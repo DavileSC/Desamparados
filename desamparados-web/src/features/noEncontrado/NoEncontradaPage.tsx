@@ -1,16 +1,15 @@
 import { lazy, Suspense, useState } from 'react'
-import { Helmet } from 'react-helmet-async'
 import { Box, Typography } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
+import MetaDePagina from '../../components/MetaDePagina'
 import Boton from '../../components/Boton'
 import { enlaceConFlecha } from '../../components/estiloDeBoton'
 import { hayWebGL } from '../../components/mapa/barrio'
 import { CLAVE_RECORRIDO, getContenido, type BloqueItinerario, type Coordenada, type PaginaDeBloques } from '../../lib/api/contenido'
 import { useModulos } from '../../hooks/useModulos'
-import { site } from '../../config/site'
 
 // Aparte: el mapa trae MapLibre, y la 404 la usan también páginas que no lo
 // necesitan (una noticia que no existe). Solo se descarga si hay mapa que pintar.
@@ -44,11 +43,8 @@ export default function NoEncontradaPage() {
 
   return (
     <>
-      <Helmet>
-        <title>{`Página no encontrada | ${site.nombreCorto}`}</title>
-        {/* Una SPA no puede devolver un 404 HTTP: al menos evitamos que se indexe */}
-        <meta name="robots" content="noindex" />
-      </Helmet>
+      {/* Una SPA no puede devolver un 404 HTTP: al menos evitamos que se indexe, y sin canonical a la dirección rota. */}
+      <MetaDePagina titulo="Página no encontrada" sinIndexar />
 
       <Box component="section" sx={{ py: { xs: 4, md: 10 }, minHeight: { md: 'calc(100svh - 72px)' }, display: 'flex', alignItems: 'center' }}>
         <ContenedorDePagina>

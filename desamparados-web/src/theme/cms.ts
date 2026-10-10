@@ -1,4 +1,5 @@
 import { createTheme, type Theme } from '@mui/material/styles'
+import { esES } from '@mui/material/locale'
 import theme, { designTokens, ERROR_SOBRE_OSCURO, themeOptions } from './index'
 
 /**
@@ -372,6 +373,8 @@ export const temaCms: Theme = createTheme(
       },
     },
   },
+  // Sale de las opciones y no de `theme`, así que el español de MUI se pone aquí también.
+  esES,
 )
 
 /**

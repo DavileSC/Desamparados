@@ -7,6 +7,7 @@ import AvisoDeCookies from '../components/AvisoDeCookies'
 import TransicionDePagina from '../components/TransicionDePagina'
 import { designTokens } from '../theme'
 import { useFocoAlCambiarDePagina } from '../hooks/useFocoAlCambiarDePagina'
+import SaltarAlContenido from '../components/SaltarAlContenido'
 
 export default function MarcoPublico() {
   const principal = useRef<HTMLElement>(null)
@@ -14,29 +15,11 @@ export default function MarcoPublico() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {/* Para quien navega con teclado: sin él, cada página obliga a tabular por
-          todo el menú antes de llegar al contenido. Invisible hasta que se
-          enfoca, que es el primer Tab de la página. Se enfoca a mano en vez de
-          dejar el #ancla, que cambiaría la dirección y no movería el foco. */}
-      <Box
-        component="a"
-        href="#contenido"
-        onClick={(e: React.MouseEvent) => {
-          e.preventDefault()
-          principal.current?.focus()
-        }}
-        sx={{
-          position: 'fixed', top: 8, left: 8, zIndex: (t) => t.zIndex.tooltip + 1,
-          px: 2, py: 1.25, borderRadius: '6px',
-          bgcolor: designTokens.colors.primary, color: 'text.primary',
-          fontWeight: 600, textDecoration: 'none',
-          outline: `2px solid ${designTokens.colors.tertiaryContainer}`, outlineOffset: 2,
-          transform: 'translateY(-200%)',
-          '&:focus': { transform: 'none' },
-        }}
-      >
-        Saltar al contenido
-      </Box>
+      {/* Con los colores que ya tenía en la web pública. */}
+      <SaltarAlContenido
+        destino={principal}
+        sx={{ bgcolor: designTokens.colors.primary, color: 'text.primary', outlineColor: designTokens.colors.tertiaryContainer }}
+      />
       <BarraDeNavegacion />
       <Box
         component="main"

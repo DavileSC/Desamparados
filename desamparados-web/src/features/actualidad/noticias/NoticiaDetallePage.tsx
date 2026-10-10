@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import MetaDePagina from '../../../components/MetaDePagina'
 import FichaDeNoticia from '../../../components/FichaDeNoticia'
 import { Link, useParams } from 'react-router-dom'
@@ -8,7 +8,6 @@ import ContenedorDePagina from '../../../components/ContenedorDePagina'
 import SeccionAnimada from '../../../components/SeccionAnimada'
 import { noticiaPorDireccion } from '../../../lib/api/noticias'
 import { ErrorDeApi } from '../../../lib/api/cliente'
-import type { Noticia } from '../../../types'
 import NoEncontradaPage from '../../noEncontrado/NoEncontradaPage'
 import { limpiarHtml } from '../../../lib/limpiarHtml'
 import { useVolverAlListado } from '../../../hooks/useVolverAlListado'
@@ -26,49 +25,23 @@ export default function NoticiaDetallePage() {
   // El archivo de noticias del que se vino, con su página: sin esto, «Volver a
   // todas las noticias» devolvía siempre a la primera.
   const volverAlArchivo = useVolverAlListado('/noticias')
-  const [noticia, setNoticia] = useState<Noticia | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  // Se guarda qué dirección no existe, no un sí o no: al pasar a otra noticia
-  // sin desmontar la página, la marca no debe arrastrarse.
-  const [inexistente, setInexistente] = useState<string | null>(null)
-  const [intento, setIntento] = useState(0)
+  // Con el slug en la clave: al ir atrás o adelante entre noticias, cada una
+  // trae lo suyo (antes se veía la anterior, o un error viejo que no se
+  // limpiaba), y volver a una ya vista no la pide otra vez.
+  const consulta = useQuery({
+    queryKey: ['noticias', 'ficha', slug],
+    queryFn: () => noticiaPorDireccion(slug),
+    // Una dirección que no existe no es un fallo pasajero: ni se reintenta ni
+    // se ofrece «Volver a intentar», y la página de no encontrada lleva el
+    // noindex que la saca de los buscadores.
+    retry: (veces, error) => !(error instanceof ErrorDeApi && error.status === 404) && veces < 1,
+  })
 
-  useEffect(() => {
-    let cancelado = false
-
-    noticiaPorDireccion(slug)
-      .then((data) => {
-        if (!cancelado) setNoticia(data)
-      })
-      .catch((err: unknown) => {
-        if (cancelado) return
-        // Una dirección que no existe no es un fallo pasajero: ofrecer «Volver a
-        // intentar» no lleva a ninguna parte, y la página de no encontrada
-        // lleva el noindex que la saca de los buscadores.
-        if (err instanceof ErrorDeApi && err.status === 404) setInexistente(slug)
-        else setError(err instanceof Error ? err.message : 'No se ha podido cargar la noticia.')
-      })
-      .finally(() => {
-        if (!cancelado) setLoading(false)
-      })
-
-    return () => {
-      cancelado = true
-    }
-  }, [slug, intento])
-
-  const reintentar = () => {
-    setError(null)
-    setLoading(true)
-    setIntento((n) => n + 1)
+  if (consulta.error instanceof ErrorDeApi && consulta.error.status === 404) return <NoEncontradaPage />
+  if (consulta.isPending || consulta.isError) {
+    return <EnCarga avisoArriba estado={consulta.isPending ? 'cargando' : 'error'} que="la noticia" alReintentar={() => void consulta.refetch()} esqueleto={<FichaEsqueleto />} />
   }
-
-  if (inexistente === slug) return <NoEncontradaPage />
-  if (loading || error) {
-    return <EnCarga avisoArriba estado={loading ? 'cargando' : 'error'} que="la noticia" alReintentar={reintentar} esqueleto={<FichaEsqueleto />} />
-  }
-  if (!noticia) return <NoEncontradaPage />
+  const noticia = consulta.data
 
   const cuerpo = noticia.contenido ?? noticia.extracto ?? ''
   // Un texto en HTML ya trae sus párrafos: con `pre-line`, los saltos de línea

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import {
   Box,
@@ -19,6 +19,8 @@ import LogoutIcon from '@mui/icons-material/Logout'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import EscudoDelGrupo from '../components/EscudoDelGrupo'
 import TransicionDePagina from '../components/TransicionDePagina'
+import SaltarAlContenido from '../components/SaltarAlContenido'
+import { useFocoAlCambiarDePagina } from '../hooks/useFocoAlCambiarDePagina'
 import { designTokens } from '../theme'
 import { cerrarSesion } from '../features/altas/auth/session'
 import { site } from '../config/site'
@@ -31,6 +33,9 @@ export default function MarcoAreaHermano() {
   const theme = useTheme()
   const location = useLocation()
   const [cajonAbierto, setCajonAbierto] = useState(false)
+  // Como en la web pública: salto al contenido y, al navegar, el foco al título nuevo.
+  const principal = useRef<HTMLElement>(null)
+  useFocoAlCambiarDePagina(principal)
   const { activo } = useModulos()
   const entradas = entradasDelArea.filter((e) => activo(e.modulo))
 
@@ -131,7 +136,8 @@ export default function MarcoAreaHermano() {
             justifyContent: 'flex-start',
             color: 'text.secondary',
             textTransform: 'none', letterSpacing: 0, fontSize: 15, fontWeight: 500,
-            '&:hover': { color: 'primary.main', backgroundColor: 'rgba(255,255,255,0.05)' },
+            // El granate no es color de letra sobre negro (3,1:1): al pasar, blanco.
+            '&:hover': { color: 'text.primary', backgroundColor: 'rgba(255,255,255,0.05)' },
           }}
         >
           Cerrar sesión
@@ -142,6 +148,7 @@ export default function MarcoAreaHermano() {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      <SaltarAlContenido destino={principal} />
       <AppBar
         position="fixed"
         elevation={0}
@@ -154,7 +161,8 @@ export default function MarcoAreaHermano() {
         }}
       >
         <Toolbar>
-          <IconButton color="inherit" edge="start" onClick={alternarCajon} sx={{ mr: 2 }}>
+          <IconButton color="inherit" edge="start" onClick={alternarCajon} sx={{ mr: 2 }}
+            aria-label={cajonAbierto ? 'Cerrar el menú' : 'Abrir el menú'} aria-expanded={cajonAbierto} aria-controls="menu-del-area">
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" sx={{ fontFamily: designTokens.fonts.heading }}>
@@ -169,6 +177,7 @@ export default function MarcoAreaHermano() {
       >
         <Drawer
           variant="temporary"
+          id="menu-del-area"
           open={cajonAbierto}
           onClose={alternarCajon}
           ModalProps={{ keepMounted: true }}
@@ -193,7 +202,11 @@ export default function MarcoAreaHermano() {
 
       <Box
         component="main"
+        id="contenido"
+        ref={principal}
+        tabIndex={-1}
         sx={{
+          '&:focus, & h1[tabindex="-1"]:focus': { outline: 'none' },
           flexGrow: 1,
           p: { xs: 3, md: 5 },
           pt: { xs: 10, md: 5 },

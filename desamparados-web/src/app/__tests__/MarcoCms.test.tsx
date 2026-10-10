@@ -152,7 +152,8 @@ describe('el menú del Inicio', () => {
     entrarComo('REDES')
     renderWithProviders(<MarcoCms />)
     const enlaces = screen.getAllByRole('link')
-    expect(enlaces[1]).toHaveAccessibleName('Inicio') // [0] es el logotipo
+    expect(enlaces[0]).toHaveAccessibleName('Saltar al contenido')
+    expect(enlaces[2]).toHaveAccessibleName('Inicio') // [1] es el logotipo
   })
 
   it('agrupa las secciones por áreas', () => {

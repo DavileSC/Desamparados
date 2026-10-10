@@ -157,11 +157,14 @@ export default function TiendaPage() {
     }
   }
 
-  const titulo = producto ? producto.nombre : 'Tienda'
+  // Una ficha de un producto que ya no está: ni «Tienda» indexable ni canonical a la dirección rota.
+  const productoQueNoEsta = Boolean(id) && consulta.isSuccess && !producto
+  const titulo = producto ? producto.nombre : productoQueNoEsta ? 'Producto no disponible' : 'Tienda'
   const hayCesta = pagoDisponible && lineas.length > 0
   return <>
     <MetaDePagina
       titulo={titulo}
+      sinIndexar={productoQueNoEsta}
       descripcion={producto
         ? `${producto.nombre}, ${euros(producto.precio)}. ${producto.descripcion}`.slice(0, 160)
         : `Recuerdos ${deLaCorporacion()} ${site.titular}. Se compran en línea y se recogen en Secretaría.`}

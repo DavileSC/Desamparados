@@ -1,4 +1,5 @@
 import { createTheme, type ThemeOptions } from '@mui/material/styles'
+import { esES } from '@mui/material/locale'
 
 export const designTokens = {
   colors: {
@@ -270,6 +271,7 @@ export const themeOptions: ThemeOptions = {
   },
 }
 
-export const theme = createTheme(themeOptions)
+// esES: los textos que MUI pone solo («Close», «Open», «Go to page 3»), en español.
+export const theme = createTheme(themeOptions, esES)
 
 export default theme

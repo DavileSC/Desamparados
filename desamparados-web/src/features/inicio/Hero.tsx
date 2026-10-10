@@ -61,8 +61,11 @@ export default function Hero() {
   const video = useRef<HTMLVideoElement>(null)
   // Todo lo que se mueve solo más de cinco segundos tiene que poder pararse
   // (WCAG 2.2.2): por eso el botón de pausa.
+  // Lo mismo con las fotos que rotan solas: el botón también para el pase.
   const [pausado, setPausado] = useState(false)
+  const rotan = total >= 2 && !reduceMotion && !conVideo
   const alternarPausa = () => {
+    if (!conVideo) { setPausado((p) => !p); return }
     const el = video.current
     if (!el) return
     if (el.paused) { void el.play(); setPausado(false) } else { el.pause(); setPausado(true) }
@@ -73,14 +76,14 @@ export default function Hero() {
   // anula además las transiciones y la rotación quedaría en cortes secos).
   const [tick, setTick] = useState(0)
   useEffect(() => {
-    if (total < 2 || reduceMotion || conVideo) return
+    if (!rotan || pausado) return
     const id = window.setInterval(() => {
       // En una pestaña en segundo plano no se avanza: al volver no hay salto.
       if (document.hidden) return
       setTick((t) => t + 1)
     }, INTERVALO_ROTACION_MS)
     return () => window.clearInterval(id)
-  }, [total, reduceMotion, conVideo])
+  }, [rotan, pausado])
   const actual = total > 0 ? tick % total : 0
 
   // Parallax que sigue levemente al ratón: la imagen se mueve en sentido contrario al
@@ -239,10 +242,12 @@ export default function Hero() {
         }}
       />
 
-      {conVideo && (
+      {(conVideo || rotan) && (
         <IconButton
           onClick={alternarPausa}
-          aria-label={pausado ? 'Reanudar el vídeo de fondo' : 'Pausar el vídeo de fondo'}
+          aria-label={conVideo
+            ? (pausado ? 'Reanudar el vídeo de fondo' : 'Pausar el vídeo de fondo')
+            : (pausado ? 'Reanudar el pase de fotos' : 'Pausar el pase de fotos')}
           sx={{
             position: 'absolute',
             zIndex: 3,
@@ -331,8 +336,8 @@ export default function Hero() {
             </Typography>
           </Revela>
           <Revela alMontar retraso={RETRASO_TEXTOS_S} orden={3}>
-            {/* Con vídeo, el rincón de la derecha es de su botón de pausa. */}
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: { xs: 'flex-start', md: 'flex-end' }, alignItems: 'center', gap: { xs: 1.5, md: 3 }, pr: { xs: conVideo ? 7 : 0, md: 0 } }}>
+            {/* Con vídeo o fotos que rotan, el rincón de la derecha es de su botón de pausa. */}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: { xs: 'flex-start', md: 'flex-end' }, alignItems: 'center', gap: { xs: 1.5, md: 3 }, pr: { xs: conVideo || rotan ? 7 : 0, md: 0 } }}>
               <Boton component={Link} to="/historia" sx={{ px: { xs: 2.5, md: 3.5 }, fontSize: { xs: 14, md: 15 } }}>
                 {textos.hero.botonPrincipal}
               </Boton>

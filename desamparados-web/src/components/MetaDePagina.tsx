@@ -1,5 +1,6 @@
 import { Helmet } from 'react-helmet-async'
 import { site } from '../config/site'
+import { useSinCanonico } from '../lib/canonico'
 
 /**
  * El título y la descripción de una página, en un solo sitio.
@@ -26,9 +27,10 @@ export default function MetaDePagina({ titulo, descripcion, conSufijo = true, si
   /** Una o dos frases sobre lo que hay en la página. Sin ella, la general del sitio. */
   descripcion?: string
   conSufijo?: boolean
-  /** Para las páginas de un solo visitante (un pedido, un recibo): no pintan nada en un buscador. */
+  /** Para las páginas de un solo visitante (un pedido, un recibo) o que no existen: no pintan nada en un buscador, y van sin canonical. */
   sinIndexar?: boolean
 }) {
+  useSinCanonico(sinIndexar)
   const completo = conSufijo ? `${titulo} | ${site.nombreCorto}` : titulo
   // Una cadena vacía (el subtítulo en blanco de una página del CMS) también cae
   // a la general: una descripción vacía le dice al buscador que no la hay.

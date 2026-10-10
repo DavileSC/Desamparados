@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useState } from 'react'
 import { createBrowserRouter, RouterProvider, Navigate, Outlet, ScrollRestoration } from 'react-router-dom'
 import CargandoPagina from '../components/CargandoPagina'
 import MarcoPublico from '../app/MarcoPublico'
@@ -9,6 +9,7 @@ import ExigeModulo from './ExigeModulo'
 import DireccionAntigua from './DireccionAntigua'
 import { rolesPorRutaCms } from '../app/rolesCms'
 import { Helmet } from 'react-helmet-async'
+import { QuitarCanonico } from '../lib/canonico'
 import { useLocation } from 'react-router-dom'
 import { site } from '../config/site'
 import ErrorDeRuta from '../components/ErrorDeRuta'
@@ -138,17 +139,19 @@ function pagina(Component: React.ComponentType, modulo: Requisito) {
 function RootLayout() {
   const location = useLocation()
   const canonical = `${site.url}${location.pathname === '/' ? '/' : location.pathname.replace(/\/$/, '')}`
+  // Lo pide una página sin indexar (lib/canonico.ts): con noindex, sin canonical.
+  const [sinCanonico, setSinCanonico] = useState(false)
   return (
-    <>
+    <QuitarCanonico.Provider value={setSinCanonico}>
       <Helmet>
-        <link rel="canonical" href={canonical} />
+        {!sinCanonico && <link rel="canonical" href={canonical} />}
         <meta property="og:url" content={canonical} />
         {/* og:site_name, og:type y og:image no van: son las mismas en todas
             las páginas, ya vienen en index.html y aquí salían repetidas. */}
       </Helmet>
       <ScrollRestoration />
       <Outlet />
-    </>
+    </QuitarCanonico.Provider>
   )
 }
 

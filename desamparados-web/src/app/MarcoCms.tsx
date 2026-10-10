@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import {
   Box, ButtonBase, Collapse, Divider, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon,
@@ -11,6 +11,8 @@ import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded'
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded'
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined'
 import EscudoDelGrupo from '../components/EscudoDelGrupo'
+import SaltarAlContenido from '../components/SaltarAlContenido'
+import { useFocoAlCambiarDePagina } from '../hooks/useFocoAlCambiarDePagina'
 import { useAuthStore } from '../features/altas/auth/store'
 import { cerrarSesion } from '../features/altas/auth/session'
 import { TemaCmsProvider } from './temaCms'
@@ -410,6 +412,9 @@ function BloqueUsuario({ role, onNavegar }: { role?: string; onNavegar?: () => v
 function Contenido() {
   const role = useAuthStore((state) => state.cms?.role)
   const [menuAbierto, setMenuAbierto] = useState(false)
+  // Como en la web pública: salto al contenido y, al navegar, el foco al título nuevo.
+  const principal = useRef<HTMLDivElement>(null)
+  useFocoAlCambiarDePagina(principal)
   const tema = useTheme()
   const { superficies } = useTemaCms()
   const esMovil = useMediaQuery(tema.breakpoints.down('md'))
@@ -452,6 +457,7 @@ function Contenido() {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: 'background.default', color: 'text.primary' }}>
+      <SaltarAlContenido destino={principal} />
       {esMovil ? (
         <Drawer open={menuAbierto} onClose={() => setMenuAbierto(false)} sx={{ '& .MuiDrawer-paper': { width: 'min(300px, 86vw)', border: 0 } }}>
           {barra}
@@ -503,7 +509,8 @@ function Contenido() {
             </IconButton>
           </Toolbar>
         )}
-        <Box sx={{ p: { xs: 2.5, md: 4 } }}>
+        {/* El destino es el contenido y no el <main>: en el móvil, el <main> empieza por la barra del menú. */}
+        <Box id="contenido" ref={principal} tabIndex={-1} sx={{ p: { xs: 2.5, md: 4 }, '&:focus, & h1[tabindex="-1"]:focus': { outline: 'none' } }}>
           <Outlet />
         </Box>
       </Box>
