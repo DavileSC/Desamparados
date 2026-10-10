@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Alert, Box, ButtonBase, Link as EnlaceMui, Paper, TextField, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import Boton from '../../components/Boton'
@@ -8,6 +9,7 @@ import { Contador } from './ElegirTalla'
 import { euros, nombreConTalla, quedanDe, topeDe, type LineaDeLaCesta } from './cesta'
 import { esTelefonoValido, normalizarTelefono } from '../../lib/validacion/identidad'
 import { propsDeFoto } from '../../lib/fotoSubida'
+import { enfocarLoQueFalla } from '../../lib/enfocarLoQueFalla'
 
 export interface Comprador { nombre: string; email: string; telefono: string; metodo: MetodoEnLinea }
 
@@ -47,13 +49,12 @@ export default function CestaDeLaTienda({ lineas, metodos, enviando, error, onCa
    */
   const [intentado, setIntentado] = useState(false)
   const fallos = fallosDe(comprador)
-  const refs = { nombre: useRef<HTMLInputElement>(null), email: useRef<HTMLInputElement>(null), telefono: useRef<HTMLInputElement>(null) }
+  const cesta = useRef<HTMLElement>(null)
   const fallo = (campo: Campo) => (intentado ? fallos[campo] : null)
   const pagar = () => {
-    const primero = (['nombre', 'email', 'telefono'] as const).find((c) => fallos[c])
-    if (primero) {
-      setIntentado(true)
-      refs[primero].current?.focus()
+    if (fallos.nombre || fallos.email || fallos.telefono) {
+      flushSync(() => setIntentado(true))
+      enfocarLoQueFalla(cesta.current)
       return
     }
     // El servidor guarda nueve dígitos pelados: «+34 600 12 34 56» también vale.
@@ -63,7 +64,7 @@ export default function CestaDeLaTienda({ lineas, metodos, enviando, error, onCa
   const enDatos = paso === 'datos' && lineas.length > 0
 
   return (
-    <Paper component="aside" aria-label="Tu cesta" elevation={0} sx={{ px: 3, pb: 3, display: 'grid', gap: 2, bgcolor: 'transparent', backgroundImage: 'none' }}>
+    <Paper component="aside" ref={cesta} aria-label="Tu cesta" elevation={0} sx={{ px: 3, pb: 3, display: 'grid', gap: 2, bgcolor: 'transparent', backgroundImage: 'none' }}>
       <Box sx={{ display: 'flex', gap: 1, fontSize: 12, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'text.secondary' }} aria-hidden="true">
         <Box component="span" sx={{ color: enDatos ? undefined : GOLD }}>1 · Cesta</Box>
         <span>›</span>
@@ -100,11 +101,11 @@ export default function CestaDeLaTienda({ lineas, metodos, enviando, error, onCa
           </>}
       </> : <>
         <Typography component="h2" sx={{ fontSize: 20, fontWeight: 600 }}>Tus datos</Typography>
-        <TextField label="Nombre y apellidos" value={comprador.nombre} onChange={(e) => setComprador({ ...comprador, nombre: e.target.value })} fullWidth inputRef={refs.nombre}
+        <TextField label="Nombre y apellidos" value={comprador.nombre} onChange={(e) => setComprador({ ...comprador, nombre: e.target.value })} fullWidth
           error={!!fallo('nombre')} helperText={fallo('nombre')} slotProps={{ htmlInput: { maxLength: 120, autoComplete: 'name' } }} />
-        <TextField label="Correo" type="email" value={comprador.email} onChange={(e) => setComprador({ ...comprador, email: e.target.value })} fullWidth inputRef={refs.email}
+        <TextField label="Correo" type="email" value={comprador.email} onChange={(e) => setComprador({ ...comprador, email: e.target.value })} fullWidth
           error={!!fallo('email')} helperText={fallo('email') ?? 'Te mandamos ahí la confirmación.'} slotProps={{ htmlInput: { autoComplete: 'email' } }} />
-        <TextField label="Teléfono" type="tel" value={comprador.telefono} onChange={(e) => setComprador({ ...comprador, telefono: e.target.value })} fullWidth inputRef={refs.telefono}
+        <TextField label="Teléfono" type="tel" value={comprador.telefono} onChange={(e) => setComprador({ ...comprador, telefono: e.target.value })} fullWidth
           error={!!fallo('telefono')} helperText={fallo('telefono')} slotProps={{ htmlInput: { autoComplete: 'tel' } }} />
         {metodos.length > 1 && (
           <Box role="group" aria-label="Pagar con" sx={{ display: 'grid', gridTemplateColumns: `repeat(${metodos.length}, minmax(0, 1fr))`, gap: 1 }}>

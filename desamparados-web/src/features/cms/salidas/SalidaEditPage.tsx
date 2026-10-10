@@ -53,22 +53,17 @@ interface SeccionProps {
 
 /**
  * Si los valores de una sección difieren de lo último guardado. Devuelve la
- * función que se llama tras guardar: toma lo que haya en el siguiente pintado
- * (que puede traer lo que devolvió el servidor) como lo guardado.
+ * función que se llama tras guardar: apunta como guardado lo que había en el
+ * pintado desde el que se pulsó «Guardar», que es justo lo que se mandó (si se
+ * sigue escribiendo mientras se guarda, eso queda como cambio pendiente).
  */
 function useSeccionSucia(seccion: string, valores: unknown, onSucio: SeccionProps['onSucio']) {
   const actual = JSON.stringify(valores)
   const [guardado, setGuardado] = useState(actual)
-  const [recienGuardado, setRecienGuardado] = useState(false)
-  useEffect(() => {
-    if (!recienGuardado) return
-    setGuardado(actual)
-    setRecienGuardado(false)
-  }, [recienGuardado, actual])
-  const sucio = !recienGuardado && actual !== guardado
+  const sucio = actual !== guardado
   useEffect(() => { onSucio(seccion, sucio) }, [seccion, sucio, onSucio])
   useEffect(() => () => onSucio(seccion, false), [seccion, onSucio])
-  return () => setRecienGuardado(true)
+  return () => setGuardado(actual)
 }
 
 /** Datos: nombre, slug, orden y si está activa. */

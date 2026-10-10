@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Box, IconButton, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import PauseIcon from '@mui/icons-material/Pause'
@@ -113,7 +113,8 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
   /** El rótulo «Salida y entrada»: se aparta cuando el trono pasa por su lado. */
   const rotuloSalida = useRef<HTMLSpanElement | null>(null)
   const camaraActual = useRef(camara)
-  camaraActual.current = camara
+  // Al día tras cada pintado y antes que los efectos que la leen; no durante el pintado.
+  useLayoutEffect(() => { camaraActual.current = camara }, [camara])
   /** Hasta cuándo dura el cambio de plano en curso. MapLibre 6 ya no expone
    *  `isEasing()` en el mapa, así que se lleva la cuenta aquí. */
   const planoHasta = useRef(0)

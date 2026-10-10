@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Box, Link as EnlaceMui, Typography } from '@mui/material'
-import { keyframes } from '@mui/system'
+import { keyframes } from '@mui/material/styles'
 import { SERIF } from '../../features/inicio/estilos'
 import { anchoMaximo } from './presentacion'
 import {

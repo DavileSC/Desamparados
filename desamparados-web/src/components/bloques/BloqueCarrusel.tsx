@@ -50,6 +50,8 @@ export default function BloqueCarrusel({ bloque }: { bloque: Datos }) {
   }
   // Solo el dedo: con el ratón se pasa con las flechas.
   const empieza = (e: PointerEvent) => { if (e.pointerType !== 'mouse') inicio.current = e.clientX }
+  // El móvil recibe la función y no la ref: un componente no toca lo que le llega por props.
+  const cancela = () => { inicio.current = null }
   const acaba = (e: PointerEvent) => {
     if (inicio.current === null) return
     const recorrido = e.clientX - inicio.current
@@ -58,7 +60,7 @@ export default function BloqueCarrusel({ bloque }: { bloque: Datos }) {
   }
 
   if (movil) {
-    return <CarruselMovil {...{ bloque, actual, pieza, total, ir, teclas, empieza, acaba, inicio, reducir: !!reducir }} />
+    return <CarruselMovil {...{ bloque, actual, pieza, total, ir, teclas, empieza, acaba, cancela, reducir: !!reducir }} />
   }
 
   return (
@@ -81,7 +83,7 @@ export default function BloqueCarrusel({ bloque }: { bloque: Datos }) {
       <Box
         onPointerDown={empieza}
         onPointerUp={acaba}
-        onPointerCancel={() => { inicio.current = null }}
+        onPointerCancel={cancela}
         sx={{
           position: 'relative', overflow: 'hidden', backgroundColor: '#0c0b0d', touchAction: 'pan-y',
           aspectRatio: { xs: '4 / 5', md: 'auto' },
@@ -158,11 +160,11 @@ interface PropsMovil {
   teclas: (e: KeyboardEvent) => void
   empieza: (e: PointerEvent) => void
   acaba: (e: PointerEvent) => void
-  inicio: { current: number | null }
+  cancela: () => void
   reducir: boolean
 }
 
-function CarruselMovil({ bloque, actual, pieza, total, ir, teclas, empieza, acaba, inicio, reducir }: PropsMovil) {
+function CarruselMovil({ bloque, actual, pieza, total, ir, teclas, empieza, acaba, cancela, reducir }: PropsMovil) {
   const [cartela, setCartela] = useState(false)
   const idTitulo = useId()
   const hayCartela = pieza.texto !== '' || pieza.datos.length > 0
@@ -177,7 +179,7 @@ function CarruselMovil({ bloque, actual, pieza, total, ir, teclas, empieza, acab
       onKeyDown={teclas}
       onPointerDown={empieza}
       onPointerUp={acaba}
-      onPointerCancel={() => { inicio.current = null }}
+      onPointerCancel={cancela}
       sx={{
         position: 'relative', overflow: 'hidden', backgroundColor: '#0c0b0d', touchAction: 'pan-y', outline: 'none',
         // A sangre, de borde a borde, y del alto de la pantalla menos la barra fija;
