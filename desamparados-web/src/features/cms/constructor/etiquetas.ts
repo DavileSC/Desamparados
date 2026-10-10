@@ -53,7 +53,7 @@ const ETIQUETA_VALOR: Record<string, string> = {
   lado: 'Datos al lado', debajo: 'Datos debajo', solo: 'Solo el formulario',
   mitad: 'La mitad', tercio: 'Un tercio', arriba: 'Arriba',
   clasica: 'Clásica', lineas: 'Líneas',
-  bajo: 'Bajo', medio: 'Medio', alto: 'Alto', natural: 'Natural', compacta: 'Compacta',
+  bajo: 'Bajo', medio: 'Medio', alto: 'Alto', compacta: 'Compacta',
   pequeno: 'Pequeño', mediano: 'Mediano',
   anillos: 'Anillos entrelazados', foco: 'En foco', enfoque: 'Se enfoca al leerla', fila: 'En una fila',
 }

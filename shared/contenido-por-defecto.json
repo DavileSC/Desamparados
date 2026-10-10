@@ -1416,7 +1416,6 @@
         "titulo": "Cómo llegar",
         "presentacion": {
           "alto": "medio",
-          "estilo": "oscuro",
           "disposicion": "lado",
           "ancla": "como-llegar"
         },
