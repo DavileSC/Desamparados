@@ -8,7 +8,7 @@
  * boletín a cuatrocientos hermanos tarda unos minutos, pero llega. Si el
  * servidor se reinicia a medias, al arrancar sigue por donde iba.
  */
-import { EstadoComunicado, EstadoEnvio, EstadoPago, Prisma, TipoComunicado } from '@prisma/client';
+import { EstadoComunicado, EstadoEnvio, EstadoPago, Prisma, TipoComunicado, TipoRecibo } from '@prisma/client';
 import db from '../config/db';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearContenidoCms, extractoPlano } from '../utils/sanear-html.js';
@@ -18,6 +18,7 @@ import { firma, maquetar, parrafo, saludo, urlDeLaWeb } from './correos/plantill
 import { anioDeLaMesa } from './procesion/zonas.service.js';
 import { SalidasService } from './procesion/salidas.service.js';
 import { ModulosService } from './modulos.service.js';
+import { reemitidosDe } from './recibos/comunes.js';
 import { diaDeHoy } from '../domain/fechas-hermano.js';
 import { articuloDe, deLaCorporacion } from '../domain/articulos.js';
 import {
@@ -57,6 +58,22 @@ async function segmentoAplicable(s: Segmento): Promise<Segmento> {
 }
 
 
+/**
+ * Quién debe cuotas, con el mismo criterio que la lista de impagos: solo
+ * CUOTA_HERMANO y sin las devueltas que ya se reemitieron. Con «algún recibo
+ * pendiente o devuelto» a secas, el aviso de impago llegaba a quien ya había
+ * pagado la reemisión, a quien se le reembolsó una papeleta o a quien tenía
+ * un donativo sin cobrar.
+ */
+async function idsConCuotasPendientes(): Promise<number[]> {
+  const recibos = await db.recibo.findMany({
+    where: { tipo: TipoRecibo.CUOTA_HERMANO, estado: { in: [EstadoPago.PENDIENTE, EstadoPago.DEVUELTO] }, hermano: { activo: true } },
+    select: { id: true, hermanoId: true, year: true, tipo: true, estado: true },
+  });
+  const reemitidos = await reemitidosDe(recibos.filter((r) => r.estado === EstadoPago.DEVUELTO));
+  return [...new Set(recibos.filter((r) => !reemitidos.has(r.id)).map((r) => r.hermanoId))];
+}
+
 /** Las fichas del segmento: siempre activas; en el boletín, solo las suscritas. */
 async function fichasDelSegmento(tipo: TipoComunicado, s: Segmento) {
   const hoy = diaDeHoy();
@@ -66,7 +83,7 @@ async function fichasDelSegmento(tipo: TipoComunicado, s: Segmento) {
     activo: true,
     ...(tipo === TipoComunicado.BOLETIN ? { boletin: true } : {}),
     ...(conPapeleta ? { papeletas: { some: { salidaId: conPapeleta, year: anioDeLaMesa(await SalidasService.porId(conPapeleta)) } } } : {}),
-    ...(s.conDeuda ? { recibos: { some: { estado: { in: [EstadoPago.PENDIENTE, EstadoPago.DEVUELTO] } } } } : {}),
+    ...(s.conDeuda ? { id: { in: await idsConCuotasPendientes() } } : {}),
     ...(s.edad === 'MAYORES' ? { fechaNacimiento: { lte: hace18 } } : s.edad === 'MENORES' ? { fechaNacimiento: { gt: hace18 } } : {}),
     ...(s.poblacion ? { poblacion: s.poblacion } : {}),
   };

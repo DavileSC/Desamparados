@@ -963,23 +963,25 @@ age -d -i clave-copias-desamparados.txt desamparados_20260911T040000Z.tar.gz.age
   | tar -xzf - -C restauracion
 # restauracion/db.sql y restauracion/storage/
 
-# 2. La base de datos, primero en una de prueba
-docker compose exec -T db mariadb -u root -p -e \
-  "CREATE DATABASE desamparados_prueba CHARACTER SET utf8mb4"
-docker compose exec -T db mariadb -u root -p desamparados_prueba < restauracion/db.sql
-docker compose exec -T db mariadb -u root -p -e \
-  "SELECT COUNT(*) FROM desamparados_prueba.User"
+# 2. La base de datos, primero en una de prueba. `mariadb` como root dentro
+#    del contenedor, con la clave de su propio entorno (como backup-vps.sh):
+#    con `-p` y `exec -T` el cliente leería la contraseña del volcado y
+#    respondería «Access denied».
+root() { docker compose exec -T db sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb -u root "$@"' sh "$@"; }
+root -e "CREATE DATABASE desamparados_prueba CHARACTER SET utf8mb4"
+root desamparados_prueba < restauracion/db.sql
+root -e "SELECT COUNT(*) FROM desamparados_prueba.User"
 
 # 3. Solo para restaurar de verdad:
 #    docker compose stop api web
-#    docker compose exec -T db mariadb -u root -p desamparados_db < restauracion/db.sql
+#    root desamparados_db < restauracion/db.sql
 #    sudo -u desamparados rsync -a --delete restauracion/storage/ \
 #      /srv/desamparados/backend-desamparados/storage/
 #    docker compose start api web
 
 # 4. Borrar lo descifrado al terminar: lleva el censo entero en claro
 rm -rf restauracion
-docker compose exec -T db mariadb -u root -p -e "DROP DATABASE desamparados_prueba"
+root -e "DROP DATABASE desamparados_prueba"
 ```
 
 En Windows, para el equipo de desarrollo, siguen `scripts/backup-db.ps1` y

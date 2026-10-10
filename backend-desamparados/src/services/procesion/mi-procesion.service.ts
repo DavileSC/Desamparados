@@ -183,7 +183,7 @@ export class MiProcesionService {
         tieneTunicaPropia: true, numeroHermano: true,
         solicitudes: {
           where: { estado: EstadoSolicitud.PENDIENTE },
-          include: { recibo: true, cita: { select: { id: true, turno: { select: { id: true, salidaId: true, fecha: true, horaInicio: true, horaFin: true } } } } },
+          include: { recibo: true, cita: { select: { id: true, estado: true, turno: { select: { id: true, salidaId: true, fecha: true, horaInicio: true, horaFin: true } } } } },
           orderBy: { id: 'desc' },
         },
         papeletas: {
@@ -266,7 +266,8 @@ export class MiProcesionService {
       });
 
       if (!cita) throw new NotFoundError('Cita no encontrada o no autorizada.');
-      if (cita.estado !== EstadoCita.RESERVADA) throw new HttpError('Esta cita ya no se puede cancelar.');
+      // La de quien no pasó su día (NO_PRESENTADO) también: su solicitud sigue viva.
+      if (cita.estado !== EstadoCita.RESERVADA && cita.estado !== EstadoCita.NO_PRESENTADO) throw new HttpError('Esta cita ya no se puede cancelar.');
 
       const solicitud = cita.solicitud;
       if (!solicitud || solicitud.estado !== EstadoSolicitud.PENDIENTE) {
@@ -288,6 +289,59 @@ export class MiProcesionService {
     });
     avisarALaMesa({ que: 'anulado', hermanoId: solicitud.hermanoId, salidaId: solicitud.salidaId });
     return { id: citaId, estado: EstadoCita.CANCELADA };
+  }
+
+  /**
+   * Otro día para recoger la papeleta, con la misma solicitud (puesto,
+   * voluntad y lo ya pagado no cambian). Es la salida de quien no pasó el día
+   * que pidió: «Procesar ausencias» le deja la cita NO_PRESENTADO y le escribe
+   * «pida una cita nueva», pero pedir de nuevo chocaba con su solicitud viva
+   * («Ya está apuntado») y cancelar exigía la cita RESERVADA: se quedaba
+   * atascado. Sirve también para cambiar un día que aún no ha llegado.
+   */
+  static async cambiarDia(userId: number, citaId: number, turnoId: number, meta?: MetaDeAuditoria) {
+    const hecho = await transactionWithRetry(async (tx) => {
+      const cita = await tx.cita.findFirst({
+        where: { id: citaId, hermano: { userId, activo: true } },
+        include: { solicitud: true, turno: true },
+      });
+      if (!cita) throw new NotFoundError('Cita no encontrada o no autorizada.');
+      const solicitud = cita.solicitud;
+      if (!solicitud || solicitud.estado !== EstadoSolicitud.PENDIENTE
+        || (cita.estado !== EstadoCita.RESERVADA && cita.estado !== EstadoCita.NO_PRESENTADO)) {
+        throw new HttpError('Esta solicitud ya no admite cambiar de día.', 409);
+      }
+      const turno = await tx.turno.findUnique({ where: { id: turnoId }, include: { salida: { include: { acto: true } } } });
+      // Por el fin del turno: el de esta tarde aún se puede elegir por la mañana.
+      if (!turno || !turno.activo || turno.salidaId !== solicitud.salidaId || turno.horaFin < new Date()) {
+        throw new HttpError('El turno no existe o ya no está disponible.');
+      }
+      if (turno.id === cita.turnoId) throw new HttpError('Ya tienes ese día.', 409);
+      if (!(await PlazoPapeletasService.estaAbierto(turno.salida, tx))) {
+        throw new HttpError(`La inscripción ${deArticulo(articuloDe(turno.salida), turno.salida.nombre)} no está abierta.`, 409);
+      }
+      const ocupacion = await tx.cita.count({ where: { turnoId, estado: EstadoCita.RESERVADA } });
+      if (ocupacion >= turno.capacidadEstimada) throw new HttpError('Este turno ya ha alcanzado su capacidad máxima.');
+
+      // La de antes deja de contar en el aforo de su día; la ausencia se queda como estaba.
+      if (cita.estado === EstadoCita.RESERVADA) {
+        await tx.cita.update({ where: { id: cita.id }, data: { estado: EstadoCita.CANCELADA } });
+      }
+      // Única por [hermano, turno]: si ya tuvo ese día y lo canceló, se recupera.
+      const anterior = await tx.cita.findUnique({ where: { hermanoId_turnoId: { hermanoId: cita.hermanoId, turnoId } } });
+      const nueva = anterior
+        ? await tx.cita.update({ where: { id: anterior.id }, data: { estado: EstadoCita.RESERVADA } })
+        : await tx.cita.create({ data: { turnoId, hermanoId: cita.hermanoId, estado: EstadoCita.RESERVADA } });
+      await tx.solicitud.update({ where: { id: solicitud.id }, data: { citaId: nueva.id } });
+      return { solicitud, antes: { citaId: cita.id, turnoId: cita.turnoId, estado: cita.estado }, nueva };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+    await AuditoriaService.log(ACCIONES_AUDITORIA.SOLICITUD_SALIDA_CAMBIAR_DIA, meta ?? { userId }, 'solicitud', hecho.solicitud.id, {
+      antes: hecho.antes,
+      despues: { citaId: hecho.nueva.id, turnoId },
+    });
+    avisarALaMesa({ que: 'inscrito', hermanoId: hecho.solicitud.hermanoId, salidaId: hecho.solicitud.salidaId });
+    return { citaId: hecho.nueva.id, solicitudId: hecho.solicitud.id };
   }
 
   /**

@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
-import { Role, TipoRecibo } from '@prisma/client';
+import { EstadoPago, Role, TipoRecibo } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
@@ -119,9 +119,13 @@ test('el aviso va a todos los activos del segmento, y los filtros se suman', asy
   const e = await escenario();
   try {
     const conDeuda = await e.ficha({ nombre: 'Ana', email: 'ana.aviso@ejemplo.test' });
-    await e.ficha({ nombre: 'Pepe', email: 'pepe.aviso@ejemplo.test' });
+    const pepe = await e.ficha({ nombre: 'Pepe', email: 'pepe.aviso@ejemplo.test' });
     await e.ficha({ nombre: 'Niño', email: 'nino.aviso@ejemplo.test', menor: true });
     await db.recibo.create({ data: { hermanoId: conDeuda.id, year: 2099, concepto: 'Cuota 2099', importe: '30', tipo: TipoRecibo.CUOTA_HERMANO } });
+    // Ni un donativo pendiente ni una cuota devuelta que ya se reemitió (y pagó) son cuotas por cobrar.
+    await db.recibo.create({ data: { hermanoId: pepe.id, year: 2099, concepto: 'Donativo', importe: '10', tipo: TipoRecibo.DONATIVO } });
+    await db.recibo.create({ data: { hermanoId: pepe.id, year: 2098, concepto: 'Cuota 2098', importe: '30', tipo: TipoRecibo.CUOTA_HERMANO, estado: EstadoPago.DEVUELTO } });
+    await db.recibo.create({ data: { hermanoId: pepe.id, year: 2098, concepto: 'Cuota 2098 (reemisión)', importe: '30', tipo: TipoRecibo.CUOTA_HERMANO, estado: EstadoPago.PAGADO } });
 
     assert.equal((await ComunicadosService.destinatarios('AVISO', { poblacion: e.pueblo })).correos, 3);
     assert.equal((await ComunicadosService.destinatarios('AVISO', { poblacion: e.pueblo, edad: 'MAYORES' })).correos, 2);

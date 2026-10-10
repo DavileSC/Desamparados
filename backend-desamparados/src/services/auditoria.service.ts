@@ -48,6 +48,7 @@ export const ACCIONES_AUDITORIA = {
   SOLICITUD_SALIDA_CANCELAR: 'SOLICITUD_SALIDA_CANCELAR',
   // El hermano desde su área: pedir la papeleta y pagar en línea
   SOLICITUD_SALIDA_PEDIR: 'SOLICITUD_SALIDA_PEDIR',
+  SOLICITUD_SALIDA_CAMBIAR_DIA: 'SOLICITUD_SALIDA_CAMBIAR_DIA',
   PAGO_EN_LINEA: 'PAGO_EN_LINEA',
   // Lo que el banco cobró y no cuadró, y quién de Tesorería lo dio por resuelto
   PAGO_EN_LINEA_INCIDENCIA: 'PAGO_EN_LINEA_INCIDENCIA',

@@ -605,6 +605,74 @@ test('P5: sin fecha límite, el turno de hoy que aún no ha terminado no cuenta 
   }
 });
 
+test('NG3: quien no pasó su día cambia a otro con la misma solicitud, o la cancela; el cierre recoge las que se quedaron así', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const hermano = await e.hermano();
+    const otro = await e.hermano();
+    const t1 = await e.turno(new Date(Date.now() + 60 * 60 * 1000));
+    const t2 = await e.turno(new Date(Date.now() + 2 * 60 * 60 * 1000));
+    await conLaPasion({ plazoAbierto: true }, async () => {
+      const { citaId, solicitudId } = await MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t1.id, hermanoId: hermano.id, puesto: 'Vara' });
+      // Lo que deja «Procesar ausencias».
+      await db.cita.update({ where: { id: citaId }, data: { estado: EstadoCita.NO_PRESENTADO } });
+
+      await assert.rejects(MiProcesionService.cambiarDia(e.usuario.id, citaId, t1.id), HttpError, 'el mismo día, no');
+      const cambio = await MiProcesionService.cambiarDia(e.usuario.id, citaId, t2.id, e.meta);
+      assert.equal(cambio.solicitudId, solicitudId);
+      const solicitud = await db.solicitud.findUniqueOrThrow({ where: { id: solicitudId } });
+      assert.equal(solicitud.citaId, cambio.citaId);
+      assert.equal(solicitud.puesto, 'Vara', 'la solicitud es la misma');
+      assert.equal((await db.cita.findUniqueOrThrow({ where: { id: cambio.citaId } })).estado, EstadoCita.RESERVADA);
+      assert.equal((await db.cita.findUniqueOrThrow({ where: { id: citaId } })).estado, EstadoCita.NO_PRESENTADO, 'la ausencia queda como estaba');
+      assert.ok(await auditoria(ACCIONES_AUDITORIA.SOLICITUD_SALIDA_CAMBIAR_DIA, solicitudId));
+
+      // Una cita de otra cuenta no se toca.
+      const ajeno = await crearUsuarioPrueba(Role.USER);
+      try {
+        await assert.rejects(MiProcesionService.cambiarDia(ajeno.id, cambio.citaId, t1.id), HttpError);
+      } finally {
+        await borrarUsuarioPrueba(ajeno.id);
+      }
+
+      // Cancelar la de quien no pasó: antes exigía RESERVADA.
+      const delOtro = await MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t1.id, hermanoId: otro.id, puesto: 'Cirio' });
+      await db.cita.update({ where: { id: delOtro.citaId }, data: { estado: EstadoCita.NO_PRESENTADO } });
+      await MiProcesionService.cancelarAsistencia(e.usuario.id, delOtro.citaId);
+      assert.equal((await db.solicitud.findUniqueOrThrow({ where: { id: delOtro.solicitudId } })).estado, 'CANCELADA');
+    });
+
+    // El cierre definitivo: una solicitud cuya cita quedó NO_PRESENTADO se cancela.
+    const viejo = await e.turno(new Date(Date.UTC(2001, 0, 1, 18)));
+    const tercero = await e.hermano();
+    const cita = await db.cita.create({ data: { hermanoId: tercero.id, turnoId: viejo.id, estado: EstadoCita.NO_PRESENTADO } });
+    const atascada = await db.solicitud.create({ data: { hermanoId: tercero.id, salidaId: e.pasion.id, year: 2001, puesto: 'Cirio', citaId: cita.id, origen: 'WEB' } });
+    await PapeletasService.procesarAusencias(new Date(Date.UTC(2001, 0, 2)), true, e.meta);
+    assert.equal((await db.solicitud.findUniqueOrThrow({ where: { id: atascada.id } })).estado, 'CANCELADA');
+    assert.equal((await db.cita.findUniqueOrThrow({ where: { id: cita.id } })).estado, EstadoCita.CANCELADA);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('NG6: «Papeleta sin recoger» no llega a una ficha de baja, aunque su cita se marque', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const baja = await e.hermano({ activo: false });
+    const turno = await e.turno(new Date(Date.UTC(2001, 0, 1, 18)));
+    const cita = await db.cita.create({ data: { hermanoId: baja.id, turnoId: turno.id } });
+    recordatoriosEnviados.mock.resetCalls();
+
+    await PapeletasService.procesarAusencias(new Date(Date.UTC(2001, 0, 2)), false, e.meta);
+    assert.equal((await db.cita.findUniqueOrThrow({ where: { id: cita.id } })).estado, EstadoCita.NO_PRESENTADO);
+    assert.equal(recordatoriosEnviados.mock.callCount(), 0);
+  } finally {
+    await e.recoger();
+  }
+});
+
 // ============================================================================
 //  Revisión · cuota viva, conceptos sin mayúsculas y categorías concurrentes
 // ============================================================================

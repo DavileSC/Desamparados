@@ -1,5 +1,5 @@
 import { type } from 'arktype';
-import { textoRequerido, paginacionQuery, textoOpcional, email, telefono, dni } from '../config/common.js';
+import { idParam, textoRequerido, paginacionQuery, textoOpcional, email, telefono, dni } from '../config/common.js';
 import { esFechaValida, instanteLimiteAusencias } from '../domain/datos-procesion.js';
 
 const metodoPagoSchema = type("'EFECTIVO' | 'BIZUM' | 'TRANSFERENCIA' | 'TARJETA'");
@@ -40,6 +40,11 @@ export const avisarAsistenciaSchema = type({
         puesto: puesto,
         "donativo?": donativo,
     }
+});
+
+export const cambiarDiaSchema = type({
+    params: { id: idParam },
+    body: { turnoId: idCuerpo },
 });
 
 // --- LOS NUEVOS ESQUEMAS QUE NOS TRAEMOS DE LAS RUTAS ---

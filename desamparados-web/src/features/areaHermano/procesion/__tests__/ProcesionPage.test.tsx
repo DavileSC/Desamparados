@@ -51,7 +51,7 @@ function servidor(estado: Partial<MiProcesion>, catalogo: Salida[] = salidasDePr
     if (esListaDeSalidas(String(url))) return Promise.resolve(json(catalogo))
     if (String(url).includes('/mis-recibos/pagar')) return Promise.resolve(json(respuestaDelPago))
     if (String(url).includes('/mis-recibos/pagos/')) return Promise.resolve(json(estadoDelPagoEnElServidor))
-    if (metodo === 'POST' || metodo === 'DELETE') return Promise.resolve(json({ citaId: 1, total: 20, repetida: false }))
+    if (metodo === 'POST' || metodo === 'DELETE' || metodo === 'PATCH') return Promise.resolve(json({ citaId: 1, total: 20, repetida: false }))
     return Promise.resolve(json({ salidas: salidas(), pagoEnLinea: false, pago: null, fichas: [], ...estado }))
   }))
   return llamadas
@@ -111,7 +111,7 @@ describe('ProcesionPage', () => {
 
   it('una solicitud dice lo que pidió, su día (con el año si no es este) y que falta la cuota; se puede cancelar', async () => {
     const user = userEvent.setup()
-    const cita = { id: 77, turno: { id: 1, salidaId: 1, fecha: DIAS[0].fecha, horaInicio: DIAS[0].horaInicio, horaFin: DIAS[0].horaFin } }
+    const cita = { id: 77, estado: 'RESERVADA' as const, turno: { id: 1, salidaId: 1, fecha: DIAS[0].fecha, horaInicio: DIAS[0].horaInicio, horaFin: DIAS[0].horaFin } }
     const solicitud = { id: 4, puesto: 'Nazareno', donativo: null, pendiente: 0, concepto: 'Papeleta de sitio 2027', pagada: false, cita }
     const llamadas = servidor({
       salidas: salidas({ abierto: true, dias: DIAS }),
@@ -129,7 +129,29 @@ describe('ProcesionPage', () => {
     // Sin pasarela, se dice dónde pagar.
     expect(screen.getByText(/Puedes pagar en Secretaría o el día del reparto/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /cancelar la solicitud de antonio/i }))
+    // Antes de cancelar se pregunta, nombrando a quién y el día que se pierde.
+    const dialogo = await screen.findByRole('dialog')
+    expect(within(dialogo).getByText(/se pierde el día reservado \(lunes, 8 de marzo/)).toBeInTheDocument()
+    expect(llamadas.some((l) => l.metodo === 'DELETE')).toBe(false)
+    await user.click(within(dialogo).getByRole('button', { name: 'Cancelar la solicitud' }))
     await waitFor(() => expect(llamadas.some((l) => l.metodo === 'DELETE' && l.url.includes('/procesion/avisar/77'))).toBe(true))
+  })
+
+  it('quien no pasó su día elige otro con la misma solicitud (los días llenos no se ofrecen)', async () => {
+    const user = userEvent.setup()
+    const cita = { id: 78, estado: 'NO_PRESENTADO' as const, turno: { id: 9, salidaId: 1, fecha: '2027-03-01T00:00:00.000Z', horaInicio: '2027-03-01T17:00:00.000Z', horaFin: '2027-03-01T20:00:00.000Z' } }
+    const solicitud = { id: 4, puesto: 'Nazareno', donativo: null, pendiente: 0, concepto: 'Papeleta de sitio 2027', pagada: true, cita }
+    const llamadas = servidor({ salidas: salidas({ abierto: true, dias: DIAS }), fichas: [ficha(1, 'Antonio', {}, { solicitud })] })
+    renderWithProviders(<ProcesionPage />)
+
+    const tarjeta = await screen.findByRole('region', { name: 'Este año' })
+    expect(within(tarjeta).getByText(/No pasó el lunes, 1 de marzo/)).toBeInTheDocument()
+    await user.click(within(tarjeta).getByRole('combobox', { name: 'Otro día' }))
+    const opciones = await screen.findAllByRole('option')
+    expect(opciones).toHaveLength(1)
+    await user.click(opciones[0])
+    await user.click(within(tarjeta).getByRole('button', { name: 'Cambiar de día' }))
+    await waitFor(() => expect(llamadas.find((l) => l.metodo === 'PATCH' && l.url.includes('/procesion/avisar/78'))?.cuerpo).toEqual({ turnoId: 1 }))
   })
 
   // Sin el módulo de cuotas en línea, ni se ofrece pagar ni se pregunta al

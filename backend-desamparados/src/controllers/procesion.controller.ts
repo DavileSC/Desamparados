@@ -49,6 +49,11 @@ export class ProcesionController {
     res.status(200).json({ message: 'Cita cancelada correctamente.' });
   });
 
+  static cambiarDia = manejar('Error al cambiar de día', async (req, res) => {
+    const data = await MiProcesionService.cambiarDia(req.user!.id, Number(req.params.id), (req.body as { turnoId: number }).turnoId, AuditoriaService.metaFromReq(req));
+    res.json(data);
+  });
+
   static getMisPapeletas = manejar('Error obteniendo el historial de papeletas', async (req, res) => {
     const userId = req.user!.id;
     const papeletas = await MiProcesionService.getMisPapeletas(userId, req.query);

@@ -58,7 +58,8 @@ export interface FichaEnUnaSalida {
     pendiente: number
     concepto: string
     pagada: boolean
-    cita: { id: number; turno: { id: number; salidaId: number; fecha: string; horaInicio: string; horaFin: string } } | null
+    /** NO_PRESENTADO: no pasó el día que pidió y tiene que elegir otro (o cancelar). */
+    cita: { id: number; estado: 'RESERVADA' | 'NO_PRESENTADO' | 'CANCELADA'; turno: { id: number; salidaId: number; fecha: string; horaInicio: string; horaFin: string } } | null
   } | null
   /** La papeleta de este año, ya recogida: con su QR para enseñarlo en la puerta. */
   papeleta: {
@@ -136,6 +137,11 @@ export function pedirPapeleta(datos: { hermanoId: number; turnoId: number; puest
   return llamarApi<{ citaId: number; solicitudId: number }>(
     '/procesion/avisar', { method: 'POST', json: datos },
   )
+}
+
+/** Otro día para recoger la papeleta, con la misma solicitud: puesto, voluntad y lo pagado no cambian. */
+export function cambiarDia(citaId: number, turnoId: number) {
+  return llamarApi<{ citaId: number; solicitudId: number }>(`/procesion/avisar/${citaId}`, { method: 'PATCH', json: { turnoId } })
 }
 
 export function anularCita(citaId: number) {

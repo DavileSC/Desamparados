@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Alert, Autocomplete, Box, Checkbox, CircularProgress, FormControlLabel, Radio, RadioGroup, Tab, Tabs, TextField, Typography,
+  Alert, Autocomplete, Box, Checkbox, CircularProgress, FormControlLabel, MenuItem, Radio, RadioGroup, Tab, Tabs, TextField, Typography,
 } from '@mui/material'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
@@ -11,12 +11,13 @@ import SeccionAnimada from '../../../components/SeccionAnimada'
 import TarjetaCristal from '../../../components/TarjetaCristal'
 import Boton from '../../../components/Boton'
 import {
-  anularCita, estadoDelPago, irAlBanco, miProcesion, pagarEnLinea, pedirPapeleta,
+  anularCita, cambiarDia, estadoDelPago, irAlBanco, miProcesion, pagarEnLinea, pedirPapeleta,
   type DiaDeReparto, type EstadoDelPago, type FichaEnLaProcesion, type MetodoEnLinea, type MiProcesion, type SalidaDelHermano,
 } from '../../../lib/api/procesion'
 import { formatearImporte } from '../recibos/etiquetas'
 import { PARENTESCO } from '../perfil/etiquetas'
 import AvisoSuave from '../../../components/AvisoSuave'
+import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
 import { site } from '../../../config/site'
 import PapeletasDeLaFamilia from './PapeletasDeLaFamilia'
 import { useSalidas } from '../../procesion/useSalidas'
@@ -330,10 +331,16 @@ function estadoDe(f: FichaEnLaProcesion, salida: string): { texto: string; color
 
 function Apuntadas({ fichas, salida, onHecho, onError }: { fichas: FichaEnLaProcesion[]; salida: SalidaDelHermano; onHecho: (m: string) => void; onError: (m: string) => void }) {
   const [anulando, setAnulando] = useState<number | null>(null)
+  // Un toque en «Cancelar» perdía el día reservado, que puede tener aforo: se pregunta antes.
+  const [aCancelar, setACancelar] = useState<FichaEnLaProcesion | null>(null)
+  const [cambiando, setCambiando] = useState<number | null>(null)
+  const [diaNuevo, setDiaNuevo] = useState<Record<number, number>>({})
   const { data: catalogo = [] } = useSalidas()
   const articulo = articuloDe(catalogo, salida.salida)
+  const diasLibres = salida.dias.filter((d) => d.genteApuntada < d.capacidad)
 
   const cancelar = async (f: FichaEnLaProcesion) => {
+    setACancelar(null)
     const cita = f.porSalida[salida.salida].solicitud?.cita
     if (!cita) return
     setAnulando(cita.id)
@@ -347,6 +354,22 @@ function Apuntadas({ fichas, salida, onHecho, onError }: { fichas: FichaEnLaProc
     }
   }
 
+  const otroDia = async (f: FichaEnLaProcesion, citaId: number) => {
+    const turnoId = diaNuevo[citaId]
+    if (!turnoId) return
+    setCambiando(citaId)
+    try {
+      await cambiarDia(citaId, turnoId)
+      const turno = salida.dias.find((d) => d.id === turnoId)
+      onHecho(`${f.nombre} pasará a recoger la papeleta el ${turno ? `${dia(turno).toLowerCase()}, ${horas(turno)}` : 'día elegido'}.`)
+    } catch (e: unknown) {
+      onError(mensaje(e, 'No se ha podido cambiar el día.'))
+    } finally {
+      setCambiando(null)
+    }
+  }
+
+  const citaACancelar = aCancelar?.porSalida[salida.salida].solicitud?.cita ?? null
   const todasRecogidas = fichas.every((f) => f.porSalida[salida.salida].papeleta)
   return (
     <TarjetaCristal component="section" aria-label="Este año" sx={{ p: { xs: 2.5, md: 3.5 } }}>
@@ -365,13 +388,32 @@ function Apuntadas({ fichas, salida, onHecho, onError }: { fichas: FichaEnLaProc
                 <Typography component="span" sx={{ display: 'block', fontWeight: 600 }}>{f.nombre} {f.apellidos}</Typography>
                 <Typography component="span" sx={{ display: 'block', fontSize: 14, color: 'text.secondary' }}>
                   {papeleta ? sitio(papeleta) : `Pediste: ${solicitud!.puesto} (lo ${segunLaCorporacion('confirma', 'confirman')} ${laCorporacion({ corto: true })} en la mesa)`}
-                  {!papeleta && cita ? ` · ${dia(cita.turno)}, ${horas(cita.turno)}` : ''}
+                  {!papeleta && cita && cita.estado !== 'NO_PRESENTADO' ? ` · ${dia(cita.turno)}, ${horas(cita.turno)}` : ''}
                 </Typography>
+                {!papeleta && cita?.estado === 'NO_PRESENTADO' && (
+                  <Typography component="span" sx={{ display: 'block', fontSize: 14, color: 'warning.main' }}>
+                    {`No pasó el ${dia(cita.turno).toLowerCase()}. ${salida.abierto && diasLibres.length > 0 ? 'Elige otro día para recogerla:' : 'Habla con Secretaría para recogerla.'}`}
+                  </Typography>
+                )}
+                {!papeleta && cita?.estado === 'NO_PRESENTADO' && salida.abierto && diasLibres.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.5, mt: 1 }}>
+                    <TextField
+                      select size="small" label="Otro día" value={diaNuevo[cita.id] ?? ''}
+                      onChange={(ev) => setDiaNuevo((d) => ({ ...d, [cita.id]: Number(ev.target.value) }))}
+                      sx={{ minWidth: 260 }}
+                    >
+                      {diasLibres.map((d) => <MenuItem key={d.id} value={d.id}>{`${dia(d)}, ${horas(d)}`}</MenuItem>)}
+                    </TextField>
+                    <Boton appVariant="primary" onClick={() => void otroDia(f, cita.id)} disabled={!diaNuevo[cita.id] || cambiando !== null} sx={{ py: 0.5, px: 1.75, fontSize: 13 }}>
+                      {cambiando === cita.id ? 'Cambiando…' : 'Cambiar de día'}
+                    </Boton>
+                  </Box>
+                )}
               </span>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Typography component="span" sx={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase', color: e.color }}>{e.texto}</Typography>
                 {puedeCancelar && (
-                  <Boton appVariant="outline" onClick={() => void cancelar(f)} disabled={anulando !== null} aria-label={`Cancelar la solicitud de ${f.nombre}`} sx={{ py: 0.5, px: 1.75, fontSize: 13 }}>
+                  <Boton appVariant="outline" onClick={() => setACancelar(f)} disabled={anulando !== null} aria-label={`Cancelar la solicitud de ${f.nombre}`} sx={{ py: 0.5, px: 1.75, fontSize: 13 }}>
                     {anulando === cita.id ? 'Cancelando…' : 'Cancelar'}
                   </Boton>
                 )}
@@ -380,6 +422,16 @@ function Apuntadas({ fichas, salida, onHecho, onError }: { fichas: FichaEnLaProc
           )
         })}
       </Box>
+      <DialogoConfirmacion
+        abierto={aCancelar !== null}
+        titulo={`¿Cancelar la solicitud de ${aCancelar?.nombre ?? ''}?`}
+        mensaje={`${aCancelar?.nombre ?? ''} dejará de salir en ${conArticulo(articulo, salida.nombre)}${citaACancelar && citaACancelar.estado === 'RESERVADA' ? ` y se pierde el día reservado (${dia(citaACancelar.turno).toLowerCase()}, ${horas(citaACancelar.turno)})` : ''}. Para volver habrá que pedirla otra vez.`}
+        textoConfirmar="Cancelar la solicitud"
+        textoCancelar="Volver"
+        peligro
+        onConfirmar={() => { if (aCancelar) void cancelar(aCancelar) }}
+        onCancelar={() => setACancelar(null)}
+      />
       {!todasRecogidas && (
         <Typography sx={{ mt: 2, fontSize: 13.5, color: 'text.secondary' }}>
           {salida.conRopa

@@ -369,9 +369,12 @@ export class PapeletasService {
       throw new HttpError('La fecha límite debe ser una fecha válida que no sea posterior a hoy.');
     }
 
+    // En el cierre entran también los que ya se marcaron ausentes antes: si
+    // no cambiaron de día, su solicitud se quedaba pendiente para siempre.
+    const estadosQueCuentan = esCierreDefinitivo ? [EstadoCita.RESERVADA, EstadoCita.NO_PRESENTADO] : [EstadoCita.RESERVADA];
     const ausentes = await db.cita.findMany({
       where: {
-        estado: EstadoCita.RESERVADA,
+        estado: { in: estadosQueCuentan },
         // Por el FIN del turno, no por su fecha. `fecha` es la medianoche del
         // día y `horaInicio`/`horaFin` son instantes completos de ese mismo día
         // (así los crean crearTurno y la siembra): comparando `fecha`, el turno
@@ -396,7 +399,7 @@ export class PapeletasService {
     const { count } = idsAusentes.length === 0
       ? { count: 0 }
       : await db.cita.updateMany({
-          where: { id: { in: idsAusentes }, estado: EstadoCita.RESERVADA },
+          where: { id: { in: idsAusentes }, estado: { in: estadosQueCuentan } },
           data: { estado: estadoNuevo }
         });
 
@@ -433,7 +436,9 @@ export class PapeletasService {
     })).map(c => c.id));
 
     for (const cita of ausentes) {
-      if (marcadas.has(cita.id) && cita.hermano?.user?.email) {
+      // Solo a fichas activas: la baja no cancela lo ya pagado y su cita
+      // sigue en pie, y «pida una cita nueva» llegaba a la familia de un difunto.
+      if (marcadas.has(cita.id) && cita.hermano?.activo && cita.hermano.user?.email) {
         const fechaStr = cita.turno.fecha.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Madrid' });
         // Importante añadir 'await' para que no se sature el servidor si hay 500 emails
         await EmailService.enviarRecordatorioAusencia(

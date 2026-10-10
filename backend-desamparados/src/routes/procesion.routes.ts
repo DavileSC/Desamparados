@@ -13,6 +13,7 @@ import { idParam } from '../config/common.js';
 import { ROLES_CENSO_EN_MESA } from '../services/procesion/mesa.service.js';
 import {
   avisarAsistenciaSchema,
+  cambiarDiaSchema,
   cortejoQuerySchema,
   cortejoConfiguracionSchema,
   cortejoAplicarSchema,
@@ -59,6 +60,7 @@ procesionRouter.get('/dias', validate(salidaQuerySchema), ProcesionController.ge
 procesionRouter.get('/mi-estado', ProcesionController.getMiEstado);
 procesionRouter.post('/avisar', validate(avisarAsistenciaSchema), ProcesionController.avisarAsistencia);
 procesionRouter.delete('/avisar/:id', validateId, ProcesionController.cancelarAsistencia);
+procesionRouter.patch('/avisar/:id', validate(cambiarDiaSchema), ProcesionController.cambiarDia);
 procesionRouter.get('/mis-papeletas', validate(misPapeletasQuerySchema), ProcesionController.getMisPapeletas);
 
 // ==========================================
