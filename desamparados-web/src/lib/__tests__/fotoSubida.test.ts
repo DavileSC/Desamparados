@@ -17,8 +17,16 @@ describe('srcsetDeSubida', () => {
     )
   })
 
+  it('las fotos de la portada de la siembra y la de por defecto también llevan copias', () => {
+    expect(srcsetDeSubida('/storage/public/portada/01-virgen-rostro.webp')).toBe(
+      '/storage/public/portada/01-virgen-rostro-640.webp 640w, /storage/public/portada/01-virgen-rostro-1280.webp 1280w, /storage/public/portada/01-virgen-rostro.webp 1920w',
+    )
+    expect(srcsetDeSubida('/images/hero-1920.webp')).toBe('/images/hero-960.webp 960w, /images/hero-1920.webp 1920w')
+  })
+
   it.each([
-    ['/images/hero-1920.webp'],
+    ['/images/otra.webp'],
+    ['/storage/public/portada/01-virgen-rostro-640.webp'],
     [`/storage/public/portada/${HEX}.webp`],
     [`/storage/public/${HEX}.jpg`],
     [`/storage/public/${HEX}-640.webp`],

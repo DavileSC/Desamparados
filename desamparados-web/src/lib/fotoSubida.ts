@@ -5,18 +5,27 @@ import type { SyntheticEvent } from 'react'
  * (`<hex>-640.webp` y `<hex>-1280.webp`), y existen siempre, aunque la foto
  * sea más estrecha: es el contrato de `domain/variantes-de-foto.ts` del
  * backend. Por eso basta la URL para ofrecerlas en `srcset`, sin preguntar
- * nada a la API. Las demás direcciones (las de `/images/`, las de
- * `storage/public/portada/`, los jpg y png de antes) no tienen copias y se
- * quedan como están.
+ * nada a la API. Las fotos de la portada que pone la siembra
+ * (`storage/public/portada/01-virgen-rostro.webp`) también las llevan: las
+ * genera el mismo script (`utils/variantes-publicas.ts`). Las demás
+ * direcciones (las de `/images/`, los jpg y png de antes) no tienen copias y se
+ * quedan como están, salvo la foto de la portada por defecto, que lleva la suya.
  */
 const SUBIDA = /^((?:https?:\/\/[^/?#]+)?\/storage\/public\/)([a-f0-9]{32})\.webp$/i
+const DE_LA_SIEMBRA = /^((?:https?:\/\/[^/?#]+)?\/storage\/public\/portada\/)(\d{2}-[a-z0-9-]+?)(?<!-640|-1280)\.webp$/i
+
+/** Las fotos fijas de `public/images` que tienen una copia más pequeña al lado. */
+const FIJAS: Record<string, string> = {
+  '/images/hero-1920.webp': '/images/hero-960.webp 960w, /images/hero-1920.webp 1920w',
+}
 
 /** El ancho de la foto original como mucho: el backend la recorta a 1920 px de lado. */
 const ANCHO_ORIGINAL = 1920
 
 /** El `srcset` de una foto subida, o undefined si la URL no es de una subida con copias. */
 export function srcsetDeSubida(url: string | null | undefined): string | undefined {
-  const partes = url ? SUBIDA.exec(url) : null
+  if (url && FIJAS[url]) return FIJAS[url]
+  const partes = url ? SUBIDA.exec(url) ?? DE_LA_SIEMBRA.exec(url) : null
   if (!partes) return undefined
   const [, carpeta, hex] = partes
   return `${carpeta}${hex}-640.webp 640w, ${carpeta}${hex}-1280.webp 1280w, ${url} ${ANCHO_ORIGINAL}w`

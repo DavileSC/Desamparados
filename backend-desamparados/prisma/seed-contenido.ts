@@ -18,6 +18,7 @@ import {
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { completarVariantes } from '../src/utils/variantes-publicas';
 import db from '../src/config/db';
 import { porDefecto, SLUGS_CONTENIDO } from '../src/domain/contenido';
 
@@ -500,6 +501,8 @@ export async function sembrarImagenesPortada() {
   // Solo con la tabla vacía: la lista la manda el CMS y el seed no debe pisarla.
   if ((await db.imagenPortada.count()) > 0) return;
   instalarImagenesPortada();
+  // Con sus copias de 640 y 1280: van a pantalla completa en la primera visita.
+  await completarVariantes({ directorio: path.join(process.cwd(), 'storage', 'public') });
   await db.imagenPortada.createMany({
     data: IMAGENES_PORTADA.map((imagen, orden) => ({
       url: urlImagenPortada(imagen.archivo),

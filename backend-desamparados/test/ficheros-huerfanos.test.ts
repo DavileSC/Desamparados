@@ -463,6 +463,15 @@ describe('copias reducidas de las fotos (FR5)', () => {
 
       const otraVez = await completarVariantes({ directorio: carpeta });
       assert.deepEqual(otraVez.completadas, [], 'idempotente');
+
+      // Las de la portada de la siembra también: van a pantalla completa en la primera visita.
+      await mkdir(path.join(carpeta, 'portada'));
+      await sharp({ create: { width: 1600, height: 900, channels: 3, background: '#888' } }).webp().toFile(path.join(carpeta, 'portada', '01-virgen-rostro.webp'));
+      const conPortada = await completarVariantes({ directorio: carpeta });
+      assert.deepEqual(conPortada.completadas, ['portada/01-virgen-rostro.webp']);
+      assert.equal((await sharp(path.join(carpeta, 'portada', '01-virgen-rostro-640.webp')).metadata()).width, 640);
+      assert.ok(existsSync(path.join(carpeta, 'portada', '01-virgen-rostro-1280.webp')));
+      assert.deepEqual((await completarVariantes({ directorio: carpeta })).completadas, [], 'las copias no se toman por fotos');
     } finally {
       await rm(carpeta, { recursive: true, force: true });
     }
