@@ -1,6 +1,7 @@
 import type { MouseEvent } from 'react'
 import { Box, ButtonBase, Tooltip } from '@mui/material'
 import type { Pieza } from '../../lib/api/apadrinamientos'
+import { euros } from '../../lib/euros'
 
 interface Props {
   foto: string
@@ -16,7 +17,6 @@ interface Props {
   apadrinadasElegibles?: boolean
 }
 
-const euros = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n)
 
 /**
  * La foto de una campaña con sus piezas encima, en porcentaje: se colocan

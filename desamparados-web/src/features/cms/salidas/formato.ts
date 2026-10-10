@@ -1,3 +1,5 @@
+import { euros } from '../../../lib/euros'
+
 /**
  * Fechas de una salida: «AAAA-MM-DD», ya calculada por el servidor
  * (`fechaDelAnio`). Se construye con año/mes/día sueltos y no con
@@ -24,8 +26,8 @@ export function fechaConDia(dia: string): string {
   return `${diaSemana} ${fechaLarga(dia)}`
 }
 
-/** «12,50 €». */
-export const euros = (valor: number) => `${valor.toFixed(2).replace('.', ',')} €`
+/** «1.250,00 €»: el de toda la web. */
+export { euros }
 
 interface SalidaResumen {
   fecha: 'PASCUA' | 'MANUAL'

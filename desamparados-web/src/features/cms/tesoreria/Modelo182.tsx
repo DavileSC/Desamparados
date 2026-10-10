@@ -4,7 +4,7 @@ import {
 } from '@mui/material'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  enviarCertificados, euros182, guardarConfiguracionModelo182, justificantePorDefecto, resumenModelo182, traerCertificados, traerFicheroModelo182,
+  enviarCertificados, guardarConfiguracionModelo182, justificantePorDefecto, resumenModelo182, traerCertificados, traerFicheroModelo182,
   type ConfiguracionModelo182,
 } from '../../../lib/api/modelo182'
 import { guardarEnDisco } from '../../../lib/api/datos'
@@ -13,6 +13,7 @@ import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
 import { deLaCorporacion } from '../../../domain/articulos'
 import { Dato, DatosDeFicha, Ficha, ListaDeFichas } from '../listados/Fichas'
 import { useEnFichas } from '../listados/useEnFichas'
+import { eurosDeCentimos } from '../../../lib/euros'
 
 /** «del Grupo» (o lo que toque): la forma corta, para un rótulo o un texto ya situado. */
 const delGrupo = () => deLaCorporacion({ corto: true })
@@ -111,9 +112,9 @@ export default function Modelo182({ puedeCambiar }: Props) {
         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' } }}>
           {[
             ['Donantes declarados', String(r.declarados.length)],
-            ['Total declarado', euros182(r.total)],
+            ['Total declarado', eurosDeCentimos(r.total)],
             ['Sin poder declarar', String(r.excluidos.length)],
-            ['Donativos anónimos', r.anonimos.cuantos ? `${r.anonimos.cuantos} · ${euros182(r.anonimos.centimos)}` : '0'],
+            ['Donativos anónimos', r.anonimos.cuantos ? `${r.anonimos.cuantos} · ${eurosDeCentimos(r.anonimos.centimos)}` : '0'],
           ].map(([etiqueta, valor]) => (
             <Paper key={etiqueta} sx={{ p: 2 }}>
               <Typography variant="body2" color="text.secondary">{etiqueta}</Typography>
@@ -143,7 +144,7 @@ export default function Modelo182({ puedeCambiar }: Props) {
           <Alert severity="warning">
             <strong>No se pueden declarar ({r.excluidos.length}):</strong> sin un NIF no hay deducción. Corrige la ficha y vuelve a mirar.
             <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
-              {r.excluidos.slice(0, 30).map((e, i) => <li key={`${e.nombre}-${i}`}>{e.nombre} · {euros182(e.centimos)} · {e.motivo}</li>)}
+              {r.excluidos.slice(0, 30).map((e, i) => <li key={`${e.nombre}-${i}`}>{e.nombre} · {eurosDeCentimos(e.centimos)} · {e.motivo}</li>)}
             </Box>
           </Alert>
         )}
@@ -190,7 +191,7 @@ export default function Modelo182({ puedeCambiar }: Props) {
                   >
                     <DatosDeFicha>
                       <Dato etiqueta="NIF">{d.nif}</Dato>
-                      <Dato etiqueta="Importe">{euros182(d.centimos)}</Dato>
+                      <Dato etiqueta="Importe">{eurosDeCentimos(d.centimos)}</Dato>
                       <Dato etiqueta="Deducción" ancho>{d.porcentaje} %{d.recurrente && <Chip size="small" label="Recurrente" sx={{ ml: 1 }} />}</Dato>
                     </DatosDeFicha>
                   </Ficha>
@@ -217,7 +218,7 @@ export default function Modelo182({ puedeCambiar }: Props) {
                         {d.provinciaSupuesta && <Typography variant="body2" color="warning.main">Sin código postal: se declara en la provincia {delGrupo()}</Typography>}
                       </TableCell>
                       <TableCell>{d.nif}</TableCell>
-                      <TableCell align="right">{euros182(d.centimos)}</TableCell>
+                      <TableCell align="right">{eurosDeCentimos(d.centimos)}</TableCell>
                       <TableCell align="right">
                         {d.porcentaje} %{d.recurrente && <Chip size="small" label="Recurrente" sx={{ ml: 1 }} />}
                       </TableCell>

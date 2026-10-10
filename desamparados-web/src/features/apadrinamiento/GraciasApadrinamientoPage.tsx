@@ -6,8 +6,8 @@ import CabeceraDePagina from '../../components/CabeceraDePagina'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
 import Boton from '../../components/Boton'
 import { apadrinamientoPublico, type ApadrinamientoPublico } from '../../lib/api/apadrinamientos'
+import { euros } from '../../lib/euros'
 
-const euros = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n)
 const ESPERA_MS = 3000
 const INTENTOS = 20
 

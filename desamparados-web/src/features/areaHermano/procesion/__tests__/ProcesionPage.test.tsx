@@ -180,7 +180,7 @@ describe('ProcesionPage', () => {
     renderWithProviders(<ProcesionPage />)
 
     expect(await screen.findByText(/está en pruebas/)).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Pagar 25,00 €' }))
+    await user.click(screen.getByRole('button', { name: 'Pagar 25,00\u00a0€' }))
     await waitFor(() => expect(llamadas.some((l) => l.metodo === 'POST' && l.url.includes('/recibos/mis-recibos/pagar'))).toBe(true))
     expect(llamadas.find((l) => l.url.includes('/mis-recibos/pagar'))?.cuerpo).toMatchObject({ reciboIds: [30], solicitudIds: [6], metodo: 'TARJETA' })
     expect(await screen.findByText(/Pago hecho: 25,00 €/)).toBeInTheDocument()
@@ -199,7 +199,7 @@ describe('ProcesionPage', () => {
     renderWithProviders(<ProcesionPage />)
 
     expect(await screen.findByText(/página segura del banco/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Pagar 20,00 € con tarjeta' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Pagar 20,00\u00a0€ con tarjeta' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Pagar con Bizum' }))
     await waitFor(() => expect(enviados).toHaveLength(1))
     expect(llamadas.find((l) => l.url.includes('/mis-recibos/pagar'))?.cuerpo).toMatchObject({ reciboIds: [30], metodo: 'BIZUM' })
@@ -250,7 +250,7 @@ describe('ProcesionPage', () => {
     renderWithProviders(<ProcesionPage />, { ruta: '/area-hermano/procesion?pago=00000042AB7Z' })
 
     expect(await screen.findByText('Comprobando el pago con el banco…')).toBeInTheDocument()
-    expect(await screen.findByRole('button', { name: 'Pagar 20,00 € con tarjeta' })).toBeDisabled()
+    expect(await screen.findByRole('button', { name: 'Pagar 20,00\u00a0€ con tarjeta' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Pagar con Bizum' })).toBeDisabled()
   })
 

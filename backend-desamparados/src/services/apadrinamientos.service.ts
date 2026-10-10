@@ -22,6 +22,7 @@ import { datos, esc, firma, maquetar, parrafo, urlDeLaWeb } from './correos/plan
 import { modoDePago, pagoParaLaWeb } from '../domain/redsys.js';
 import { aCentimos } from '../domain/sepa.js';
 import type { DatosFiscales } from './pagos/donativo.service.js';
+import { eurosDeCentimos } from '../utils/euros.js';
 
 export const CATEGORIA_APADRINAMIENTOS = 'Apadrinamientos';
 const PAGADOS = [EstadoPedido.PAGADO, EstadoPedido.ENTREGADO];
@@ -34,7 +35,6 @@ export interface DatosApadrinar {
   fiscal?: DatosFiscales | null;
 }
 
-const euros = (centimos: number) => `${(centimos / 100).toFixed(2).replace('.', ',')} €`;
 
 /** La campaña con sus piezas y, de cada una, si está apadrinada y por quién (si lo quiso decir). */
 async function campanaCompleta(id: number, conDatosPrivados: boolean) {
@@ -65,7 +65,7 @@ function correoDeApadrinamiento(a: { nombre: string; importe: Prisma.Decimal; de
     bloques: {
       datos: datos([
         ['Pieza', esc(a.pieza.nombre)],
-        ['Donativo', esc(euros(aCentimos(a.importe)))],
+        ['Donativo', esc(eurosDeCentimos(aCentimos(a.importe)))],
         ...(a.dedicatoria ? [['Dedicatoria', esc(a.dedicatoria)] as [string, string]] : []),
       ]),
       certificado: parrafo(a.nif

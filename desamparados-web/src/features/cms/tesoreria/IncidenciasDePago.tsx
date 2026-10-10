@@ -2,9 +2,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { Alert, AlertTitle, Box, Button, Typography } from '@mui/material'
 import { incidenciasDePago, resolverIncidenciaDePago, type IncidenciaDePago } from '../../../lib/api/tesoreria'
 import { NOMBRE_METODO } from '../mesa/formato'
+import { euros } from '../../../lib/euros'
 
 const fecha = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-const euros = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' })
 
 /**
  * Los pagos en línea que el banco cobró y no se pudieron aplicar (el recibo
@@ -51,7 +51,7 @@ export default function IncidenciasDePago() {
           <Box component="li" key={i.id} sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
             <Box>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {euros.format(i.importe)} · {NOMBRE_METODO[i.metodo] ?? i.metodo} · pedido {i.pedido}{i.autorizacion ? ` · autorización ${i.autorizacion}` : ''}
+                {euros(i.importe)} · {NOMBRE_METODO[i.metodo] ?? i.metodo} · pedido {i.pedido}{i.autorizacion ? ` · autorización ${i.autorizacion}` : ''}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {fecha.format(new Date(i.fecha))}{i.correo ? ` · ${i.correo}` : ''} · {i.motivo}

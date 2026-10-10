@@ -14,7 +14,8 @@ import {
 
 } from '../domain/partida-doble.js';
 
-const euros = (centimos: number) => centimos / 100;
+/** Céntimos → euros, como número (no como texto: para eso, utils/euros.ts). */
+const centimosAEuros = (centimos: number) => centimos / 100;
 
 /** Las categorías con la cuenta que usan: la asignada o, si no, la propuesta. */
 async function planDeCategorias() {
@@ -78,13 +79,13 @@ export class PartidaDobleService {
       anio,
       asientos: asientos.length,
       categoriasPropuestas: plan.filter((c) => c.propuesta).length,
-      sumas: sumas.map((s) => ({ ...s, debe: euros(s.debe), haber: euros(s.haber), saldo: euros(s.saldo) })),
+      sumas: sumas.map((s) => ({ ...s, debe: centimosAEuros(s.debe), haber: centimosAEuros(s.haber), saldo: centimosAEuros(s.saldo) })),
       resultados: {
-        ingresos: resultados.ingresos.map((x) => ({ ...x, importe: euros(x.importe) })),
-        gastos: resultados.gastos.map((x) => ({ ...x, importe: euros(x.importe) })),
-        totalIngresos: euros(resultados.totalIngresos),
-        totalGastos: euros(resultados.totalGastos),
-        excedente: euros(resultados.excedente),
+        ingresos: resultados.ingresos.map((x) => ({ ...x, importe: centimosAEuros(x.importe) })),
+        gastos: resultados.gastos.map((x) => ({ ...x, importe: centimosAEuros(x.importe) })),
+        totalIngresos: centimosAEuros(resultados.totalIngresos),
+        totalGastos: centimosAEuros(resultados.totalGastos),
+        excedente: centimosAEuros(resultados.excedente),
       },
     };
   }
@@ -99,7 +100,7 @@ export class PartidaDobleService {
       porPagina,
       asientos: trozo.map((a) => ({
         ...a,
-        lineas: a.lineas.map((l) => ({ cuenta: l.cuenta, nombre: nombreDeCuenta(l.cuenta), debe: euros(l.debe), haber: euros(l.haber) })),
+        lineas: a.lineas.map((l) => ({ cuenta: l.cuenta, nombre: nombreDeCuenta(l.cuenta), debe: centimosAEuros(l.debe), haber: centimosAEuros(l.haber) })),
       })),
     };
   }
@@ -121,7 +122,7 @@ export class PartidaDobleService {
     ];
     for (const a of asientos) {
       for (const l of a.lineas) {
-        diario.addRow({ numero: a.numero, fecha: new Date(`${a.fecha}T00:00:00Z`), cuenta: l.cuenta, nombre: nombreDeCuenta(l.cuenta), concepto: a.concepto, debe: l.debe ? euros(l.debe) : null, haber: l.haber ? euros(l.haber) : null });
+        diario.addRow({ numero: a.numero, fecha: new Date(`${a.fecha}T00:00:00Z`), cuenta: l.cuenta, nombre: nombreDeCuenta(l.cuenta), concepto: a.concepto, debe: l.debe ? centimosAEuros(l.debe) : null, haber: l.haber ? centimosAEuros(l.haber) : null });
       }
     }
     diario.getColumn('fecha').numFmt = 'dd/mm/yyyy';
@@ -132,20 +133,20 @@ export class PartidaDobleService {
       { header: 'Debe', key: 'debe', width: 14, style: { numFmt: dinero } }, { header: 'Haber', key: 'haber', width: 14, style: { numFmt: dinero } },
       { header: 'Saldo deudor', key: 'deudor', width: 14, style: { numFmt: dinero } }, { header: 'Saldo acreedor', key: 'acreedor', width: 14, style: { numFmt: dinero } },
     ];
-    for (const s of sumas) hojaSumas.addRow({ cuenta: s.cuenta, nombre: s.nombre, debe: euros(s.debe), haber: euros(s.haber), deudor: s.saldo > 0 ? euros(s.saldo) : null, acreedor: s.saldo < 0 ? euros(-s.saldo) : null });
-    hojaSumas.addRow({ nombre: 'Total', debe: euros(sumas.reduce((t, s) => t + s.debe, 0)), haber: euros(sumas.reduce((t, s) => t + s.haber, 0)) }).font = { bold: true };
+    for (const s of sumas) hojaSumas.addRow({ cuenta: s.cuenta, nombre: s.nombre, debe: centimosAEuros(s.debe), haber: centimosAEuros(s.haber), deudor: s.saldo > 0 ? centimosAEuros(s.saldo) : null, acreedor: s.saldo < 0 ? centimosAEuros(-s.saldo) : null });
+    hojaSumas.addRow({ nombre: 'Total', debe: centimosAEuros(sumas.reduce((t, s) => t + s.debe, 0)), haber: centimosAEuros(sumas.reduce((t, s) => t + s.haber, 0)) }).font = { bold: true };
 
     const hojaResultados = libro.addWorksheet('Cuenta de resultados');
     hojaResultados.columns = [{ header: 'Cuenta', key: 'cuenta', width: 9 }, { header: 'Concepto', key: 'nombre', width: 48 }, { header: 'Importe', key: 'importe', width: 16, style: { numFmt: dinero } }];
     hojaResultados.addRow({ nombre: 'Ingresos de la actividad' }).font = { bold: true };
-    for (const x of r.ingresos) hojaResultados.addRow({ cuenta: x.cuenta, nombre: x.nombre, importe: euros(x.importe) });
-    hojaResultados.addRow({ nombre: 'Total ingresos', importe: euros(r.totalIngresos) }).font = { bold: true };
+    for (const x of r.ingresos) hojaResultados.addRow({ cuenta: x.cuenta, nombre: x.nombre, importe: centimosAEuros(x.importe) });
+    hojaResultados.addRow({ nombre: 'Total ingresos', importe: centimosAEuros(r.totalIngresos) }).font = { bold: true };
     hojaResultados.addRow({});
     hojaResultados.addRow({ nombre: 'Gastos de la actividad' }).font = { bold: true };
-    for (const x of r.gastos) hojaResultados.addRow({ cuenta: x.cuenta, nombre: x.nombre, importe: euros(-x.importe) });
-    hojaResultados.addRow({ nombre: 'Total gastos', importe: euros(-r.totalGastos) }).font = { bold: true };
+    for (const x of r.gastos) hojaResultados.addRow({ cuenta: x.cuenta, nombre: x.nombre, importe: centimosAEuros(-x.importe) });
+    hojaResultados.addRow({ nombre: 'Total gastos', importe: centimosAEuros(-r.totalGastos) }).font = { bold: true };
     hojaResultados.addRow({});
-    hojaResultados.addRow({ nombre: 'Excedente del ejercicio', importe: euros(r.excedente) }).font = { bold: true };
+    hojaResultados.addRow({ nombre: 'Excedente del ejercicio', importe: centimosAEuros(r.excedente) }).font = { bold: true };
 
     for (const hoja of [diario, hojaSumas, hojaResultados]) hoja.getRow(1).font = { bold: true };
     await AuditoriaService.log(ACCIONES_AUDITORIA.CONTABILIDAD_EXPORTAR, meta ?? {}, 'ejercicio', anio, { despues: { anio, asientos: asientos.length } });

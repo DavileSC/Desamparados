@@ -14,7 +14,8 @@ export function fechaCorta(iso: string) {
 /** El día AAAA-MM-DD de una fecha del censo, para un campo de fecha. */
 export const diaDe = (iso: string) => iso.slice(0, 10)
 
-export const euros = (valor: number) => `${valor.toFixed(2).replace('.', ',')} €`
+/** «1.250,00 €»: el de toda la web. */
+export { euros } from '../../../lib/euros'
 
 /** 145 → «1,45»: la altura de hombro como la dicta quien talla. */
 export const alturaEnMetros = (cm: number | null) => (cm === null ? '' : (cm / 100).toFixed(2).replace('.', ','))

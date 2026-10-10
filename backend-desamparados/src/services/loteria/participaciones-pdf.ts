@@ -12,6 +12,7 @@ import {
   LEYENDA_POR_DEFECTO, jugadoPorNumero, numeroImpreso, participacionesDelTalonario, type Reparto,
 } from '../../domain/loteria.js';
 import { A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, NEGRO, ORO, aBuffer, nuevoDocumento, rotulo, sinMargenes, versalitas, type Doc } from '../informes/pdf.js';
+import { eurosDeCentimos } from '../../utils/euros.js';
 
 export interface SorteoParaImprimir extends Reparto {
   nombre: string;
@@ -27,9 +28,7 @@ const MATRIZ = 52 * MM;
 const MARGEN = 7 * MM;
 const ORO_TEXTO = '#8a6a30';
 const fechaLarga = new Intl.DateTimeFormat('es-ES', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' });
-const formatoEuros = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 /** «4,00 €», siempre con céntimos (en una participación se lee el precio exacto) y con espacio duro. */
-const dinero = (centimos: number) => `${formatoEuros.format(centimos / 100)} €`;
 
 function lineaDeCorte(doc: Doc, x1: number, y1: number, x2: number, y2: number) {
   doc.save().moveTo(x1, y1).lineTo(x2, y2).lineWidth(0.5).dash(3, { space: 3 }).strokeColor(GRIS).stroke().undash().restore();
@@ -63,8 +62,8 @@ function participacion(doc: Doc, s: SorteoParaImprimir, n: number, total: number
 
   const varios = s.numeros.length > 1;
   const donativo = s.precioParticipacion - s.jugado;
-  const juega = `Juega ${dinero(s.jugado)}${varios ? ` (${dinero(Math.floor(jugadoPorNumero(s)))} a cada número)` : ''}`;
-  const cuentas = [juega, donativo > 0 ? `Donativo ${dinero(donativo)}` : null, `Importe ${dinero(s.precioParticipacion)}`].filter(Boolean).join('   ·   ');
+  const juega = `Juega ${eurosDeCentimos(s.jugado)}${varios ? ` (${eurosDeCentimos(Math.floor(jugadoPorNumero(s)))} a cada número)` : ''}`;
+  const cuentas = [juega, donativo > 0 ? `Donativo ${eurosDeCentimos(donativo)}` : null, `Importe ${eurosDeCentimos(s.precioParticipacion)}`].filter(Boolean).join('   ·   ');
   rotulo(doc, cuentas, x, arriba + 96, { letra: LETRA.textoMedio, tam: 9, color: NEGRO, ancho });
   doc.font(LETRA.texto).fontSize(6.8).fillColor(GRIS)
     .text(s.leyenda.trim() || LEYENDA_POR_DEFECTO, x, arriba + 110, { width: ancho, height: ALTO - 110 - 2 * MARGEN, ellipsis: true, lineGap: 0.5 });

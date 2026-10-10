@@ -23,9 +23,9 @@ import { aCentimos } from '../domain/sepa.js';
 import { diaMadrid, inicioDiaMadrid } from '../domain/contabilidad.js';
 import { prepararVenta, type LineaDeCaja, type MetodoDeCaja } from '../domain/caja.js';
 import { nombreConTalla } from '../domain/tienda.js';
+import { eurosDeCentimos } from '../utils/euros.js';
 
 const aEuros = (centimos: number) => new Prisma.Decimal(centimos).div(100);
-const euros = (centimos: number) => `${(centimos / 100).toFixed(2).replace('.', ',')} €`;
 
 /** Cuántas ventas recientes se enseñan, y cuántos ingresos. */
 const VENTAS_A_LA_VISTA = 50;
@@ -151,7 +151,7 @@ export class CajaService {
       if (centimos > pendiente) {
         throw new HttpError(pendiente <= 0
           ? 'No queda efectivo de la tienda por ingresar.'
-          : `Solo quedan ${euros(pendiente)} de la tienda por ingresar. Si llevas también dinero de otra cosa, apunta aquí solo lo de la tienda.`, 409);
+          : `Solo quedan ${eurosDeCentimos(pendiente)} de la tienda por ingresar. Si llevas también dinero de otra cosa, apunta aquí solo lo de la tienda.`, 409);
       }
       return tx.ingresoEfectivoTienda.create({ data: { fecha: inicioDiaMadrid(fecha), importe: aEuros(centimos), nota: nota?.trim() || null, apuntadoPor } });
     });

@@ -1,4 +1,5 @@
 import type { MetodoPago, ReceiptStatus, TipoRecibo } from '../../../lib/api/recibos'
+import { euros } from '../../../lib/euros'
 
 /**
  * Cómo se nombran ante el hermano el estado, el tipo y la forma de pago de un
@@ -38,9 +39,8 @@ export const METODO_PAGO: Record<MetodoPago, string> = {
   DOMICILIACION: 'Domiciliación',
 }
 
-/** El importe como se escribe en España: coma decimal y el símbolo al final. */
-export const formatearImporte = (importe: number | string): string =>
-  `${Number(importe).toFixed(2).replace('.', ',')} €`
+/** El importe como se escribe en España; la API lo manda como texto («12.50»). */
+export const formatearImporte = (importe: number | string): string => euros(Number(importe))
 
 export const formatearFecha = (fecha: string): string =>
   new Date(fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })

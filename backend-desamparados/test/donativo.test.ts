@@ -149,7 +149,7 @@ test('el banco avisa: el donativo entra una vez en la contabilidad y el donante 
   for (let i = 0; i < 50 && !enviados.some((c) => c.to === 'lucia@example.com'); i++) await new Promise((r) => setTimeout(r, 20));
   const gracias = enviados.find((c) => c.to === 'lucia@example.com');
   assert.ok(gracias, 'le llegan las gracias');
-  assert.match(gracias.html, /12,50 €/);
+  assert.match(gracias.html, /12,50\u00a0€/);
   assert.match(gracias.html, /Cultos/);
 });
 

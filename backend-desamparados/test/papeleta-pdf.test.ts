@@ -70,7 +70,7 @@ test('el PDF de la papeleta: una página A4 con sus datos y el QR firmado', asyn
     const d = await datosDeLaPapeleta(e.papeleta.id);
     assert.ok(d);
     assert.equal(d.referencia, `${e.year}-${String(e.papeleta.id).padStart(4, '0')}`);
-    assert.equal(d.importe, '20,00 €');
+    assert.equal(d.importe, '20,00\u00a0€');
     assert.equal(d.tunica, '145-31');
     assert.equal(leerCodigoDePapeleta(d.codigo), e.papeleta.id, 'el QR es el de esta papeleta');
 

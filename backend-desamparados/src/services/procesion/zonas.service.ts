@@ -45,6 +45,7 @@ import { comprobarQueNoVaEnOtraPapeleta, estadoAlDevolver, prestarRopaEnTransacc
 import { cingulosSinDevolverDe, devolverCingulosEnTransaccion, prestarCinguloEnTransaccion, recuentoDeCingulos, type CinguloEnMesa } from './cingulos.js';
 import { unaVez } from './una-vez.js';
 import { avisarALaMesa } from './avisos-mesa.js';
+import { euros } from '../../utils/euros.js';
 
 type Tx = Prisma.TransactionClient;
 type Cliente = Tx | typeof db;
@@ -528,7 +529,7 @@ export class ZonasService {
       year: p.year,
       salida: { nombre: p.salida.nombre, cobro: p.salida.cobro, conRopa: p.salida.conRopa, indicaciones: p.salida.indicaciones, articulo: articuloDe(p.salida) },
       concepto: p.recibo.concepto,
-      importe: importe > 0 && p.recibo.estado === EstadoPago.PAGADO ? `${importe.toFixed(2).replace('.', ',')} €` : '',
+      importe: importe > 0 && p.recibo.estado === EstadoPago.PAGADO ? euros(importe) : '',
       papeletaId: p.id,
       puesto: p.puesto,
       tramo: p.tramo || '',

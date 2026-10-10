@@ -70,4 +70,3 @@ export const traerMiCertificado = (ejercicio: number, nif: string) =>
 /** El justificante que se propone: 182, el ejercicio y un 1 al final (13 cifras). */
 export const justificantePorDefecto = (ejercicio: number) => `182${ejercicio}000001`
 
-export const euros182 = (centimos: number) => (centimos / 100).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })

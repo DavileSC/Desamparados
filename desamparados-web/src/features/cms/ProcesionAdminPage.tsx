@@ -26,13 +26,14 @@ import Cortejo from './cortejo/Cortejo'
 import { site } from '../../config/site'
 import { useModulos } from '../../hooks/useModulos'
 import { deArticulo, laCorporacion, segunLaCorporacion, type Articulo } from '../../domain/articulos'
+import { euros } from '../../lib/euros'
 
 const ZONA = 'Europe/Madrid'
 const formatoDia = new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 const formatoCorto = new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, day: 'numeric', month: 'long' })
 const formatoHora = new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, hour: '2-digit', minute: '2-digit' })
 const mayuscula = (texto: string) => texto.charAt(0).toUpperCase() + texto.slice(1)
-const euros = (valor: number | null) => (valor === null ? '—' : `${valor.toFixed(2).replace('.', ',')} €`)
+const importe = (valor: number | null) => (valor === null ? '—' : euros(valor))
 
 const mensaje = (e: unknown, porDefecto: string) => (e instanceof Error ? e.message : porDefecto)
 const DIA_VACIO = { fecha: '', horaInicio: '18:00', horaFin: '21:00', aforo: '100' }
@@ -231,7 +232,7 @@ export default function ProcesionAdminPage() {
             <Cifra titulo="Días de reparto por delante" valor={String(plazo.diasDeReparto)}
               detalle={plazo.primerDia && plazo.ultimoDia ? (plazo.primerDia === plazo.ultimoDia ? `el ${formatoCorto.format(new Date(plazo.primerDia))}` : `del ${formatoCorto.format(new Date(plazo.primerDia))} al ${formatoCorto.format(new Date(plazo.ultimoDia))}`) : 'ninguno publicado'} />
             {vista.cobro === 'CUOTA'
-              ? <Cifra titulo="Cuota de salida" valor={plazo.cuotaSalida === 0 ? 'No se cobra' : euros(plazo.cuotaSalida)}
+              ? <Cifra titulo="Cuota de salida" valor={plazo.cuotaSalida === 0 ? 'No se cobra' : importe(plazo.cuotaSalida)}
                   detalle={<>se cambia en <Box component={Link} to="/cms/procesion/salidas" sx={enlace}>Procesión → Salidas</Box></>} />
               : <Cifra titulo="Para participar" valor="La voluntad" detalle="un donativo libre, que puede ser 0 €" />}
             <Cifra titulo="Citas reservadas" valor={String(plazo.citasReservadas)} detalle={plazo.abierto ? 'en los días por delante' : 'se reservan con el plazo abierto'} />

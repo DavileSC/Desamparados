@@ -7,8 +7,8 @@ import ContenedorDePagina from '../../components/ContenedorDePagina'
 import Boton from '../../components/Boton'
 import { pedidoPublico, type PedidoPublico } from '../../lib/api/tienda'
 import { nombreConTalla } from './cesta'
+import { euros } from '../../lib/euros'
 
-const euros = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n)
 /** El aviso del banco puede llegar unos segundos después que la persona: se pregunta un rato. */
 const ESPERA_MS = 3000
 const INTENTOS = 20

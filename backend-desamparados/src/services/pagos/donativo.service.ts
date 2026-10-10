@@ -23,6 +23,7 @@ import { urlDeLaWeb } from '../correos/plantilla.js';
 import { EmailService } from '../email.service.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from '../auditoria.service.js';
 import { aCentimos, claveDelCobro, urlDelAviso, type InicioDePago, type MetodoEnLinea } from './comunes.js';
+import { euros } from '../../utils/euros.js';
 
 export interface PeticionDeDonativo {
   /** El slug de la página desde la que se dona: su bloque dice qué se admite. */
@@ -170,7 +171,7 @@ export class DonativoService {
     if (repetida) return;
     await AuditoriaService.log(ACCIONES_AUDITORIA.PAGO_EN_LINEA, meta, 'PagoEnLinea', pago.id, { donativo: { importe: Number(pago.importe), destino: datos.destino } });
     if (datos.email) {
-      EmailService.enviarGraciasDonativo(datos.email, datos.nombre, `${Number(pago.importe).toFixed(2).replace('.', ',')} €`, datos.destino).catch(console.error);
+      EmailService.enviarGraciasDonativo(datos.email, datos.nombre, euros(Number(pago.importe)), datos.destino).catch(console.error);
     }
   }
 

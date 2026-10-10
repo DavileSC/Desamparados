@@ -20,7 +20,8 @@ import { aCentimos } from '../domain/sepa.js';
 /** Hasta dónde se mira atrás: una devolución SEPA CORE llega, como mucho, a los 13 meses. */
 const MESES_ATRAS = 14;
 
-const euros = (centimos: number) => centimos / 100;
+/** Céntimos → euros, como número (no como texto: para eso, utils/euros.ts). */
+const centimosAEuros = (centimos: number) => centimos / 100;
 const cuentaEnmascarada = (cuenta: string) => `••••${cuenta.slice(-4)}`;
 const textoMovimiento = (m: MovimientoN43) => [m.referencia1, m.referencia2, ...m.conceptos].filter(Boolean).join(' · ');
 
@@ -77,7 +78,7 @@ async function analizar(contenido: string) {
       };
     }),
     dudosos: casado.dudosos.map(({ movimiento, motivo }) => ({
-      linea: movimiento.linea, fecha: movimiento.fechaValor, signo: movimiento.signo, importe: euros(movimiento.centimos),
+      linea: movimiento.linea, fecha: movimiento.fechaValor, signo: movimiento.signo, importe: centimosAEuros(movimiento.centimos),
       texto: textoMovimiento(movimiento), motivo,
     })),
     /** Movimientos que no son de ninguna remesa: no se tocan. */

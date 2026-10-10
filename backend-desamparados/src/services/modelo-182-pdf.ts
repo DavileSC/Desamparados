@@ -16,6 +16,7 @@ import {
   aBuffer, nuevoDocumento, rombo, rotulo, sinMargenes, versalitas, type Doc,
 } from './informes/pdf.js';
 import type { ConfiguracionModelo182 } from './modelo-182.service.js';
+import { eurosDeCentimos } from '../utils/euros.js';
 
 export interface CertificadoDe {
   nif: string;
@@ -31,7 +32,6 @@ const MARGEN = 25 * MM;
 const ANCHO = A4.ancho - 2 * MARGEN;
 const ORO_TEXTO = '#8a6a30';
 const fechaLarga = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'long', year: 'numeric' });
-const euros = (c: number) => `${(c / 100).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 /** «2026-03-05» → «05/03/2026». */
 const dia = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
 
@@ -87,13 +87,13 @@ function certificado(doc: Doc, c: ConfiguracionModelo182, ejercicio: number, d: 
     if (y > A4.alto - 240) { doc.addPage(); membrete(doc); y = 130; cabecera(); }
     rotulo(doc, dia(a.fecha), MARGEN, y, { tam: 9.5, color: NEGRO });
     rotulo(doc, a.concepto, MARGEN + colFecha, y, { tam: 9.5, color: NEGRO, ancho: ANCHO - colFecha - colImporte });
-    rotulo(doc, euros(a.centimos), MARGEN, y, { tam: 9.5, color: NEGRO, ancho: ANCHO, alinear: 'right' });
+    rotulo(doc, eurosDeCentimos(a.centimos), MARGEN, y, { tam: 9.5, color: NEGRO, ancho: ANCHO, alinear: 'right' });
     y += 15;
   }
   doc.rect(MARGEN, y, ANCHO, 0.5).fill(FILETE);
   y += 6;
   rotulo(doc, 'Total del ejercicio', MARGEN + colFecha, y, { letra: LETRA.textoFuerte, tam: 10, color: NEGRO });
-  rotulo(doc, euros(d.centimos), MARGEN, y, { letra: LETRA.textoFuerte, tam: 10, color: NEGRO, ancho: ANCHO, alinear: 'right' });
+  rotulo(doc, eurosDeCentimos(d.centimos), MARGEN, y, { letra: LETRA.textoFuerte, tam: 10, color: NEGRO, ancho: ANCHO, alinear: 'right' });
   doc.x = MARGEN;
   doc.y = y + 26;
 

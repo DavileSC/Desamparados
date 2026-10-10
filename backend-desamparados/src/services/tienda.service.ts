@@ -22,6 +22,7 @@ import { modoDePago, pagoParaLaWeb } from '../domain/redsys.js';
 import { aCentimos } from '../domain/sepa.js';
 import { nombreConTalla, prepararPedido, type LineaPedida } from '../domain/tienda.js';
 import { deLaCorporacion } from '../domain/articulos.js';
+import { eurosDeCentimos } from '../utils/euros.js';
 
 export const CATEGORIA_TIENDA = 'Ventas de la tienda';
 
@@ -96,7 +97,6 @@ export interface DatosCompra {
   lineas: LineaPedida[];
 }
 
-const euros = (centimos: number) => `${(centimos / 100).toFixed(2).replace('.', ',')} €`;
 
 type ProductoConTallas = Prisma.ProductoGetPayload<{ include: typeof conTallas }>;
 
@@ -160,11 +160,11 @@ async function guardarTallas(tx: Prisma.TransactionClient, productoId: number, t
 /** El correo de «pedido pagado», de su plantilla (Emails → «Pedido de la tienda pagado»). */
 function correoDePedido(p: { nombre: string; id: number; total: Prisma.Decimal; lineas: { nombre: string; nombreTalla: string | null; precio: Prisma.Decimal; cantidad: number }[] }) {
   return PlantillasCorreoService.correo('pedido_tienda', {
-    campos: { nombre: p.nombre, numero: p.id, total: euros(aCentimos(p.total)) },
+    campos: { nombre: p.nombre, numero: p.id, total: eurosDeCentimos(aCentimos(p.total)) },
     bloques: {
       lineas: datos([
-        ...p.lineas.map((l): [string, string] => [`${l.cantidad} × ${esc(nombreConTalla(l.nombre, l.nombreTalla))}`, esc(euros(aCentimos(l.precio) * l.cantidad))]),
-        ['Total', `<strong>${esc(euros(aCentimos(p.total)))}</strong>`],
+        ...p.lineas.map((l): [string, string] => [`${l.cantidad} × ${esc(nombreConTalla(l.nombre, l.nombreTalla))}`, esc(eurosDeCentimos(aCentimos(l.precio) * l.cantidad))]),
+        ['Total', `<strong>${esc(eurosDeCentimos(aCentimos(p.total)))}</strong>`],
       ]),
       secretaria: bloqueDeSecretaria('Dónde y cuándo'),
     },

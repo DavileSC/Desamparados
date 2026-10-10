@@ -9,13 +9,13 @@ import { darDeBajaHermano } from '../../../lib/api/hermanos'
 import { usePaginacion } from '../../../hooks/usePaginacion'
 import Paginador from '../../../components/Paginador'
 import type { MetaPaginacion } from '../../../lib/api/tipos'
+import { euros } from '../../../lib/euros'
 
 interface Props {
   /** Secretaría, Hermano Mayor y administración dan la baja; Tesorería solo mira. */
   puedeDarDeBaja: boolean
 }
 
-const euros = (valor: number) => valor.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })
 /** El día de hoy en Madrid, AAAA-MM-DD ('en-CA' formatea justo así). */
 const hoyEnMadrid = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date())
 

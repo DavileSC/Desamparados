@@ -234,7 +234,7 @@ describe('MesaProcesionPage · Tesorería', () => {
 
     expect(await screen.findByRole('checkbox', { name: 'Cobrar Cuota 2027' })).toBeChecked()
     await user.click(screen.getByRole('button', { name: 'Bizum' }))
-    await user.click(screen.getByRole('button', { name: 'Cobrar 20,00 €' }))
+    await user.click(screen.getByRole('button', { name: 'Cobrar 20,00\u00a0€' }))
 
     await waitFor(() => expect(post(llamadas, '/mesa/cobrar')).toHaveLength(1))
     expect(post(llamadas, '/mesa/cobrar')[0].cuerpo).toMatchObject({ hermanoId: 20, reciboIds: [30], metodoPago: 'BIZUM' })
@@ -247,7 +247,7 @@ describe('MesaProcesionPage · Tesorería', () => {
     renderWithProviders(<MesaProcesionPage />)
     await buscarAbel(user)
 
-    const cobrar = await screen.findByRole('button', { name: 'Cobrar 20,00 €' })
+    const cobrar = await screen.findByRole('button', { name: 'Cobrar 20,00\u00a0€' })
     await user.click(cobrar)
     expect(await screen.findByText(/No hay conexión y no se ha guardado.*no se cobrará dos veces/)).toBeInTheDocument()
     expect(screen.getByRole('checkbox', { name: 'Cobrar Cuota 2027' })).toBeChecked()
@@ -270,7 +270,7 @@ describe('MesaProcesionPage · Tesorería', () => {
     const voluntad = screen.getByRole('textbox', { name: 'Donativo' })
     await user.clear(voluntad)
     await user.type(voluntad, '3')
-    await user.click(screen.getByRole('button', { name: 'Cobrar 3,00 €' }))
+    await user.click(screen.getByRole('button', { name: 'Cobrar 3,00\u00a0€' }))
     await waitFor(() => expect(post(llamadas, '/mesa/cobrar')).toHaveLength(1))
     expect(post(llamadas, '/mesa/cobrar')[0].cuerpo).toMatchObject({ reciboIds: [], solicitudes: [{ solicitudId: 99, importe: 3 }] })
     expect(await screen.findByText(/Que pase a Túnicas/)).toBeInTheDocument()
@@ -294,7 +294,7 @@ describe('MesaProcesionPage · Tesorería', () => {
     como('ALBACERIA')
     renderWithProviders(<MesaProcesionPage />)
     await buscarAbel(user)
-    await screen.findByRole('button', { name: 'Cobrar 20,00 €' })
+    await screen.findByRole('button', { name: 'Cobrar 20,00\u00a0€' })
     expect(screen.queryByRole('button', { name: /Perdonar/ })).not.toBeInTheDocument()
   })
 })
@@ -409,7 +409,7 @@ describe('MesaProcesionPage · Túnicas', () => {
     expect(await screen.findByText('La túnica no sale todavía.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Dar la ropa' })).toBeDisabled()
     await user.click(screen.getByRole('button', { name: 'A Tesorería' }))
-    expect(await screen.findByRole('button', { name: 'Cobrar 20,00 €' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Cobrar 20,00\u00a0€' })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Tesorería' })).toHaveAttribute('aria-selected', 'true')
   })
 

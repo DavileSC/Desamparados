@@ -84,8 +84,9 @@ export function lineasDeLaCesta(cesta: Cesta, productos: Producto[]): LineaDeLaC
   })
 }
 
-/** «12,00 €». */
-export const euros = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n)
+/** «1.250,00 €»: el de toda la web. */
+export { euros } from '../../lib/euros'
+
 export const enlaceDeFicha = (p: Producto) => `/tienda/producto/${p.id}`
 
 /** Lo que se dice debajo de las tallas: si quedan pocas de la elegida y cuáles están agotadas. */

@@ -19,6 +19,7 @@ import {
   A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, MARFIL, NEGRO, ORO,
   aBuffer, nuevoDocumento, rombo, rotulo, sinMargenes, versalitas, type Doc,
 } from '../informes/pdf.js';
+import { euros } from '../../utils/euros.js';
 
 export interface DatosDeLaPapeleta {
   id: number;
@@ -49,7 +50,6 @@ export interface DatosDeLaPapeleta {
 
 export const referenciaDe = (year: number, id: number) => `${year}-${String(id).padStart(4, '0')}`;
 
-const euros = (n: number) => `${n.toFixed(2).replace('.', ',')} €`;
 
 /** Todo lo que lleva la papeleta, o null si no existe. */
 export async function datosDeLaPapeleta(id: number): Promise<DatosDeLaPapeleta | null> {

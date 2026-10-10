@@ -7,15 +7,10 @@ export const COLOR_GASTO = '#b0414a'
 
 // `useGrouping: 'always'`: el es-ES de Intl no pone el punto de miles hasta los
 // cinco dígitos, y «6998 €» junto a «12.874 €» parece un error.
-const conCentimos = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, useGrouping: 'always' })
-const sinCentimos = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0, useGrouping: 'always' })
 const formatoNumero = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0, useGrouping: 'always' })
 
-/** Importe de un apunte: siempre con céntimos, alineable en columna. */
-export const euros = (valor: number) => conCentimos.format(valor)
-
-/** Cifra de resumen: sin céntimos si son redondos, con ellos si no. */
-export const eurosResumen = (valor: number) => (Number.isInteger(valor) ? sinCentimos : conCentimos).format(valor)
+/** Importe de un apunte: siempre con céntimos, alineable en columna. Cifra de resumen: sin céntimos si son redondos. */
+export { euros, eurosRedondos as eurosResumen } from '../../../lib/euros'
 
 /** Número suelto (ejes de la gráfica, recuentos), con punto de miles. */
 export const numero = (valor: number) => formatoNumero.format(valor)

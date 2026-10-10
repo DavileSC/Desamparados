@@ -15,8 +15,8 @@ import { apadrinar, campanasPublicas, type CampanasPublicas, type Pieza } from '
 import type { MetodoEnLinea } from '../../lib/api/tienda'
 import { irAlBanco } from '../../lib/api/procesion'
 import { site } from '../../config/site'
+import { euros } from '../../lib/euros'
 
-const euros = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n)
 const VACIO = { nombre: '', email: '', telefono: '', dedicatoria: '', mostrarNombre: true, metodo: 'TARJETA' as MetodoEnLinea }
 
 /**

@@ -9,6 +9,7 @@ import Boton from '../Boton'
 import CamposCertificado from '../CamposCertificado'
 import { SIN_CERTIFICADO, certificadoCompleto, datosFiscalesDe } from '../../lib/certificado'
 import { enfocarLoQueFalla } from '../../lib/enfocarLoQueFalla'
+import { eurosRedondos } from '../../lib/euros'
 import { SERIF } from '../../features/inicio/estilos'
 import { anchoMaximo } from './presentacion'
 import { irAlBanco, type EstadoDelPago, type MetodoEnLinea } from '../../lib/api/procesion'
@@ -20,7 +21,6 @@ const RECUADRO = '#1a181b'
 const ACENTO = '#fc858a'
 const FILETE = 'rgba(255, 255, 255, 0.14)'
 
-const euros = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: Number.isInteger(n) ? 0 : 2 }).format(n)
 
 /** «12,5» o «12.50» → 12.5; lo que no es un importe con dos decimales como mucho, null. */
 function leerImporte(texto: string): number | null {
@@ -92,7 +92,7 @@ export default function BloqueDonativo({ bloque }: { bloque: Datos }) {
         irAlBanco(inicio)
         return
       }
-      setHecho(`Gracias: hemos recibido tu donativo de ${euros(importe)}.`)
+      setHecho(`Gracias: hemos recibido tu donativo de ${eurosRedondos(importe)}.`)
     } catch (e) {
       setError(e instanceof Error && e.message ? e.message : 'No se ha podido empezar el donativo. Inténtalo de nuevo.')
     }
@@ -126,7 +126,7 @@ export default function BloqueDonativo({ bloque }: { bloque: Datos }) {
 
       <Box role="group" aria-label="Importe" sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25 }}>
         {bloque.importes.map((n) => (
-          <ButtonBase key={n} aria-pressed={elegido === n} onClick={() => setElegido(n)} sx={opcion(elegido === n)}>{euros(n)}</ButtonBase>
+          <ButtonBase key={n} aria-pressed={elegido === n} onClick={() => setElegido(n)} sx={opcion(elegido === n)}>{eurosRedondos(n)}</ButtonBase>
         ))}
         <ButtonBase aria-pressed={elegido === 'otro'} onClick={() => setElegido('otro')} sx={opcion(elegido === 'otro')}>Otro</ButtonBase>
       </Box>
@@ -177,7 +177,7 @@ export default function BloqueDonativo({ bloque }: { bloque: Datos }) {
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
             {pago.metodos.map((m, i) => (
               <Boton key={m} appVariant={i === 0 ? 'primary' : 'claro'} disabled={enviando || pagina === null} onClick={() => void enviar(m)}>
-                {enviando ? 'Un momento…' : m === 'BIZUM' ? 'Con Bizum' : `Donar ${importe !== null && !fueraDeLimites ? euros(importe) : ''}${pago.metodos.length > 1 ? ' con tarjeta' : ''}`.replace('  ', ' ')}
+                {enviando ? 'Un momento…' : m === 'BIZUM' ? 'Con Bizum' : `Donar ${importe !== null && !fueraDeLimites ? eurosRedondos(importe) : ''}${pago.metodos.length > 1 ? ' con tarjeta' : ''}`.replace('  ', ' ')}
               </Boton>
             ))}
           </Box>
@@ -232,7 +232,7 @@ function VueltaDelBanco() {
         if (cancelado) return
         if (estado !== 'PENDIENTE') {
           const final = TRAS_EL_BANCO[estado]
-          setAviso({ tono: final.tono, texto: final.texto(euros(importe)) })
+          setAviso({ tono: final.tono, texto: final.texto(eurosRedondos(importe)) })
           return
         }
       } catch {

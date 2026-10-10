@@ -20,13 +20,13 @@ import {
   A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, NEGRO, ORO,
   aBuffer, nuevoDocumento, rombo, rotulo, sinMargenes, versalitas, type Doc,
 } from './informes/pdf.js';
+import { euros } from '../utils/euros.js';
 
 const MM = 72 / 25.4;
 const MARGEN = 20 * MM;
 const ANCHO = A4.ancho - 2 * MARGEN;
 const ORO_TEXTO = '#8a6a30';
 const fechaCorta = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'long', year: 'numeric' });
-const euros = (n: number) => `${n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 
 /** La foto como JPEG, o null si no es una subida o no se puede leer. */
 async function jpegDe(url: string | null | undefined, anchoPx: number): Promise<Buffer | null> {

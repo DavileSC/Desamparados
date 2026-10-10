@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { Alert, Box, Divider, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import Boton from '../../../components/Boton'
-import { euros182, misCertificados, traerMiCertificado } from '../../../lib/api/modelo182'
+import { misCertificados, traerMiCertificado } from '../../../lib/api/modelo182'
 import { guardarEnDisco } from '../../../lib/api/datos'
 import { aLaCorporacion } from '../../../domain/articulos'
+import { eurosDeCentimos } from '../../../lib/euros'
 
 /**
  * Los certificados de donativos de la cuenta, para la declaración de la
@@ -43,7 +44,7 @@ export default function CertificadosDonativos() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5, minHeight: 56, flexWrap: 'wrap' }}>
             <Box sx={{ flex: 1, minWidth: 180 }}>
               <Typography sx={{ fontWeight: 600 }}>{c.ejercicio} · {c.nombre}</Typography>
-              <Typography variant="body2" color="text.secondary">{euros182(c.centimos)}</Typography>
+              <Typography variant="body2" color="text.secondary">{eurosDeCentimos(c.centimos)}</Typography>
             </Box>
             <Boton appVariant="outline" size="small" disabled={!data.disponibles || bajando !== null} onClick={() => void bajar(c.ejercicio, c.nif)}>
               {bajando === `${c.ejercicio}-${c.nif}` ? 'Preparando…' : 'Descargar'}
