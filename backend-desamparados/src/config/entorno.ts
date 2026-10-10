@@ -53,6 +53,14 @@ function esUrlHttps(valor: string): boolean {
   }
 }
 
+/**
+ * Un secreto que no lo es: el texto de una plantilla («genera-un-secreto…»,
+ * «change-me»…) o muy pocos caracteres distintos («xxxx…»). Lo de
+ * `gen:secret` son 128 cifras hexadecimales y no se parece a nada de esto.
+ */
+const pareceDeEjemplo = (secreto: string) =>
+  /genera|secreto|cambia|ejemplo|change|secret|example|replace|your/i.test(secreto) || new Set(secreto).size < 10;
+
 export function validarEntorno(entorno: Entorno = process.env): ResultadoEntorno {
   const errores: string[] = [];
   const avisos: string[] = [];
@@ -169,6 +177,10 @@ export function validarEntorno(entorno: Entorno = process.env): ResultadoEntorno
 
   if (definida(entorno.JWT_SECRET) && entorno.JWT_SECRET.length < 32) {
     errores.push('JWT_SECRET es demasiado corto: en producción hacen falta al menos 32 caracteres (npm run gen:secret).');
+  } else if (definida(entorno.JWT_SECRET) && pareceDeEjemplo(entorno.JWT_SECRET)) {
+    // La frase de una plantilla mide más de 32 y pasaba: con ella cualquiera
+    // firma sesiones de ADMIN, QR de papeletas y bajas del boletín.
+    errores.push('JWT_SECRET parece un texto de ejemplo, no un secreto: genera uno con npm run gen:secret.');
   }
 
   if (definida(entorno.TOTP_ENC_KEY) && !/^[0-9a-f]{64}$/i.test(entorno.TOTP_ENC_KEY.trim())) {

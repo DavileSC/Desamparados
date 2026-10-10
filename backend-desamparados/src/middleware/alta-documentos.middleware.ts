@@ -14,7 +14,9 @@ import { scanBufferClamav } from '../utils/clamd.js';
  * del CMS y con sus propias reglas:
  *
  *  - Solo dos ficheros, cada uno con su campo y sus tipos. La foto, JPG o PNG;
- *    el certificado, PDF, DOC o DOCX, que es como lo dan las parroquias.
+ *    el certificado, PDF o una foto (JPG o PNG), que es como se escanea o se
+ *    fotografía. Nada de Word: un .doc puede llevar macros, y quien lo sube
+ *    no tiene sesión.
  *  - Van a storage/private: los ve Secretaría desde el CMS y nadie más.
  *  - Se comprueban por su contenido real (no por la extensión que dice el
  *    navegador), pasan por el antivirus y la foto pierde sus metadatos.
@@ -31,8 +33,6 @@ import { scanBufferClamav } from '../utils/clamd.js';
 
 export const MAX_BYTES_CERTIFICADO = 10 * 1024 * 1024;
 
-const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-
 /** Lo que admite cada campo: tipos reales (los que ve file-type) y extensiones. */
 const DOCUMENTOS = {
   foto: {
@@ -42,10 +42,9 @@ const DOCUMENTOS = {
     pesada: 'La foto pesa más de 5 MB. Redúcela antes de adjuntarla.',
   },
   certificadoBautismo: {
-    // Un .doc es un contenedor OLE (file-type lo ve como `x-cfb`); un .docx, un zip de Office.
-    tipos: { 'application/pdf': ['.pdf'], 'application/x-cfb': ['.doc'], [DOCX]: ['.docx'] } as Record<string, string[]>,
+    tipos: { 'application/pdf': ['.pdf'], 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] } as Record<string, string[]>,
     tope: MAX_BYTES_CERTIFICADO,
-    formato: 'El certificado tiene que ser PDF, DOC o DOCX.',
+    formato: 'El certificado tiene que ser PDF o una foto (JPG o PNG).',
     pesada: 'El certificado pesa más de 10 MB. Redúcelo antes de adjuntarlo.',
   },
 } as const;
@@ -133,8 +132,9 @@ export function recibirAlta(req: Request, res: Response, next: NextFunction) {
 
 /**
  * Comprueba cada documento de verdad: tipo por su contenido, que la extensión
- * cuadre, su tope, el antivirus y, en la foto, fuera metadatos (el GPS del
- * móvil dice dónde vive quien se apunta). Va después de validar el alta: no
+ * cuadre, su tope, el antivirus y, en las fotos (también un certificado
+ * fotografiado), fuera metadatos: el GPS del móvil dice dónde vive quien se
+ * apunta. Va después de validar el alta: no
  * se analiza nada de una solicitud que no iba a salir.
  */
 export async function comprobarDocumentosDelAlta(req: Request, res: Response, next: NextFunction) {
@@ -167,12 +167,12 @@ export async function comprobarDocumentosDelAlta(req: Request, res: Response, ne
         throw new DocumentoRechazado(campo, 'Ahora mismo no se pueden revisar los documentos. Inténtalo más tarde, o envía la solicitud sin él y entrégalo en Secretaría.', 503);
       }
 
-      if (campo === 'foto') {
+      if (tipo!.mime.startsWith('image/')) {
         let limpia: Buffer;
         try {
           limpia = await prepararFoto(original);
         } catch {
-          throw new DocumentoRechazado(campo, 'No se ha podido leer la foto. Comprueba que no está dañada.');
+          throw new DocumentoRechazado(campo, campo === 'foto' ? 'No se ha podido leer la foto. Comprueba que no está dañada.' : 'No se ha podido leer la foto del certificado. Comprueba que no está dañada.');
         }
         if (limpia.length > reglas.tope) throw new DocumentoRechazado(campo, reglas.pesada, 413);
         // Sale en WebP: se guarda con su extensión y el original se va.

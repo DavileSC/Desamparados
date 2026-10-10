@@ -75,7 +75,7 @@ export const TITULARIDADES = ['PROPIA', 'FAMILIAR_HERMANO', 'OTRA_PERSONA'] as c
  */
 export const DOCUMENTOS_ALTA = {
   foto: { extensiones: ['.jpg', '.jpeg', '.png'], megas: 5, tipos: 'JPG o PNG' },
-  certificadoBautismo: { extensiones: ['.pdf', '.doc', '.docx'], megas: 10, tipos: 'PDF, DOC o DOCX' },
+  certificadoBautismo: { extensiones: ['.pdf', '.jpg', '.jpeg', '.png'], megas: 10, tipos: 'PDF, JPG o PNG' },
 } as const
 
 const documento = (cual: keyof typeof DOCUMENTOS_ALTA, nombre: string) => {

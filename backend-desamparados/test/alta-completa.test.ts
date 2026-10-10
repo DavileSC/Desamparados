@@ -213,6 +213,32 @@ describe('el alta completa contra la base de datos', () => {
     assert.deepEqual(ficherosPrivados(), antes, 'el fichero rechazado se borra');
   });
 
+  test('el certificado no admite Word (un .doc puede llevar macros); fotografiado, se guarda en WebP y sin metadatos', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const antes = ficherosPrivados();
+    // La cabecera de un contenedor OLE, que es lo que es un .doc.
+    const doc = Buffer.concat([Buffer.from('D0CF11E0A1B11AE1', 'hex'), Buffer.alloc(504)]);
+    const conWord = await multipart(
+      { usuario: adulto(nuevoCorreo('word'), nuevoDni()), titular, comentarioAdicional: '' },
+      { certificadoBautismo: [doc, 'partida.doc'] },
+    );
+    assert.equal(conWord.status, 400);
+    assert.match((await conWord.json() as { message: string }).message, /PDF o una foto/);
+    assert.deepEqual(ficherosPrivados(), antes);
+
+    const email = nuevoCorreo('certfoto');
+    const foto = await sharp({ create: { width: 60, height: 80, channels: 3, background: '#eeeeee' } })
+      .withMetadata({ exif: { IFD0: { Copyright: 'rastro' } } }).jpeg().toBuffer();
+    const res = await multipart(
+      { usuario: adulto(email, nuevoDni()), titular, pago: { forma: 'EFECTIVO' }, comentarioAdicional: '' },
+      { certificadoBautismo: [foto, 'partida.jpg'] },
+    );
+    assert.equal(res.status, 201, await res.clone().text());
+    const [suya] = await fichasDe(email);
+    assert.match(suya.certificadoBautismo ?? '', /^[a-f0-9]{32}\.webp$/);
+    assert.equal((await sharp(fs.readFileSync(path.join(privateStorageDir, suya.certificadoBautismo!))).metadata()).exif, undefined);
+  });
+
   test('si el alta no sale (datos que no validan), los documentos se borran', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const antes = ficherosPrivados();

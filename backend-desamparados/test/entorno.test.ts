@@ -18,7 +18,7 @@ const PRODUCCION_COMPLETA = {
   EMAIL_USER: 'secretaria@ejemplo.org',
   EMAIL_PASS: 'clave-de-aplicacion',
   NUM_PROXIES: '1',
-  JWT_SECRET: 'x'.repeat(64),
+  JWT_SECRET: '9f3c1a7e5b2d8046c1e9a3f7b5d20e86a4c7f1b3e9d5a2c8',
   TOTP_ENC_KEY: 'ab'.repeat(32),
   CLAMAV_HOST: '127.0.0.1',
   CLAMAV_REQUIRED: 'true',
@@ -60,6 +60,10 @@ describe('validarEntorno', () => {
   test('en producción JWT_SECRET necesita 32 caracteres y TOTP_ENC_KEY 64 hexadecimales', () => {
     const corto = validarEntorno({ ...PRODUCCION_COMPLETA, JWT_SECRET: 'corto' }).errores;
     assert.ok(corto.some((e) => /JWT_SECRET es demasiado corto/.test(e)));
+    // La frase de la plantilla de antes medía 43 y pasaba; tampoco vale una ristra de la misma letra.
+    for (const deEjemplo of ['genera-un-secreto-de-al-menos-32-caracteres', 'x'.repeat(64)]) {
+      assert.ok(validarEntorno({ ...PRODUCCION_COMPLETA, JWT_SECRET: deEjemplo }).errores.some((e) => /texto de ejemplo/.test(e)), deEjemplo);
+    }
     const clave = validarEntorno({ ...PRODUCCION_COMPLETA, TOTP_ENC_KEY: 'zz'.repeat(32) }).errores;
     assert.ok(clave.some((e) => /TOTP_ENC_KEY debe tener exactamente 64/.test(e)));
   });
