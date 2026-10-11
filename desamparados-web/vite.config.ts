@@ -22,9 +22,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     // Los datos de la corporación son de cada instalación y no están en git
-    // (instalacion/datos-entidad.json): el código los importa como
-    // `@instalacion/datos-entidad.json` y el plugin los entrega validados. Si
-    // faltan o tienen un dato mal puesto, Vite no arranca y dice cuál.
+    // (instalacion/datos-entidad.json) ni en la web compilada: la web los lee
+    // de window.__INSTALACION__ (/instalacion.js). En desarrollo los sirve el
+    // plugin, con index.html relleno; en el servidor los escribe el contenedor
+    // al arrancar. Si faltan o tienen un dato mal puesto, Vite no arranca y
+    // dice cuál. `vite build` no los usa.
     plugins: [react(), datosDeLaInstalacion()],
     server: {
       proxy: {
