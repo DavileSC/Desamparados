@@ -36,6 +36,18 @@ const IMAGENES: { escudo: ImagenDeCorreo; cabecera: ImagenDeCorreo | null } = {
     ? { cid: 'cabecera@marca', archivo: FICHEROS_MARCA.correoCabecera.ruta, tipo: FICHEROS_MARCA.correoCabecera.tipo }
     : null,
 };
+/**
+ * El escudo del membrete va siempre a 56 de alto, la altura de las dos líneas
+ * del nombre a su lado; el ancho sale de su proporción para que un escudo
+ * cuadrado o apaisado no se deforme. Se escribe en el atributo y en el estilo
+ * (Outlook lee el primero; los demás, el segundo), así que tiene que ser un
+ * número entero de píxeles.
+ */
+export function medidaDelEscudo({ ancho, alto }: { ancho: number; alto: number }) {
+  const ALTO = 56;
+  return { ancho: Math.round((ALTO * ancho) / alto), alto: ALTO };
+}
+const ESCUDO = medidaDelEscudo(FICHEROS_MARCA.escudoSobreClaro);
 const conImagen = Object.entries(IMAGENES).flatMap(([nombre, imagen]) => (imagen ? [[nombre, imagen] as const] : []));
 
 // Los colores de la casa. Los grises están elegidos para leerse bien sobre su
@@ -281,7 +293,7 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
               <table role="presentation" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                   <td valign="middle" style="padding-right: 16px;">
-                    <img src="cid:${IMAGENES.escudo.cid}" alt="Escudo ${deLaCorporacion({ identidad: identidadInstalacion })}" width="46" height="56" style="display: block; border: 0; width: 46px; height: 56px;">
+                    <img src="cid:${IMAGENES.escudo.cid}" alt="Escudo ${deLaCorporacion({ identidad: identidadInstalacion })}" width="${ESCUDO.ancho}" height="${ESCUDO.alto}" style="display: block; border: 0; width: ${ESCUDO.ancho}px; height: ${ESCUDO.alto}px;">
                   </td>
                   <td valign="middle" style="font-family: ${SERIF};">
                     <p style="margin: 0; font-size: 13px; font-style: italic; color: ${suave};">${esc(identidadInstalacion.tipo)}</p>
