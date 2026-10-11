@@ -158,6 +158,50 @@ jobs:
           done
           curl -fsSI http://127.0.0.1:8099/instalacion.js | grep -qi '^cache-control: no-cache' \
             || { echo "::error::/instalacion.js sin Cache-Control: no-cache."; mal=1; }
+          # La marca: aquí no hay carpeta montada, así que es la de partida. El
+          # escudo, los iconos del manifest y el og:image tienen que servirse
+          # como imágenes (sin /marca/ en la imagen, el reenvío de la SPA daría
+          # la portada con un 200 y nadie lo notaría).
+          es_imagen() {
+            tipo=$(curl -fsS -o /dev/null -w '%{content_type}' "http://127.0.0.1:8099$1") \
+              && case "$tipo" in image/png|image/jpeg) true ;; *) false ;; esac \
+              || { echo "::error::$1 no se sirve como imagen (${tipo:-sin respuesta})."; mal=1; }
+          }
+          es_imagen /marca/escudo-sobre-oscuro.png
+          for icono in $(curl -fsS http://127.0.0.1:8099/manifest.json | node -e 'let t="";process.stdin.on("data",d=>t+=d).on("end",()=>console.log(JSON.parse(t).icons.map(i=>i.src).join(" ")))'); do
+            es_imagen "$icono"
+          done
+          og=$(curl -fsS --compressed http://127.0.0.1:8099/ | sed -n 's/.*<meta property="og:image" content="https:\/\/[^/]*\([^"]*\)".*/\1/p')
+          if [ -n "$og" ]; then es_imagen "$og"; else echo "::error::index.html sin og:image."; mal=1; fi
+          # Los iconos viejos de la raíz, trasladados.
+          for viejo in /favicon.ico /favicon-32.png /apple-touch-icon.png /icono-192.png /icono-512.png; do
+            curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' "http://127.0.0.1:8099$viejo" | grep -q '^301 .*/marca/' \
+              || { echo "::error::$viejo no redirige a /marca/."; mal=1; }
+          done
+          exit "$mal"
+
+      # La marca montada, como en el servidor (instalacion/marca): se usan sus
+      # ficheros y no los de partida. Aquí se monta la propia marca de partida,
+      # que basta para ver que el montaje se lee. Y una marca con un fichero
+      # que no es lo que dice su nombre impide arrancar y lo dice.
+      - name: Prueba de humo de la marca
+        run: |
+          imagen="$REGISTRO-web:$GITHUB_SHA"
+          datos="$PWD/shared/datos-entidad.ejemplo.json:/app/instalacion/datos-entidad.json:ro"
+          sitio="$PWD/docker/nginx/sitio-tras-proxy.conf:/etc/nginx/conf.d/desamparados.conf:ro"
+          mal=0
+          salida=$(docker run --rm -v "$datos" -v "$sitio" -v "$PWD/shared/marca-de-partida:/app/instalacion/marca:ro" "$imagen" nginx -t 2>&1) \
+            || { echo "$salida"; echo "::error::Con la marca montada, la web no arranca."; mal=1; }
+          printf '%s\n' "$salida" | grep -q '\[marca\] escudo-sobre-oscuro.png: de la instalación' \
+            || { echo "$salida"; echo "::error::Con la marca montada, no se usa su escudo."; mal=1; }
+          rota=$(mktemp -d)
+          echo 'esto no es un PNG' > "$rota/escudo-sobre-oscuro.png"
+          chmod 755 "$rota" && chmod 644 "$rota/escudo-sobre-oscuro.png"
+          if salida=$(docker run --rm -v "$datos" -v "$sitio" -v "$rota:/app/instalacion/marca:ro" "$imagen" nginx -t 2>&1); then
+            echo "$salida"; echo "::error::Con un escudo que es un texto, la web arranca igual."; mal=1
+          fi
+          printf '%s\n' "$salida" | grep -q 'escudo-sobre-oscuro.png: no es una imagen PNG' \
+            || { echo "$salida"; echo "::error::Con un escudo que es un texto, no dice qué fichero falla."; mal=1; }
           exit "$mal"
 
   desplegar:

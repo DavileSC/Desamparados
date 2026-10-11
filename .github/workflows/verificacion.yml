@@ -196,13 +196,15 @@ jobs:
       # scripts/instalacion-web.mjs. Aquí se hace lo mismo con el ejemplo:
       # tiene que quedar sin ninguna marca. Si Vite dejara de conservarlas, o
       # la plantilla usara una que la orden no conoce, el fallo saldría aquí y
-      # no en el servidor.
+      # no en el servidor. Aquí no hay instalacion/marca: se usa la marca de
+      # partida, que tiene que acabar copiada en marca/.
       - name: Comprobar que index.html se rellena al arrancar
         run: |
           grep -q '{{nombre}}' dist/index.html || { echo "::error::dist/index.html ya no lleva las marcas: ¿se han compilado los datos dentro?"; exit 1; }
           node scripts/instalacion-web.mjs --plantilla dist/index.html --destino "$RUNNER_TEMP/web" --datos ../shared/datos-entidad.ejemplo.json --comprimir
           if grep -n '{{' "$RUNNER_TEMP/web/index.html"; then echo "::error::Quedan marcas sin rellenar en index.html."; exit 1; fi
-          ls -l "$RUNNER_TEMP/web"
+          [ -f "$RUNNER_TEMP/web/marca/escudo-sobre-oscuro.png" ] || { echo "::error::La orden no ha copiado la marca a marca/."; exit 1; }
+          ls -l "$RUNNER_TEMP/web" "$RUNNER_TEMP/web/marca"
 
       # `npm run build` regenera la lista de páginas del sitemap desde el router
       # (shared/rutas-publicas.json, que sirve la API): si quedó desincronizada
