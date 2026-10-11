@@ -58,7 +58,8 @@ export default function PasoTusDatos({ ficha, onGuardada, onSi, cambiado }: {
     ['Bautismo', o('fechaBautismo', ficha.fechaBautismo ? [diaLegible(ficha.fechaBautismo), ficha.parroquiaBautismo ?? ficha.lugarBautismo].filter(Boolean).join(' · ') : null)],
   ]
   const donde: Fila[] = [
-    ['Correo', o('email', ficha.email)],
+    // El de la ficha, no el de entrar: ese lo cambia Secretaría.
+    ['Correo de contacto', o('email', ficha.email)],
     ['Segundo correo', ficha.email2],
     ['Móvil', o('telefono', ficha.telefono)],
     ['Fijo', ficha.telefonoFijo],
@@ -74,7 +75,12 @@ export default function PasoTusDatos({ ficha, onGuardada, onSi, cambiado }: {
             <Typography sx={{ fontWeight: 600, color: 'warning.light' }}>
               {faltan.length === 1 ? `Nos falta tu ${enUnaFrase(faltan)}` : `Nos faltan algunos datos: ${enUnaFrase(faltan)}`}
             </Typography>
-            <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 0.5 }}>El censo no los traía y la Secretaría los necesita. Rellénalos y guarda para seguir.</Typography>
+            {/* Concordado con lo que falte: «los traía» con un solo dato sonaba a error. */}
+            <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 0.5 }}>
+              {faltan.length === 1
+                ? 'El censo no traía ese dato y la Secretaría lo necesita. Rellénalo y guarda para seguir.'
+                : 'El censo no traía esos datos y la Secretaría los necesita. Rellénalos y guarda para seguir.'}
+            </Typography>
           </Box>
           <CamposDeFicha key={faltan.map((c) => c.campo).join()} ficha={ficha} campos={faltan} onGuardada={onGuardada} />
         </TarjetaCristal>

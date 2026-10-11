@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Alert, Box, Button, Checkbox, CircularProgress, FormControlLabel, Skeleton, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
@@ -20,7 +20,7 @@ import { designTokens } from '../../../theme'
 import { site } from '../../../config/site'
 import PasoTusDatos from './PasoTusDatos'
 import PasoFamilia from './PasoFamilia'
-import { enUnaFrase, faltanDeLaCuota } from './obligatorios'
+import { enUnaFrase, faltanDeLaCuota, faltanDeTusDatos, faltanDelFamiliar } from './obligatorios'
 
 type ClavePaso = 'datos' | 'cuota' | 'familia' | 'confirmar'
 
@@ -28,7 +28,48 @@ const TITULO: Record<ClavePaso, string> = { datos: 'Tus datos', cuota: 'Cuota y 
 
 const nombreCompleto = (f: ApiProfile) => `${f.nombre} ${f.apellidos}`.trim()
 
-interface Avance { actual: number; alcanzado: number }
+const titularDe = (fichas: ApiProfile[]) => fichas.find((f) => f.esTitular) ?? null
+const familiaDe = (fichas: ApiProfile[]) => fichas.filter((f) => !f.esTitular).sort((a, b) => a.fechaNacimiento.localeCompare(b.fechaNacimiento))
+
+/** Los pasos que tiene la revisión de estas fichas: sin titular o sin familia, sus pasos no están. */
+function pasosDe(fichas: ApiProfile[], conCuotas: boolean): ClavePaso[] {
+  return [
+    ...(titularDe(fichas) ? (['datos', ...(conCuotas ? ['cuota'] : [])] as ClavePaso[]) : []),
+    ...(familiaDe(fichas).length > 0 ? (['familia'] as ClavePaso[]) : []),
+    'confirmar',
+  ]
+}
+
+/** El primer paso en que falta algo obligatorio, o null si no falta nada. */
+function pasoQueFalta(fichas: ApiProfile[], conCuotas: boolean): ClavePaso | null {
+  const titular = titularDe(fichas)
+  if (titular && faltanDeTusDatos(titular).length > 0) return 'datos'
+  if (titular && conCuotas && faltanDeLaCuota(titular).length > 0) return 'cuota'
+  if (familiaDe(fichas).some((f) => faltanDelFamiliar(f).length > 0)) return 'familia'
+  return null
+}
+
+/** Los campos que van en el paso de la cuota, no en «Tus datos». */
+const DE_LA_CUOTA = new Set(['iban', 'titularidadCuenta', 'titularCuenta'])
+
+/**
+ * El paso donde falta lo que dice el 409 al confirmar (`fichaIncompleta`): la
+ * del titular, en «Tus datos» o en la cuota según el campo; la de un familiar,
+ * en «Tu familia». Null si el cuerpo no lo trae.
+ */
+function pasoDelConflicto(cuerpo: unknown): ClavePaso | null {
+  const ficha = (cuerpo as { fichaIncompleta?: { esTitular?: unknown; campos?: unknown } } | null)?.fichaIncompleta
+  if (!ficha || typeof ficha.esTitular !== 'boolean') return null
+  if (!ficha.esTitular) return 'familia'
+  const campos = Array.isArray(ficha.campos) ? ficha.campos : []
+  return campos.length > 0 && campos.every((c) => DE_LA_CUOTA.has(String(c))) ? 'cuota' : 'datos'
+}
+
+/**
+ * `cambiados` va con el avance: guardado solo en memoria, quien cambiaba algo,
+ * salía y volvía leía «Sin cambios» en el repaso final.
+ */
+interface Avance { actual: number; alcanzado: number; cambiados: string[] }
 
 /** Dónde se quedó, por cuenta: «Salir» promete que la próxima vez sigue aquí. */
 const claveGuardada = (cuenta: number | undefined) => `primer-acceso:${cuenta ?? 'sin-cuenta'}`
@@ -37,7 +78,10 @@ function leerAvance(cuenta: number | undefined): Avance | null {
   try {
     const crudo = window.localStorage.getItem(claveGuardada(cuenta))
     const avance = crudo ? (JSON.parse(crudo) as Partial<Avance>) : null
-    return avance && typeof avance.actual === 'number' && typeof avance.alcanzado === 'number' ? { actual: avance.actual, alcanzado: avance.alcanzado } : null
+    if (!avance || typeof avance.actual !== 'number' || typeof avance.alcanzado !== 'number') return null
+    // Los guardados antes de llevar `cambiados` siguen valiendo: sin la lista, nada cambiado.
+    const cambiados = Array.isArray(avance.cambiados) ? avance.cambiados.filter((c): c is string => typeof c === 'string') : []
+    return { actual: avance.actual, alcanzado: avance.alcanzado, cambiados }
   } catch {
     return null
   }
@@ -90,27 +134,32 @@ export default function RevisarFichaPage() {
         if (cancelado) return
         setFichas(r.data.filter((f) => f.activo))
         const avance = leerAvance(cuenta)
-        if (avance) { setActual(avance.actual); setAlcanzado(avance.alcanzado) }
+        if (avance) { setActual(avance.actual); setAlcanzado(avance.alcanzado); setCambiados(new Set(avance.cambiados)) }
       })
       .catch((e: unknown) => { if (!cancelado) setErrorCarga(e instanceof Error ? e.message : 'No se ha podido cargar tu ficha.') })
     return () => { cancelado = true }
   }, [cuenta])
 
   useEffect(() => {
-    if (fichas && !hecho) guardarAvance(cuenta, { actual, alcanzado })
-  }, [fichas, hecho, actual, alcanzado, cuenta])
+    if (fichas && !hecho) guardarAvance(cuenta, { actual, alcanzado, cambiados: [...cambiados] })
+  }, [fichas, hecho, actual, alcanzado, cambiados, cuenta])
 
-  const titular = fichas?.find((f) => f.esTitular) ?? null
-  const familia = (fichas ?? []).filter((f) => !f.esTitular).sort((a, b) => a.fechaNacimiento.localeCompare(b.fechaNacimiento))
-  const pasos: ClavePaso[] = [
-    ...(titular ? (['datos', ...(conCuotas ? ['cuota'] : [])] as ClavePaso[]) : []),
-    ...(familia.length > 0 ? (['familia'] as ClavePaso[]) : []),
-    'confirmar',
-  ]
+  const titular = titularDe(fichas ?? [])
+  const familia = familiaDe(fichas ?? [])
+  const pasos = pasosDe(fichas ?? [], conCuotas)
   // Lo guardado puede apuntar más allá si desde entonces se fue alguien de la familia.
   const indice = Math.min(actual, pasos.length - 1)
   const paso = pasos[indice]
   const etiquetaDe = (p: ClavePaso) => (p === 'familia' ? `${TITULO.familia} · ${familia.length}` : TITULO[p])
+
+  // Al cambiar de paso, el foco al título del nuevo: con solo subir la página,
+  // el lector de pantalla seguía en el botón pulsado, que ya no existe.
+  const tituloPaso = useRef<HTMLHeadingElement>(null)
+  const primerPaso = useRef(true)
+  useEffect(() => {
+    if (primerPaso.current) { primerPaso.current = false; return }
+    tituloPaso.current?.focus({ preventScroll: true })
+  }, [indice])
 
   const ir = (i: number) => { setActual(i); setCambiandoCuota(false); setErrorPaso(null); window.scrollTo({ top: 0 }) }
   const siguiente = () => { const i = indice + 1; setAlcanzado((a) => Math.max(a, i)); ir(i) }
@@ -137,7 +186,23 @@ export default function RevisarFichaPage() {
       guardarAvance(cuenta, null)
       setHecho(true)
     } catch (e) {
-      setErrorPaso(e instanceof ErrorDeApi ? e.message : 'No se ha podido confirmar. Inténtalo otra vez.')
+      const mensaje = e instanceof ErrorDeApi ? e.message : 'No se ha podido confirmar. Inténtalo otra vez.'
+      // Con algo vacío, el 409 dice en qué ficha y qué campos (`fichaIncompleta`):
+      // se le lleva a ese paso en vez de dejarle en el repaso sin poder
+      // arreglarlo. Las fichas se vuelven a leer (pudo vaciarlas otra pestaña)
+      // para que el paso enseñe lo que falta.
+      if (e instanceof ErrorDeApi && e.status === 409) {
+        try {
+          const activas = (await misFichas()).data.filter((f) => f.activo)
+          setFichas(activas)
+          const falta = pasoDelConflicto(e.payload) ?? pasoQueFalta(activas, conCuotas)
+          const destino = falta ? pasosDe(activas, conCuotas).indexOf(falta) : -1
+          if (destino >= 0) ir(destino)
+        } catch {
+          // Sin poder releerlas se queda aquí, con el mensaje del servidor.
+        }
+      }
+      setErrorPaso(mensaje)
     } finally {
       setConfirmando(false)
     }
@@ -170,7 +235,7 @@ export default function RevisarFichaPage() {
   } else if (paso === 'datos' && titular) {
     contenido = (
       <>
-        <Encabezado antetitulo={antetitulo} titulo={TITULO.datos} texto="Así figuras en el censo. Si está bien, sigue; si algo no, lo cambias aquí mismo." />
+        <Encabezado refTitulo={tituloPaso} antetitulo={antetitulo} titulo={TITULO.datos} texto="Así figuras en el censo. Si está bien, sigue; si algo no, lo cambias aquí mismo." />
         <PasoTusDatos ficha={titular} onGuardada={guardada} onSi={siguiente} cambiado={cambiados.has('datos')} />
       </>
     )
@@ -180,7 +245,7 @@ export default function RevisarFichaPage() {
     const revision: Revision = { sinLapiz: true, tituloOculto: true, editando, alTerminar: () => { setCambiandoCuota(false); setVueltaCuota((v) => v + 1) } }
     contenido = (
       <>
-        <Encabezado antetitulo={antetitulo} titulo={TITULO.cuota} texto={editando ? 'Cambia lo que no esté bien y guarda.' : 'Cómo pagas tu cuota y, si la tienes domiciliada, en qué cuenta.'} />
+        <Encabezado refTitulo={tituloPaso} antetitulo={antetitulo} titulo={TITULO.cuota} texto={editando ? 'Cambia lo que no esté bien y guarda.' : 'Cómo pagas tu cuota y, si la tienes domiciliada, en qué cuenta.'} />
         {faltan.length > 0 && <Alert severity="warning">Para domiciliar la cuota nos falta: {enUnaFrase(faltan)}.</Alert>}
         <CuotaYPago key={`cuota-${vueltaCuota}-${editando}`} ficha={titular} onGuardada={guardada} revision={revision} />
         {!editando && <Pregunta onSi={siguiente} onCambiar={() => setCambiandoCuota(true)} cambiado={cambiados.has('cuota')} />}
@@ -191,6 +256,7 @@ export default function RevisarFichaPage() {
     contenido = (
       <>
         <Encabezado
+          refTitulo={tituloPaso}
           antetitulo={antetitulo}
           titulo={TITULO.familia}
           texto={`${uno ? 'Está en tu cuenta porque en el censo figuraba' : 'Están en tu cuenta porque en el censo figuraban'} con tu correo. Dinos qué ${uno ? 'es' : 'es cada uno'} para ti y echa un vistazo a sus datos.`}
@@ -201,11 +267,11 @@ export default function RevisarFichaPage() {
   } else {
     const revisados = [
       ...pasos.filter((p) => p === 'datos' || p === 'cuota').map((p) => ({ clave: p as string, etiqueta: TITULO[p] })),
-      ...familia.map((f) => ({ clave: `ficha-${f.id}`, etiqueta: `${f.nombre}${f.numeroHermano ? ` · n.º ${f.numeroHermano}` : ''}` })),
+      ...familia.map((f) => ({ clave: `ficha-${f.id}`, etiqueta: `${f.nombre}${f.numeroHermano ? ` · n.º ${f.numeroHermano}` : ''}` })),
     ]
     contenido = (
       <>
-        <Encabezado antetitulo={antetitulo} titulo="Repaso final" texto="Esto es lo que has revisado. Si todo está bien, confirma y entrarás en tu área." />
+        <Encabezado refTitulo={tituloPaso} antetitulo={antetitulo} titulo="Repaso final" texto="Esto es lo que has revisado. Si todo está bien, confirma y entrarás en tu área." />
         <TarjetaCristal component="ul" aria-label="Lo que has revisado" sx={{ m: 0, p: 0, listStyle: 'none' }}>
           {revisados.map(({ clave, etiqueta }, i) => {
             const cambiado = cambiados.has(clave)
@@ -279,7 +345,7 @@ export default function RevisarFichaPage() {
                 ))}
               </Box>
               {titular?.numeroHermano && (
-                <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 3 }}>Hermano n.º {titular.numeroHermano}</Typography>
+                <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 3 }}>Hermano n.º{' '}{titular.numeroHermano}</Typography>
               )}
             </Box>
           )}
@@ -298,11 +364,12 @@ export default function RevisarFichaPage() {
   )
 }
 
-function Encabezado({ antetitulo, titulo, texto }: { antetitulo: string; titulo: string; texto: string }) {
+/** `tabIndex={-1}`: recibe el foco al llegar al paso, sin entrar en el orden del tabulador. */
+function Encabezado({ antetitulo, titulo, texto, refTitulo }: { antetitulo: string; titulo: string; texto: string; refTitulo: Ref<HTMLHeadingElement> }) {
   return (
     <Box>
       <Typography sx={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'text.secondary' }}>{antetitulo}</Typography>
-      <Typography variant="h3" component="h1" sx={{ fontSize: { xs: 26, md: 32 }, mt: 0.5, textWrap: 'balance' }}>{titulo}</Typography>
+      <Typography ref={refTitulo} tabIndex={-1} variant="h3" component="h1" sx={{ fontSize: { xs: 26, md: 32 }, mt: 0.5, textWrap: 'balance', '&:focus': { outline: 'none' } }}>{titulo}</Typography>
       <Typography sx={{ color: 'text.secondary', mt: 1, maxWidth: '62ch' }}>{texto}</Typography>
     </Box>
   )
