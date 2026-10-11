@@ -74,7 +74,7 @@ const pagoSchema = type({
  */
 const menorSchema = type({
     nombre: textoRequerido,
-    "apellidos?": "string",  // Sin ellos se heredan los del adulto: ver auth.service
+    "apellidos?": textoOpcional,  // Sin ellos se heredan los del adulto: ver auth.service
     "primerApellido?": textoRequerido,
     "segundoApellido?": textoOpcional,
     "dni?": dni,             // Si viene, pasa por la validación de la letra
