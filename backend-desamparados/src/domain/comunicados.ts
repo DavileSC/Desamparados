@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { deArticulo, type Articulo } from './articulos.js';
+import { esDireccionDeNadie } from './cuenta-de-custodia.js';
 
 /**
  * El boletín y los avisos masivos: a quién van, cómo se pasa el HTML del
@@ -60,7 +61,7 @@ export interface Destinatario {
 }
 
 /** Las direcciones que no son de nadie: la cuenta de custodia y las de la demo. */
-const esDireccionReal = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && !email.endsWith('.invalido');
+const esDireccionReal = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && !esDireccionDeNadie(email);
 
 /**
  * Un correo por dirección: una familia con tres fichas recibe uno. El de la

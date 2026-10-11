@@ -47,6 +47,8 @@ export interface PersonaEncontrada {
   situacion: Situacion
   /** Si ya está apuntado a la salida: con la solicitud pendiente, o ya recogida. */
   apuntado: { puesto: string; recogida: boolean } | null
+  /** Sin cuenta, en el censo importado: no puede ser tutora de un menor. */
+  enCensoImportado?: boolean
 }
 
 export interface Esperado {

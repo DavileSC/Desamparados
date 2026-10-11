@@ -29,6 +29,7 @@ import { enmascararEmail } from '../../utils/log-privacidad.js';
 import { conceptoDeSalida, requisitosParaRecoger } from '../../domain/salidas.js';
 import { cuotaDe } from './plazo.service.js';
 import type { SalidaConActo } from './salidas.service.js';
+import { esCuentaDeCustodia } from '../../domain/cuenta-de-custodia.js';
 
 
 /**
@@ -188,13 +189,17 @@ export class MesaService {
       select: {
         id: true, nombre: true, apellidos: true, fechaNacimiento: true, numeroHermano: true,
         activo: true, fechaBaja: true,
+        // Solo para decir si cuelga de la cuenta de custodia: el correo no sale.
+        user: { select: { email: true } },
         papeletas: { where: { year, salidaId }, select: { puesto: true } },
         solicitudes: { where: { year, salidaId, estado: EstadoSolicitud.PENDIENTE }, select: { puesto: true } },
       },
     });
-    return personas.map(({ activo, fechaBaja, papeletas, solicitudes, ...p }) => ({
+    return personas.map(({ activo, fechaBaja, papeletas, solicitudes, user, ...p }) => ({
       ...p,
       situacion: situacionDe({ activo, fechaBaja }),
+      /** Sin cuenta, en el censo importado: no puede ser tutora de nadie. */
+      enCensoImportado: esCuentaDeCustodia(user),
       apuntado: papeletas[0] ? { puesto: papeletas[0].puesto, recogida: true }
         : solicitudes[0] ? { puesto: solicitudes[0].puesto, recogida: false } : null,
     }));
@@ -266,8 +271,10 @@ export class MesaService {
       recuentoDeCingulos(),
     ]);
 
-    // La familia (las fichas de la misma cuenta) suele pagar junta.
-    const familia = await db.hermano.findMany({
+    // La familia (las fichas de la misma cuenta) suele pagar junta. Las de la
+    // cuenta de custodia no son familia: solo comparten no tener cuenta.
+    const enCustodia = esCuentaDeCustodia(await db.user.findUnique({ where: { id: h.userId }, select: { email: true } }));
+    const familia = enCustodia ? [] : await db.hermano.findMany({
       where: { userId: h.userId, id: { not: h.id }, fechaBaja: null },
       orderBy: [{ esTitular: 'desc' }, { fechaNacimiento: 'asc' }],
       select: { id: true, nombre: true, apellidos: true },
@@ -406,6 +413,12 @@ export class MesaService {
         select: { userId: true, telefono: true, email: true, user: { select: { email: true, telefono: true } } },
       });
       if (!tutor) throw new NotFoundError('No se encontró al tutor en el censo.');
+      // El menor colgaría de la cuenta de custodia, que no es de nadie: ni
+      // tendría quien entrara por él ni familia, y heredaba su contacto de
+      // relleno (el teléfono «000000000»).
+      if (esCuentaDeCustodia(tutor.user)) {
+        throw new HttpError('Esa ficha está en el censo importado y no tiene cuenta: no puede ser tutora. Busca a otro tutor o dalo de alta como nuevo.', 400);
+      }
       cuenta = { id: tutor.userId };
       contacto = { telefono: dto.telefono?.trim() || tutor.telefono || tutor.user.telefono, email: email || tutor.email || tutor.user.email };
     } else {

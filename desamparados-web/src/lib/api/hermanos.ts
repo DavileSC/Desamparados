@@ -64,7 +64,8 @@ export interface AdminBrother {
   fechaMedalla: string | null
   /** Cómo se le nombra en las cartas y la papeleta («Rvdo. P.»…); sin él, según el sexo. */
   tratamiento: string | null
-  user?: { email: string | null; telefono: string | null }
+  /** Null si cuelga de la cuenta de custodia del censo importado: sus datos son relleno. */
+  user?: { email: string | null; telefono: string | null } | null
 }
 
 export interface PendingRequest {
@@ -195,7 +196,10 @@ export interface FichaDeLaCuenta {
 /** La ficha tal como la lee Secretaría: con la cuenta, lo pagado, las papeletas y lo que tiene del ropero. */
 export interface FichaDelCenso extends AdminBrother {
   parentesco: Parentesco | null
-  user?: { email: string | null; telefono: string | null; hermanos?: FichaDeLaCuenta[] }
+  /** Null en una ficha del censo importado: la cuenta de custodia no es de nadie y sus demás fichas no son familia. */
+  user?: { email: string | null; telefono: string | null; hermanos?: FichaDeLaCuenta[] } | null
+  /** Si cuelga de la cuenta de custodia del censo importado, a la espera de saber de quién es. */
+  enCensoImportado?: boolean
   recibos?: { id: number; year: number; concepto: string; estado: ReceiptStatus; fechaPago: string | null }[]
   papeletas?: { id: number; year: number; puesto: string; tramo: string | null }[]
   prendas?: { id: number; numero: string; tipo: Prenda['tipo']; talla: string | null }[]

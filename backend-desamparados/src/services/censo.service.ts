@@ -14,6 +14,7 @@ import { UpdateAdminHermanoDto, type MotivoBaja } from '../dtos/hermano.dto';
 import { encrypt } from '../utils/bcrypt.handle';
 import { comprobarBajaNoFutura, comprobarFechasHermano, diaDeHoy, instanteDeDia } from '../domain/fechas-hermano';
 import { esCuentaAnonimizada } from '../domain/cuenta-anonimizada';
+import { esCuentaDeCustodia, sinCuentaDeCustodia } from '../domain/cuenta-de-custodia.js';
 import { diferenciasFicha, valorParaAuditoria } from '../domain/cambios-ficha';
 import { apellidosTrasCambio } from '../domain/apellidos.js';
 import { condicionBusqueda } from '../domain/busqueda-texto.js';
@@ -77,7 +78,7 @@ export class CensoService {
       db.hermano.count({ where })
     ]);
 
-    return respuestaPaginada(data, total, paginacion);
+    return respuestaPaginada(data.map(sinCuentaDeCustodia), total, paginacion);
   }
 
   // Ver todos los hermanos
@@ -99,18 +100,20 @@ export class CensoService {
         // Sin datos bancarios, como el buscador (ver searchHermanos).
         select: {
           ...HERMANO_SAFE_SELECT,
-          user: { select: { nombre: true, apellidos: true, telefono: true } }
+          // El correo, solo para reconocer la cuenta de custodia: no sale.
+          user: { select: { nombre: true, apellidos: true, telefono: true, email: true } }
         }
       }),
       db.hermano.count({ where: { activo: true } })
     ]);
 
-    return respuestaPaginada(data, total, paginacion);
+    const fichas = data.map(({ user: { email, ...cuenta }, ...h }) => ({ ...h, user: esCuentaDeCustodia({ email }) ? null : cuenta }));
+    return respuestaPaginada(fichas, total, paginacion);
   }
 
   // Ver un hermano por ID
   static async getHermanoById(id: number) {
-    return await db.hermano.findUnique({
+    const ficha = await db.hermano.findUnique({
       where: { id },
       select: {
         ...HERMANO_SAFE_SELECT,
@@ -154,6 +157,12 @@ export class CensoService {
         }
       }
     });
+    if (!ficha) return null;
+    // Sin la cuenta de custodia: su teléfono y su correo son relleno (la
+    // pantalla caía en ellos si la ficha no traía los suyos) y sus otras
+    // fichas no son familia. `enCensoImportado` le dice al CMS por qué no hay cuenta.
+    const enCensoImportado = esCuentaDeCustodia(ficha.user);
+    return { ...ficha, user: enCensoImportado ? null : ficha.user, enCensoImportado };
   }
 
   /**

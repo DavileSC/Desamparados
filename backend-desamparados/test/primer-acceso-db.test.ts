@@ -3,7 +3,8 @@
 // abre la sesión de una vez, y no vale dos veces; confirmar exige los
 // obligatorios de cada ficha y el parentesco de las fichas a cargo, y quita la
 // marca para siempre; Secretaría ve en qué está cada invitación (vale,
-// caducó, la pisó una recuperación o ya se estrenó); «no es de mi familia» devuelve la ficha a la custodia con un aviso para Secretaría. Y
+// caducó, la pisó una recuperación o ya se estrenó), y un correo que no sale
+// no pisa el enlace que ya llegó; «no es de mi familia» devuelve la ficha a la custodia con un aviso para Secretaría. Y
 // las rutas: el listado y las invitaciones son de quien lleva el censo.
 
 import assert from 'node:assert/strict';
@@ -237,6 +238,69 @@ test('Secretaría ve si el enlace de la invitación vale, caducó o lo sustituy�
     await invitarYEsperar(e);
     assert.equal((await vistaDeSecretaria(e)).invitacion?.estado, 'vigente');
   } finally {
+    await e.recoger();
+  }
+});
+
+// El enlace nuevo se guardaba antes de mandar el correo: un reenvío que no
+// salía dejaba sin valor el enlace anterior, que sí había llegado, y el CMS
+// decía «vale hasta…» de un correo que nadie recibió.
+test('un reenvío que no sale deja la invitación anterior como estaba, y su enlace sigue valiendo', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  const campos = { resetPasswordToken: true, resetPasswordExpires: true, invitacionCaducaEn: true, invitadoEn: true } as const;
+  const falla = () => ponerTransporte({ sendMail: async () => { throw new Error('cupo agotado'); } });
+  const funciona = () => ponerTransporte({ sendMail: async (correo) => { enviados.push(correo); } });
+  try {
+    // La primera, si no sale, no deja ni token ni invitación.
+    falla();
+    await pedir('/api/hermanos/admin/primer-acceso/invitar', { metodo: 'POST', cookie: e.sesionStaff, cuerpo: { ids: [e.cuenta.id] } });
+    await PrimerAccesoService.esperarCola();
+    assert.deepEqual(await db.user.findUniqueOrThrow({ where: { id: e.cuenta.id }, select: campos }),
+      { resetPasswordToken: null, resetPasswordExpires: null, invitacionCaducaEn: null, invitadoEn: null });
+    assert.deepEqual(await vistaDeSecretaria(e), { invitacion: { estado: 'sin-invitar', caducaEn: null }, filtro: 'sin-invitar' });
+
+    funciona();
+    const token = await invitarYEsperar(e);
+    const antes = await db.user.findUniqueOrThrow({ where: { id: e.cuenta.id }, select: campos });
+    const vistaAntes = await vistaDeSecretaria(e);
+    assert.equal(vistaAntes.invitacion?.estado, 'vigente');
+
+    falla();
+    const reenvio = await pedir('/api/hermanos/admin/primer-acceso/invitar', { metodo: 'POST', cookie: e.sesionStaff, cuerpo: { ids: [e.cuenta.id] } });
+    assert.equal(reenvio.status, 202);
+    await PrimerAccesoService.esperarCola();
+    assert.deepEqual(await db.user.findUniqueOrThrow({ where: { id: e.cuenta.id }, select: campos }), antes);
+    assert.deepEqual(await vistaDeSecretaria(e), vistaAntes);
+    assert.equal((await pedir('/api/auth/primer-acceso/datos', { metodo: 'POST', cuerpo: { token } })).status, 200, 'el enlace que llegó sigue valiendo');
+
+    // Y uno que sale deja la nueva, vigente con su fecha, y el enlace de antes ya no vale.
+    funciona();
+    const nuevo = await invitarYEsperar(e);
+    assert.notEqual(nuevo, token);
+    const vista = await vistaDeSecretaria(e);
+    assert.equal(vista.invitacion?.estado, 'vigente');
+    assert.ok(Date.parse(vista.invitacion!.caducaEn!) >= Date.parse(vistaAntes.invitacion!.caducaEn!));
+    assert.equal((await pedir('/api/auth/primer-acceso/datos', { metodo: 'POST', cuerpo: { token } })).status, 400);
+    assert.equal((await pedir('/api/auth/primer-acceso/datos', { metodo: 'POST', cuerpo: { token: nuevo } })).status, 200);
+  } finally {
+    funciona();
+    await e.recoger();
+  }
+});
+
+test('una recuperación cuyo correo no sale tampoco pisa la invitación', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    const token = await invitarYEsperar(e);
+    const vista = await vistaDeSecretaria(e);
+    ponerTransporte({ sendMail: async () => { throw new Error('cupo agotado'); } });
+    await AuthService.prepararRecuperacion(e.cuenta.email);
+    assert.deepEqual(await vistaDeSecretaria(e), vista);
+    assert.equal((await pedir('/api/auth/primer-acceso/datos', { metodo: 'POST', cuerpo: { token } })).status, 200);
+  } finally {
+    ponerTransporte({ sendMail: async (correo) => { enviados.push(correo); } });
     await e.recoger();
   }
 });

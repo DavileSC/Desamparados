@@ -20,6 +20,8 @@ interface Props {
   autoFocus?: boolean
   /** El id del campo, para llevarle el foco con el teclado (F2). */
   id?: string
+  /** Sin las fichas del censo importado: buscando tutor, no tienen cuenta de la que colgar a nadie. */
+  sinCensoImportado?: boolean
 }
 
 const ESPERA_MS = 250
@@ -31,7 +33,7 @@ const ESPERA_MS = 250
  * Enter elige el primero, las flechas se mueven por la lista.
  */
 export default function BuscadorPersonas({
-  etiqueta = 'Buscar en el censo', onElegir, zona = 'todas', salida, conEsperados, autoFocus, id,
+  etiqueta = 'Buscar en el censo', onElegir, zona = 'todas', salida, conEsperados, autoFocus, id, sinCensoImportado,
 }: Props) {
   // Quien no lleva el censo solo encuentra por DNI, teléfono o correo con el
   // dato entero (un trozo servía para sacar los de cualquiera): se le avisa,
@@ -67,12 +69,12 @@ export default function BuscadorPersonas({
     let cancelado = false
     const espera = window.setTimeout(() => {
       buscarPersonas(q, salida, zona)
-        .then((r) => { if (!cancelado) { setResultados(r); setMarcado(0); setError(false) } })
+        .then((r) => { if (!cancelado) { setResultados(sinCensoImportado ? r.filter((p) => !p.enCensoImportado) : r); setMarcado(0); setError(false) } })
         .catch(() => { if (!cancelado) setError(true) })
         .finally(() => { if (!cancelado) setContestada(pregunta) })
     }, ESPERA_MS)
     return () => { cancelado = true; window.clearTimeout(espera) }
-  }, [q, corta, pregunta, zona, salida])
+  }, [q, corta, pregunta, zona, salida, sinCensoImportado])
 
   const visibles: { id: number; nombre: string; apellidos: string; fechaNacimiento: string }[] = resultados ?? (conEsperados ? esperados : [])
   const elegir = (p: { id: number; nombre: string; apellidos: string }) => { onElegir(p); setTexto('') }

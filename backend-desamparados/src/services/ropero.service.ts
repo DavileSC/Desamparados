@@ -1,6 +1,7 @@
 import db from '../config/db.js';
 import { EstadoPrenda, type TipoPrenda } from '@prisma/client';
 import { palabrasDeBusqueda } from '../domain/busqueda-texto.js';
+import { esCuentaDeCustodia } from '../domain/cuenta-de-custodia.js';
 
 export class RoperoService {
   /**
@@ -37,14 +38,15 @@ export class RoperoService {
       take: 8,
       select: {
         id: true, numeroHermano: true, nombre: true, apellidos: true, fechaNacimiento: true, puesto: true, esTitular: true,
-        user: { select: { nombre: true, apellidos: true } },
+        user: { select: { nombre: true, apellidos: true, email: true } },
         prendas: { where: { estado: EstadoPrenda.PRESTADA }, select: { tipo: true, numero: true, talla: true }, orderBy: { numero: 'asc' } },
       },
     });
     return hermanos.map(({ esTitular, user, ...h }) => ({
       ...h,
       // Quien lleva la cuenta, si no es la suya: el padre, una tía, el padrino…
-      gestor: esTitular ? null : `${user.nombre} ${user.apellidos}`.trim(),
+      // La de custodia no la lleva nadie: «Censo importado» no es una persona.
+      gestor: esTitular || esCuentaDeCustodia(user) ? null : `${user.nombre} ${user.apellidos}`.trim(),
     }));
   }
 }

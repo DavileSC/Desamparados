@@ -935,9 +935,14 @@ test('por HTTP: Tesorería y Albacería en la mesa solo ven y corrigen fichas en
     assert.ok((await buscar(albaceria.id, Role.ALBACERIA, `Visible ${activo.apellidos}`)).includes(activo.id));
     assert.ok((await buscar(albaceria.id, Role.ALBACERIA, `Debe ${conRopa.apellidos}`)).includes(conRopa.id), 'la baja con ropa sin devolver sale, para recibirla');
     assert.ok(!(await buscar(albaceria.id, Role.ALBACERIA, `Oculta ${baja.apellidos}`)).includes(baja.id), 'la baja sin nada pendiente, no');
-    // Por DNI o teléfono, solo el dato entero.
-    assert.deepEqual(await buscar(tesoreria.id, Role.TESORERIA, dni.slice(0, 5)), []);
-    assert.deepEqual(await buscar(tesoreria.id, Role.TESORERIA, '5779'), []);
+    // Por DNI o teléfono, solo el dato entero. Un trozo hecho solo de cifras la
+    // mesa lo lee además como número de hermano (y debe: es como se busca en
+    // ventanilla), así que «00019», el principio de un DNI al azar, encontraba
+    // al n.º 19 de la base una vez de cada tantas. El trozo del DNI lleva la
+    // letra para que no pueda ser un número; el del teléfono no puede
+    // llevarla, y se mira solo que no saque a esta ficha (que no tiene número).
+    assert.deepEqual(await buscar(tesoreria.id, Role.TESORERIA, dni.slice(-5)), []);
+    assert.ok(!(await buscar(tesoreria.id, Role.TESORERIA, '5779')).includes(activo.id));
     assert.deepEqual(await buscar(tesoreria.id, Role.TESORERIA, dni.toLowerCase()), [activo.id]);
     assert.deepEqual(await buscar(tesoreria.id, Role.TESORERIA, '623577927'), [activo.id]);
 

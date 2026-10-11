@@ -17,6 +17,7 @@ import { comprobarBajaNoFutura, instanteDeDia } from '../domain/fechas-hermano.j
 import { EmailService } from './email.service.js';
 import { siModulo } from './modulos.service.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from './auditoria.service.js';
+import { esCuentaDeCustodia } from '../domain/cuenta-de-custodia.js';
 
 const NOMBRE_SUFRAGIO: Record<TipoSufragio, string> = {
   MISA_FUNERAL: 'Misa funeral',
@@ -84,6 +85,10 @@ export class DifuntosService {
 
   /** A quién escribir en nombre de la familia, si hay a quién. */
   private static async familia(difunto: { id: number; userId: number; esTitular: boolean }) {
+    // En la cuenta de custodia no hay familia: las otras fichas son de
+    // desconocidos y su correo es relleno.
+    const cuenta = await db.user.findUnique({ where: { id: difunto.userId }, select: { email: true } });
+    if (esCuentaDeCustodia(cuenta)) return null;
     const otras = await db.hermano.findMany({
       where: { userId: difunto.userId, id: { not: difunto.id }, fechaBaja: null, email: { not: null } },
       orderBy: [{ esTitular: 'desc' }, { fechaNacimiento: 'asc' }],
@@ -93,10 +98,7 @@ export class DifuntosService {
     if (conCorreo) return { nombre: nombreDe(conCorreo), email: conCorreo.email!.trim() };
     if (difunto.esTitular) return null;
     // Un menor o alguien a cargo: la cuenta es de quien lo apuntó.
-    const [titular, cuenta] = await Promise.all([
-      db.hermano.findFirst({ where: { userId: difunto.userId, esTitular: true }, select: { nombre: true, apellidos: true, fechaBaja: true, motivoBaja: true } }),
-      db.user.findUnique({ where: { id: difunto.userId }, select: { email: true } }),
-    ]);
+    const titular = await db.hermano.findFirst({ where: { userId: difunto.userId, esTitular: true }, select: { nombre: true, apellidos: true, fechaBaja: true, motivoBaja: true } });
     if (!cuenta?.email || titular?.motivoBaja === MotivoBaja.FALLECIMIENTO) return null;
     return { nombre: titular ? nombreDe(titular) : null, email: cuenta.email };
   }

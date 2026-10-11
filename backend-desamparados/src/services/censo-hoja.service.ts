@@ -31,15 +31,10 @@ import {
   type ClaveColumna, type FichaImportada,
 } from '../domain/censo-hoja.js';
 import { textoDeFichero } from '../middleware/upload.middleware.js';
+import { CUENTA_CENSO_IMPORTADO } from '../domain/cuenta-de-custodia.js';
 
-/** La cuenta de custodia de las fichas importadas sin cuenta propia. */
-export const CUENTA_CENSO_IMPORTADO = {
-  email: 'censo-importado@cuentas.invalido',
-  dni: 'CENSO-IMPORTADO',
-  nombre: 'Censo',
-  apellidos: 'importado',
-  telefono: '000000000',
-};
+/** La cuenta de custodia de las fichas importadas sin cuenta propia (ver domain/cuenta-de-custodia.ts). */
+export { CUENTA_CENSO_IMPORTADO };
 
 /** Un tope razonable: el censo más grande de una corporación cabe de sobra. */
 const MAX_FILAS = 5000;
