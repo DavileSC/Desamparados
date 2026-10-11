@@ -163,6 +163,40 @@ test('confirmar pide los obligatorios y el parentesco de las fichas a cargo, y q
   }
 });
 
+test('Secretaría ve cuándo caduca cada invitación, también las ya caducadas', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    const listar = async (estado?: string) => {
+      const res = await pedir(`/api/hermanos/admin/primer-acceso?${estado ? `estado=${estado}&` : ''}q=${encodeURIComponent(e.cuenta.email)}`, { cookie: e.sesionStaff });
+      assert.equal(res.status, 200);
+      return (await res.json() as { data: { id: number; invitacionCaducaEn: string | null }[] }).data;
+    };
+    // Sin invitar: no hay nada que caduque.
+    assert.deepEqual((await listar()).map((c) => [c.id, c.invitacionCaducaEn]), [[e.cuenta.id, null]]);
+
+    const caducada = new Date(Date.now() - 3 * 24 * 3600_000);
+    await db.user.update({
+      where: { id: e.cuenta.id },
+      data: { invitadoEn: new Date(Date.now() - 20 * 24 * 3600_000), resetPasswordToken: 'x'.repeat(64), resetPasswordExpires: caducada },
+    });
+    // Caducada, sigue entre los invitados, con la fecha para decir «caducó el…».
+    const invitados = await listar('invitado');
+    assert.deepEqual(invitados.map((c) => [c.id, c.invitacionCaducaEn]), [[e.cuenta.id, caducada.toISOString()]]);
+
+    // Estrenada (el enlace ya se gastó) o confirmada: ya no hay invitación viva.
+    await db.user.update({ where: { id: e.cuenta.id }, data: { resetPasswordToken: null, resetPasswordExpires: null } });
+    assert.equal((await listar('invitado'))[0]?.invitacionCaducaEn, null);
+    await db.user.update({
+      where: { id: e.cuenta.id },
+      data: { primerAccesoPendiente: false, fichaConfirmadaEn: new Date(), resetPasswordToken: 'y'.repeat(64), resetPasswordExpires: new Date(Date.now() + 3600_000) },
+    });
+    assert.equal((await listar('confirmado'))[0]?.invitacionCaducaEn, null);
+  } finally {
+    await e.recoger();
+  }
+});
+
 test('«no es de mi familia» devuelve la ficha a la custodia y avisa a Secretaría', async (t) => {
   if (!dbDisponible) { t.skip(SIN_DB); return; }
   const e = await escenario();

@@ -107,6 +107,7 @@ export class PrimerAccesoService {
         where,
         select: {
           id: true, nombre: true, apellidos: true, email: true, invitadoEn: true, fichaConfirmadaEn: true,
+          primerAccesoPendiente: true, resetPasswordToken: true, resetPasswordExpires: true,
           hermanos: { where: { activo: true }, select: { esTitular: true, numeroHermano: true } },
         },
         orderBy: [{ apellidos: 'asc' }, { nombre: 'asc' }, { id: 'asc' }],
@@ -127,6 +128,14 @@ export class PrimerAccesoService {
       aCargo: c.hermanos.filter((h) => !h.esTitular).length,
       invitadoEn: c.invitadoEn,
       fichaConfirmadaEn: c.fichaConfirmadaEn,
+      // Cuándo deja de valer el enlace que tiene en el correo, aunque ya haya
+      // pasado: sin la fecha, una invitación caducada parecía en camino y
+      // nadie la reenviaba. Null si no hay enlace sin gastar (no se invitó,
+      // ya lo estrenó) o ya confirmó. El enlace es el mismo campo que el de
+      // «¿Has olvidado tu contraseña?»: si lo pide, manda la fecha de ese.
+      invitacionCaducaEn: c.primerAccesoPendiente && c.invitadoEn && c.resetPasswordToken && c.resetPasswordExpires
+        ? c.resetPasswordExpires.toISOString()
+        : null,
       enCola: cola.has(c.id),
     }));
     return { ...respuestaPaginada(data, total, paginacion), cifras: { sinInvitar, invitados, confirmados, enCola: cola.size } };
