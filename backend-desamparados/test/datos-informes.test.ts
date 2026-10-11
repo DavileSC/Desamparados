@@ -18,6 +18,7 @@ import { puedeEscribir } from '../src/services/informe-anual.service.js';
 import { informeAnual, informeDeArea } from '../src/services/informes/informes.js';
 import { entradilla, enTexto } from '../src/domain/entradillas.js';
 import { SIN_DB } from './fixtures/sin-db.js';
+import { HOY, crudos } from './fixtures/crudos-informes.js';
 
 /** Un año sin datos reales: la prueba escribe su Informe anual y lo borra al acabar. */
 const ANIO_DE_PRUEBA = 2001;
@@ -55,9 +56,6 @@ const pedir = (ruta: string, cookie: string, method = 'GET', cuerpo?: unknown) =
     headers: { 'Content-Type': 'application/json', Cookie: cookie },
     ...(cuerpo !== undefined ? { body: JSON.stringify(cuerpo) } : {}),
   });
-
-// Un día cualquiera de 2026, con el año en marcha.
-const HOY = new Date('2026-09-29T12:00:00Z');
 
 describe('los años', () => {
   test('el año va del 1 de enero al 31 de diciembre, en doce meses', () => {
@@ -99,57 +97,6 @@ describe('los años', () => {
     assert.deepEqual(etiquetasDeMeses(['2026-01', '2026-02']), ['ene', 'feb']);
   });
 });
-
-/** Unas cifras de conjunto inventadas, para probar las palabras sin base de datos. */
-function crudos(parcial: {
-  papeletas?: number;
-  /** La segunda salida (la que siempre cae en «otras salidas», nunca es la principal): para probar que concuerda con su propio artículo. */
-  otraSalida?: { nombre?: string; articulo?: Articulo; papeletas?: number };
-} = {}): DatosCrudos {
-  const meses = periodoDe(2025, HOY).meses;
-  return {
-    hermanos: {
-      activos: 228, activosAlEmpezar: 133, altas: 99, bajas: 4, anterior: { altas: 59, bajas: 3 },
-      bajasPorMotivo: [{ motivo: 'IMPAGO', total: 3 }, { motivo: null, total: 1 }],
-      porMes: meses.map((mes) => ({ mes, altas: 8, bajas: 0 })),
-      cierres: [{ etiqueta: '2021', activos: 12 }, { etiqueta: '2025', activos: 228 }],
-      edadMedia: 42.2, menores: 22, porEdad: [{ tramo: 'Menos de 18', total: 22 }],
-    },
-    dinero: {
-      ingresos: 13806, gastos: 9492, anterior: { ingresos: 14186, gastos: 10736 },
-      porMes: meses.map((mes) => ({ mes, ingresos: 1000, gastos: 700 })),
-      porCategoria: [{ categoria: 'Cuotas de hermanos', tipo: 'INGRESO', importe: 5490 }, { categoria: 'Caridad', tipo: 'GASTO', importe: 2764 }],
-      porCobrar: [{ estado: 'PENDIENTE', total: 10, importe: 350 }, { estado: 'DEVUELTO', total: 2, importe: 70 }],
-    },
-    procesion: {
-      anio: 2026,
-      porSalida: [
-        {
-          slug: 'sabado-de-pasion', nombre: 'Sábado de Pasión', articulo: 'el', conRopa: true,
-          papeletas: parcial.papeletas ?? 183, papeletasAnioAnterior: 131, porPuesto: [{ etiqueta: 'Nazareno de cirio', total: 90 }],
-          serie: [{ anio: 2025, total: 131 }, { anio: 2026, total: parcial.papeletas ?? 183 }],
-        },
-        {
-          slug: 'rosario-vespertino', nombre: parcial.otraSalida?.nombre ?? 'Rosario vespertino', articulo: parcial.otraSalida?.articulo ?? 'el',
-          conRopa: false, papeletas: parcial.otraSalida?.papeletas ?? 0, papeletasAnioAnterior: 0, porPuesto: [],
-        },
-      ],
-      porCobrar: [],
-    },
-    inventario: {
-      enseres: [{ nombre: 'Candelería del paso', optimo: 24, bueno: 6, reparar: 4, total: 34 }],
-      prendas: [{ tipo: 'TUNICA', estado: 'DISPONIBLE', total: 72 }, { tipo: 'TUNICA', estado: 'TALLER', total: 3 }],
-    },
-    web: {
-      noticias: 8, publicaciones: 3, cambios: 97, paginasTocadas: 7, anterior: { noticias: 0, publicaciones: 3 },
-      noticiasPorMes: meses.map((mes) => ({ mes, total: 1 })), publicacionesPorMes: [], cambiosPorMes: [], boletin: 0, activos: 276,
-    },
-    agenda: {
-      actos: [{ id: 1, title: 'Solemne triduo', startDate: '2025-11-05T18:00:00.000Z', type: 'CULTO', location: 'Parroquia' }],
-      anterior: 12,
-    },
-  };
-}
 
 describe('las cifras, en palabras', () => {
   const p = periodoDe(2025, HOY);
