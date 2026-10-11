@@ -81,23 +81,9 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
-      # Los datos de la corporación no están en git (instalacion/, ignorada): la
-      # web los lleva compilados dentro, así que aquí salen de la variable
-      # DATOS_ENTIDAD del repositorio (Settings → Secrets and variables →
-      # Actions → Variables), con el contenido entero del fichero. Hasta que la
-      # web los lea al arrancar, la imagen de la web es de una corporación.
-      - name: Datos de la corporación
-        if: matrix.imagen == 'web'
-        env:
-          DATOS_ENTIDAD: ${{ vars.DATOS_ENTIDAD }}
-        run: |
-          if [ -z "$DATOS_ENTIDAD" ]; then
-            echo "::error::Falta la variable DATOS_ENTIDAD del repositorio, con el contenido de instalacion/datos-entidad.json."
-            exit 1
-          fi
-          mkdir -p instalacion
-          printf '%s\n' "$DATOS_ENTIDAD" > instalacion/datos-entidad.json
-          node -e "const d = require('./instalacion/datos-entidad.json'); console.log('Corporación:', d.identidad.nombre, '·', d.identidad.dominio)"
+      # Ninguna imagen lleva los datos de la corporación: la API y la web los
+      # leen al arrancar del montaje ./instalacion del servidor. Por eso aquí
+      # no hace falta ningún dato de nadie.
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
@@ -124,22 +110,55 @@ jobs:
       # sitio dejaría la web caída en el servidor. Se prueban los dos sitios:
       # el de detrás del nginx del sistema (el que se usa hoy) y el de
       # producción, que necesita un certificado cualquiera para arrancar.
+      #
+      # Con `nginx` como orden, el entrypoint de la imagen pasa antes por
+      # 40-instalacion.sh, como en el servidor: escribe la web y el sitio de
+      # producción con los datos montados. Aquí, los de la corporación de ejemplo.
       - name: nginx -t
-        env:
-          DATOS_ENTIDAD: ${{ vars.DATOS_ENTIDAD }}
         run: |
           imagen="$REGISTRO-web:$GITHUB_SHA"
+          datos="$PWD/shared/datos-entidad.ejemplo.json:/app/instalacion/datos-entidad.json:ro"
           docker pull --quiet "$imagen"
           echo "Sitio detrás del nginx del sistema:"
-          docker run --rm \
+          docker run --rm -v "$datos" \
             -v "$PWD/docker/nginx/sitio-tras-proxy.conf:/etc/nginx/conf.d/desamparados.conf:ro" \
             "$imagen" nginx -t
           echo "Sitio de producción:"
-          dominio=$(node -p "JSON.parse(process.env.DATOS_ENTIDAD).identidad.dominio")
+          dominio=$(node -p "require('./shared/datos-entidad.ejemplo.json').identidad.dominio")
           mkdir -p "certs/live/$dominio"
           openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=$dominio" \
             -keyout "certs/live/$dominio/privkey.pem" -out "certs/live/$dominio/fullchain.pem" 2>/dev/null
-          docker run --rm -v "$PWD/certs:/etc/letsencrypt:ro" "$imagen" nginx -t
+          docker run --rm -v "$datos" -v "$PWD/certs:/etc/letsencrypt:ro" "$imagen" nginx -t
+
+      # La web arrancada como en el servidor: lo que sirve tiene que llevar los
+      # datos montados y ninguna marca de la plantilla (también comprimido, que
+      # es lo que manda gzip_static), y /instalacion.js no se puede quedar en
+      # la caché del navegador.
+      - name: Prueba de humo
+        run: |
+          imagen="$REGISTRO-web:$GITHUB_SHA"
+          nombre=$(node -p "require('./shared/datos-entidad.ejemplo.json').identidad.nombre")
+          docker run -d --name web-humo -p 127.0.0.1:8099:80 \
+            -v "$PWD/shared/datos-entidad.ejemplo.json:/app/instalacion/datos-entidad.json:ro" \
+            -v "$PWD/docker/nginx/sitio-tras-proxy.conf:/etc/nginx/conf.d/desamparados.conf:ro" \
+            "$imagen" >/dev/null
+          trap 'docker logs web-humo; docker rm -f web-humo >/dev/null' EXIT
+          for _ in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:8099/ && break; sleep 1; done
+          mal=0
+          for ruta in / /instalacion.js /manifest.json /robots.txt; do
+            if ! cuerpo=$(curl -fsS --compressed "http://127.0.0.1:8099$ruta"); then
+              echo "::error::$ruta no responde."; mal=1; continue
+            fi
+            if printf '%s' "$cuerpo" | grep -q '{{'; then echo "::error::$ruta lleva marcas sin rellenar."; mal=1; fi
+            case "$ruta" in
+              /robots.txt) esperado="Sitemap: https://$(node -p "require('./shared/datos-entidad.ejemplo.json').identidad.dominio")/sitemap.xml" ;;
+              *) esperado="$nombre" ;;
+            esac
+            printf '%s' "$cuerpo" | grep -qF "$esperado" || { echo "::error::$ruta no lleva «$esperado»."; mal=1; }
+          done
+          curl -fsSI http://127.0.0.1:8099/instalacion.js | grep -qi '^cache-control: no-cache' \
+            || { echo "::error::/instalacion.js sin Cache-Control: no-cache."; mal=1; }
+          exit "$mal"
 
   desplegar:
     name: Desplegar en el VPS
