@@ -1,6 +1,7 @@
 import { createTheme, type Theme } from '@mui/material/styles'
 import { esES } from '@mui/material/locale'
 import theme, { designTokens, ERROR_SOBRE_OSCURO, themeOptions } from './index'
+import { alfa, MARCA } from './marca'
 
 /**
  * Tema del CMS en dos modos, sobre el mismo juego de tokens que la web pública.
@@ -90,9 +91,9 @@ const SUPERFICIES: Record<ModoCms, SuperficiesCms> = {
     inversoPista: 'rgba(255,255,255,0.12)',
     boton2: '#ffffff',
     boton2Borde: '#e3dfda',
-    accionFondo: 'rgba(110,24,34,0.07)',
-    accionTexto: designTokens.colors.burgundy, // #6e1822
-    enlace: designTokens.colors.burgundy,
+    accionFondo: alfa(MARCA.principal, 0.07),
+    accionTexto: MARCA.principal,
+    enlace: MARCA.principal,
     pillUrgente: 'rgba(227,73,72,0.12)',
     pillPendiente: 'rgba(237,161,0,0.16)',
     pillNeutro: '#efeeeb',
@@ -115,9 +116,9 @@ const SUPERFICIES: Record<ModoCms, SuperficiesCms> = {
     inversoPista: designTokens.colors.surfaceVariant, // #e4e2df
     boton2: 'rgba(255,255,255,0.06)',
     boton2Borde: 'transparent',
-    accionFondo: 'rgba(160,61,68,0.22)',
-    accionTexto: designTokens.colors.secondaryFixedDim, // #ffb3b4
-    enlace: designTokens.colors.secondaryFixedDim,
+    accionFondo: alfa(MARCA.principalMedio, 0.22),
+    accionTexto: MARCA.principalPalido,
+    enlace: MARCA.principalPalido,
     pillUrgente: 'rgba(227,73,72,0.18)',
     pillPendiente: 'rgba(237,161,0,0.18)',
     pillNeutro: 'rgba(255,255,255,0.08)',
@@ -141,7 +142,7 @@ const GRAFICAS: Record<ModoCms, GraficasCms> = {
     cero: '#b9b3b0',
     banda: 'rgba(27,28,26,0.045)',
     estados: designTokens.dataviz.estados,
-    acento: designTokens.colors.burgundy,
+    acento: MARCA.principal,
     brillo: '0.22',
   },
   oscuro: {
@@ -154,7 +155,7 @@ const GRAFICAS: Record<ModoCms, GraficasCms> = {
     cero: 'rgba(204,196,201,0.4)',
     banda: 'rgba(255,255,255,0.05)',
     estados: designTokens.dataviz.estados,
-    acento: '#f08a93',
+    acento: MARCA.principalGrafica,
     brillo: '0.75',
   },
 }
@@ -318,7 +319,7 @@ export function crearTemaCms(modo: ModoCms): Theme {
             root: {
               variants: [
                 { props: { variant: 'text', color: 'primary' }, style: { color: s.accionTexto } },
-                { props: { variant: 'outlined', color: 'primary' }, style: { color: s.accionTexto, borderColor: 'rgba(255, 179, 180, 0.5)', '&:hover': { borderColor: s.accionTexto } } },
+                { props: { variant: 'outlined', color: 'primary' }, style: { color: s.accionTexto, borderColor: alfa(MARCA.principalPalido, 0.5), '&:hover': { borderColor: s.accionTexto } } },
               ],
             },
           },
@@ -366,7 +367,7 @@ export const temaCms: Theme = createTheme(
           root: ({ theme: t }: { theme: Theme }) => ({
             variants: [
               { props: { variant: 'text', color: 'primary' }, style: t.applyStyles('dark', { color: ACCION_OSCURA }) },
-              { props: { variant: 'outlined', color: 'primary' }, style: t.applyStyles('dark', { color: ACCION_OSCURA, borderColor: 'rgba(255, 179, 180, 0.5)', '&:hover': { borderColor: ACCION_OSCURA } }) },
+              { props: { variant: 'outlined', color: 'primary' }, style: t.applyStyles('dark', { color: ACCION_OSCURA, borderColor: alfa(MARCA.principalPalido, 0.5), '&:hover': { borderColor: ACCION_OSCURA } }) },
             ],
           }),
         },
