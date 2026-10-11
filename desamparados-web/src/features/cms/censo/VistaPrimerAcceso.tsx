@@ -13,15 +13,29 @@ const REFRESCO_MS = 5000
 const dia = (iso: string) => new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
 
 /**
- * En qué está la cuenta. Una invitación caducada se dice (el enlace vale dos
- * semanas): «Invitado el …» hacía pensar que aún podía entrar con él.
+ * En qué está la cuenta. Lo que importa a Secretaría es si el enlace del
+ * correo aún le sirve: si caducó o lo pisó una recuperación, hay que
+ * reenviarlo, y el botón se destaca (`reenviar`). La situación la calcula el
+ * servidor; aquí solo se dice.
  */
-function situacion(c: CuentaPrimerAcceso, ahora = Date.now()): { texto: string; color: string; caducada: boolean } {
-  if (c.fichaConfirmadaEn) return { texto: `Confirmó el ${dia(c.fichaConfirmadaEn)}`, color: 'success.main', caducada: false }
-  if (c.enCola) return { texto: 'Invitación saliendo', color: 'text.secondary', caducada: false }
-  if (c.invitadoEn && c.invitacionCaducaEn && Date.parse(c.invitacionCaducaEn) < ahora) return { texto: `Caducó el ${dia(c.invitacionCaducaEn)}`, color: 'error.main', caducada: true }
-  if (c.invitadoEn) return { texto: `Invitado el ${dia(c.invitadoEn)}`, color: 'warning.main', caducada: false }
-  return { texto: 'Sin invitar', color: 'text.secondary', caducada: false }
+function situacion(c: CuentaPrimerAcceso): { texto: string; color: string; reenviar: boolean } {
+  if (c.fichaConfirmadaEn || !c.invitacion) {
+    return { texto: c.fichaConfirmadaEn ? `Confirmó el ${dia(c.fichaConfirmadaEn)}` : 'Confirmó', color: 'success.main', reenviar: false }
+  }
+  if (c.enCola) return { texto: 'Invitación saliendo', color: 'text.secondary', reenviar: false }
+  const { estado, caducaEn } = c.invitacion
+  switch (estado) {
+    case 'vigente':
+      return { texto: `Invitado · el enlace vale hasta el ${caducaEn ? dia(caducaEn) : '—'}`, color: 'warning.main', reenviar: false }
+    case 'caducada':
+      return { texto: `El enlace caducó el ${caducaEn ? dia(caducaEn) : '—'}`, color: 'error.main', reenviar: true }
+    case 'sustituida':
+      return { texto: 'El enlace ya no vale: pidió otro para recuperar la contraseña', color: 'error.main', reenviar: true }
+    case 'estrenada':
+      return { texto: 'Ya entró; falta que confirme la ficha', color: 'text.primary', reenviar: false }
+    default:
+      return { texto: 'Sin invitar', color: 'text.secondary', reenviar: false }
+  }
 }
 
 const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`
@@ -133,7 +147,7 @@ export default function VistaPrimerAcceso() {
       ) : (
         <Box component="ul" aria-label="Cuentas del censo importado" sx={{ listStyle: 'none', m: 0, p: 0 }}>
           {filas.map((c) => {
-            const { texto, color, caducada } = situacion(c)
+            const { texto, color, reenviar } = situacion(c)
             return (
               <Box component="li" key={c.id} sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2, py: 1.75, borderTop: 1, borderColor: 'divider' }}>
                 <Box sx={{ minWidth: 0, flex: '1 1 260px' }}>
@@ -149,7 +163,7 @@ export default function VistaPrimerAcceso() {
                   <Typography variant="body2" sx={{ color, fontWeight: 600 }}>{texto}</Typography>
                   {!c.fichaConfirmadaEn && !c.enCola && (
                     <Button
-                      variant={caducada ? 'contained' : 'outlined'}
+                      variant={reenviar ? 'contained' : 'outlined'}
                       size="small"
                       disabled={trabajando}
                       onClick={() => void invitar([c.id])}
