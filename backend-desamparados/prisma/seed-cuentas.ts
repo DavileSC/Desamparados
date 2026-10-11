@@ -25,6 +25,24 @@ export type EntornoSiembra = (typeof ENTORNOS_SIEMBRA)[number];
 export const ADMIN_EMAIL_DESARROLLO = 'admin@cofradia.com';
 export const HERMANO_EMAIL_DESARROLLO = 'hermano@cofradia.com';
 
+/**
+ * Sus DNI, con la letra que les toca (a 00000000 le toca la T y a 11111111 la
+ * H): con una letra mala, guardar la ficha desde «Mi perfil» o el CMS
+ * chocaba con el validador y parecía un fallo de la pantalla.
+ */
+export const DNI_ADMIN_DESARROLLO = '00000000T';
+export const DNI_HERMANO_DESARROLLO = '11111111H';
+
+/**
+ * Las contraseñas de desarrollo cuando no llegan por el entorno. Cumplen la
+ * política real del proyecto (test/seed-cuentas.test.ts lo comprueba): si la
+ * lista de palabras prohibidas crece, la prueba avisa antes de que nadie se
+ * quede sin poder entrar en local. Llevan «Local» para que canten en un
+ * servidor real.
+ */
+export const PASSWORD_DEV_ADMIN = 'Nazareno-Local-2026';
+export const PASSWORD_DEV_USER = 'Siembra-Local-Titular';
+
 export interface PlanCuentas {
   entorno: EntornoSiembra;
   adminEmail: string;

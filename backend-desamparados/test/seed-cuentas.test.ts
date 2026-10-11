@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { planDeCuentas } from '../prisma/seed-cuentas.js';
+import { ArkErrors } from 'arktype';
+import {
+  DNI_ADMIN_DESARROLLO, DNI_HERMANO_DESARROLLO, PASSWORD_DEV_ADMIN, PASSWORD_DEV_USER, planDeCuentas,
+} from '../prisma/seed-cuentas.js';
+import { dni } from '../src/config/common.js';
+import { motivoContrasenaDebil } from '../src/domain/password-debil.js';
 
 /**
  * Qué cuentas siembra `npm run seed` según el entorno. Sin base de datos.
@@ -45,5 +50,19 @@ describe('planDeCuentas', () => {
     const base = { NODE_ENV: 'production', SEED_ADMIN_EMAIL: 'secretaria@grupo-parroquial.es' };
     assert.throws(() => planDeCuentas({ ...base, SEED_ADMIN_PASSWORD: 'corta' }), /SEED_ADMIN_PASSWORD no vale/);
     assert.doesNotThrow(() => planDeCuentas({ ...base, SEED_ADMIN_PASSWORD: 'Tres-Palabras-Largas-Juntas' }));
+  });
+});
+
+describe('los datos de las cuentas de desarrollo', () => {
+  test('los DNI tienen la letra que les toca: el alta y la ficha los validan igual', () => {
+    for (const valor of [DNI_ADMIN_DESARROLLO, DNI_HERMANO_DESARROLLO]) {
+      assert.equal(dni(valor) instanceof ArkErrors, false, `${valor} no es un DNI válido`);
+    }
+  });
+
+  test('las contraseñas cumplen la política real, no una más floja', () => {
+    for (const valor of [PASSWORD_DEV_ADMIN, PASSWORD_DEV_USER]) {
+      assert.equal(motivoContrasenaDebil(valor, 'el Grupo Parroquial'), null, valor);
+    }
   });
 });

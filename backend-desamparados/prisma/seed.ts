@@ -7,7 +7,10 @@ import db from '../src/config/db';
 import { sembrarContenido } from './seed-contenido';
 import { sembrarDemostracion } from './seed-demo';
 import { sembrarSalidas } from './seed-salidas';
-import { HERMANO_EMAIL_DESARROLLO, planDeCuentas, type PlanCuentas } from './seed-cuentas';
+import {
+  DNI_ADMIN_DESARROLLO, DNI_HERMANO_DESARROLLO, HERMANO_EMAIL_DESARROLLO, PASSWORD_DEV_ADMIN, PASSWORD_DEV_USER,
+  planDeCuentas, type PlanCuentas,
+} from './seed-cuentas';
 import { ModulosService } from '../src/services/modulos.service';
 
 /**
@@ -22,16 +25,15 @@ import { ModulosService } from '../src/services/modulos.service';
  * Contraseñas:
  * - SEED_ADMIN_PASSWORD/SEED_USER_PASSWORD mandan siempre, también en desarrollo
  *   (en producción, SEED_ADMIN_PASSWORD tiene que cumplir la política).
- * - Sin ellas, en DESARROLLO se usan las constantes de abajo, que cumplen la
- *   política real del proyecto: 12 caracteres mínimo y ninguna palabra de la
- *   lista negra. Llevan "Local" en el nombre para que canten en un servidor real.
+ * - Sin ellas, en DESARROLLO se usan PASSWORD_DEV_ADMIN y PASSWORD_DEV_USER
+ *   (seed-cuentas.ts), que cumplen la política real del proyecto: 12
+ *   caracteres mínimo y ninguna palabra de la lista negra. Una prueba lo
+ *   comprueba. Llevan "Local" en el nombre para que canten en un servidor real.
  * - Sin ellas, en PRODUCCIÓN se genera una aleatoria y se muestra UNA sola vez.
  * - Si la cuenta ya existe no se toca, y tampoco se genera ni se muestra
  *   ninguna contraseña (antes se mostraba una que no se llegaba a guardar).
  */
 
-const PASSWORD_DEV_ADMIN = 'Nazareno-Local-2026';
-const PASSWORD_DEV_USER = 'Siembra-Local-Titular';
 
 function resolveSeedPassword(plan: PlanCuentas, envVar: string, devDefault: string, label: string): string {
   // El entorno manda siempre. Antes se miraba isDev primero, así que estas
@@ -62,7 +64,7 @@ async function main() {
         email: plan.adminEmail,
         password: adminPassword,
         role: Role.ADMIN, // ¡IMPORTANTE!
-        dni: '00000000A',
+        dni: DNI_ADMIN_DESARROLLO,
         nombre: 'Super',
         apellidos: 'Administrador',
         telefono: '600000000',
@@ -89,7 +91,7 @@ async function main() {
         email: HERMANO_EMAIL_DESARROLLO,
         password: userPassword,
         role: Role.USER,
-        dni: '11111111B',
+        dni: DNI_HERMANO_DESARROLLO,
         nombre: 'Juan',
         apellidos: 'El Cofrade',
         telefono: '611111111',
@@ -101,7 +103,7 @@ async function main() {
             nombre: 'Juan',
             apellidos: 'El Cofrade',
             fechaNacimiento: new Date('1990-05-15'),
-            dni: '11111111B',
+            dni: DNI_HERMANO_DESARROLLO,
             esTitular: true,
             activo: true,
             // Datos procesión vacíos por ahora
