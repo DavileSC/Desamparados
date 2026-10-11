@@ -6,7 +6,7 @@ import PantallaEdicion from './PantallaEdicion'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import { useVolverAlListado } from '../../hooks/useVolverAlListado'
 import { useModulos } from '../../hooks/useModulos'
-import { MOTIVOS_BAJA, darDeBajaHermano, emanciparHermano, fichaDeHermano, reactivarHermano, actualizarHermano, type AdminBrother, type DatosDeFichaDeHermano, type MotivoBaja } from '../../lib/api/hermanos'
+import { MOTIVOS_BAJA, darDeBajaHermano, emanciparHermano, fichaDeHermano, reactivarHermano, actualizarHermano, type AdminBrother, type DatosDeFichaDeHermano, type FichaDelCenso, type MotivoBaja } from '../../lib/api/hermanos'
 import { PARENTESCOS } from '../../lib/api/auth'
 import { ESTADO_CIVIL, SEXO } from '../areaHermano/perfil/etiquetas'
 import { site } from '../../config/site'
@@ -107,7 +107,7 @@ export default function HermanoEditPage() {
   // El listado del que se vino, con su página y sus filtros: el enlace de editar
   // los trae en el state. Sin state (URL tecleada) se cae en la ruta pelada.
   const volverAlListado = useVolverAlListado('/cms/hermanos')
-  const [ficha, setFicha] = useState<AdminBrother | null>(null)
+  const [ficha, setFicha] = useState<FichaDelCenso | null>(null)
   const [form, setForm] = useState<Formulario | null>(null)
   const [inicial, setInicial] = useState<Formulario | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -437,7 +437,9 @@ export default function HermanoEditPage() {
                     // Reactivar a quien pidió borrar sus datos devuelve la ficha
                     // al censo, pero no reabre aquella cuenta: se le crea otra.
                     ? 'Su cuenta de acceso se eliminó a petición suya (RGPD). Si vuelve a necesitar entrar en la web, créale una cuenta nueva: le llegará un enlace para poner su contraseña.'
-                    : `Depende de la cuenta de ${ficha.user?.email ?? 'otro hermano'}.`}
+                    : ficha.enCensoImportado
+                      ? 'No tiene cuenta: está en el censo importado hasta que se sepa de qué familia es.'
+                      : `Depende de la cuenta de ${ficha.user?.email ?? 'otro hermano'}.`}
                 </Typography>
                 {mayorDeEdad && estado === 'activo' && !cuentaSuprimida && (
                   <Alert severity="info" sx={{ mt: 2 }}>

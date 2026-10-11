@@ -29,6 +29,7 @@ import { enmascararEmail } from '../../utils/log-privacidad.js';
 import { conceptoDeSalida, requisitosParaRecoger } from '../../domain/salidas.js';
 import { cuotaDe } from './plazo.service.js';
 import type { SalidaConActo } from './salidas.service.js';
+import { esCuentaDeCustodia } from '../../domain/cuenta-de-custodia.js';
 
 
 /**
@@ -266,8 +267,10 @@ export class MesaService {
       recuentoDeCingulos(),
     ]);
 
-    // La familia (las fichas de la misma cuenta) suele pagar junta.
-    const familia = await db.hermano.findMany({
+    // La familia (las fichas de la misma cuenta) suele pagar junta. Las de la
+    // cuenta de custodia no son familia: solo comparten no tener cuenta.
+    const enCustodia = esCuentaDeCustodia(await db.user.findUnique({ where: { id: h.userId }, select: { email: true } }));
+    const familia = enCustodia ? [] : await db.hermano.findMany({
       where: { userId: h.userId, id: { not: h.id }, fechaBaja: null },
       orderBy: [{ esTitular: 'desc' }, { fechaNacimiento: 'asc' }],
       select: { id: true, nombre: true, apellidos: true },
@@ -407,7 +410,10 @@ export class MesaService {
       });
       if (!tutor) throw new NotFoundError('No se encontró al tutor en el censo.');
       cuenta = { id: tutor.userId };
-      contacto = { telefono: dto.telefono?.trim() || tutor.telefono || tutor.user.telefono, email: email || tutor.email || tutor.user.email };
+      // El contacto de la cuenta es el respaldo, salvo el de la de custodia,
+      // que es relleno: el menor heredaba el teléfono «000000000».
+      const deLaCuenta = esCuentaDeCustodia(tutor.user) ? null : tutor.user;
+      contacto = { telefono: dto.telefono?.trim() || tutor.telefono || deLaCuenta?.telefono || null, email: email || tutor.email || deLaCuenta?.email || null };
     } else {
       const t = dto.tutor.nuevo;
       const apellidosTutor = componerApellidos(t.primerApellido, t.segundoApellido ?? null).apellidos;

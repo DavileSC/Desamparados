@@ -287,6 +287,15 @@ describe('HermanoEditPage', () => {
     expect(screen.getByRole('button', { name: /emancipar/i })).toBeInTheDocument()
   })
 
+  // La API no manda la cuenta de custodia (su correo es relleno): sin esto
+  // decía «Depende de la cuenta de otro hermano», que no es verdad.
+  it('en una ficha del censo importado dice que no tiene cuenta, no de quién depende', async () => {
+    responder({ ...dependiente, user: null, enCensoImportado: true })
+    montar(43)
+    expect(await screen.findByText(/no tiene cuenta: está en el censo importado/i)).toBeInTheDocument()
+    expect(screen.queryByText(/depende de la cuenta/i)).not.toBeInTheDocument()
+  })
+
   it('avisa de que ya tiene edad para tener cuenta propia', async () => {
     responder(dependiente)
     montar(43)
