@@ -1,7 +1,7 @@
 import type { ApiEvent, EventoCalendario } from '../../lib/api/agenda'
 import { GRANATE } from './estilos'
 
-export { GOLD, SERIF } from './estilos'
+export {  SERIF } from './estilos'
 
 /**
  * Nombre y color de cada tipo de acto, uno distinto por tipo: la agenda de la

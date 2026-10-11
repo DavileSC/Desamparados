@@ -20,7 +20,7 @@ import { ModulosService } from './modulos.service.js';
  * y los enseres del inventario (piezas del Grupo).
  */
 
-export interface DatosResponse {
+interface DatosResponse {
   generadoEn: string;
   periodo: Omit<Periodo, 'inicio' | 'fin'>;
   periodos: { clave: string; etiqueta: string }[];

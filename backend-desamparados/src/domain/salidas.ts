@@ -44,7 +44,6 @@ export function conceptoDeSalida(salida: { nombre: string; cobro: CobroSalida },
   }
 }
 
-
 // ---------------------------------------------------------------------------
 //  Qué hace falta para recoger
 // ---------------------------------------------------------------------------
@@ -57,7 +56,7 @@ export interface CuotaDelHermano {
   estado: EstadoPago;
 }
 
-export interface Requisitos {
+interface Requisitos {
   /** Lo de la salida (la cuota de salida o el donativo) está pagado o no hay nada que pagar. */
   salidaPagada: boolean;
   /** Lo que falta de la salida, en euros (0 si nada). */
@@ -73,9 +72,6 @@ export interface Requisitos {
   /** Por qué no, dicho para la mesa. Vacío si puede. */
   motivos: string[];
 }
-
-/** Cuántas cuotas atrasadas se admiten antes de avisar de que se pierde la condición de hermano. */
-export const CUOTAS_ATRASADAS_MAXIMAS = 2;
 
 /**
  * Lo que queda por pagar de la salida en una solicitud: nada si ya tiene su

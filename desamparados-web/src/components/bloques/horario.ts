@@ -7,13 +7,13 @@ import type { BloqueHorario, FranjaDeMisas, TurnoDeDespacho } from '../../lib/ap
  */
 
 /** Cuánto dura una misa, para decir «ahora mismo» y no «la próxima» mientras se celebra. */
-export const DURACION_MISA = 45
+const DURACION_MISA = 45
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 
 /** Un momento en Málaga: el día de la semana (0 domingo), los minutos desde medianoche y el día del año (MM-DD). */
-export interface Momento { dia: number; minutos: number; mesDia: string }
+interface Momento { dia: number; minutos: number; mesDia: string }
 
 const RELOJ_DE_MADRID = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'Europe/Madrid', hourCycle: 'h23', weekday: 'short', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
@@ -32,7 +32,7 @@ export function momentoEnMadrid(instante: Date): Momento {
 }
 
 /** «19:00» → 1140. */
-export const aMinutos = (hora: string) => Number(hora.slice(0, 2)) * 60 + Number(hora.slice(3, 5))
+const aMinutos = (hora: string) => Number(hora.slice(0, 2)) * 60 + Number(hora.slice(3, 5))
 
 /** 570 → «9:30»: sin el cero delante, como se escribe un horario. */
 export const aHora = (minutos: number) => `${Math.floor(minutos / 60)}:${String(minutos % 60).padStart(2, '0')}`

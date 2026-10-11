@@ -34,7 +34,7 @@ export interface MovimientoN43 {
   conceptos: string[];
 }
 
-export interface CuentaN43 {
+interface CuentaN43 {
   entidad: string;
   oficina: string;
   cuenta: string;
@@ -47,7 +47,7 @@ export interface CuentaN43 {
   movimientos: MovimientoN43[];
 }
 
-export interface ExtractoN43 {
+interface ExtractoN43 {
   cuentas: CuentaN43[];
   /** Lo que no cuadra o no se entiende: el fichero no se aplica si hay alguno. */
   errores: string[];
@@ -172,12 +172,12 @@ export function recibosNombrados(m: MovimientoN43): number[] {
 }
 
 /** Los mandatos que nombra (`HERMANO-000045-20260930`): el id del hermano. */
-export function hermanosNombrados(m: MovimientoN43): number[] {
+function hermanosNombrados(m: MovimientoN43): number[] {
   return [...new Set([...textoDe(m).matchAll(/\bHERMANO-(\d{6})-\d{8}\b/g)].map((x) => Number(x[1])))];
 }
 
 /** Lo justo de cada recibo que pudo ir al banco. */
-export interface ReciboEnElBanco {
+interface ReciboEnElBanco {
   id: number;
   hermanoId: number;
   centimos: number;
@@ -185,14 +185,14 @@ export interface ReciboEnElBanco {
 }
 
 /** Lo justo de cada remesa sin cobrar. */
-export interface RemesaSinCobrar {
+interface RemesaSinCobrar {
   id: number;
   mensajeId: string;
   fechaCobro: string;
   centimos: number;
 }
 
-export interface Casado {
+interface Casado {
   /** Cargos que son la devolución de un recibo de una remesa. */
   devoluciones: { movimiento: MovimientoN43; reciboId: number }[];
   /** Abonos que son el cobro de una remesa entera. */

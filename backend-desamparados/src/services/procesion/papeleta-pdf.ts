@@ -21,7 +21,7 @@ import {
 } from '../informes/pdf.js';
 import { euros } from '../../utils/euros.js';
 
-export interface DatosDeLaPapeleta {
+interface DatosDeLaPapeleta {
   id: number;
   year: number;
   salida: SalidaImpresa;

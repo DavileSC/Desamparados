@@ -2,7 +2,7 @@ import { llamarApi, traerArchivo } from './cliente'
 import HOJAS from '../../../../shared/formatos-de-etiquetas.json'
 
 /** Lo que se imprime: el asunto, el texto con sus campos y la firma. */
-export interface TextoDeCarta {
+interface TextoDeCarta {
   asunto: string
   cuerpo: string
   firmaCargo: string

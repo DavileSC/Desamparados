@@ -36,7 +36,7 @@ export interface PapeletaDelCortejo {
   hermanoId: number;
 }
 
-export interface Asignacion {
+interface Asignacion {
   papeletaId: number;
   tramo: string;
   numero: number;

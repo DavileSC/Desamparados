@@ -191,11 +191,6 @@ export interface PaginaPublica {
 
 export const PAGINAS_PUBLICAS: PaginaPublica[] = CATALOGO.paginas
 
-/** Dónde vive en la web pública cada página editable. */
-export const RUTA_PUBLICA: Record<string, string> = Object.fromEntries(
-  PAGINAS_PUBLICAS.map((pagina) => [pagina.slug, pagina.ruta]),
-)
-
 /** La ficha de una página del catálogo, o `undefined` si el slug no es de ahí. */
 export const paginaPublica = (slug: string): PaginaPublica | undefined =>
   PAGINAS_PUBLICAS.find((pagina) => pagina.slug === slug)

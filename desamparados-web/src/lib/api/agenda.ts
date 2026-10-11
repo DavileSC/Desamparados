@@ -109,7 +109,7 @@ export async function eventosDelCalendario(
 export type PeriodoAgenda = 'proximos' | 'pasados'
 
 /** Búsqueda y filtros del listado de la agenda en el CMS; `''` es «todos». */
-export interface FiltrosAgenda {
+interface FiltrosAgenda {
   q?: string
   tipo?: ApiEvent['type'] | ''
 }

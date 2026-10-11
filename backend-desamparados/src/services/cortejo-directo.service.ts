@@ -10,14 +10,14 @@ export const CADUCA_MS = 10 * 60 * 1000;
 
 export interface PosicionEnviada { lng: number; lat: number; precision: number | null }
 
-export interface CortejoPublico {
+interface CortejoPublico {
   enDirecto: boolean;
   lng?: number;
   lat?: number;
   actualizadoEl?: string;
 }
 
-export interface CortejoParaLaJunta extends CortejoPublico {
+interface CortejoParaLaJunta extends CortejoPublico {
   enMarcha: boolean;
   precision: number | null;
   autorNombre: string | null;

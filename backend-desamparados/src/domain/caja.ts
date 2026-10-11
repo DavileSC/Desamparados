@@ -8,15 +8,15 @@
  */
 import { MAX_POR_LINEA, faltaDe, tallaDeLaLinea, type ProductoALaVenta } from './tienda.js';
 
-export const MAX_LINEAS_CAJA = 40;
+const MAX_LINEAS_CAJA = 40;
 /** Lo más caro que se apunta suelto: más, es que se ha escrito mal. */
-export const MAX_SUELTO_CENTIMOS = 5_000_00;
+const MAX_SUELTO_CENTIMOS = 5_000_00;
 
 export type LineaDeCaja =
   | { productoId: number; tallaId?: number; cantidad: number }
   | { nombre: string; centimos: number; cantidad: number };
 
-export interface LineaCobrada { productoId: number | null; tallaId: number | null; talla: string | null; nombre: string; centimos: number; cantidad: number }
+interface LineaCobrada { productoId: number | null; tallaId: number | null; talla: string | null; nombre: string; centimos: number; cantidad: number }
 
 export function prepararVenta(lineas: LineaDeCaja[], catalogo: ProductoALaVenta[]):
   { lineas: LineaCobrada[]; centimos: number } | { problema: string } {
@@ -54,7 +54,7 @@ export function prepararVenta(lineas: LineaDeCaja[], catalogo: ProductoALaVenta[
 
 export type MetodoDeCaja = 'EFECTIVO' | 'TARJETA' | 'BIZUM';
 
-export interface ResumenDeCaja {
+interface ResumenDeCaja {
   ventas: number;
   anuladas: number;
   /** En céntimos, sin las anuladas. */

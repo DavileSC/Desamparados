@@ -5,7 +5,7 @@ export type ReceiptStatus = 'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'D
 export type TipoRecibo = 'PAPELETA_SITIO' | 'CUOTA_HERMANO' | 'DONATIVO' | 'OTRO'
 export type MetodoPago = 'EFECTIVO' | 'BIZUM' | 'TRANSFERENCIA' | 'TARJETA' | 'DOMICILIACION'
 
-export interface ApiReceipt {
+interface ApiReceipt {
   id: number
   year: number
   concepto: string

@@ -249,7 +249,7 @@ test('el script de rescate funciona de punta a punta desde la consola', async (t
 
 const entornoProduccion = (extra: Record<string, string>) => ({
   NODE_ENV: 'production', FRONTEND_URL: 'https://x.es', API_URL: 'https://x.es', EMAIL_USER: 'a', EMAIL_PASS: 'b',
-  NUM_PROXIES: '1', JWT_SECRET: 'x'.repeat(40), TOTP_ENC_KEY: 'ab'.repeat(32), CLAMAV_HOST: '127.0.0.1',
+  NUM_PROXIES: '1', JWT_SECRET: 'k3Vq9ZtR7wLm2PxN8bYcF4hJ6sDa1GeU5oTi0WnQ', TOTP_ENC_KEY: 'ab'.repeat(32), CLAMAV_HOST: '127.0.0.1',
   CLAMAV_REQUIRED: 'true', ...extra
 });
 

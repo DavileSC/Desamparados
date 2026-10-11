@@ -11,11 +11,10 @@ import { z } from 'zod'
 import {
   motivoContrasenaDebil,
   LONGITUD_MINIMA,
-  LONGITUD_MAXIMA,
 } from '../../../backend-desamparados/src/domain/password-debil'
 import { laCorporacion } from '../domain/articulos'
 
-export { LONGITUD_MINIMA, LONGITUD_MAXIMA }
+export { LONGITUD_MINIMA }
 
 /**
  * Contraseña NUEVA: registro y restablecimiento. Aplica la política completa y

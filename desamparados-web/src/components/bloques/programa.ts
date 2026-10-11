@@ -4,7 +4,7 @@ import type { FilaDePrograma } from '../../lib/api/contenido'
 /** Los actos de la Agenda que cuentan como culto del programa. */
 const TIPOS_DE_CULTO: ReadonlySet<EventoCalendario['type']> = new Set(['CULTO', 'PROCESION'])
 
-export interface Proximo {
+interface Proximo {
   /** La posición de la fila en el programa. */
   indice: number
   /** El primer culto de la Agenda en ese mes, si ya está anunciado. */

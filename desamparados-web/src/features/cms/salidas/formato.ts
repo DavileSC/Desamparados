@@ -15,7 +15,7 @@ function fechaLocal(dia: string): Date {
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 
 /** «28 de marzo de 2026». */
-export function fechaLarga(dia: string): string {
+function fechaLarga(dia: string): string {
   const f = fechaLocal(dia)
   return `${f.getDate()} de ${MESES[f.getMonth()]} de ${f.getFullYear()}`
 }
@@ -27,7 +27,7 @@ export function fechaConDia(dia: string): string {
 }
 
 /** «1.250,00 €»: el de toda la web. */
-export { euros }
+
 
 interface SalidaResumen {
   fecha: 'PASCUA' | 'MANUAL'

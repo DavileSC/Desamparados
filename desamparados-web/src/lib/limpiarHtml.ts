@@ -42,7 +42,7 @@ const IMAGEN_PROPIA = /^\/(?:storage\/public|images)\/(?:[A-Za-z0-9_-]+\/)*[A-Za
  * con la ruta de una carpeta nuestra, apunta a nuestro sitio y ya no avisa a
  * nadie de la visita. `URL` resuelve los `..` antes de comprobar la ruta.
  */
-export function aRutaPropia(src: string): string {
+function aRutaPropia(src: string): string {
   const limpio = src.trim()
   if (!/^(?:https?:)?\/\//i.test(limpio)) return src
   try {

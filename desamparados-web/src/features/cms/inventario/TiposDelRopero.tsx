@@ -2,7 +2,7 @@ import { Box, ButtonBase, Tab, Tabs, Typography } from '@mui/material'
 import type { Prenda, RecuentoDeTipo } from '../../../lib/api/inventario'
 import { ESTADO_PRENDA } from './colores'
 
-export const ORDEN_TIPOS: Prenda['tipo'][] = ['TUNICA', 'CAPIROTE', 'FARAONA', 'CAPA', 'OTRO']
+const ORDEN_TIPOS: Prenda['tipo'][] = ['TUNICA', 'CAPIROTE', 'FARAONA', 'CAPA', 'OTRO']
 const NOMBRE_TIPO: Record<Prenda['tipo'], string> = { TUNICA: 'Túnicas', CAPIROTE: 'Capirotes', FARAONA: 'Faraonas', CAPA: 'Capas', OTRO: 'Otras prendas' }
 const MASCULINO: Record<Prenda['tipo'], boolean> = { TUNICA: false, CAPIROTE: true, FARAONA: false, CAPA: false, OTRO: false }
 const ORDEN_ESTADOS: Prenda['estado'][] = ['DISPONIBLE', 'PRESTADA', 'LAVADO', 'TALLER', 'BAJA']

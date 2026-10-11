@@ -1,14 +1,5 @@
 import { useEffect, useState } from 'react'
 import { keyframes } from '@mui/material/styles'
-import { designTokens } from '../../../theme'
-
-/** Las cifras grandes: la Saira del CMS, estrecha y con dígitos de igual ancho. */
-export const CIFRA = {
-  fontFamily: designTokens.fonts.cms.heading,
-  fontStretch: '78%',
-  fontWeight: 600,
-  fontVariantNumeric: 'tabular-nums',
-} as const
 
 /**
  * Las animaciones del Inicio. Cada una cuenta algo del dato que mueve —la
@@ -23,15 +14,10 @@ export const sinMovimiento = { '@media (prefers-reduced-motion: reduce)': { anim
 
 const entrar = keyframes`from { opacity: .55; transform: translateY(10px) } to { opacity: 1; transform: none }`
 export const trazar = keyframes`from { stroke-dashoffset: 1 } to { stroke-dashoffset: 0 }`
-/** Hasta `--hasta` (0 = entero): así se llena solo hasta el punto de hoy. */
-export const llenarTrazo = keyframes`from { stroke-dashoffset: 1 } to { stroke-dashoffset: var(--hasta) }`
 export const aparecerSuave = keyframes`from { opacity: 0 } to { opacity: 1 }`
 export const crecerY = keyframes`from { transform: scaleY(0) } to { transform: scaleY(1) }`
 export const crecerX = keyframes`from { transform: scaleX(0) } to { transform: scaleX(1) }`
-export const aparecer = keyframes`from { transform: scale(.3); opacity: .2 } to { transform: scale(1); opacity: 1 }`
 export const acercar = keyframes`from { transform: scale(1) } to { transform: scale(1.07) }`
-/** Un cirio que se prende: del color apagado al encendido. */
-export const encender = keyframes`from { background-color: var(--apagado) } to { background-color: var(--encendido) }`
 export const latido = keyframes`
   0%, 100% { box-shadow: 0 0 0 0 rgba(227, 73, 72, .45) }
   60% { box-shadow: 0 0 0 7px rgba(227, 73, 72, 0) }
@@ -49,7 +35,7 @@ export const entrada = (orden = 0) => ({
  * reducir el movimiento. Donde no se sabe (los tests, navegadores sin
  * matchMedia) no se anima y se enseña el valor final desde el principio.
  */
-export function puedeAnimar(): boolean {
+function puedeAnimar(): boolean {
   return typeof window !== 'undefined'
     && typeof window.matchMedia === 'function'
     && window.matchMedia('(prefers-reduced-motion: no-preference)').matches

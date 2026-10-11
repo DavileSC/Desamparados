@@ -272,6 +272,6 @@ export const themeOptions: ThemeOptions = {
 }
 
 // esES: los textos que MUI pone solo («Close», «Open», «Go to page 3»), en español.
-export const theme = createTheme(themeOptions, esES)
+const theme = createTheme(themeOptions, esES)
 
 export default theme

@@ -18,7 +18,7 @@ import {
 import type { ConfiguracionModelo182 } from './modelo-182.service.js';
 import { eurosDeCentimos } from '../utils/euros.js';
 
-export interface CertificadoDe {
+interface CertificadoDe {
   nif: string;
   nifRepresentante: string | null;
   nombre: string;

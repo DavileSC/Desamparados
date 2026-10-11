@@ -80,7 +80,7 @@ export function aniosCumplidos(fechaNacimiento: Date, hoy: string = diaDeHoy()):
   return edad;
 }
 
-export const MAYORIA_DE_EDAD = 18;
+const MAYORIA_DE_EDAD = 18;
 
 /**
  * La emancipación da una cuenta propia, con su contraseña y su acceso a la web:

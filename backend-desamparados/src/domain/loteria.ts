@@ -28,7 +28,7 @@ export interface Reparto {
   porTalonario: number;
 }
 
-export const NUMERO_DE_LOTERIA = /^\d{5}$/;
+const NUMERO_DE_LOTERIA = /^\d{5}$/;
 
 /** Los números guardados, por si el JSON viene torcido: lo que no sea un número válido se descarta. */
 export function numerosDe(valor: unknown): NumeroJugado[] {

@@ -4,9 +4,9 @@ import ScheduleIcon from '@mui/icons-material/Schedule'
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined'
 import type { GraficasCms } from '../../theme/cms'
 
-export type ClaveEstado = 'ok' | 'aviso' | 'error'
+type ClaveEstado = 'ok' | 'aviso' | 'error'
 
-export interface FilaEstado {
+interface FilaEstado {
   clave: string
   etiqueta: string
   total: number

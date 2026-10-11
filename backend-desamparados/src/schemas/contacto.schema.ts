@@ -13,14 +13,14 @@ const message = type('string <= 5000').pipe((valor: string) => valor.trim(), typ
 // escribe podía hacer que «Responder» se fuera a un tercero. Aquí solo pasan
 // los caracteres de una dirección normal: nada de comas, espacios, comillas
 // ni ángulos.
-export const emailVisitante = email
+const emailVisitante = email
   .and(type('string').matching(/^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$/))
   .describe('un email válido');
 
 // Opcional y no solo español: escribe gente de fuera (familias en el
 // extranjero, otras corporaciones). Cifras con espacios, puntos, guiones o
 // paréntesis, con o sin prefijo «+»; entre 6 y 15 cifras (el máximo de E.164).
-export const telefonoContacto = type('string')
+const telefonoContacto = type('string')
   .narrow((valor) => {
     if (!/^\+?[0-9 ().-]+$/.test(valor.trim())) return false;
     const cifras = valor.replace(/\D/g, '').length;

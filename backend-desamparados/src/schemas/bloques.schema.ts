@@ -551,7 +551,7 @@ const horarioSchema = type({
  * `ia` (06-10-2026): está generada con IA, y la web lo dice debajo. La ley
  * europea de IA pide avisarlo desde agosto de 2026, y cuesta una línea.
  */
-export const DIBUJOS = ['templo', 'signoPasionista'] as const;
+const DIBUJOS = ['templo', 'signoPasionista'] as const;
 
 const dibujoSchema = type({
   ...comunes,

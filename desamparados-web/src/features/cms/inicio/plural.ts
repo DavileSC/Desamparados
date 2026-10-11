@@ -12,4 +12,4 @@ export function contar(n: number, singular: string, plural: string): string {
   return `${numero(n)} ${n === 1 ? singular : plural}`
 }
 
-export default contar
+

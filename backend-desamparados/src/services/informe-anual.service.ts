@@ -14,8 +14,8 @@ import type { TextosInforme } from './informes/informes.js';
  * Administración, todo.
  */
 
-export const CAMPOS_INFORME = ['presentacion', 'firmaPresentacion', 'lugarFecha', 'epilogo', 'firmaEpilogo', 'notaPatrimonio', 'fechaCabildo'] as const;
-export type CampoInforme = typeof CAMPOS_INFORME[number];
+const CAMPOS_INFORME = ['presentacion', 'firmaPresentacion', 'lugarFecha', 'epilogo', 'firmaEpilogo', 'notaPatrimonio', 'fechaCabildo'] as const;
+type CampoInforme = typeof CAMPOS_INFORME[number];
 
 const DE_SECRETARIA: CampoInforme[] = ['epilogo', 'firmaEpilogo'];
 
@@ -24,7 +24,7 @@ export function puedeEscribir(role: string, campo: CampoInforme): boolean {
   return role === Role.SECRETARIA && DE_SECRETARIA.includes(campo);
 }
 
-export interface InformeAnualResponse {
+interface InformeAnualResponse {
   anio: number;
   desde: string;
   hasta: string;

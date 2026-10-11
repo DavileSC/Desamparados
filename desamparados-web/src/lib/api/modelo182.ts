@@ -10,7 +10,7 @@ export interface ConfiguracionModelo182 {
   cuotas: boolean
 }
 
-export interface AportacionDeclarada {
+interface AportacionDeclarada {
   nif: string
   nombre: string
   centimos: number
@@ -18,7 +18,7 @@ export interface AportacionDeclarada {
   concepto: string
 }
 
-export interface Declarado {
+interface Declarado {
   nif: string
   nifRepresentante: string | null
   apellidosYNombre: string
@@ -33,7 +33,7 @@ export interface Declarado {
   aportaciones: AportacionDeclarada[]
 }
 
-export interface ResumenModelo182 {
+interface ResumenModelo182 {
   ejercicio: number
   configuracion: ConfiguracionModelo182
   declarados: Declarado[]
@@ -57,7 +57,7 @@ export const enviarCertificados = (ejercicio: number) =>
   llamarApi<{ enviados: number; fallidos: number; sinCorreo: number; message: string }>(`/recibos/admin/modelo-182/enviar?ejercicio=${ejercicio}`, { method: 'POST' })
 
 /** Los certificados del área de hermanos: los de su cuenta, por ejercicio cerrado. */
-export interface MisCertificados {
+interface MisCertificados {
   /** Si el Grupo ya puso su NIF: sin él, no se puede sacar ninguno. */
   disponibles: boolean
   certificados: { ejercicio: number; nif: string; nombre: string; centimos: number }[]

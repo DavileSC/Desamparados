@@ -24,7 +24,7 @@ const CLAVE_PORTADA_PUBLICA = ['home', 'portada']
 export const MAX_FOTOS_PORTADA = 12
 
 /** Una fila del formulario: la clave la da el propio CMS, para que React siga la fila al reordenar. */
-export interface Fila extends ImagenPortada {
+interface Fila extends ImagenPortada {
   clave: number
 }
 

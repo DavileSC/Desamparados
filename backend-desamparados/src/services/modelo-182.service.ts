@@ -71,13 +71,13 @@ const POR_DEFECTO: ConfiguracionModelo182 = {
 /** La provincia de la sede: la de quien no tiene código postal en su ficha. */
 const PROVINCIA_DEL_GRUPO = provinciaDelCodigoPostal(/\b(\d{5})\b/.exec(secretaria.direccion ?? '')?.[1] ?? null);
 
-export interface Excluido {
+interface Excluido {
   nombre: string;
   centimos: number;
   motivo: string;
 }
 
-export interface ResumenModelo182 {
+interface ResumenModelo182 {
   ejercicio: number;
   configuracion: ConfiguracionModelo182;
   declarados: (Omit<Declarado, 'aportaciones' | 'provincia'> & { provincia: string; provinciaSupuesta: boolean; aportaciones: Aportacion[] })[];

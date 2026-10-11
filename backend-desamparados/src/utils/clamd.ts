@@ -37,9 +37,9 @@ const TIMEOUT_MS = 60_000;
  * - `no-disponible`: debía analizarse y no se ha podido (clamd caído, lento,
  *   mal configurado o con una respuesta que no se entiende).
  */
-export type VeredictoAntivirus = 'limpio' | 'infectado' | 'sin-analizar' | 'no-disponible';
+type VeredictoAntivirus = 'limpio' | 'infectado' | 'sin-analizar' | 'no-disponible';
 
-export interface ScanResult {
+interface ScanResult {
   veredicto: VeredictoAntivirus;
   clean: boolean;
   scanned: boolean; // false = ClamAV no estaba configurado

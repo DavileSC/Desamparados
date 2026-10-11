@@ -185,7 +185,7 @@ export class PlantillasCorreoService {
  * no olvidar ninguno al añadir uno nuevo); los recuadros se quedan como
  * párrafos con su título en negrita.
  */
-export function cuerpoParaElEditor(cuerpo: string): string {
+function cuerpoParaElEditor(cuerpo: string): string {
   const campos: Record<string, string> = comunes();
   const clavesComunes = CAMPOS_COMUNES.map((c) => c.clave).join('|');
   const reComunes = new RegExp(`\\{\\{\\s*(${clavesComunes})\\s*\\}\\}`, 'g');

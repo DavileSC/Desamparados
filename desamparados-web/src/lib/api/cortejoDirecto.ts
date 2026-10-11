@@ -1,7 +1,7 @@
 import { llamarApi } from './cliente'
 
 /** Lo que ve la web: la posición solo si está en la calle y es reciente. */
-export interface CortejoPublico {
+interface CortejoPublico {
   enDirecto: boolean
   lng?: number
   lat?: number

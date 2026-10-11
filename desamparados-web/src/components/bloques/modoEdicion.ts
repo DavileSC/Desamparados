@@ -8,7 +8,7 @@ import { createContext, useContext } from 'react'
  * Fuera del CMS no hay contexto (`null`) y la página se pinta tal cual la ve
  * cualquiera: los ocultos no salen.
  */
-export interface ModoEdicion {
+interface ModoEdicion {
   /** La posición del bloque abierto en el editor, o `null`. */
   seleccionado: number | null
   /** Se ha pulsado el bloque de esa posición. */

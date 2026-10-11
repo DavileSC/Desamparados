@@ -11,7 +11,7 @@
  * sin añadir dependencias ni llamadas de red al registro.
  */
 export const LONGITUD_MINIMA = 12;
-export const LONGITUD_MAXIMA = 64;
+const LONGITUD_MAXIMA = 64;
 
 /** Contraseñas y raíces que aparecen en cabeza de cualquier diccionario. */
 const RAICES_PROHIBIDAS = [

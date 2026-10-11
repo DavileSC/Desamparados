@@ -11,7 +11,7 @@ export const CLAVE_MESA = ['mesa'] as const
  * `randomUUID`: la mesa puede abrirse por la red del salón (http y una IP),
  * donde el navegador no ofrece `randomUUID`.
  */
-export function nuevaClave(): string {
+function nuevaClave(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16))
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
 }
@@ -31,7 +31,7 @@ export function useClaveDeOperacion() {
  * Si el fallo es de la red y no una respuesta del servidor: sin respuesta
  * (el cliente lo da como estado 0) o la de una pasarela que no llegó a él.
  */
-export const esFalloDeRed = (e: unknown) =>
+const esFalloDeRed = (e: unknown) =>
   !(e instanceof ErrorDeApi) || e.status === 0 || e.status === 502 || e.status === 503 || e.status === 504
 
 /** El aviso de un fallo: si fue la red, se dice que no se perdió nada y que se puede repetir sin miedo. */

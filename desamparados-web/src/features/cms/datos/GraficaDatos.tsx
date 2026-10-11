@@ -10,7 +10,7 @@ import { AZUL_GRAFICA, FILETE_SUAVE, ORO, ORO_GRAFICA, ROJO_GRAFICA, SERIF, VERD
 const GRIS_GRAFICA = segunModo('#b9aeb2', '#6f666b')
 
 /** Los colores con nombre que manda el servidor, en los del CMS (claro u oscuro). */
-export function colorDe(c: ColorDato): string {
+function colorDe(c: ColorDato): string {
   if (c.startsWith('tipo:')) return colorDelTipo(c.slice(5) as Parameters<typeof colorDelTipo>[0])
   return { oro: ORO_GRAFICA, rojo: ROJO_GRAFICA, verde: VERDE, azul: AZUL_GRAFICA, gris: GRIS_GRAFICA }[c as 'oro'] ?? GRIS_GRAFICA
 }

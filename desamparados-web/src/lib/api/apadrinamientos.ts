@@ -31,7 +31,7 @@ export interface CampanasPublicas {
   campanas: (Campana & { libres: number })[]
 }
 
-export interface DatosApadrinar {
+interface DatosApadrinar {
   piezaId: number
   nombre: string
   email: string
@@ -43,7 +43,7 @@ export interface DatosApadrinar {
   fiscal?: DatosFiscales | null
 }
 
-export type ResultadoApadrinar =
+type ResultadoApadrinar =
   | { tipo: 'hecho'; token: string }
   | { tipo: 'banco'; token: string; pedido: string; url: string; campos: Record<string, string> }
 
@@ -51,7 +51,7 @@ export interface ApadrinamientoPublico { estado: EstadoPedido; nombre: string; p
 
 export interface CampanaEnLista { id: number; titulo: string; foto: string; activa: boolean; piezas: number; apadrinadas: number; recaudado: number }
 export interface DatosCampana { titulo: string; descripcion: string; foto: string; activa: boolean }
-export interface DatosPieza { nombre: string; precio: number; x: number; y: number }
+interface DatosPieza { nombre: string; precio: number; x: number; y: number }
 
 export const campanasPublicas = () => llamarApi<CampanasPublicas>('/apadrinamientos', { auth: false })
 export const apadrinar = (d: DatosApadrinar) => llamarApi<ResultadoApadrinar>('/apadrinamientos', { method: 'POST', json: d, auth: false })

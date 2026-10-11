@@ -8,7 +8,7 @@ const EVENTO_DECISION = 'desamparados-cookie-consent-change'
  * `declined`, en inglés y con esa misma clave: cambiarlos dejaría sin efecto la
  * decisión que ya tomaron los visitantes y les volvería a salir el aviso.
  */
-export type Consentimiento = 'accepted' | 'declined' | null
+type Consentimiento = 'accepted' | 'declined' | null
 
 // localStorage puede lanzar (modo privado, almacenamiento bloqueado, iframes...).
 // Nunca debe tumbar la app: sin almacenamiento, el banner simplemente se muestra.

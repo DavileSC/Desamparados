@@ -3,8 +3,8 @@
  * («{{nombre}}») y se rellena con los datos de cada hermano al imprimirla.
  */
 
-export const CAMPOS_DE_CARTA = ['saludo', 'tratamiento', 'nombre', 'apellidos', 'numero'] as const;
-export type CampoDeCarta = (typeof CAMPOS_DE_CARTA)[number];
+const CAMPOS_DE_CARTA = ['saludo', 'tratamiento', 'nombre', 'apellidos', 'numero'] as const;
+type CampoDeCarta = (typeof CAMPOS_DE_CARTA)[number];
 
 export interface DestinatarioDeCarta {
   nombre: string;
@@ -20,10 +20,10 @@ export function tratamientoDe(d: DestinatarioDeCarta): string {
 }
 
 /** «Estimado» / «Estimada» / «Estimado/a», como en los correos. */
-export const saludoDe = (d: DestinatarioDeCarta) => (d.sexo === 'MUJER' ? 'Estimada' : d.sexo === 'HOMBRE' ? 'Estimado' : 'Estimado/a');
+const saludoDe = (d: DestinatarioDeCarta) => (d.sexo === 'MUJER' ? 'Estimada' : d.sexo === 'HOMBRE' ? 'Estimado' : 'Estimado/a');
 
 /** El valor de cada campo para un hermano. */
-export function valoresDe(d: DestinatarioDeCarta): Record<CampoDeCarta, string> {
+function valoresDe(d: DestinatarioDeCarta): Record<CampoDeCarta, string> {
   return {
     saludo: saludoDe(d),
     tratamiento: tratamientoDe(d),

@@ -17,7 +17,7 @@ import { rutaParaRegistro } from '../utils/log-privacidad.js';
 
 morgan.token('ruta', (req: Request) => rutaParaRegistro(req.originalUrl ?? req.url ?? ''));
 
-export const FORMATO_PRODUCCION =
+const FORMATO_PRODUCCION =
   ':date[iso] :remote-addr :method :ruta :status :res[content-length] - :response-time ms';
 
 export function registroPeticiones(

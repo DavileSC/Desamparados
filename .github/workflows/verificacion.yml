@@ -42,7 +42,7 @@ jobs:
       run:
         working-directory: backend-desamparados
 
-    # MariaDB de verdad: sin ella se omitían 75 de las 248 pruebas del backend,
+    # MariaDB de verdad: sin ella se omiten todas las pruebas que tocan la base,
     # entre ellas las de sesión y permisos. Usuario y base coinciden con las
     # variables de abajo; la imagen crea el usuario con todos los permisos
     # sobre esa base. 11.8, la misma que en desarrollo: trae

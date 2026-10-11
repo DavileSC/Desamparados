@@ -12,7 +12,7 @@
  * - Sin hora de fin, una hora de duración.
  */
 
-export interface ActoIcs {
+interface ActoIcs {
   id: number;
   title: string;
   description: string | null;
@@ -62,7 +62,7 @@ const aUtc = (dia: string) => Date.UTC(Number(dia.slice(0, 4)), Number(dia.slice
 const diasEntre = (a: string, b: string) => Math.round((aUtc(b) - aUtc(a)) / (24 * UNA_HORA));
 
 /** 20261103T180000Z, para DTSTAMP, que siempre va en UTC. */
-export const instanteIcs = (fecha: Date) => fecha.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+const instanteIcs = (fecha: Date) => fecha.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 
 /** Comas, puntos y coma, barras y saltos de línea van escapados. */
 export const textoIcs = (texto: string) =>

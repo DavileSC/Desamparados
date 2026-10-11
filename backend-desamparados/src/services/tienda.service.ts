@@ -64,7 +64,7 @@ export const conTallas = { tallas: { orderBy: [{ orden: 'asc' as const }, { id: 
  * se queda lo que hay ahora; si lo cambió sobre un número que ya no es el
  * de la base, se le pide que lo revise (409).
  */
-export function existenciasAlGuardar(nuevas: number | null, leidas: number | null | undefined, ahora: number | null, quien: string): number | null {
+function existenciasAlGuardar(nuevas: number | null, leidas: number | null | undefined, ahora: number | null, quien: string): number | null {
   if (leidas === undefined || leidas === ahora) return nuevas;
   if (nuevas === leidas) return ahora;
   throw new HttpError(`Mientras editabas cambió lo que queda ${quien}: ahora ${ahora === null ? 'no tiene límite' : `quedan ${ahora}`}. Revísalo y guarda otra vez.`, 409);

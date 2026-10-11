@@ -48,7 +48,7 @@ export const COLUMNAS_EXPORTACION: ClaveColumna[] = [
 export const tituloDe = (clave: ClaveColumna) => COLUMNAS.find((c) => c.clave === clave)!.titulo;
 
 /** «F. de Alta» → «f de alta», «N.I.F.» → «nif»: sin tildes, sin puntos ni signos, en minúsculas. */
-export function normalizarTitulo(texto: string): string {
+function normalizarTitulo(texto: string): string {
   return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[º°ª.]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
@@ -130,7 +130,7 @@ export interface FichaImportada {
   numeroHermano: number | null;
 }
 
-export type ResultadoFila = { ficha: FichaImportada } | { fila: number; errores: string[] };
+type ResultadoFila = { ficha: FichaImportada } | { fila: number; errores: string[] };
 
 /**
  * Lee una fila con las columnas ya detectadas. Junta todos los errores de la

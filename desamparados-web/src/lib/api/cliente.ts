@@ -96,7 +96,7 @@ export const SESION_NO_CMS = 'SESION_NO_CMS'
  * pestaña): se pregunta la sesión, el store se entera de que falta y
  * `ExigeRol` enseña la pantalla para activarlo.
  */
-export const FALTA_DOBLE_FACTOR = 'FALTA_DOBLE_FACTOR'
+const FALTA_DOBLE_FACTOR = 'FALTA_DOBLE_FACTOR'
 
 /**
  * El 404 del backend cuando la ruta es de un módulo apagado. Si llega, la
@@ -104,7 +104,7 @@ export const FALTA_DOBLE_FACTOR = 'FALTA_DOBLE_FACTOR'
  * desde otra): `useModulos` se apunta aquí para volver a pedirla, y así los
  * menús y las rutas se enteran sin recargar la página.
  */
-export const MODULO_NO_ACTIVADO = 'MODULO_NO_ACTIVADO'
+const MODULO_NO_ACTIVADO = 'MODULO_NO_ACTIVADO'
 
 type OyenteDeModulo = (modulo: string) => void
 const oyentesDeModuloNoActivado = new Set<OyenteDeModulo>()

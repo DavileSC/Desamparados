@@ -13,7 +13,7 @@
  * no cambia. El `<title>` no hace falta: React lo pone delante del estático y
  * es el que manda.
  */
-export const META_QUE_PONE_CADA_PAGINA = [
+const META_QUE_PONE_CADA_PAGINA = [
   'meta[name="description"]',
   'meta[property="og:title"]',
   'meta[property="og:description"]',

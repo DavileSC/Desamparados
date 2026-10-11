@@ -24,7 +24,7 @@ export interface UsoDeCorreo {
 
 export interface CatalogoDeEmails { comunes: CampoDeUso[]; usos: UsoDeCorreo[] }
 
-export interface Plantilla extends TextoDePlantilla { id: number; nombre: string; uso: string; enUso: boolean }
+interface Plantilla extends TextoDePlantilla { id: number; nombre: string; uso: string; enUso: boolean }
 
 export type DatosPlantilla = TextoDePlantilla & { nombre: string; uso: string }
 

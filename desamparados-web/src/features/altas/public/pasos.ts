@@ -19,7 +19,7 @@ export type Campo = keyof MembershipFormData
  * ficha) y quien trae menores tiene un paso más para ellos. Su DNI sí se pide
  * siempre, porque es el de la cuenta, no el de la ficha.
  */
-export type Paso = { titulo: string; campos: Campo[] }
+type Paso = { titulo: string; campos: Campo[] }
 
 export function pasosDe(camino: Camino | null): Paso[] {
   if (!camino) return [{ titulo: '¿Quién se apunta?', campos: ['camino'] }]

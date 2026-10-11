@@ -322,7 +322,7 @@ export function textosPortada(identidadInstalacion: Identidad = identidad) {
 }
 
 /** La portada: negro, el escudo en oro, «Informe anual» con el nombre del Grupo, el año grande y una franja burdeos. */
-export function portada(doc: Doc, periodo: Periodo, textos: TextosInforme, identidadInstalacion: Identidad = identidad) {
+function portada(doc: Doc, periodo: Periodo, textos: TextosInforme, identidadInstalacion: Identidad = identidad) {
   const t = textosPortada(identidadInstalacion);
   sinMargenes(doc, () => {
     const cx = A4.ancho / 2;

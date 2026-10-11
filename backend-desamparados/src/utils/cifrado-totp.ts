@@ -29,7 +29,7 @@ const ETIQUETA_BYTES = 16;
 const INFO_HKDF = 'desamparados/totp-secret/v1';
 const HEX_64 = /^[0-9a-f]{64}$/i;
 
-export interface ClaveTotp {
+interface ClaveTotp {
   /** Con la que se cifra, y la primera que se prueba al leer. */
   clave: Buffer;
   /** true si no hay TOTP_ENC_KEY y la clave sale de JWT_SECRET (solo fuera de producción). */

@@ -9,16 +9,16 @@ import { diaMadrid } from './contabilidad';
  * esconde el único que importa.
  */
 
-export type ValorAuditado = string | number | boolean | null;
-export type Instantanea = Record<string, ValorAuditado>;
-export type DetallesCambio = { antes: Instantanea; despues: Instantanea };
+type ValorAuditado = string | number | boolean | null;
+type Instantanea = Record<string, ValorAuditado>;
+type DetallesCambio = { antes: Instantanea; despues: Instantanea };
 
 /**
  * Datos bancarios: nunca en claro en la auditoría, que la lee más gente de la
  * que puede ver una cuenta. Se anota que cambió y nada más.
  */
 const CAMPOS_BANCARIOS = new Set(['iban', 'titularCuenta']);
-export const MARCA_CAMBIADO = 'cambiado';
+const MARCA_CAMBIADO = 'cambiado';
 
 /**
  * Convierte un valor a algo que se pueda comparar y guardar en JSON. Las fechas

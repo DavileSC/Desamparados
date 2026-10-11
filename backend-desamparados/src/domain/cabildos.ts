@@ -52,7 +52,7 @@ export function quorum(presentesConVoto: number, censoConVoto: number, reglas: R
   return { necesarios, enPrimera: censoConVoto > 0 && presentesConVoto >= necesarios };
 }
 
-export type ResultadoVotacion = 'APROBADO' | 'RECHAZADO';
+type ResultadoVotacion = 'APROBADO' | 'RECHAZADO';
 
 /**
  * Qué sale de una votación. La simple, más a favor que en contra (el empate

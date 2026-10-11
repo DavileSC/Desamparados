@@ -7,7 +7,7 @@ import { SIN_VALOR_VISIBLE, anchoControl } from './controles'
 
 export interface Opcion { valor: string; etiqueta: string }
 
-export interface FiltroDesplegable<C extends string> {
+interface FiltroDesplegable<C extends string> {
   clave: C
   etiqueta: string
   /** Cómo se lee sin filtrar: «Todos», «Todas». */

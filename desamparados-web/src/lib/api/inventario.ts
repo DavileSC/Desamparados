@@ -14,7 +14,7 @@ export interface Prenda { id: number; numero: string; tipo: 'TUNICA' | 'CAPIROTE
 // Enseres y ropero son dos listados independientes de la misma pantalla: cada
 // uno pide su propia página, y por eso reciben la suya en vez de compartirla.
 // Cada uno con sus filtros y su orden; vacío = sin filtrar.
-export type FiltrosEnseres = { search?: string; categoria?: string; ubicacion?: string; necesitaReparacion?: 'true' | ''; orden?: string }
+type FiltrosEnseres = { search?: string; categoria?: string; ubicacion?: string; necesitaReparacion?: 'true' | ''; orden?: string }
 export type FiltrosPrendas = { q?: string; tipo?: Prenda['tipo'] | ''; estado?: Prenda['estado'] | ''; orden?: string }
 export const listarEnseres = (pagina: { pagina: number; porPagina: number }, filtros: FiltrosEnseres = {}) =>
   llamarApi<RespuestaPaginada<Enser>>(`/inventario/enseres?${paramsPagina(pagina, filtros)}`)

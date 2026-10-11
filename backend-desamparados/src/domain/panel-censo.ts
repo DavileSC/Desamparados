@@ -7,7 +7,7 @@ export interface MovimientoMensual {
   total: number;
 }
 
-export interface PuntoCenso {
+interface PuntoCenso {
   mes: string;
   activos: number;
 }

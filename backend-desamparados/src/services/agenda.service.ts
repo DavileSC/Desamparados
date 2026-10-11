@@ -17,10 +17,10 @@ import { transactionWithRetry } from '../utils/transaction-retry.js';
 export const ACTOS_EN_PORTADA = 5;
 
 /** Los días de atrás que siguen en el calendario suscrito. */
-export const DIAS_PASADOS_EN_CALENDARIO = 90;
+const DIAS_PASADOS_EN_CALENDARIO = 90;
 
 /** Seis semanas de rejilla y algo de holgura: el calendario del CMS no pide más de una vez. */
-export const MAX_DIAS_CALENDARIO = 62;
+const MAX_DIAS_CALENDARIO = 62;
 
 export function actosEnPortada<E extends { startDate: Date }>(proximosPublicos: E[]): E[] {
   const primero = proximosPublicos[0];

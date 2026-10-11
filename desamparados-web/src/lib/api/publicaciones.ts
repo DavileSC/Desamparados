@@ -4,7 +4,7 @@ import { llamarApi } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
 
 /** Lo que la portada tiene cacheado de las publicaciones (`useDatosDePortada('publicaciones')`). */
-export const CLAVE_PUBLICACIONES_DE_PORTADA = ['portada', 'publicaciones'] as const
+const CLAVE_PUBLICACIONES_DE_PORTADA = ['portada', 'publicaciones'] as const
 
 /** Tras crear, cambiar o borrar una publicación en el CMS: que la portada la vuelva a pedir. */
 export function invalidarPublicacionesPublicas(queryClient: QueryClient) {

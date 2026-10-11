@@ -31,7 +31,7 @@ export interface AcreedorSepa {
   bic: string | null;
 }
 
-export const VARIABLES_ACREEDOR = ['SEPA_ACREEDOR_NOMBRE', 'SEPA_ACREEDOR_ID', 'SEPA_ACREEDOR_IBAN'] as const;
+const VARIABLES_ACREEDOR = ['SEPA_ACREEDOR_NOMBRE', 'SEPA_ACREEDOR_ID', 'SEPA_ACREEDOR_IBAN'] as const;
 
 const definida = (valor: string | undefined): valor is string => valor !== undefined && valor.trim() !== '';
 
@@ -151,7 +151,7 @@ export function esDiaHabilBancario(dia: string): boolean {
 }
 
 /** El día que queda `n` días hábiles bancarios después de `dia`. */
-export function sumarDiasHabiles(dia: string, n: number): string {
+function sumarDiasHabiles(dia: string, n: number): string {
   let actual = dia;
   let quedan = n;
   while (quedan > 0) {
@@ -166,7 +166,7 @@ export function sumarDiasHabiles(dia: string, n: number): string {
  * uno para los recurrentes, pero el fichero hay que subirlo al banco, y el
  * banco lo quiere antes de su hora de corte: con dos no se llega tarde.
  */
-export const DIAS_HABILES_DE_MARGEN = 2;
+const DIAS_HABILES_DE_MARGEN = 2;
 
 export function fechaCobroMinima(hoy: string): string {
   return sumarDiasHabiles(hoy, DIAS_HABILES_DE_MARGEN);
@@ -214,7 +214,7 @@ export const TEXTO_EXCLUSION: Record<MotivoExclusion, string> = {
   IMPORTE_CERO: 'El importe es cero',
 };
 
-export interface Adeudo {
+interface Adeudo {
   reciboId: number;
   /** EndToEndId: vuelve en la devolución y la casa con su recibo. */
   endToEndId: string;
@@ -225,7 +225,7 @@ export interface Adeudo {
 }
 
 /** `REC-123`: único por recibo y corto (el banco admite 35). */
-export const endToEndDeRecibo = (reciboId: number) => `REC-${reciboId}`;
+const endToEndDeRecibo = (reciboId: number) => `REC-${reciboId}`;
 
 /** La referencia del mandato: el hermano y el día en que lo firmó. */
 export function referenciaMandato(hermanoId: number, fechaFirma: string): string {
@@ -283,7 +283,7 @@ export const importeXml = (centimos: number) => `${Math.floor(centimos / 100)}.$
 
 // --- El fichero ------------------------------------------------------------
 
-export interface DatosRemesa {
+interface DatosRemesa {
   mensajeId: string;
   creadaEl: Date;
   fechaCobro: string;

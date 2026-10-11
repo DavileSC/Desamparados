@@ -29,7 +29,7 @@ const tasacionSchema = type("0 <= number <= 9999999999.99")
     .narrow((n) => Math.abs(Math.round(n * 100) - n * 100) < 1e-6)
     .describe("un importe en euros con dos decimales como mucho")
     .or("null");
-export const MAX_FOTOS_ENSER = 12;
+const MAX_FOTOS_ENSER = 12;
 const fotosSchema = type({ url: imagenOpcional, pie: type("string <= 160").matching(/^[^<>]*$/) })
     .array().atMostLength(MAX_FOTOS_ENSER);
 

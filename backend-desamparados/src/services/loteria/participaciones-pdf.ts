@@ -14,7 +14,7 @@ import {
 import { A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, NEGRO, ORO, aBuffer, nuevoDocumento, rotulo, sinMargenes, versalitas, type Doc } from '../informes/pdf.js';
 import { eurosDeCentimos } from '../../utils/euros.js';
 
-export interface SorteoParaImprimir extends Reparto {
+interface SorteoParaImprimir extends Reparto {
   nombre: string;
   fecha: Date;
   leyenda: string;

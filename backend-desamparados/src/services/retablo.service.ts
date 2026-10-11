@@ -30,19 +30,19 @@ export interface AjustesRetablo extends Retablo {
 }
 
 /** Lo que se cuenta: su nombre, con qué artículo se escribe (null en un acto) y el día. */
-export interface CuentaDeHoy {
+interface CuentaDeHoy {
   nombre: string;
   articulo: Articulo | null;
   fecha: string;
 }
 
 /** Lo que pinta el Inicio hoy: la foto que toca y la cuenta atrás, ya resueltas. */
-export interface RetabloDeHoy extends Retablo {
+interface RetabloDeHoy extends Retablo {
   cuenta: CuentaDeHoy | null;
 }
 
 /** Lo que se puede elegir en la pantalla de ajustes. Null: su módulo está apagado. */
-export interface OpcionesRetablo {
+interface OpcionesRetablo {
   proxima: CuentaDeHoy | null;
   salidas: { id: number; nombre: string; articulo: Articulo; fecha: string | null }[] | null;
   actos: { id: number; nombre: string; fecha: string }[] | null;
@@ -53,7 +53,7 @@ const CLAVE_PUNTO = 'inicio_retablo_punto';
 const CLAVE_TIEMPOS = 'inicio_retablo_tiempos';
 const CLAVE_CUENTA = 'inicio_retablo_cuenta';
 /** El encuadre de la foto de siempre: el rostro de la Virgen. */
-export const PUNTO_POR_DEFECTO = { x: 50, y: 30 };
+const PUNTO_POR_DEFECTO = { x: 50, y: 30 };
 /** Los actos de la Agenda que se ofrecen: los próximos, hasta este número. */
 const ACTOS_A_ELEGIR = 60;
 

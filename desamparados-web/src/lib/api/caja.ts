@@ -36,7 +36,7 @@ export interface EstadoVentaEnMano {
 }
 
 /** Una línea: un producto del catálogo (con su talla, si la tiene), o algo suelto con su precio en céntimos. */
-export type LineaDeVenta = { productoId: number; tallaId?: number; cantidad: number } | { nombre: string; centimos: number; cantidad: number }
+type LineaDeVenta = { productoId: number; tallaId?: number; cantidad: number } | { nombre: string; centimos: number; cantidad: number }
 
 export const estadoVentaEnMano = () => llamarApi<EstadoVentaEnMano>('/tienda/admin/caja')
 export const venderEnMano = (lineas: LineaDeVenta[], metodo: MetodoDeCaja) =>

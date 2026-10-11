@@ -26,7 +26,7 @@ import { PlantillasCorreoService } from './plantillas-correo.service.js';
 import type { AreaSesion } from '../utils/cookies.js';
 
 /** Quien entra en el censo al aprobar la solicitud, con el número que recibe. */
-export interface HermanoAprobado { nombre: string; apellidos: string | null; numeroHermano: number }
+interface HermanoAprobado { nombre: string; apellidos: string | null; numeroHermano: number }
 
 /** «Estimado Juan:», como lo pone el campo {{saludo}} (sin HTML: la plantilla lo escapa). */
 const textoDeSaludo = (nombre: string, sexo?: Sexo) =>

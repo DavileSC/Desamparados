@@ -10,9 +10,9 @@
  */
 import { EventEmitter } from 'node:events';
 
-export type QueCambia = 'inscrito' | 'cobrado' | 'perdonado' | 'entregado' | 'corregido' | 'anulado' | 'alta' | 'devuelto';
+type QueCambia = 'inscrito' | 'cobrado' | 'perdonado' | 'entregado' | 'corregido' | 'anulado' | 'alta' | 'devuelto';
 
-export interface AvisoDeMesa {
+interface AvisoDeMesa {
   que: QueCambia;
   hermanoId: number;
   /** De qué salida, si es de una en concreto. */

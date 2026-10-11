@@ -21,13 +21,13 @@ export const tokenPedidoSchema = type({ params: { token: type(/^[a-f0-9]{32}$/).
 const precio = type("0 < number <= 99999.99").narrow((n) => Math.abs(Math.round(n * 100) - n * 100) < 1e-6).describe("un precio positivo con dos decimales como mucho");
 
 // Las fotos de más de un producto: hasta ocho, cada una con su pie.
-export const MAX_FOTOS_PRODUCTO = 8;
+const MAX_FOTOS_PRODUCTO = 8;
 const fotosSchema = type({ url: imagenOpcional, pie: type("string <= 160").matching(/^[^<>]*$/) })
     .array().atMostLength(MAX_FOTOS_PRODUCTO);
 
 // Las tallas: hasta veinte, cada una con su nombre (sin repetir, sin mirar
 // mayúsculas) y lo que queda (null: sin límite). Las que ya estaban traen su id.
-export const MAX_TALLAS = 20;
+const MAX_TALLAS = 20;
 const tallasSchema = type({
     "id?": "number.integer > 0",
     nombre: textoLimpio(20, 'una talla'),

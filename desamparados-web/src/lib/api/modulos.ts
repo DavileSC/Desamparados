@@ -15,7 +15,7 @@ export interface ModuloDelCms extends FichaDeModulo {
 }
 export const modulosDelCms = () => llamarApi<ModuloDelCms[]>('/cms/modulos')
 
-export interface ResultadoDeCambio { ok: true; cambiados: ClaveModulo[]; activos: ClaveModulo[] }
+interface ResultadoDeCambio { ok: true; cambiados: ClaveModulo[]; activos: ClaveModulo[] }
 /**
  * Encender o apagar. Un 400 llega como ErrorDeApi con `payload.faltan` (lo
  * que habría que encender antes) o `payload.dependientes` (lo que impide apagar).

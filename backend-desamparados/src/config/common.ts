@@ -86,7 +86,7 @@ export const codigoPostal = type("string").pipe(
 
 // El NIF de quien dona (DNI, NIE o CIF), para el certificado y el Modelo 182.
 // Con el patrón del DNI de abajo: se normaliza antes y se guarda limpio.
-export const nif = type("string").pipe(
+const nif = type("string").pipe(
     normalizarNif,
     type("string").narrow((s: string) => nifValido(s)).describe("un NIF válido (DNI, NIE o CIF) con su letra o cifra de control"),
 );
@@ -121,7 +121,7 @@ export const datosFiscales = type({
 // cualquier otro separador: «12.345.678-Z» es como sale en muchos papeles.
 const LETRAS_DNI = "TRWAGMYFPDXBNJZSQVHLCKE";
 
-export function normalizarDni(valor: string): string {
+function normalizarDni(valor: string): string {
     const limpio = valor.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
     const dni = /^([0-9]{1,7})([A-Z])$/.exec(limpio);
     if (dni) return dni[1].padStart(8, '0') + dni[2];

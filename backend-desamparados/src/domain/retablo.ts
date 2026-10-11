@@ -38,7 +38,7 @@ export const CUENTA_POR_DEFECTO: CuentaAtras = { tipo: 'proxima' };
 export const MAX_TIEMPOS = 8;
 
 /** Un tramo de días, los dos incluidos, en `AAAA-MM-DD`. */
-export interface Tramo {
+interface Tramo {
   desde: string;
   hasta: string;
 }

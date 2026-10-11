@@ -2,13 +2,13 @@ import { subirImagenPublica } from '../../../lib/api/subida'
 
 /** Los mismos límites que la subida del servidor (upload.middleware.ts): se avisa antes de enviar. */
 export const TIPOS_FOTO = ['image/jpeg', 'image/png', 'image/webp']
-export const MAX_BYTES_FOTO = 5 * 1024 * 1024
+const MAX_BYTES_FOTO = 5 * 1024 * 1024
 
 /** Cuántas fotos suben a la vez: más no acaba antes, porque el servidor analiza cada una. */
 const A_LA_VEZ = 3
 
 /** Por qué no se puede subir una foto, o `null` si vale. */
-export function problemaDeFoto(archivo: File): string | null {
+function problemaDeFoto(archivo: File): string | null {
   if (!TIPOS_FOTO.includes(archivo.type)) return 'tiene que ser JPG, PNG o WebP'
   if (archivo.size > MAX_BYTES_FOTO) return 'pesa más de 5 MB'
   return null

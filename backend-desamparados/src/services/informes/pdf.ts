@@ -1,7 +1,7 @@
 import PDFDocument from 'pdfkit';
 import { fileURLToPath } from 'node:url';
 import type { Color, Cuerpo, Formato, Grafica } from '../../domain/datos-areas.js';
-import { euros, numero } from '../../domain/datos-areas.js';
+import { numero } from '../../domain/datos-areas.js';
 import type { Trozo } from '../../domain/entradillas.js';
 import { identidad } from '../../domain/datos-entidad.js';
 
@@ -89,7 +89,7 @@ export const ANCHO_UTIL = A4.ancho - 2 * MX;
 /** Hasta dónde llega el contenido: debajo va el pie. */
 export const FIN = A4.alto - 67.5;
 /** Dónde empieza el contenido en una página que sigue a otra (bajo la banda fina). */
-export const INICIO_SIGUE = 72;
+const INICIO_SIGUE = 72;
 
 export type Doc = PDFKit.PDFDocument;
 
@@ -181,7 +181,7 @@ export class Paginas {
 
 // ---------------------------------------------------------------- texto
 
-export interface OpcionesRotulo { letra?: string; tam?: number; color?: string; ancho?: number; alinear?: 'left' | 'center' | 'right'; espaciado?: number; opacidad?: number }
+interface OpcionesRotulo { letra?: string; tam?: number; color?: string; ancho?: number; alinear?: 'left' | 'center' | 'right'; espaciado?: number; opacidad?: number }
 
 /**
  * Una línea de texto en un sitio fijo, sin partirla ni saltar de página. Con
@@ -208,7 +208,7 @@ export function rotulo(doc: Doc, texto: string, x: number, y: number, o: Opcione
  * «4.314 €» y «46 %» no se parten al final de una línea. `euros()` deja un
  * espacio normal (la pantalla lo prefiere así); en papel se pega con uno duro.
  */
-export const pegar = (texto: string) => texto.replace(/ (€|%)/g, '\u00a0$1');
+const pegar = (texto: string) => texto.replace(/ (€|%)/g, '\u00a0$1');
 
 /** «CAPÍTULO IV»: los rótulos van en versalitas espaciadas. */
 export const versalitas = (texto: string) => texto.toLocaleUpperCase('es-ES');
@@ -298,7 +298,7 @@ export function bandaCapitulo(doc: Doc, o: { cabecera: string; antetitulo: strin
 }
 
 /** La banda fina de una página que sigue a otra del mismo capítulo. */
-export function bandaSigue(doc: Doc, izquierda: string, derecha: string) {
+function bandaSigue(doc: Doc, izquierda: string, derecha: string) {
   sinMargenes(doc, () => {
     doc.rect(0, 0, A4.ancho, 42).fill(NEGRO);
     doc.rect(0, 39.75, A4.ancho, 2.25).fill(BURDEOS);
@@ -534,7 +534,7 @@ function barras(doc: Doc, c: Extract<Cuerpo, { tipo: 'barras' }>, x: number, y: 
 }
 
 /** Lo que ocupa el cuerpo de una gráfica. */
-export function altoDelCuerpo(c: Cuerpo, altoColumnas: number): number {
+function altoDelCuerpo(c: Cuerpo, altoColumnas: number): number {
   if (c.tipo === 'barras') return c.filas.length * ALTO_BARRA;
   if (c.tipo === 'lista') return c.filas.length * ALTO_BARRA;
   return altoColumnas;
@@ -555,10 +555,10 @@ export function vacio(doc: Doc, texto: string, x: number, y: number, ancho: numb
   return alto;
 }
 
-export interface OpcionesGrafica { altoColumnas?: number }
+interface OpcionesGrafica { altoColumnas?: number }
 
 /** Lo que ocupa una gráfica entera: título, leyenda, dibujo y pie. */
-export function altoDeGrafica(doc: Doc, g: Grafica, ancho: number, o: OpcionesGrafica = {}): number {
+function altoDeGrafica(doc: Doc, g: Grafica, ancho: number, o: OpcionesGrafica = {}): number {
   const cabecera = 25 + (g.leyenda?.length && !g.vacio ? 16 : 0);
   const cuerpo = g.vacio ? altoDeVacio(doc, g.vacio, ancho) : altoDelCuerpo(g.cuerpo, o.altoColumnas ?? 130);
   return cabecera + cuerpo + (g.pie ? 16 : 0);
@@ -574,7 +574,7 @@ const coloresDeLeyenda = (g: Grafica) => {
 };
 
 /** Una gráfica en un sitio fijo, sin partirla (se ha medido antes con `altoDeGrafica`). */
-export function graficaEn(doc: Doc, g: Grafica, x: number, y: number, ancho: number, o: OpcionesGrafica = {}): number {
+function graficaEn(doc: Doc, g: Grafica, x: number, y: number, ancho: number, o: OpcionesGrafica = {}): number {
   let yy = tituloDeBloque(doc, g.titulo, g.resumen, x, y, ancho);
   if (g.leyenda?.length && !g.vacio) yy = leyenda(doc, coloresDeLeyenda(g), x, yy);
   if (g.vacio) {
@@ -657,4 +657,4 @@ export function fila(p: Paginas, cols: Grafica[][], o: OpcionesGrafica = {}) {
   doc.y = y + alto + 22;
 }
 
-export { euros, numero };
+;

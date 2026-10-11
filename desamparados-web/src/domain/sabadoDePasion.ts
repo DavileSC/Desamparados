@@ -35,7 +35,7 @@ export function sabadoDePasion(anio: number): Date {
   return new Date(domingo.getFullYear(), domingo.getMonth(), domingo.getDate() - 8)
 }
 
-export interface CuentaAtrasEstacion {
+interface CuentaAtrasEstacion {
   /** La próxima estación de penitencia. */
   fecha: Date
   /** Días que faltan; 0 el mismo día. */

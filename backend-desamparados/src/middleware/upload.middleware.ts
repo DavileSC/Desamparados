@@ -87,7 +87,7 @@ export const privateUploadMiddleware = multer({
  * `client_max_body_size` de `/api/upload/` en nginx y `StreamMaxLength` de
  * ClamAV, o el vídeo se cortaría antes de analizarse.
  */
-export const MAX_BYTES_VIDEO = Math.max(topesVideo.hero.maxBytes, topesVideo.galeria.maxBytes);
+const MAX_BYTES_VIDEO = Math.max(topesVideo.hero.maxBytes, topesVideo.galeria.maxBytes);
 
 const filtroDeVideo = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const ext = path.extname(file.originalname).toLowerCase();
@@ -106,7 +106,7 @@ export const videoUploadMiddleware = multer({
  * ocupa unos cientos de KB; el tope queda holgado y por debajo de los 3 MB
  * que nginx deja pasar a `/api/`. Qué tipo es lo decide quien lo lee.
  */
-export const MAX_BYTES_DATOS = 900 * 1024;
+const MAX_BYTES_DATOS = 900 * 1024;
 
 export const ficheroDeDatosMiddleware = multer({
   storage: multer.memoryStorage(),

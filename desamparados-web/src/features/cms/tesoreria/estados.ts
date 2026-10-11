@@ -1,9 +1,9 @@
 import type { AdminReceiptStatus } from '../../../lib/api/tesoreria'
 import { segunModo } from '../../../theme/cms'
 
-export type Tono = { texto: string; fondo: string }
+type Tono = { texto: string; fondo: string }
 
-export interface EstadoRecibo {
+interface EstadoRecibo {
   /** «Pendiente»: el sello de cada recibo. */
   etiqueta: string
   /** «Pendientes»: el contador. */

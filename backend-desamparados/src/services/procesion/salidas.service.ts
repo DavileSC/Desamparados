@@ -67,7 +67,7 @@ export function salidaDe(peticion: { query?: Record<string, unknown>; body?: unk
 }
 
 /** La próxima salida para la cuenta atrás de la portada: lo justo, nada de cuotas ni puestos. */
-export interface ProximaSalida {
+interface ProximaSalida {
   nombre: string;
   articulo: Articulo;
   /** El día en Madrid, `AAAA-MM-DD`. */

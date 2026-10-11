@@ -17,7 +17,7 @@ export const CLAVE_CINGULOS = 'cingulos_total';
 /** Lo que la mesa puede elegir al dar la ropa (DEVUELTO lo pone la devolución). */
 export type CinguloEnMesa = Exclude<Cingulo, 'DEVUELTO'>;
 
-export interface RecuentoDeCingulos {
+interface RecuentoDeCingulos {
   /** Los que tiene el Grupo. */
   total: number;
   /** Prestados y sin devolver, de este año o de otros. */
@@ -29,7 +29,7 @@ export interface RecuentoDeCingulos {
 }
 
 /** Cuántos tiene el Grupo, según la configuración (0 si nadie lo ha apuntado). */
-export async function totalDeCingulos(cliente: Cliente = db): Promise<number> {
+async function totalDeCingulos(cliente: Cliente = db): Promise<number> {
   const fila = await cliente.configuracion.findUnique({ where: { key: CLAVE_CINGULOS } });
   const n = Number(fila?.value);
   return Number.isInteger(n) && n >= 0 ? n : 0;

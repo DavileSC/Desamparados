@@ -14,7 +14,7 @@
  * propone por su nombre.
  */
 
-export interface Cuenta { codigo: string; nombre: string }
+interface Cuenta { codigo: string; nombre: string }
 
 /** Las cuentas del plan que puede necesitar el Grupo, por grupos. */
 export const PLAN: Cuenta[] = [
@@ -121,9 +121,9 @@ export interface TraspasoABanco {
   centimos: number;
 }
 
-export interface Linea { cuenta: string; debe: number; haber: number }
+interface Linea { cuenta: string; debe: number; haber: number }
 /** `apunteId`, el apunte del libro de caja; `traspasoId`, el ingreso en el banco. Uno de los dos. */
-export interface Asiento { numero: number; apunteId: number | null; traspasoId?: number; fecha: string; concepto: string; lineas: Linea[] }
+interface Asiento { numero: number; apunteId: number | null; traspasoId?: number; fecha: string; concepto: string; lineas: Linea[] }
 
 /**
  * El libro diario: un asiento por apunte y por traspaso al banco, numerados
@@ -152,7 +152,7 @@ export function libroDiario(apuntes: ApunteDeCaja[], traspasos: TraspasoABanco[]
 }
 
 
-export interface SumaDeCuenta { cuenta: string; nombre: string; debe: number; haber: number; saldo: number }
+interface SumaDeCuenta { cuenta: string; nombre: string; debe: number; haber: number; saldo: number }
 
 /** Sumas y saldos: por cuenta, lo cargado, lo abonado y el saldo (deudor en positivo). */
 export function sumasYSaldos(asientos: Asiento[]): SumaDeCuenta[] {

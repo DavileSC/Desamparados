@@ -21,7 +21,7 @@ import topes from '../../../shared/topes-video.json' with { type: 'json' };
  * fichero roto o recortado devuelve `null`.
  */
 
-export interface PistaMp4 {
+interface PistaMp4 {
   /** 'vide', 'soun'… el tipo de la pista según su `hdlr`. */
   tipo: string;
   /** El códec de la muestra: 'avc1' (H.264), 'hvc1' (H.265), 'mp4a' (AAC)… */
@@ -30,7 +30,7 @@ export interface PistaMp4 {
   alto?: number;
 }
 
-export interface InfoMp4 {
+interface InfoMp4 {
   /** En segundos. */
   duracion: number;
   pistas: PistaMp4[];
@@ -127,8 +127,8 @@ export function leerMp4(datos: Buffer): InfoMp4 | null {
 }
 
 /** Dónde va el vídeo: cada sitio tiene su tope de peso y de duración. */
-export type UsoDeVideo = 'hero' | 'galeria';
-export const USOS_DE_VIDEO: readonly UsoDeVideo[] = ['hero', 'galeria'];
+type UsoDeVideo = 'hero' | 'galeria';
+const USOS_DE_VIDEO: readonly UsoDeVideo[] = ['hero', 'galeria'];
 export const esUsoDeVideo = (valor: unknown): valor is UsoDeVideo =>
   typeof valor === 'string' && (USOS_DE_VIDEO as readonly string[]).includes(valor);
 

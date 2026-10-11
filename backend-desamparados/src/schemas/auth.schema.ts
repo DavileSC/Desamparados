@@ -66,14 +66,6 @@ const pagoSchema = type({
 });
 
 /**
- * Qué es el menor para quien lo apunta. No siempre es su hijo: un tío, un
- * abuelo o un padrino pueden ser su tutor a efectos de la cofradía, y a
- * Secretaría le hace falta saberlo para pedir la autorización de los padres.
- */
-export const PARENTESCOS = ['HIJO', 'SOBRINO', 'NIETO', 'AHIJADO', 'OTRO'] as const;
-export type ParentescoAlta = (typeof PARENTESCOS)[number];
-
-/**
  * Un menor a cargo del adulto que se registra. El DNI y el correo son
  * opcionales **a propósito**: un niño de siete años no tiene ninguno de los
  * dos, pero uno de quince ya suele tener ambos, y obligar a dejarlos en blanco
@@ -87,6 +79,8 @@ const menorSchema = type({
     "segundoApellido?": textoOpcional,
     "dni?": dni,             // Si viene, pasa por la validación de la letra
     "email?": email,
+    // Qué es el menor para quien lo apunta. No siempre es su hijo: un tío, un abuelo
+    // o un padrino pueden ser su tutor, y Secretaría pide con ello la autorización de los padres.
     "parentesco?": "'HIJO' | 'SOBRINO' | 'NIETO' | 'AHIJADO' | 'OTRO'",
     fechaNacimiento: diaNacimiento
 });
@@ -138,7 +132,6 @@ export const reactivacionSchema = type({
     }
 });
 
-
 // =================================================================
 //  3. ESQUEMAS DE LOGIN Y 2FA
 // =================================================================
@@ -158,7 +151,7 @@ export const logoutSchema = type({
 });
 
 // Esquema para validar los 6 dígitos del TOTP
-export const totpTokenSchema = type("string").matching(/^[0-9]{6}$/).describe("un código numérico de 6 dígitos");
+const totpTokenSchema = type("string").matching(/^[0-9]{6}$/).describe("un código numérico de 6 dígitos");
 
 // Acepta el TOTP (123456) o un código de respaldo (AB2C-DEF4-GH56). También en
 // minúsculas, sin guiones o con espacios: el servicio lo normaliza

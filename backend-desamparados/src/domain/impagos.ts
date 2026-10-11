@@ -8,14 +8,14 @@
  * está en el banco, cobrándose.
  */
 
-export interface CuotaImpagada {
+interface CuotaImpagada {
   id: number;
   year: number;
   estado: 'PENDIENTE' | 'DEVUELTO';
   importe: number;
 }
 
-export interface HermanoConImpagos {
+interface HermanoConImpagos {
   hermano: { id: number; nombre: string; apellidos: string; numeroHermano: number | null };
   cuotas: CuotaImpagada[];
   /** Lo que debe en total, en euros con dos decimales. */

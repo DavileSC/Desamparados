@@ -25,14 +25,14 @@ export interface AuthUser {
   primerAccesoPendiente?: boolean
 }
 
-export type AreaSesion = 'cms' | 'hermanos'
+type AreaSesion = 'cms' | 'hermanos'
 
 /**
  * `cargando` es el estado inicial: todavía no sabemos qué sesiones hay porque
  * la respuesta de /api/auth/me no ha llegado. Los guardas de ruta deben esperar
  * en lugar de mandar al login, o expulsarían a quien sí tiene sesión.
  */
-export type AuthStatus = 'cargando' | 'listo'
+type AuthStatus = 'cargando' | 'listo'
 
 /** Clave que usaba zustand/persist cuando el token vivía en el navegador */
 export const CLAVE_PERSISTENCIA_ANTIGUA = 'desamparados-auth'

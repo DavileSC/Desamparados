@@ -28,7 +28,7 @@ const formatoDia = new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, weekday: '
 const formatoHora = new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, hour: '2-digit', minute: '2-digit' });
 
 /** «lunes 8 de marzo, de 18:00 a 21:00». */
-export function describirTurno(turno: { fecha: Date; horaInicio: Date; horaFin: Date }): string {
+function describirTurno(turno: { fecha: Date; horaInicio: Date; horaFin: Date }): string {
   return `${formatoDia.format(turno.fecha)}, de ${formatoHora.format(turno.horaInicio)} a ${formatoHora.format(turno.horaFin)}`;
 }
 

@@ -12,7 +12,7 @@ import { topesDeVideo } from '../domain/mp4.js';
  * límite y cada una retiene sus fotos en el disco (ver `ficheros-publicos.ts`);
  * con cincuenta caben meses de cambios de una página que se toca a menudo.
  */
-export const VERSIONES_POR_PAGINA = 50;
+const VERSIONES_POR_PAGINA = 50;
 
 /** Quién guarda: se copia a la versión para que siga diciéndolo si la cuenta se borra. */
 async function autorDe(autorId?: number): Promise<{ autorId: number | null; autorNombre: string }> {

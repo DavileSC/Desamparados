@@ -5,7 +5,7 @@ import { curvaSuave, pasoBonito, pasoEtiquetas } from './ejes'
 import { useAnchoMedido } from './useAnchoMedido'
 import { Degradado, Halo } from './brillo'
 
-export interface PuntoLinea {
+interface PuntoLinea {
   x: string
   y: number
 }

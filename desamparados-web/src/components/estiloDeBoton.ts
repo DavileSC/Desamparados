@@ -84,8 +84,6 @@ export const BOTON = {
   },
 } as const
 
-export type EstiloDeBoton = keyof typeof BOTON
-
 /** Para los fondos granate: el botón claro oscurece el granate en vez de aclararlo. */
 export const VELO_SOBRE_GRANATE = { '--velo-boton': 'rgba(10, 9, 11, 0.32)' } as const
 

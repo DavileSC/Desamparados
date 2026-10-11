@@ -44,9 +44,9 @@ const aPapeleta = (p: Fila) => ({
   deBaja: deBaja(p),
 });
 
-export type PapeletaEnPuerta = ReturnType<typeof aPapeleta>;
+type PapeletaEnPuerta = ReturnType<typeof aPapeleta>;
 
-export interface Lectura {
+interface Lectura {
   /** `FAMILIA`: el QR de la familia; nadie ha entrado aún, la lista va en `familia`. */
   veredicto: Veredicto | 'FAMILIA';
   papeleta: PapeletaEnPuerta | null;

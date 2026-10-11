@@ -24,7 +24,7 @@ import { aCentimos } from '../domain/sepa.js';
 import type { DatosFiscales } from './pagos/donativo.service.js';
 import { eurosDeCentimos } from '../utils/euros.js';
 
-export const CATEGORIA_APADRINAMIENTOS = 'Apadrinamientos';
+const CATEGORIA_APADRINAMIENTOS = 'Apadrinamientos';
 const PAGADOS = [EstadoPedido.PAGADO, EstadoPedido.ENTREGADO];
 
 export interface DatosCampana { titulo: string; descripcion: string; foto: string; activa: boolean }

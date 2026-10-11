@@ -48,7 +48,7 @@ const MAX_FILAS = 5000;
  * Lo que puede ocupar el Excel ya descomprimido. Un censo de 5000 filas no
  * llega ni a 5 MB; por encima solo cabe una bomba zip.
  */
-export const MAX_BYTES_XLSX_DESCOMPRIMIDO = 50 * 1024 * 1024;
+const MAX_BYTES_XLSX_DESCOMPRIMIDO = 50 * 1024 * 1024;
 
 type Celda = unknown;
 

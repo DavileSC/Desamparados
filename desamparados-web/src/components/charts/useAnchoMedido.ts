@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 /** Ancho de partida mientras nadie ha medido nada (y en los tests, que no miden). */
-export const ANCHO_POR_DEFECTO = 560
+const ANCHO_POR_DEFECTO = 560
 
 /**
  * El ancho real que tiene el hueco donde va la gráfica, en píxeles.

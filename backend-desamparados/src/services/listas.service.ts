@@ -11,11 +11,11 @@ import db from '../config/db.js';
 import { NotFoundError } from '../utils/error.handle.js';
 
 /** Los filtros de cada listado que se pueden guardar. */
-export const FILTROS_GUARDABLES = {
+const FILTROS_GUARDABLES = {
   censo: ['q', 'estado', 'numero', 'correo', 'cuenta', 'edad', 'medalla', 'boletin', 'orden'],
 } as const;
 
-export type PantallaConListas = keyof typeof FILTROS_GUARDABLES;
+type PantallaConListas = keyof typeof FILTROS_GUARDABLES;
 
 /** La consulta, con solo los filtros del listado y en su orden: dos listas iguales se escriben igual. */
 export function consultaLimpia(pantalla: PantallaConListas, consulta: string): string {

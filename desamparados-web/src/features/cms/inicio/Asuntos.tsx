@@ -14,7 +14,7 @@ import { FILETE, FILETE_SUAVE, ORO, ROSA_URGENTE } from './estiloRetablo'
  * se mueve. `filas` es 4 en pantallas altas y 3 en las bajas, donde con cuatro
  * el año se quedaba sin sitio.
  */
-export const aLaVista = (cuantos: number, filas = 4) => (cuantos <= filas ? cuantos : filas - 1)
+const aLaVista = (cuantos: number, filas = 4) => (cuantos <= filas ? cuantos : filas - 1)
 const PY = 'clamp(5px, 1vh, 9px)'
 
 const COLOR: Record<Prioridad, string> = {

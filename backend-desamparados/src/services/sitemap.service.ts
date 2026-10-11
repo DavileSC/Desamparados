@@ -18,7 +18,7 @@ import { ModulosService } from './modulos.service.js';
 interface RutaPublica { ruta: string; requisito: string[] }
 
 /** El detalle de una noticia: la única ruta con parámetro que se rellena. */
-export const RUTA_DE_NOTICIA = '/noticias/:slug';
+const RUTA_DE_NOTICIA = '/noticias/:slug';
 
 const RUTAS: readonly RutaPublica[] = rutasPublicas.rutas;
 
@@ -29,7 +29,7 @@ const escaparXml = (texto: string) =>
 const cumple = (requisito: readonly string[], activos: ReadonlySet<ClaveModulo>) =>
   requisito.some((m) => m === NUCLEO || (esClaveDeModulo(m) && activos.has(m)));
 
-export interface EntradaSitemap { ruta: string; lastmod?: Date }
+interface EntradaSitemap { ruta: string; lastmod?: Date }
 
 export class SitemapService {
   /** Las direcciones que se anuncian, sin el dominio. */

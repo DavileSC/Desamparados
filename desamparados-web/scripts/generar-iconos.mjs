@@ -13,7 +13,7 @@
 // No se ejecuta en cada build: son ficheros de marca, se generan cuando cambia
 // el escudo y se versionan. Para rehacerlos:
 //
-//   node scripts/generar-iconos.mjs
+//   npm run iconos
 //
 // `sharp` no es dependencia de la web —es una herramienta de una vez, y pesa—:
 // se toma prestada del backend, que ya la usa para quitar el EXIF de las fotos.

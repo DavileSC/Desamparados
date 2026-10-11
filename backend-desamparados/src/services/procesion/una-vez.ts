@@ -15,7 +15,7 @@ import { transactionWithRetry } from '../../utils/transaction-retry.js';
 
 type Tx = Prisma.TransactionClient;
 
-export interface Resultado<T> {
+interface Resultado<T> {
   resultado: T;
   /** La operación ya se había hecho con esta clave: no se ha vuelto a hacer. */
   repetida: boolean;

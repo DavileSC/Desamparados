@@ -9,7 +9,6 @@ export type { Articulo };
  * contraen «de el» y «a el»: con eso basta para no escribir nunca «del Grupo»
  * a mano. La misma copia vive en desamparados-web/src/domain/articulos.ts.
  */
-export const ARTICULOS: readonly Articulo[] = ['el', 'la', 'los', 'las'];
 
 /** El artículo de una fila de Salida: la columna es un VARCHAR(3) sin enum (Prisma no conoce el tipo), y solo entra por el esquema de las salidas, que lo limita a los cuatro. */
 export const articuloDe = (s: { articulo: string }): Articulo => s.articulo as Articulo;

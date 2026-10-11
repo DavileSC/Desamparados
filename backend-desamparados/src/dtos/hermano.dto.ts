@@ -73,11 +73,6 @@ export interface UpdateAdminHermanoDto extends UpdateHermanoDto {
 // Baja desde secretaría: sin fecha, se toma la de hoy.
 export type MotivoBaja = 'VOLUNTARIA' | 'IMPAGO' | 'FALLECIMIENTO' | 'OTRO';
 
-export interface BajaHermanoDto {
-  fechaBaja?: string;
-  motivo?: MotivoBaja;
-}
-
 export interface EmancipateHermanoDto {
   newEmail: string;
   newPassword: string;

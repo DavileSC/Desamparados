@@ -10,7 +10,7 @@ import VentanaDelActo from './VentanaDelActo'
 import Hueso from '../../../components/esqueleto/Hueso'
 import { CORMORANT } from './letraAlmanaque'
 
-export const PAPEL = '#f3eee5'
+const PAPEL = '#f3eee5'
 /** Los días de otro mes, un poco más apagados que la hoja. */
 const PAPEL_FUERA = '#ece5d9'
 /** Los días de culto solemne: un rosa viejo que se nota sin teñir la hoja. */

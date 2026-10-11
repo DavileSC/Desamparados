@@ -30,7 +30,7 @@ import { devueltosPendientes } from './recibos/comunes.js';
  * propia sección, que solo ven ADMIN y HERMANO_MAYOR.
  */
 
-export interface PanelResponse {
+interface PanelResponse {
   generadoEn: string;
   /** Ejercicio que acota el dinero, la procesión y la serie del censo. */
   ejercicio: { anio: number; cerrado: boolean };

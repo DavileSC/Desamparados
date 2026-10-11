@@ -19,7 +19,7 @@ export interface TransporteDeCorreo {
 }
 
 /** La cuenta aparte del formulario de contacto, ya resuelta. */
-export interface CuentaDeContacto {
+interface CuentaDeContacto {
   transporter: Transporter;
   usuario: string;
 }
@@ -31,7 +31,7 @@ export interface CuentaDeContacto {
  */
 let transporteGuardado: TransporteDeCorreo | undefined;
 
-export function transporte(): TransporteDeCorreo {
+function transporte(): TransporteDeCorreo {
   if (transporteGuardado) return transporteGuardado;
 
   if (process.env.NODE_TEST_CONTEXT !== undefined) {
@@ -120,7 +120,7 @@ export function ponerCuentaDeContacto(nueva: CuentaDeContacto | null | undefined
   cuentaGuardada = nueva;
 }
 
-export interface OpcionesDeEnvio {
+interface OpcionesDeEnvio {
   replyTo?: string;
   cuenta?: CuentaDeContacto | null;
   /** Archivos que van con el correo (la papeleta en PDF), además de las imágenes de la plantilla. */

@@ -258,7 +258,7 @@ export interface Colas {
   porRecoger: EnCola[]
 }
 
-export interface RopaPorPreparar {
+interface RopaPorPreparar {
   solicitudId: number
   dia: string | null
   hermano: { id: number; nombre: string; apellidos: string; fechaNacimiento: string; alturaHombro: number | null }
@@ -363,7 +363,7 @@ export function activarPersona(id: number) {
 
 // --- Las zonas ---
 
-export interface Inscripcion {
+interface Inscripcion {
   hermanoId: number
   /** El slug de la salida. */
   salida: string
@@ -380,7 +380,7 @@ export function inscribirEnMesa(datos: Inscripcion) {
   )
 }
 
-export interface Cobro {
+interface Cobro {
   hermanoId: number
   /** Cuotas por cobrar. */
   reciboIds: number[]
@@ -400,7 +400,7 @@ export function perdonarCuotas(datos: { reciboIds: number[]; motivo?: string; cl
   return llamarApi<{ perdonadas: { id: number; concepto: string }[]; repetida: boolean }>('/procesion/admin/mesa/perdonar', { method: 'POST', json: datos })
 }
 
-export interface Entrega {
+interface Entrega {
   solicitudId: number
   puesto?: string
   origenTunica?: OrigenTunica
@@ -420,7 +420,7 @@ export function entregarEnMesa(datos: Entrega) {
   )
 }
 
-export interface Devolucion {
+interface Devolucion {
   hermanoId: number
   /** Las prendas que devuelve; `rota`, si hay que arreglarla. */
   prendas: { id: number; rota?: boolean }[]
@@ -435,7 +435,7 @@ export function devolverEnMesa(datos: Devolucion) {
   )
 }
 
-export interface CambiosDePapeleta {
+interface CambiosDePapeleta {
   puesto?: string
   observaciones?: string | null
   origenTunica?: OrigenTunica

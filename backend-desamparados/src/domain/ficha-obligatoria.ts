@@ -7,7 +7,7 @@ import lista from '../../../shared/ficha-obligatoria.json' with { type: 'json' }
  * La lista vive en `shared/ficha-obligatoria.json` y la lee también la web,
  * que pide justo esos campos.
  */
-export interface CampoObligatorio {
+interface CampoObligatorio {
   campo: string;
   etiqueta: string;
 }

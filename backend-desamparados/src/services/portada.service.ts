@@ -1,7 +1,7 @@
 import db from '../config/db.js';
 import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-publicos.js';
 
-export interface ImagenPortadaEntrada {
+interface ImagenPortadaEntrada {
   url: string;
   descripcion?: string;
   encuadre?: number;

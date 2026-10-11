@@ -23,7 +23,7 @@ const FOTO_DE_PORTADA = /^\d{2}-[a-z0-9-]+(?<!-640|-1280)\.webp$/i;
  */
 const esSinPerdida = (webp: Buffer) => webp.subarray(0, 64).includes('VP8L');
 
-export interface ResultadoVariantes {
+interface ResultadoVariantes {
   /** Fotos a las que les faltaba alguna copia. */
   completadas: string[];
   /** Fotos que ya las tenían todas. */

@@ -36,7 +36,7 @@ export function apunteDesde(t: Transaction): FormApunte {
 const IMPORTE = /^\d{1,8}([.,]\d{1,2})?$/
 const FECHA = /^\d{4}-\d{2}-\d{2}$/
 
-export const aNumero = (importe: string) => Number(importe.trim().replace(',', '.'))
+const aNumero = (importe: string) => Number(importe.trim().replace(',', '.'))
 
 export function errorImporte(importe: string): string | null {
   const texto = importe.trim()

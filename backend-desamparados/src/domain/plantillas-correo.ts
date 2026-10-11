@@ -51,7 +51,7 @@ export function usoDe(clave: string): UsoDeCorreo | undefined {
 
 // ------------------------------------------------------------ la lectura
 
-export type Trozo = { tipo: 'texto'; texto: string } | { tipo: 'negrita'; texto: string };
+type Trozo = { tipo: 'texto'; texto: string } | { tipo: 'negrita'; texto: string };
 
 export type Bloque =
   | { tipo: 'parrafo'; lineas: string[] }

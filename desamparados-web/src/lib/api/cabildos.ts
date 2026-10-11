@@ -43,7 +43,7 @@ export interface Cabildo {
   votaciones: Votacion[]
 }
 
-export interface DatosCabildo {
+interface DatosCabildo {
   tipo: TipoCabildo
   /** Día y hora en ISO. */
   fecha: string

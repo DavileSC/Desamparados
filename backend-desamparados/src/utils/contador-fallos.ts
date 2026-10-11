@@ -11,7 +11,7 @@
  * Redis o a la base de datos.
  */
 
-export interface OpcionesContador {
+interface OpcionesContador {
   /** Fallos que disparan el bloqueo. */
   maxFallos: number;
   /** Cuánto dura el bloqueo. */

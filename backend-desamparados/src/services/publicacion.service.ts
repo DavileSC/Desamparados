@@ -23,7 +23,7 @@ export const PUBLICACIONES_EN_PORTADA = 3;
  * recientes. El desempate por `id` es el de siempre, porque varias
  * publicaciones comparten `fecha`.
  */
-export const ORDEN_PORTADA = [
+const ORDEN_PORTADA = [
   { fijada: 'desc' },
   { fecha: 'desc' },
   { id: 'asc' },

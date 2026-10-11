@@ -67,7 +67,7 @@ export const FORMULARIOS: Record<string, ComponentType<Props<never>>> = {
 export const SIN_TITULO = new Set(['espacio'])
 
 /** Un bloque recién añadido, con sus campos vacíos. */
-export const BLOQUE_NUEVO: Record<string, object> = {
+const BLOQUE_NUEVO: Record<string, object> = {
   texto: { tipo: 'texto', titulo: '', html: '' },
   foto: { tipo: 'foto', titulo: '', url: '', alt: '', pie: '' },
   // La galería nace vacía a propósito: el primer paso es elegir si lo que se

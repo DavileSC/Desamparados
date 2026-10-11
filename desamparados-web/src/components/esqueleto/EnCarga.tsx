@@ -7,7 +7,7 @@ import { GOLD, GRANATE } from '../../features/inicio/estilos'
 export const ESPERA_ANTES_DEL_ESQUELETO = 300
 
 /** `activo` lleva ya `ms` seguidos en verdadero. */
-export function useTrasUnMomento(activo: boolean, ms = ESPERA_ANTES_DEL_ESQUELETO) {
+function useTrasUnMomento(activo: boolean, ms = ESPERA_ANTES_DEL_ESQUELETO) {
   const [cumplido, setCumplido] = useState(false)
   useEffect(() => {
     if (!activo || cumplido) return

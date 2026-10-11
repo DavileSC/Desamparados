@@ -60,14 +60,14 @@ const menorSchema = z.object({
   ),
 })
 
-export type MenorFormData = z.infer<typeof menorSchema>
+type MenorFormData = z.infer<typeof menorSchema>
 
 export const SEXOS = ['HOMBRE', 'MUJER'] as const
 export const ESTADOS_CIVILES = ['SOLTERO', 'CASADO', 'PAREJA_DE_HECHO', 'SEPARADO', 'DIVORCIADO', 'VIUDO'] as const
 /** La cuota es anual: se domicilia o se paga en Secretaría. */
-export const FORMAS_DE_PAGO_ALTA = ['DOMICILIACION', 'EFECTIVO'] as const
+const FORMAS_DE_PAGO_ALTA = ['DOMICILIACION', 'EFECTIVO'] as const
 /** Quién es el titular de la cuenta, visto desde quien rellena el alta. */
-export const TITULARIDADES = ['PROPIA', 'FAMILIAR_HERMANO', 'OTRA_PERSONA'] as const
+const TITULARIDADES = ['PROPIA', 'FAMILIAR_HERMANO', 'OTRA_PERSONA'] as const
 
 /**
  * Los dos documentos que se adjuntan. Las mismas reglas que el servidor

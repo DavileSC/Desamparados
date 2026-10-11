@@ -1,7 +1,7 @@
 // src/dtos/auth.dto.ts
 
 /** Qué es el menor para quien lo apunta (ver `PARENTESCOS` en auth.schema). */
-export type Parentesco = 'HIJO' | 'SOBRINO' | 'NIETO' | 'AHIJADO' | 'OTRO';
+type Parentesco = 'HIJO' | 'SOBRINO' | 'NIETO' | 'AHIJADO' | 'OTRO';
 
 /** Un menor a cargo del adulto que abre la cuenta. */
 export interface MenorAltaDto {
@@ -90,18 +90,4 @@ export interface LoginDto {
   recordarme?: boolean;
   /** De qué login viene la petición: el 2FA solo se exige en el CMS. */
   contexto?: 'cms' | 'hermanos';
-}
-
-// =================================================================
-//  RECUPERACIÓN DE CONTRASEÑA
-// =================================================================
-
-export interface RequestPasswordResetDto {
-  email: string;
-  contexto?: 'cms' | 'hermanos';
-}
-
-export interface ResetPasswordDto {
-  token: string;
-  newPassword: string; // Usaremos el validador 'password' que ya tienes
 }

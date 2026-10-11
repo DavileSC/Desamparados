@@ -17,6 +17,4 @@ export const TIPOS_PUBLICACION = [
   { value: 'historia', label: 'Historia' },
 ] as const
 
-export type TipoPublicacion = (typeof TIPOS_PUBLICACION)[number]['value']
-
 export const nombreTipo = (tipo: string) => TIPOS_PUBLICACION.find((t) => t.value === tipo)?.label ?? tipo

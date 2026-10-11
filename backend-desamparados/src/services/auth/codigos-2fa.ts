@@ -37,7 +37,7 @@ const MENSAJE_SECRETO_ILEGIBLE =
   'No se puede comprobar tu doble factor por un problema de configuración del servidor. ' +
   'Avisa al administrador: puede desactivártelo para que vuelvas a entrar.';
 
-export type ResultadoTotp = 'ok' | 'incorrecto' | 'usado';
+type ResultadoTotp = 'ok' | 'incorrecto' | 'usado';
 
 // Todo lo que se deja a cero al apagar el 2FA, por el propio usuario o por un
 // rescate. `twoFactorLastStep` también: si se quedaba el intervalo del código
@@ -84,7 +84,7 @@ export function registrarFallo2FA(userId: number): void {
   }
 }
 
-export async function avisarBloqueo2FA(userId: number, bloqueoMs: number): Promise<boolean> {
+async function avisarBloqueo2FA(userId: number, bloqueoMs: number): Promise<boolean> {
   const user = await db.user.findUnique({
     where: { id: userId },
     select: { email: true, nombre: true, hermanos: { where: { esTitular: true }, select: { sexo: true }, take: 1 } },
@@ -208,7 +208,7 @@ export async function reclamarTotp(
  * dice eso, no que su código está mal (antes salía un 500 con «Código 2FA
  * incorrecto», y el cargo seguía probando códigos buenos).
  */
-export async function secretoEnClaro(userId: number, almacenado: string): Promise<{ secreto: string; guardado: string }> {
+async function secretoEnClaro(userId: number, almacenado: string): Promise<{ secreto: string; guardado: string }> {
   let lectura: { secreto: string; recifrar: boolean };
   try {
     lectura = leerSecretoTotp(almacenado);

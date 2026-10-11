@@ -54,7 +54,7 @@ export function construirGrafo(barrio: Barrio): Grafo {
 }
 
 /** El nodo del grafo más cercano a un punto, y a cuántos metros está. */
-export function nodoMasCercano(grafo: Grafo, p: Coordenada): { nodo: number; metros: number } {
+function nodoMasCercano(grafo: Grafo, p: Coordenada): { nodo: number; metros: number } {
   let mejor = { nodo: -1, metros: Infinity }
   grafo.nodos.forEach((c, i) => {
     const d = metros(c, p)
@@ -68,7 +68,7 @@ export function nodoMasCercano(grafo: Grafo, p: Coordenada): { nodo: number; met
  * binario). `null` si no hay camino: dos trozos de calle sueltos en los bordes
  * del mapa, por ejemplo.
  */
-export function caminoMasCorto(grafo: Grafo, desde: number, hasta: number): Coordenada[] | null {
+function caminoMasCorto(grafo: Grafo, desde: number, hasta: number): Coordenada[] | null {
   const n = grafo.nodos.length
   const dist = new Float64Array(n).fill(Infinity)
   const previo = new Int32Array(n).fill(-1)

@@ -18,7 +18,7 @@ const datos = leerDatosEntidad();
  * o no?») sin enviar ningún correo.
  */
 
-export interface DatosSecretaria {
+interface DatosSecretaria {
   horario: string | null;
   direccion: string | null;
   telefono: string | null;
@@ -63,7 +63,7 @@ const informado = (valor: string | null | undefined): valor is string =>
   typeof valor === 'string' && valor.trim() !== '';
 
 /** Dónde está la corporación (`sede` del JSON), que es también donde atiende Secretaría. */
-export interface Sede {
+interface Sede {
   nombre: string | null;
   calle: string | null;
   codigoPostal: string | null;
@@ -85,8 +85,6 @@ export function direccionDeLaSede(sede: Sede): string | null {
 // JSON, y cambiar una sin la otra dejaba los correos y el pie de la web
 // mandando a sitios distintos.
 export const secretaria: DatosSecretaria = { ...datos.secretaria, direccion: direccionDeLaSede(datos.sede) };
-
-export const escudoUrl: string | null = datos.escudoUrl;
 
 /**
  * Las líneas del bloque «Atención al Hermano», en el orden en que se pintan y

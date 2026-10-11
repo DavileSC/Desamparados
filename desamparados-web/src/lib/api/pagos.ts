@@ -7,7 +7,7 @@ export function metodosDePago() {
   return llamarApi<{ pago: { metodos: MetodoEnLinea[]; pruebas: boolean } | null }>('/pagos/metodos')
 }
 
-export interface Donativo {
+interface Donativo {
   /** El slug de la página desde la que se dona: su bloque dice qué se admite. */
   pagina: string
   /** En euros, con hasta dos decimales. */

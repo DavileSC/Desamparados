@@ -49,22 +49,6 @@ export interface MedioGaleria {
   pie: string
 }
 
-export interface ContenidoTitular {
-  ceja: string
-  titulo: string
-  subtitulo: string
-  galeria: MedioGaleria[]
-}
-
-export interface ContenidoRecorrido {
-  titulo: string
-  subtitulo: string
-  introduccion: string
-  tituloItinerario: string
-  plano: { url: string; alt: string }
-  paradas: ParadaRecorrido[]
-}
-
 /**
  * Color de un hito de la historia. Cada uno responde a algo de la web: granate
  * es el color que ya lleva el Sábado de Pasión, y dorado marca el punto en el
@@ -110,7 +94,7 @@ export interface Presentacion {
   hasta?: string
 }
 
-export interface BloqueBase { tipo: string; titulo: string; presentacion?: Presentacion }
+interface BloqueBase { tipo: string; titulo: string; presentacion?: Presentacion }
 export interface BloqueTexto extends BloqueBase { tipo: 'texto'; html: string }
 export interface BloqueFoto extends BloqueBase { tipo: 'foto'; url: string; alt: string; pie: string }
 /** Los iconos que puede llevar una tarjeta: lista cerrada, la del catálogo compartido. */

@@ -36,7 +36,7 @@ export const PARENTESCOS = [
 export type Parentesco = (typeof PARENTESCOS)[number]['value']
 
 /** Un menor a cargo de quien abre la cuenta. DNI y correo, solo si ya los tiene. */
-export interface MenorAlta {
+interface MenorAlta {
   nombre: string
   primerApellido: string
   segundoApellido: string
@@ -46,7 +46,7 @@ export interface MenorAlta {
   email?: string
 }
 
-export interface RegistroData {
+interface RegistroData {
   email: string
   password: string
   dni: string

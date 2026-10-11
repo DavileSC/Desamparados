@@ -1,7 +1,7 @@
 import type { Prisma } from '@prisma/client';
 
 /** Los filtros del censo que no son búsqueda ni situación: los que hacen útil una lista guardada. */
-export interface FiltrosAvanzados {
+interface FiltrosAvanzados {
   correo?: 'con' | 'sin';
   cuenta?: 'con' | 'sin';
   edad?: 'menores' | 'adultos';

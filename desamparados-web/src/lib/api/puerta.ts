@@ -32,13 +32,13 @@ export interface Lectura {
   familia?: PapeletaEnPuerta[]
 }
 
-export interface TramoEnPuerta {
+interface TramoEnPuerta {
   tramo: string | null
   total: number
   dentro: number
 }
 
-export interface EstadoPuerta {
+interface EstadoPuerta {
   /** El slug de la salida. */
   salida: string
   year: number

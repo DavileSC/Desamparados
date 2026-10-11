@@ -76,7 +76,7 @@ export function requiereReverso(origen: EstadoPago, destino: EstadoPago): boolea
 }
 
 /** Estados desde los que se puede cobrar un recibo (ver el grafo de arriba). */
-export const ESTADOS_COBRABLES: readonly EstadoPago[] = [EstadoPago.PENDIENTE, EstadoPago.REMESADO];
+const ESTADOS_COBRABLES: readonly EstadoPago[] = [EstadoPago.PENDIENTE, EstadoPago.REMESADO];
 
 /** `true` si el recibo puede darse por cobrado desde `estado`. */
 export function puedeCobrarse(estado: EstadoPago): boolean {

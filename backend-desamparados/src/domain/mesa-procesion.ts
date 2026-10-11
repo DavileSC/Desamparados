@@ -4,7 +4,6 @@
  * número de una túnica y qué ropa proponer a quien vuelve un año más.
  */
 
-export type Tocado = 'CAPIROTE' | 'FARAONA';
 export type Origen = 'ROPERO' | 'PROPIA' | 'NINGUNA';
 
 /** Lo que hace el tallaje al hombro razonable: ni un niño ni un error de tecleo. */
@@ -39,7 +38,7 @@ export function normalizarNumeroPrenda(numero: string): string {
   return numero.trim().replace(/\s+/g, '').toUpperCase();
 }
 
-export interface PapeletaAnterior {
+interface PapeletaAnterior {
   puesto: string;
   numTunicaAsignada: string | null;
   numCapiroteAsignado: string | null;
@@ -48,9 +47,9 @@ export interface PapeletaAnterior {
 }
 
 /** Qué se propone con el cíngulo (la mesa lo cambia a «se le debe» si no quedan). */
-export type CinguloPropuesto = 'PRESTADO' | 'PROPIO' | 'NINGUNO';
+type CinguloPropuesto = 'PRESTADO' | 'PROPIO' | 'NINGUNO';
 
-export interface Propuesta {
+interface Propuesta {
   puesto: string;
   /** `porTalla`: no tenía una en casa ni estaba libre la de antes; esta la elige su altura al hombro. */
   tunica: { origen: Origen; numero: string | null; porTalla?: boolean };
@@ -70,10 +69,10 @@ export interface TunicaLibre { numero: string; talla: string | null }
  * proponerla. Más larga se recoge con el cíngulo; más corta enseña el tobillo,
  * así que por abajo se admite menos.
  */
-export const HOLGURA_TUNICA_CM = { masLarga: 5, masCorta: 3 };
+const HOLGURA_TUNICA_CM = { masLarga: 5, masCorta: 3 };
 
 /** La talla de una túnica en centímetros: la de su número («145-31») o, si no, la apuntada («1,45»). */
-export function tallaEnCm(t: TunicaLibre): number | null {
+function tallaEnCm(t: TunicaLibre): number | null {
   const delNumero = tallaDeTunica(t.numero);
   if (delNumero) return Number(delNumero);
   return t.talla ? alturaHombroEnCm(t.talla) : null;

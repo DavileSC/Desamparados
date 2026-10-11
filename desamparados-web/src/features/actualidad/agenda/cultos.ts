@@ -7,7 +7,7 @@ const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', '
 const mayuscula = (texto: string) => texto.charAt(0).toUpperCase() + texto.slice(1)
 
 /** Los días que abarca un acto, en la hora de este navegador. */
-export function diasDelActo(evento: ApiEvent): Date[] {
+function diasDelActo(evento: ApiEvent): Date[] {
   const inicio = inicioDelDia(new Date(evento.startDate))
   const fin = evento.endDate ? inicioDelDia(new Date(evento.endDate)) : inicio
   const lista: Date[] = []
@@ -108,7 +108,7 @@ export function ultimoMes(eventos: ApiEvent[], hoy: Date) {
 }
 
 /** Un acto que va solo en sus días de una semana: de qué columna a qué columna. */
-export interface Tarjeta { evento: ApiEvent; desde: number; hasta: number }
+interface Tarjeta { evento: ApiEvent; desde: number; hasta: number }
 
 /**
  * Cómo se reparte una semana del calendario (solo sus días del mes). Un acto

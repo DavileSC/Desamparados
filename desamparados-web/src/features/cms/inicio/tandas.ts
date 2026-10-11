@@ -3,8 +3,6 @@ import { pascua } from '../../../domain/sabadoDePasion'
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 const MESES_LARGOS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
-/** «20 mar 2027» */
-export const corta = (f: Date) => `${f.getDate()} ${MESES[f.getMonth()]} ${f.getFullYear()}`
 /** «20 mar» */
 export const diaMes = (f: Date) => `${f.getDate()} ${MESES[f.getMonth()]}`
 const soloDia = (f: Date) => Date.UTC(f.getFullYear(), f.getMonth(), f.getDate())
@@ -71,7 +69,7 @@ export function actosDelAnio(hoy: Date, eventos: PanelResponse['anio']['eventos'
     .sort((a, b) => a.p - b.p)
 }
 
-export interface Tanda {
+interface Tanda {
   actos: Acto[]
   inicio: Date
   fin: Date
@@ -87,10 +85,10 @@ export interface Tanda {
  * golpes —la Cuaresma, el Triduo de mayo, la vuelta en septiembre— y entre
  * medias puede pasar meses sin nada: dos semanas de calma ya separan.
  */
-export const DIAS_DE_CALMA = 14
+const DIAS_DE_CALMA = 14
 
 /** Días enteros de `a` a `b`. */
-export const diasEntre = (a: Date, b: Date) => Math.round((soloDia(b) - soloDia(a)) / DIA_EN_MS)
+const diasEntre = (a: Date, b: Date) => Math.round((soloDia(b) - soloDia(a)) / DIA_EN_MS)
 
 function nombreDe(actos: Acto[]): string {
   if (actos.some((a) => /ceniza/i.test(a.titulo))) return 'Cuaresma'
@@ -137,7 +135,7 @@ function diasDe({ inicio, fin }: Pick<Tanda, 'inicio' | 'fin'>): string {
   return `${diaMes(inicio)} – ${diaMes(fin)}`
 }
 
-export type Momento =
+type Momento =
   | { tipo: 'plena'; tanda: Tanda; quedan: number; siguiente: Acto }
   | { tipo: 'calma'; tanda: Tanda }
   | { tipo: 'fin' }
@@ -157,11 +155,6 @@ export function momentoDelAnio(tandas: Tanda[]): Momento {
 export function tandaInicial(tandas: Tanda[]): number {
   const i = tandas.findIndex((t) => t.estado !== 'pasada')
   return i >= 0 ? i : tandas.length - 1
-}
-
-/** «16 oct – 18 oct», o solo «16 oct» si es un día. */
-export function rangoDe(tanda: Pick<Tanda, 'inicio' | 'fin'>): string {
-  return soloDia(tanda.inicio) === soloDia(tanda.fin) ? diaMes(tanda.inicio) : `${diaMes(tanda.inicio)} – ${diaMes(tanda.fin)}`
 }
 
 /** «hoy», «mañana», «en 5 días», «en 3 semanas», «en 4 meses». */

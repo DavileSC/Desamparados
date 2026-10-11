@@ -8,7 +8,7 @@ export type Formato = 'h' | 'v' | 'c'
 /** Lo que se sabe de una imagen al cargarla: su formato y su proporción (ancho / alto). */
 export interface Medida { formato: Formato; proporcion: number }
 
-export function formatoDe(ancho: number, alto: number): Medida {
+function formatoDe(ancho: number, alto: number): Medida {
   const proporcion = alto > 0 ? ancho / alto : 16 / 9
   return { proporcion, formato: proporcion > 1.15 ? 'h' : proporcion < 0.87 ? 'v' : 'c' }
 }
@@ -53,7 +53,7 @@ export const botonRedondo = (tamano: number) => ({
 export const DORADO = '#dec72b'
 
 /** Lo que tarda en pasar de foto en escritorio (el «enfoque»). */
-export const PASO = 1300
+const PASO = 1300
 
 /*
  * El paso de foto en escritorio: la nueva llega desenfocada y en penumbra y se

@@ -69,7 +69,7 @@ export const AYUDA_OPCION: Record<string, string> = {
   columnas: 'En el ordenador; en el móvil se apilan siempre.',
 }
 
-export interface FichaDeBloque { nombre: string; descripcion: string; grupo: string }
+interface FichaDeBloque { nombre: string; descripcion: string; grupo: string }
 
 /** La ficha de cada tipo en la galería de «Añadir bloque», y su grupo. */
 export const FICHA_DE_BLOQUE: Record<string, FichaDeBloque> = {

@@ -16,7 +16,7 @@
  */
 import ENTIDAD from '@instalacion/datos-entidad.json'
 
-export type DatoPendiente = null
+type DatoPendiente = null
 
 /**
  * Quién es la corporación y cómo se la contacta: vive en

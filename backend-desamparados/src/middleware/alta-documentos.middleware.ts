@@ -31,7 +31,7 @@ import { scanBufferClamav } from '../utils/clamd.js';
  * nombres de fichero, así que nadie puede enlazar su ficha a un documento ajeno.
  */
 
-export const MAX_BYTES_CERTIFICADO = 10 * 1024 * 1024;
+const MAX_BYTES_CERTIFICADO = 10 * 1024 * 1024;
 
 /** Lo que admite cada campo: tipos reales (los que ve file-type) y extensiones. */
 const DOCUMENTOS = {
@@ -49,11 +49,11 @@ const DOCUMENTOS = {
   },
 } as const;
 
-export type CampoDocumento = keyof typeof DOCUMENTOS;
+type CampoDocumento = keyof typeof DOCUMENTOS;
 const CAMPOS = Object.keys(DOCUMENTOS) as CampoDocumento[];
 
 /** Los nombres ya comprobados, para la ficha. */
-export type DocumentosDelAlta = Partial<Record<CampoDocumento, string>>;
+type DocumentosDelAlta = Partial<Record<CampoDocumento, string>>;
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace

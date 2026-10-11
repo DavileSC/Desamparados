@@ -7,7 +7,7 @@
  */
 import type { MetodoPago, Prisma, TipoRecibo, TipoTransaccion } from '@prisma/client';
 
-export const METODOS_PAGO: MetodoPago[] = ['EFECTIVO', 'BIZUM', 'TRANSFERENCIA', 'TARJETA', 'DOMICILIACION'];
+const METODOS_PAGO: MetodoPago[] = ['EFECTIVO', 'BIZUM', 'TRANSFERENCIA', 'TARJETA', 'DOMICILIACION'];
 const ZONA = 'Europe/Madrid';
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -24,9 +24,9 @@ export interface FiltrosContables {
   recibo?: number;
 }
 
-export type Granularidad = 'mes' | 'anio';
+type Granularidad = 'mes' | 'anio';
 
-export interface PuntoSerie {
+interface PuntoSerie {
   /** `AAAA-MM` por meses, `AAAA` por años. */
   clave: string;
   ingresos: number;

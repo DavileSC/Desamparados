@@ -70,7 +70,7 @@ const firmaValida = (esperada: string, llegada: string) => {
  * enseña la lista y el diputado confirma quién está (el que no, entra luego
  * con el QR de su papeleta).
  */
-export interface Familia {
+interface Familia {
   cuenta: number;
   salidaId: number;
   year: number;

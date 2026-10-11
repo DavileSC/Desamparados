@@ -11,7 +11,7 @@ import { inflateRawSync } from 'node:zlib';
  * pasa del tope aunque el fichero mienta. Solo lee el directorio central y las
  * entradas guardadas tal cual o con deflate, que es lo que escribe Excel.
  */
-export type VeredictoZip = 'ok' | 'grande' | 'roto';
+type VeredictoZip = 'ok' | 'grande' | 'roto';
 
 const FIRMA_FIN = 0x06054b50;
 const FIRMA_CENTRAL = 0x02014b50;

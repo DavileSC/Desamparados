@@ -11,8 +11,6 @@ import { privateStorageDir } from '../middleware/upload.middleware.js';
  */
 const NOMBRE_DE_SUBIDA = /^[a-f0-9]{32}\.(jpg|jpeg|png|webp|pdf|doc|docx)$/i;
 
-export const esNombreDeDocumentoPrivado = (nombre: string) => NOMBRE_DE_SUBIDA.test(nombre);
-
 /**
  * Borra de storage/private los documentos del alta (foto y certificado de
  * bautismo) de fichas que ya no existen o se han suprimido. Se llama después de
@@ -51,7 +49,7 @@ export async function documentosPrivadosReferenciados(): Promise<Set<string>> {
   return new Set(documentosDe(fichas).filter((n): n is string => Boolean(n)).map((n) => n.toLowerCase()));
 }
 
-export interface DocumentoHuerfano { nombre: string; bytes: number; modificado: Date }
+interface DocumentoHuerfano { nombre: string; bytes: number; modificado: Date }
 
 /**
  * Los documentos de storage/private que no menciona ninguna ficha. Como en

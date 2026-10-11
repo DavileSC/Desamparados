@@ -16,7 +16,7 @@ import {
   aBuffer, nuevoDocumento, rombo, rotulo, sinMargenes, versalitas, type Doc,
 } from '../informes/pdf.js';
 
-export interface DestinatarioConDireccion extends DestinatarioDeCarta {
+interface DestinatarioConDireccion extends DestinatarioDeCarta {
   direccion: string | null;
   codigoPostal: string | null;
   poblacion: string | null;

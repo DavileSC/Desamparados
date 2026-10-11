@@ -24,11 +24,10 @@ import { idCategoriaDeRecibos } from '../recibos/comunes.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from '../auditoria.service.js';
 import { participacionesEnPdf } from './participaciones-pdf.js';
 
-export const CATEGORIA_VENTA = 'Lotería y rifas';
-export const CATEGORIA_COMPRA = 'Compra de lotería';
+const CATEGORIA_VENTA = 'Lotería y rifas';
+const CATEGORIA_COMPRA = 'Compra de lotería';
 /** Las participaciones de un PDF: más, y el servidor pequeño se queda sin memoria. */
-export const MAX_PARTICIPACIONES_PDF = 2000;
-export const MAX_TALONARIOS_DE_UNA_VEZ = 500;
+const MAX_PARTICIPACIONES_PDF = 2000;
 
 export interface DatosSorteo {
   nombre: string;

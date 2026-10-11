@@ -18,7 +18,7 @@ import { palabrasDeBusqueda } from '../../domain/busqueda-texto.js';
 import { CATEGORIA_COMISIONES, CATEGORIA_DE_RECIBO, CATEGORIA_DEVOLUCIONES } from '../../domain/contabilidad.js';
 import { idsReemitidos, type ClaveRecibo } from '../../domain/reemisiones.js';
 
-export type Tx = Prisma.TransactionClient;
+type Tx = Prisma.TransactionClient;
 
 export const MENSAJE_ESTADO_CAMBIADO = 'El estado del recibo ha cambiado. Recarga la ficha e inténtalo de nuevo.';
 
@@ -56,7 +56,7 @@ export interface ConsultaRecibos {
  * además los recibos del hermano con ese número, que es como Tesorería
  * identifica a la gente en la mesa.
  */
-export function whereBusquedaRecibo(q: string | undefined): Prisma.ReciboWhereInput {
+function whereBusquedaRecibo(q: string | undefined): Prisma.ReciboWhereInput {
   const palabras = palabrasDeBusqueda(q);
   if (palabras.length === 0) return {};
   const porTexto: Prisma.ReciboWhereInput = {

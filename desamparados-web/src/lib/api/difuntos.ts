@@ -42,7 +42,7 @@ export interface FichaDifunto extends Omit<Difunto, 'sufragios'> {
   sufragios: Sufragio[]
 }
 
-export interface NuevoSufragio {
+interface NuevoSufragio {
   tipo: TipoSufragio
   /** AAAA-MM-DDTHH:mm, en Madrid. */
   fecha: string

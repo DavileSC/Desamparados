@@ -19,7 +19,7 @@ export type ClaveConfiguracion = typeof CLAVES_CONFIGURACION[number];
 export const esClaveConfiguracion = (clave: string): clave is ClaveConfiguracion =>
   (CLAVES_CONFIGURACION as readonly string[]).includes(clave);
 
-export type ResultadoValor = { ok: true; valor: string } | { ok: false; error: string };
+type ResultadoValor = { ok: true; valor: string } | { ok: false; error: string };
 
 /** El valor de una clave, ya normalizado. Sin claves permitidas, nunca hay valor que valga. */
 export function normalizarValorConfiguracion(clave: ClaveConfiguracion, _valorCrudo: string): ResultadoValor {

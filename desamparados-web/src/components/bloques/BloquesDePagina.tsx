@@ -72,7 +72,7 @@ function mismaFranja(anterior: Bloque, bloque: Bloque): boolean {
  * color, el ancla y su título de sección. Lo usa también la vista en vivo del
  * CMS, para que un bloque se pinte exactamente como dentro de la página.
  */
-export function BloqueDePagina({ bloque, indice = 0, primero = true, pegado = false }: { bloque: Bloque; indice?: number; primero?: boolean; pegado?: boolean }) {
+function BloqueDePagina({ bloque, indice = 0, primero = true, pegado = false }: { bloque: Bloque; indice?: number; primero?: boolean; pegado?: boolean }) {
   const modo = useModoEdicion()
   const { activo } = useModulos()
   const modulo = moduloDeBloque(bloque)

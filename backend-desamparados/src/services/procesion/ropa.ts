@@ -17,9 +17,9 @@ type Tx = Prisma.TransactionClient;
 export type TipoRopa = 'TUNICA' | 'CAPIROTE' | 'FARAONA';
 
 /** «La túnica 145-31…»: el tipo, con su artículo. */
-export const NOMBRE_ROPA: Record<TipoRopa, string> = { TUNICA: 'La túnica', CAPIROTE: 'El capirote', FARAONA: 'La faraona' };
+const NOMBRE_ROPA: Record<TipoRopa, string> = { TUNICA: 'La túnica', CAPIROTE: 'El capirote', FARAONA: 'La faraona' };
 
-export interface RopaPedida {
+interface RopaPedida {
   tipo: TipoRopa;
   numero: string;
   /** No está en el ropero y se da de alta al prestarla. */

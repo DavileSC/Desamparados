@@ -91,7 +91,7 @@ export function esFechaValida(texto: string): boolean {
  * en Madrid. Sirve igual para la fecha que llega del cliente y para la que ya
  * está guardada.
  */
-export function diaDelTurno(fecha: string | Date): string | null {
+function diaDelTurno(fecha: string | Date): string | null {
   if (typeof fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fecha)) return esDiaValido(fecha) ? fecha : null;
   const instante = fecha instanceof Date ? fecha : new Date(fecha);
   return Number.isNaN(instante.getTime()) ? null : diaMadrid(instante);

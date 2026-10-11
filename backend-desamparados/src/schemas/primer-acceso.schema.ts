@@ -4,7 +4,7 @@ import { idParam, paginacionQuery, password } from '../config/common';
 /** El enlace de la invitación: el mismo testigo de 64 hexadecimales que la recuperación. */
 const testigo = type('string').matching(/^[a-f0-9]{64}$/i).describe('el enlace de la invitación');
 
-export const ESTADOS_PRIMER_ACCESO = ['sin-invitar', 'invitado', 'confirmado'] as const;
+const ESTADOS_PRIMER_ACCESO = ['sin-invitar', 'invitado', 'confirmado'] as const;
 
 // El testigo va en el cuerpo y no en la ruta, como en la recuperación: una URL
 // acaba en los registros de nginx y de la API, y este abre la cuenta dos semanas.

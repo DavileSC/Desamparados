@@ -28,7 +28,7 @@ export const NOTICIAS_EN_PORTADA = 3;
  * consultas: la raya del CMS («hasta aquí sale en la portada») dejaría de
  * coincidir con lo que sale de verdad.
  */
-export const ORDEN_PORTADA = [
+const ORDEN_PORTADA = [
   { fijada: 'desc' },
   { fecha: 'desc' },
   { id: 'asc' },

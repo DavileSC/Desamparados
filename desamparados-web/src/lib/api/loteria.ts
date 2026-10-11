@@ -54,7 +54,7 @@ export interface Talonario {
 
 export interface SorteoConTalonarios extends Sorteo { lista: Talonario[] }
 
-export interface Entrega { desde: number; hasta: number; responsable: string | null; telefono: string | null }
+interface Entrega { desde: number; hasta: number; responsable: string | null; telefono: string | null }
 
 export const sorteos = () => llamarApi<Sorteo[]>('/loteria')
 export const sorteo = (id: number) => llamarApi<SorteoConTalonarios>(`/loteria/${id}`)

@@ -18,7 +18,7 @@ import { ANCHOS_VARIANTES, fotoDeVariante, nombreDeVariante } from '../domain/va
  * (`portada/*.webp`, `documentos/pendiente.pdf`) no se tocan nunca, y nada que
  * no pase ese filtro llega a un `path.join`.
  */
-export const RUTA_SUBIDA_PUBLICA = /^\/storage\/public\/([a-f0-9]{32}\.(?:jpg|jpeg|png|webp|pdf|mp4))$/i;
+const RUTA_SUBIDA_PUBLICA = /^\/storage\/public\/([a-f0-9]{32}\.(?:jpg|jpeg|png|webp|pdf|mp4))$/i;
 
 /**
  * Las rutas de subida que aparecen dentro de un texto: una URL suelta o el HTML
@@ -291,7 +291,7 @@ export async function borrarSubidasHuerfanas(
   return borrados;
 }
 
-export interface FicheroHuerfano {
+interface FicheroHuerfano {
   nombre: string;
   bytes: number;
   modificado: Date;

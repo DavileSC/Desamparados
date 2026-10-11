@@ -5,7 +5,7 @@ import DirectionsWalkIcon from '@mui/icons-material/DirectionsWalk'
 import ReceiptIcon from '@mui/icons-material/Receipt'
 import type { Modulo } from '../domain/modulos'
 
-export interface EntradaArea {
+interface EntradaArea {
   label: string
   href: string
   icono: ComponentType

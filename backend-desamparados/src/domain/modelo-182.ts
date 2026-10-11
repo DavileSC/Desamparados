@@ -19,7 +19,7 @@ import { naturalezaDelNif } from './nif.js';
  * 80 % si no llega (lo dice así el diseño de registro). Entidades: 40 %
  * (50 % si es recurrente).
  */
-export const PORCENTAJES = {
+const PORCENTAJES = {
   fisicaHasta250: 80,
   fisica: 40,
   fisicaRecurrente: 45,
@@ -161,7 +161,7 @@ const nifCampo = (nif: string | null) => (nif ? num(nif, 9) : ' '.repeat(9));
 const importe = (centimos: number, enteros: number) => num(Math.floor(centimos / 100), enteros) + num(centimos % 100, 2);
 const porcentajeCampo = (p: number) => num(Math.floor(p), 3) + num(Math.round((p % 1) * 100), 2);
 
-export interface Declarante {
+interface Declarante {
   nif: string;
   denominacion: string;
   /** Nueve cifras. */
@@ -172,7 +172,7 @@ export interface Declarante {
   justificante: string;
 }
 
-export function registroDeclarante(d: Declarante, ejercicio: number, declarados: Declarado[]): string {
+function registroDeclarante(d: Declarante, ejercicio: number, declarados: Declarado[]): string {
   const total = declarados.reduce((s, x) => s + x.centimos, 0);
   const linea =
     '1' + '182' + num(ejercicio, 4) + nifCampo(d.nif) + alfa(d.denominacion, 40) + 'T' +
@@ -183,7 +183,7 @@ export function registroDeclarante(d: Declarante, ejercicio: number, declarados:
   return linea;
 }
 
-export function registroDeclarado(d: Declarante, ejercicio: number, x: Declarado): string {
+function registroDeclarado(d: Declarante, ejercicio: number, x: Declarado): string {
   return (
     '2' + '182' + num(ejercicio, 4) + nifCampo(d.nif) + nifCampo(x.nif) + nifCampo(x.nifRepresentante) +
     alfa(x.apellidosYNombre, 40) + num(x.provincia ?? '99', 2) +

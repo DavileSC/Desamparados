@@ -22,9 +22,9 @@ import { ZonasService } from '../procesion/zonas.service.js';
 import { DonativoService } from './donativo.service.js';
 import { aCentimos, claveDelCobro, urlDelAviso, type InicioDePago, type MetodoEnLinea } from './comunes.js';
 
-export type { InicioDePago, MetodoEnLinea } from './comunes.js';
+export type {  MetodoEnLinea } from './comunes.js';
 
-export interface LoQueSePaga {
+interface LoQueSePaga {
   reciboIds: number[];
   solicitudIds: number[];
 }

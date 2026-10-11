@@ -19,9 +19,6 @@ export const OPCIONES_COMUNES = COMUNES
 /** Las opciones propias de un tipo de bloque (sin las comunes). */
 export const opcionesPropias = (tipo: string): Record<string, Opcion> => POR_TIPO[tipo] ?? {}
 
-/** Los iconos que puede llevar una tarjeta. */
-export const ICONOS_DE_TARJETA = CATALOGO.iconosDeTarjeta
-
 const opcionDe = (tipo: string, clave: string): Opcion | undefined => POR_TIPO[tipo]?.[clave] ?? COMUNES[clave]
 
 /** Si una galería es solo de vídeos (y tiene alguno): entonces se reproducen ahí mismo. */
@@ -84,7 +81,7 @@ export function hoyEnMadrid(ahora = new Date()): string {
   return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' }).format(ahora)
 }
 
-export type Visibilidad = 'visible' | 'oculto' | 'antes' | 'despues'
+type Visibilidad = 'visible' | 'oculto' | 'antes' | 'despues'
 
 /**
  * Si el bloque se ve hoy, y si no, por qué: oculto a mano, programado para más

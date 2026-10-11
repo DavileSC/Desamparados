@@ -20,7 +20,7 @@ export interface Barrio {
   verdes: FeatureCollection<Polygon>
 }
 
-export const URL_BARRIO = '/mapas/barrio-desamparados.json'
+const URL_BARRIO = '/mapas/barrio-desamparados.json'
 
 /** El reconocimiento que pide la licencia de OpenStreetMap. Va siempre en el mapa. */
 export const ATRIBUCION = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">colaboradores de OpenStreetMap</a>'

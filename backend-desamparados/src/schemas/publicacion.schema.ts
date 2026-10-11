@@ -15,7 +15,7 @@ const categorySchema = type("'boletin' | 'dossier' | 'anuario' | 'historia'");
 // nuestro se guarda como ruta relativa.
 const normalizarPdf = (valor: string) => aRutaPropia(valor, esPdfPropio);
 
-export const rutaPdfPublica = type('string')
+const rutaPdfPublica = type('string')
   .pipe(normalizarPdf, type('string').narrow(esPdfPropio).describe('un PDF subido desde el CMS (/storage/public/….pdf)'));
 
 // Al editar se valida en el servicio contra lo guardado (ver `imagenAlEditar`).

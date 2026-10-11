@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type ChangeEvent } from 'react'
-import { useEditor, EditorContent, type Editor } from '@tiptap/react'
+import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import {
@@ -263,5 +263,3 @@ function BotonFormato({ titulo, activo, desactivado = false, onClick, children }
     </Tooltip>
   )
 }
-
-export type { Editor }

@@ -26,7 +26,7 @@ export const FORMATOS_DE_ETIQUETAS: Record<string, FormatoDeEtiquetas> = hojas.f
 export const CLAVES_DE_FORMATO = Object.keys(FORMATOS_DE_ETIQUETAS);
 export const porHoja = (f: FormatoDeEtiquetas) => f.columnas * f.filas;
 
-export interface ConDireccion {
+interface ConDireccion {
   direccion: string | null;
   codigoPostal: string | null;
   poblacion: string | null;

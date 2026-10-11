@@ -17,7 +17,7 @@
 export const VALOR_SUPRIMIDO = '[suprimido]';
 
 /** Campos que identifican o describen a la persona (de `User` y de `Hermano`). */
-export const CAMPOS_PERSONALES: ReadonlySet<string> = new Set([
+const CAMPOS_PERSONALES: ReadonlySet<string> = new Set([
   'nombre', 'apellidos', 'dni', 'fechaNacimiento',
   'email', 'telefono', 'direccion', 'poblacion', 'codigoPostal',
   'iban', 'titularCuenta',

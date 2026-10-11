@@ -4,21 +4,21 @@
  * distintos (50, 200 y 500) y nadie podía decir cuál regía dónde.
  */
 
-export interface Paginacion {
+interface Paginacion {
   page: number;
   limit: number;
   skip: number;
   take: number;
 }
 
-export interface MetaPaginacion {
+interface MetaPaginacion {
   total: number;
   page: number;
   limit: number;
   totalPages: number;
 }
 
-export interface RespuestaPaginada<T> {
+interface RespuestaPaginada<T> {
   data: T[];
   meta: MetaPaginacion;
 }

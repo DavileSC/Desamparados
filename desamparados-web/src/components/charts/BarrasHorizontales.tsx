@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import { designTokens } from '../../theme'
 
-export interface FilaBarra {
+interface FilaBarra {
   etiqueta: string
   valor: number
 }

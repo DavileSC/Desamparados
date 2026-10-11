@@ -32,9 +32,3 @@ export interface UpdateReciboDto {
   fechaDevolucion?: string;
 }
 
-// Para el filtro de búsqueda del admin
-export interface ReciboFilterDto {
-  year?: number;
-  estado?: 'PENDIENTE' | 'PAGADO' | 'DEVUELTO';
-  hermanoId?: number;
-}

@@ -34,7 +34,7 @@ sharp.cache(false);
 export const LADO_MAXIMO = 1920;
 
 /** Calidad de las fotos en WebP: con las del Grupo, se ve como el JPEG a 85 y pesa un 23 % menos. */
-export const CALIDAD_WEBP = 82;
+const CALIDAD_WEBP = 82;
 
 /**
  * Prepara una foto para publicarla: siempre en WebP, sin metadatos y sin
@@ -66,7 +66,7 @@ export function prepararFoto(original: Buffer): Promise<Buffer> {
   return enFilaDeFotos(async () => (await convertirFoto(original)).foto);
 }
 
-export interface FotoConVariantes {
+interface FotoConVariantes {
   foto: Buffer;
   variantes: { ancho: number; datos: Buffer }[];
 }
@@ -75,7 +75,7 @@ export interface FotoConVariantes {
  * Como `prepararFoto`, pero además saca las copias de `ANCHOS_VARIANTES`. Todo
  * en el mismo turno de la fila: las copias se hacen con la foto aún leída.
  */
-export function prepararFotoConVariantes(original: Buffer): Promise<FotoConVariantes> {
+function prepararFotoConVariantes(original: Buffer): Promise<FotoConVariantes> {
   return enFilaDeFotos(async () => {
     const { foto, sinPerdida } = await convertirFoto(original);
     return { foto, variantes: await reducir(foto, sinPerdida) };

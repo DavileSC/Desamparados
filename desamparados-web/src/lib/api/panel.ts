@@ -40,7 +40,7 @@ export interface AvisoJunta {
 }
 
 /** La foto del retablo (null = la de siempre) y el punto que no se recorta, en %. */
-export interface Retablo {
+interface Retablo {
   foto: string | null
   x: number
   y: number
@@ -143,7 +143,7 @@ export interface PanelResponse {
   retablo?: RetabloDeHoy
 }
 
-export interface NuevoAviso {
+interface NuevoAviso {
   texto: string
   para: CargoJunta | null
   hasta: string | null

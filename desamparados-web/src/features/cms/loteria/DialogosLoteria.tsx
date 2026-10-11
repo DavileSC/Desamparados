@@ -3,7 +3,7 @@ import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuI
 import type { MetodoDeLoteria, Sorteo, Talonario } from '../../../lib/api/loteria'
 import { euros } from '../contabilidad/formato'
 
-export const METODOS_DE_LOTERIA: { valor: MetodoDeLoteria; etiqueta: string }[] = [
+const METODOS_DE_LOTERIA: { valor: MetodoDeLoteria; etiqueta: string }[] = [
   { valor: 'EFECTIVO', etiqueta: 'Efectivo' },
   { valor: 'BIZUM', etiqueta: 'Bizum' },
   { valor: 'TRANSFERENCIA', etiqueta: 'Transferencia' },

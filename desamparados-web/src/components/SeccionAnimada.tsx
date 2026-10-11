@@ -36,7 +36,7 @@ const EFECTOS = {
   desvelar: { oculto: { clipPath: 'inset(0 100% 0 0)' }, visible: { clipPath: 'inset(0 0 0 0)' }, duracion: 1.2 },
 } satisfies Record<string, { oculto: TargetAndTransition; visible: TargetAndTransition; duracion: number }>
 
-export type Efecto = keyof typeof EFECTOS
+type Efecto = keyof typeof EFECTOS
 
 // La máscara de la cortina: recorta solo por abajo, y un poco más allá de la
 // caja para no comerse los descendentes de la serif. Por arriba y los lados

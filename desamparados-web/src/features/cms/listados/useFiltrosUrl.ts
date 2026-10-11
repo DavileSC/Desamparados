@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 /** Un filtro de un listado: su valor si no hay nada en la URL y, si es un desplegable, los que valen. */
-export interface DefinicionFiltro {
+interface DefinicionFiltro {
   porDefecto?: string
   validos?: readonly string[]
 }

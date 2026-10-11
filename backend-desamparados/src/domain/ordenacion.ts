@@ -64,5 +64,3 @@ export function ordenDe<T>(tabla: Record<string, T>, pedido: unknown): T {
   return typeof pedido === 'string' && claves.includes(pedido) ? tabla[pedido] : tabla[claves[0]];
 }
 
-/** Los nombres de una tabla, para declararlos en el esquema de la ruta. */
-export const nombresDeOrden = (tabla: Record<string, unknown>) => Object.keys(tabla) as [string, ...string[]];

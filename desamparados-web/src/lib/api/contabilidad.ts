@@ -67,7 +67,7 @@ export interface ResumenContable {
   porCobrar: { importe: number; recibos: number; enElBanco: number; devueltos: number }
 }
 
-export function paramsFiltros(filtros: FiltrosContables): URLSearchParams {
+function paramsFiltros(filtros: FiltrosContables): URLSearchParams {
   const params = new URLSearchParams()
   if (filtros.tipo) params.set('tipo', filtros.tipo)
   if (filtros.desde) params.set('desde', filtros.desde)

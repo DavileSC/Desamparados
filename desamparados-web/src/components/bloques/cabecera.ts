@@ -13,9 +13,9 @@ import type { SlugContenido } from '../../lib/api/contenido'
  * - Las demás, la cabecera a sangre (`CabeceraASangre`): la foto a todo el
  *   ancho y el título apoyado en su borde de abajo.
  */
-export const SIN_CABECERA: readonly SlugContenido[] = ['agenda', 'cultos']
+const SIN_CABECERA: readonly SlugContenido[] = ['agenda', 'cultos']
 
-export type TipoDeCabecera = 'a-sangre' | 'ninguna' | 'propia'
+type TipoDeCabecera = 'a-sangre' | 'ninguna' | 'propia'
 
 export function tipoDeCabecera(slug: string): TipoDeCabecera {
   if (slug === 'historia') return 'propia'

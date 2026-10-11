@@ -8,7 +8,7 @@ import type { UsoDeVideo } from '../../../lib/api/subida'
  * es quien decide: el códec, por ejemplo, solo lo mira él.
  */
 
-export interface DatosDeVideo {
+interface DatosDeVideo {
   /** En segundos. */
   duracion: number
   ancho: number
@@ -18,7 +18,7 @@ export interface DatosDeVideo {
 /** Margen sobre la duración, el mismo que el del servidor (domain/mp4.ts). */
 const MARGEN_SEGUNDOS = 0.5
 
-export const megas = (bytes: number) => Math.round(bytes / 1024 / 1024)
+const megas = (bytes: number) => Math.round(bytes / 1024 / 1024)
 
 /** «45 segundos», «2 minutos», «1 min 30 s»: igual que el servidor (domain/mp4.ts). */
 export function duracionEnPalabras(segundos: number): string {

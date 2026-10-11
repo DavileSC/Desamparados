@@ -3,7 +3,7 @@ import { acumulados, sobreElRecorrido } from '../bloques/recorrido'
 import type { Barrio } from './barrio'
 
 /** Una calle que sale del recorrido y no vuelve a él: la de la placa «404». */
-export interface Desvio {
+interface Desvio {
   calle: string
   /** Desde el recorrido hacia fuera. */
   linea: Coordenada[]

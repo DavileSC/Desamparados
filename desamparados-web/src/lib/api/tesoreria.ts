@@ -30,7 +30,7 @@ export interface ReceiptBrother {
   numeroHermano: number | null
 }
 
-export interface DatosDeRecibo {
+interface DatosDeRecibo {
   hermanoId: number
   year: number
   concepto: string

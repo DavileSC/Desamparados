@@ -18,7 +18,7 @@ import { createCipheriv, createHmac, randomInt, timingSafeEqual } from 'node:cry
  * `services/pagos/pago-en-linea.service.ts`.
  */
 
-export type ModoDePago = 'redsys' | 'simulado';
+type ModoDePago = 'redsys' | 'simulado';
 
 /**
  * Cómo se paga en línea, o null si no se paga. `PAGO_EN_LINEA=redsys` es el
@@ -46,7 +46,7 @@ const URL_TPV = {
   real: 'https://sis.redsys.es/sis/realizarPago',
 } as const;
 
-export interface ConfiguracionRedsys {
+interface ConfiguracionRedsys {
   entorno: 'pruebas' | 'real';
   url: string;
   comercio: string;
@@ -119,7 +119,7 @@ export function firmar(parametros: string, pedido: string, clave: string): strin
 /** El base64 «seguro para URL» que usa Redsys en sus avisos, sin relleno, para comparar. */
 const normalizar = (firma: string) => firma.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
-export interface PeticionDePago {
+interface PeticionDePago {
   pedido: string;
   /** En céntimos. */
   centimos: number;
@@ -160,7 +160,7 @@ export function formularioDePago(p: PeticionDePago, c: ConfiguracionRedsys): For
   };
 }
 
-export interface AvisoDelBanco {
+interface AvisoDelBanco {
   pedido: string;
   centimos: number;
   respuesta: string;

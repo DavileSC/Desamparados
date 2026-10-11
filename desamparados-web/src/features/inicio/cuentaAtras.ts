@@ -12,7 +12,7 @@ import { instanteEnMadrid } from '../../components/bloques/fechas'
  * - El día de la salida, hasta medianoche, es «hoy»; al día siguiente el
  *   servidor ya da la siguiente.
  */
-export interface CuentaDeLaPortada {
+interface CuentaDeLaPortada {
   nombre: string
   articulo: Articulo
   /** El día, `AAAA-MM-DD`, en Madrid. */
@@ -24,7 +24,7 @@ export interface CuentaDeLaPortada {
 }
 
 /** El día de Madrid de un instante: un acto a las 00:30 del 17 es del 17. */
-export const diaEnMadrid = (ms: number) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date(ms))
+const diaEnMadrid = (ms: number) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date(ms))
 
 export function cuentaDeLaPortada(p: ProximaSalidaWeb | null, ahora: number): CuentaDeLaPortada | null {
   if (!p) return null

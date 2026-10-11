@@ -25,7 +25,7 @@ import { deLaCorporacion, laCorporacion, segunLaCorporacion } from '../../domain
  * a la web: así se ven aunque la web aún no esté publicada, y no dependen de
  * que el lector de correo quiera descargar imágenes de fuera.
  */
-export const IMAGENES = {
+const IMAGENES = {
   escudo: { cid: 'escudo@desamparados', archivo: fileURLToPath(new URL('./imagenes/escudo.png', import.meta.url)), tipo: 'image/png' },
   virgen: { cid: 'virgen@desamparados', archivo: fileURLToPath(new URL('./imagenes/virgen.jpg', import.meta.url)), tipo: 'image/jpeg' },
 } as const;
@@ -65,7 +65,7 @@ export function esc(text: string | null | undefined): string {
 export const urlDeLaWeb = (ruta = '') => `${process.env.FRONTEND_URL || 'http://localhost:5173'}${ruta}`;
 
 /** «Málaga, 23 de septiembre de 2026», como encabeza una carta (con la localidad de la corporación). */
-export function lugarYFecha(fecha = new Date()): string {
+function lugarYFecha(fecha = new Date()): string {
   return `${identidad.localidad}, ${fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Madrid' })}`;
 }
 
@@ -201,7 +201,7 @@ export function bloqueDeSecretaria(titulo: string): string {
  */
 export type Destinatario = 'hermano' | 'interno' | { contacto: string };
 
-export interface Maqueta {
+interface Maqueta {
   /** El título del cuerpo. También el <title> del documento. */
   titulo: string;
   /** La línea pequeña de encima del título: de dónde viene el correo. */

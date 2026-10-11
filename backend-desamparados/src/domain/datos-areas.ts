@@ -165,8 +165,8 @@ const formatoDecimal = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 1
 export const numero = (n: number) => formatoNumero.format(n);
 export const euros = (n: number) => formatoEuros.format(Math.round(n)).replace(/ /g, ' ');
 const conSigno = (texto: string, n: number) => (n > 0 ? `+${texto}` : n < 0 ? `−${texto}` : texto);
-export const diferencia = (n: number) => conSigno(numero(Math.abs(n)), n);
-export const diferenciaEuros = (n: number) => conSigno(euros(Math.abs(n)), n);
+const diferencia = (n: number) => conSigno(numero(Math.abs(n)), n);
+const diferenciaEuros = (n: number) => conSigno(euros(Math.abs(n)), n);
 
 /** Cómo se escribe una cifra, igual en la pantalla y en el PDF. */
 export function valorEscrito(c: Pick<Cifra, 'valor' | 'formato'>): string {
@@ -652,7 +652,7 @@ export function areasDe(d: DatosCrudos, p: Periodo, hoy: Date): Area[] {
 // ---------------------------------------------------------------- el Informe anual: el año de un vistazo
 
 /** `area` dice de qué área sale: con su módulo apagado, la tarjeta no se pinta. */
-export interface CifraVistazo { area: ClaveArea; etiqueta: string; valor: string; antes: string; cambio: string; tono?: 'bueno' | 'malo' }
+interface CifraVistazo { area: ClaveArea; etiqueta: string; valor: string; antes: string; cambio: string; tono?: 'bueno' | 'malo' }
 
 /**
  * Las ocho cifras del año de un vistazo, cada una frente a la del año anterior

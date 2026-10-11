@@ -202,8 +202,8 @@ los hermanos activos, el panel suma todos los apuntes, el número de hermano sal
 de `máximo + 1` y borrar el último ADMIN bloquea la tabla de usuarios. En
 paralelo (lo que hace `node --test` por defecto) se pisaban: fallos que salían
 una vez de cada tres, limpiezas que chocaban con claves ajenas y, lo peor, una
-suite colgada esperando un bloqueo. En serie tarda algo más de un minuto en vez
-de quince segundos; se prefirió así. **No quitar el flag** para ganar tiempo.
+suite colgada esperando un bloqueo. En serie tarda bastante más (unos minutos
+la suite entera); se prefirió así. **No quitar el flag** para ganar tiempo.
 
 Aun así, un test que lea totales globales debe usar valores propios o tolerar lo
 que dejen los datos de la base de desarrollo, y un test que retenga una
@@ -258,11 +258,10 @@ await screen.findByRole('button', { name: 'Guardar' })
 Solo muerde a `*ByRole`. `getByLabelText`, `getByText` y `getByDisplayValue` no
 filtran por `aria-hidden` y siguen viendo la pantalla tapada.
 
-Se había pisado cuatro veces y cada una se resolvió a mano sin dejarlo escrito
-en ninguna parte (los comentarios están en `AccountingAdminPage.test.tsx:182`,
-`BrothersAdminPage.test.tsx:205`, `NewsAdminPage.test.tsx:42` y
-`PortadaAdminPage.test.tsx:186`). Por eso está aquí: cuesta una tarde
-encontrarlo y treinta segundos evitarlo.
+Se había pisado cuatro veces (en las pruebas de Contabilidad, Hermanos,
+Noticias y Portada del CMS) y cada una se resolvió a mano sin dejarlo escrito
+en ninguna parte. Por eso está aquí: cuesta una tarde encontrarlo y treinta
+segundos evitarlo.
 
 **Las pruebas no corren con Desamparados, sino con la corporación de
 ejemplo** (`shared/datos-entidad.ejemplo.json`: «la Hermandad de Nuestra Señora

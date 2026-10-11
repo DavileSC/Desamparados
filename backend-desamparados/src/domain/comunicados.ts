@@ -8,7 +8,7 @@ import { deArticulo, type Articulo } from './articulos.js';
  * Todo puro. Las consultas (quién está en el segmento) las hace el servicio.
  */
 
-export type TipoComunicado = 'BOLETIN' | 'AVISO';
+type TipoComunicado = 'BOLETIN' | 'AVISO';
 
 /** El nombre de una salida con su artículo, para componer `del Sábado de Pasión` / `de la Procesión Magna`. */
 export interface SalidaDelSegmento { nombre: string; articulo: Articulo }
@@ -43,7 +43,7 @@ export function describirSegmento(tipo: TipoComunicado, s: Segmento, salidas: Re
 
 // --- Los destinatarios ---------------------------------------------------
 
-export interface FichaDestinataria {
+interface FichaDestinataria {
   nombre: string;
   sexo: 'HOMBRE' | 'MUJER' | null;
   /** El correo de la ficha, si lo tiene. */

@@ -4,7 +4,7 @@
  */
 
 export const MAX_POR_LINEA = 20;
-export const MAX_LINEAS = 30;
+const MAX_LINEAS = 30;
 
 export interface TallaALaVenta {
   id: number;
@@ -26,7 +26,7 @@ export interface ProductoALaVenta {
 }
 
 export interface LineaPedida { productoId: number; tallaId?: number; cantidad: number }
-export interface LineaDelPedido { productoId: number; tallaId: number | null; talla: string | null; nombre: string; centimos: number; cantidad: number }
+interface LineaDelPedido { productoId: number; tallaId: number | null; talla: string | null; nombre: string; centimos: number; cantidad: number }
 
 /** Cómo se nombra lo pedido en los avisos: con su talla, si la tiene. */
 export const nombreConTalla = (nombre: string, talla: string | null) => (talla ? `${nombre} (talla ${talla})` : nombre);

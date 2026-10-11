@@ -11,10 +11,8 @@ import { rejillaFila } from './rejilla'
  * la raya de lo que sale en la portada.
  */
 
-export type EstadoRedaccion = 'publicadas' | 'borradores' | 'incompletas'
-
 /** Las cifras que el servidor manda con cada página del listado. */
-export interface CifrasRedaccion {
+interface CifrasRedaccion {
   publicadas: number
   borradores: number
   incompletas: number

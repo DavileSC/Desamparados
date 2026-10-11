@@ -39,7 +39,7 @@ export interface DatosVotacion {
 }
 
 /** Las reglas de voto y quórum guardadas, o las habituales si no hay. */
-export async function reglasDelCabildo(): Promise<ReglasCabildo> {
+async function reglasDelCabildo(): Promise<ReglasCabildo> {
   const fila = await db.configuracion.findUnique({ where: { key: CLAVE_REGLAS } });
   if (!fila) return REGLAS_POR_DEFECTO;
   try {

@@ -10,17 +10,17 @@ import temaPublico from '../../../theme'
  * columna del CMS, porque a 900 px se maquetaría como en una tableta y la
  * vista previa enseñaría algo que ningún visitante de escritorio ve.
  */
-export const ANCHO_ESCRITORIO = 1440
+const ANCHO_ESCRITORIO = 1440
 
 /** Por debajo de esto, encoger un escritorio entero no deja nada legible. */
-export const ANCHO_MINIMO_ESCRITORIO = 700
+const ANCHO_MINIMO_ESCRITORIO = 700
 
 /**
  * Lo alto que ocupa la vista previa en un móvil. A tamaño real, una cabecera
  * mide una pantalla entera y el formulario quedaba debajo del todo: se le pone
  * este tope y se recorre dentro de su marco, con el dedo.
  */
-export const ALTO_MAXIMO_MOVIL = 320
+const ALTO_MAXIMO_MOVIL = 320
 
 interface Props {
   children: ReactNode

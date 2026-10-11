@@ -18,7 +18,7 @@ export const nombreDeVariante = (nombre: string, ancho: number) =>
   `${nombre.replace(/\.[^.]+$/, '')}-${ancho}.webp`;
 
 /** El nombre de una copia reducida: la foto de la que sale va en el grupo 1 (sin extensión). */
-export const NOMBRE_DE_VARIANTE = new RegExp(`^([a-f0-9]{32})-(?:${ANCHOS_VARIANTES.join('|')})\\.webp$`, 'i');
+const NOMBRE_DE_VARIANTE = new RegExp(`^([a-f0-9]{32})-(?:${ANCHOS_VARIANTES.join('|')})\\.webp$`, 'i');
 
 /** Si el nombre es una copia reducida, el de su foto (`<hex>.webp`); si no, null. */
 export function fotoDeVariante(nombre: string): string | null {

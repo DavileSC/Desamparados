@@ -27,7 +27,7 @@ import { devueltosPendientes } from './recibos/comunes.js';
 
 const deTipo = (tipo: TipoTransaccion) => (tipo === 'INGRESO' ? 'ingreso' : 'gasto');
 
-export const TRANSACCION_ERRORS = {
+const TRANSACCION_ERRORS = {
   NO_EXISTE: 'El apunte no existe.',
   // Los de recibos se corrigen desde el recibo: tocarlos aquí descuadraría la
   // contabilidad con el estado del recibo (cobrado, devuelto…).

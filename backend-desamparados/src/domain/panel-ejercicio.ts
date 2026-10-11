@@ -11,13 +11,13 @@ import { HttpError } from '../utils/error.handle.js';
  * del año (ejercicio terminado) o los últimos doce (año en curso, como hasta
  * ahora), y la pantalla lo dice en la cabecera.
  */
-export interface Ejercicio {
+interface Ejercicio {
   anio: number;
   cerrado: boolean;
 }
 
 /** Antes de 2000 no hay nada que enseñar y un año de cuatro cifras acota el error. */
-export const ANIO_MINIMO = 2000;
+const ANIO_MINIMO = 2000;
 
 /**
  * Lee y valida `?anio=`. Sin valor (o vacío), el año en curso. Cualquier otra

@@ -5,7 +5,7 @@ import type { TonoPildora } from '../listados/tonos'
  * activa se da de baja, solo una de baja se reactiva, y una pendiente se
  * aprueba o se rechaza desde Solicitudes.
  */
-export type Situacion = 'activo' | 'baja' | 'pendiente'
+type Situacion = 'activo' | 'baja' | 'pendiente'
 
 export const situacionDe = (f: { activo: boolean; fechaBaja: string | null }): Situacion =>
   (f.activo ? 'activo' : f.fechaBaja ? 'baja' : 'pendiente')

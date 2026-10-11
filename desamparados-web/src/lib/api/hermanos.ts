@@ -233,7 +233,7 @@ export function emanciparHermano(id: number, payload: { newEmail: string; newDni
   return llamarApi<{ id: number; email: string; nombre: string }>(`/hermanos/admin/${id}/emancipar`, { method: 'POST', json: payload })
 }
 
-export interface CierreDeHuecos {
+interface CierreDeHuecos {
   message: string
   asignados: { id: number; numeroHermano: number }[]
 }
@@ -279,7 +279,7 @@ export const importarCenso = (fichero: File) =>
   llamarApi<{ message: string; importadas: number }>('/hermanos/admin/censo/importar', { method: 'POST', formData: conFichero(fichero) })
 
 /** Una búsqueda del censo guardada con nombre: sus filtros, como van en la URL. */
-export interface ListaGuardada { id: number; nombre: string; consulta: string }
+interface ListaGuardada { id: number; nombre: string; consulta: string }
 
 export const listasDelCenso = () => llamarApi<ListaGuardada[]>('/hermanos/admin/listas')
 

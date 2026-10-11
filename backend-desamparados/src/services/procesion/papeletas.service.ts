@@ -31,7 +31,7 @@ type Tx = Prisma.TransactionClient;
 const NOTA_ANULACION = 'Anulado por devolución de la papeleta de sitio.';
 const NOTA_CANCELACION = 'Devuelto al cancelar la solicitud de salida.';
 
-export interface NuevaSolicitud {
+interface NuevaSolicitud {
   hermanoId: number;
   salida: SalidaConActo;
   year: number;
@@ -44,7 +44,7 @@ export interface NuevaSolicitud {
   origen: OrigenSolicitud;
 }
 
-export interface DatosDeLaPapeleta {
+interface DatosDeLaPapeleta {
   puesto: string;
   observaciones?: string | null;
   origenTunica: 'ROPERO' | 'PROPIA' | 'NINGUNA' | null;

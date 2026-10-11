@@ -128,7 +128,7 @@ export const ADMIN_EDITABLE_FIELDS = [
   'fechaMedalla', 'tratamiento'
 ] as const;
 
-export type EditableField = typeof ADMIN_EDITABLE_FIELDS[number] | typeof USER_EDITABLE_FIELDS[number];
+type EditableField = typeof ADMIN_EDITABLE_FIELDS[number] | typeof USER_EDITABLE_FIELDS[number];
 
 // Campos de la ficha que se pueden mostrar al staff sin exponer datos bancarios
 export const HERMANO_SAFE_SELECT = {
@@ -155,7 +155,7 @@ export const FICHA_PENDIENTE = { activo: false, fechaBaja: null } satisfies Pris
 /** Solo las cuentas de hermano raso (USER) se bloquean/borran al perder sus fichas. */
 export const esCuentaStaff = (role: Role) => role !== Role.USER;
 
-export const CAMPOS_FECHA = ['fechaNacimiento', 'fechaAlta', 'fechaBaja', 'fechaBautismo', 'fechaJura', 'fechaMedalla'] as const;
+const CAMPOS_FECHA = ['fechaNacimiento', 'fechaAlta', 'fechaBaja', 'fechaBautismo', 'fechaJura', 'fechaMedalla'] as const;
 
 /**
  * Quita de los cambios las fechas que caen en el mismo día (de Madrid) que ya

@@ -5,7 +5,7 @@ import { columna, pasoBonito, pasoEtiquetas } from './ejes'
 import { useAnchoMedido } from './useAnchoMedido'
 import { Degradado, Halo } from './brillo'
 
-export interface MesDivergente {
+interface MesDivergente {
   mes: string
   arriba: number
   abajo: number

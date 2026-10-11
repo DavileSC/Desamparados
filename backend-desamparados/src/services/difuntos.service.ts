@@ -18,7 +18,7 @@ import { EmailService } from './email.service.js';
 import { siModulo } from './modulos.service.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from './auditoria.service.js';
 
-export const NOMBRE_SUFRAGIO: Record<TipoSufragio, string> = {
+const NOMBRE_SUFRAGIO: Record<TipoSufragio, string> = {
   MISA_FUNERAL: 'Misa funeral',
   MISA_ANIVERSARIO: 'Misa de aniversario',
   MISA_SUFRAGIO: 'Misa de sufragio',

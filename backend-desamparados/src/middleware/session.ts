@@ -96,5 +96,3 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
   next();
 };
 
-/** Opcional: sin sesión, sigue como invitado. */
-export const optionalAuthentication = resolverSesiones;

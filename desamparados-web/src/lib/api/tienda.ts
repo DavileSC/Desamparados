@@ -46,9 +46,9 @@ export const MAX_FOTOS_PRODUCTO = 8
 export type MetodoEnLinea = 'TARJETA' | 'BIZUM'
 export type EstadoPedido = 'PENDIENTE_PAGO' | 'PAGADO' | 'ENTREGADO' | 'CANCELADO'
 
-export interface Catalogo { productos: Producto[]; categorias: CategoriaDeTienda[]; pagoDisponible: boolean; metodos: MetodoEnLinea[] }
+interface Catalogo { productos: Producto[]; categorias: CategoriaDeTienda[]; pagoDisponible: boolean; metodos: MetodoEnLinea[] }
 
-export interface DatosCompra {
+interface DatosCompra {
   nombre: string
   email: string
   telefono: string
@@ -56,7 +56,7 @@ export interface DatosCompra {
   lineas: { productoId: number; tallaId?: number; cantidad: number }[]
 }
 
-export type ResultadoCompra =
+type ResultadoCompra =
   | { tipo: 'hecho'; token: string }
   | { tipo: 'banco'; token: string; pedido: string; url: string; campos: Record<string, string> }
 
@@ -68,7 +68,7 @@ export interface PedidoPublico {
   lineas: { nombre: string; talla: string | null; precio: number; cantidad: number }[]
 }
 
-export interface PedidoDelCms extends PedidoPublico {
+interface PedidoDelCms extends PedidoPublico {
   id: number
   email: string
   telefono: string

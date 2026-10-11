@@ -22,7 +22,6 @@ export const GRANATE = '#6e1822'
 export const CONSULTA_ALTA = '(min-width: 900px) and (min-height: 820px)'
 export const CONSULTA_MUY_ALTA = '(min-width: 900px) and (min-height: 1000px)'
 export const PANTALLA_ALTA = `@media ${CONSULTA_ALTA}`
-export const PANTALLA_MUY_ALTA = `@media ${CONSULTA_MUY_ALTA}`
 
 /** Antetítulo en versalitas espaciadas, sobre fondo oscuro o foto. */
 export const ceja = {

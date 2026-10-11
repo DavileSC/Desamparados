@@ -8,9 +8,9 @@ import {
 } from '../domain/modulos.js';
 
 /** `uno`, para cuando hay uno solo: «1 producto», no «1 productos». */
-export interface RecuentoDeDatos { uno: string; que: string; total: number }
+interface RecuentoDeDatos { uno: string; que: string; total: number }
 
-export interface ModuloDelCms extends FichaDeModulo {
+interface ModuloDelCms extends FichaDeModulo {
   activo: boolean;
   cambiadoEl: string | null;
   cambiadoPor: string | null;
@@ -18,7 +18,7 @@ export interface ModuloDelCms extends FichaDeModulo {
   datos: RecuentoDeDatos[];
 }
 
-export type ResultadoDeCambio =
+type ResultadoDeCambio =
   | { ok: true; cambiados: ClaveModulo[]; activos: ClaveModulo[] }
   | { ok: false; message: string; faltan: ClaveModulo[]; dependientes: ClaveModulo[] };
 

@@ -5,16 +5,6 @@ import { Role } from '@prisma/client';
  * probarlas solas.
  */
 
-/** Los cargos a los que se puede mandar un aviso: la junta, sin el hermano raso. */
-export const CARGOS_DE_LA_JUNTA = [
-  Role.ADMIN,
-  Role.HERMANO_MAYOR,
-  Role.SECRETARIA,
-  Role.TESORERIA,
-  Role.REDES,
-  Role.ALBACERIA,
-] as const;
-
 /** El Hermano Mayor y Administración lo llevan todo: pueden dar por hecho cualquier aviso. */
 const LO_LLEVAN_TODO: Role[] = [Role.ADMIN, Role.HERMANO_MAYOR];
 

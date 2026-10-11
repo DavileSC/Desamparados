@@ -20,7 +20,7 @@ import { etiquetasEnPdf } from './etiquetas-pdf.js';
 import { FORMATOS_DE_ETIQUETAS, porHoja, sobresDe, tieneDireccion, type DestinatarioPostal } from '../../domain/etiquetas.js';
 
 /** Tope de cartas de una vez: un censo entero cabe de sobra, y un PDF de más no lo imprime nadie. */
-export const MAX_CARTAS = 3000;
+const MAX_CARTAS = 3000;
 
 export interface DatosDeCarta extends TextoDeCarta {
   nombre: string;

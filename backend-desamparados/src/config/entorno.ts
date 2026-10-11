@@ -19,10 +19,9 @@
 
 type Entorno = Record<string, string | undefined>;
 
-export const ENTORNOS_VALIDOS = ['development', 'test', 'production'] as const;
-export type NombreEntorno = (typeof ENTORNOS_VALIDOS)[number];
+const ENTORNOS_VALIDOS = ['development', 'test', 'production'] as const;
 
-export interface ResultadoEntorno {
+interface ResultadoEntorno {
   /** Motivos por los que el servidor no debe arrancar. Vacío si todo está bien. */
   errores: string[];
   /** Cosas que no impiden arrancar pero conviene saber. */
@@ -30,8 +29,8 @@ export interface ResultadoEntorno {
 }
 
 /** Interfaz por defecto en producción: solo nginx, en la misma máquina, llega al puerto. */
-export const HOST_PRODUCCION = '127.0.0.1';
-export const PUERTO_POR_DEFECTO = 3001;
+const HOST_PRODUCCION = '127.0.0.1';
+const PUERTO_POR_DEFECTO = 3001;
 
 import { claveRedsysValida } from '../domain/redsys.js';
 import { leerAcreedorSepa } from '../domain/sepa.js';

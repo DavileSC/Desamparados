@@ -25,15 +25,15 @@ import { EmailService } from './email.service.js';
 import { ModulosService } from './modulos.service.js';
 
 /** Dos semanas: es un correo que mucha gente abre días después. */
-export const VALIDEZ_INVITACION_HORAS = 14 * 24;
+const VALIDEZ_INVITACION_HORAS = 14 * 24;
 
 /** La misma pausa que los comunicados, que es la que Gmail aguanta sin cortar. */
 const pausa = () => Number(process.env.COMUNICADOS_PAUSA_MS ?? 1500);
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export const ENLACE_NO_VALIDO = 'El enlace de la invitación no es válido o ha caducado. Pide otro a la Secretaría o entra con «¿Has olvidado tu contraseña?».';
+const ENLACE_NO_VALIDO = 'El enlace de la invitación no es válido o ha caducado. Pide otro a la Secretaría o entra con «¿Has olvidado tu contraseña?».';
 
-export type EstadoPrimerAcceso = 'sin-invitar' | 'invitado' | 'confirmado';
+type EstadoPrimerAcceso = 'sin-invitar' | 'invitado' | 'confirmado';
 
 /** Las cuentas del primer acceso: las que lo tienen pendiente y las que ya lo hicieron. */
 function condicion(estado?: EstadoPrimerAcceso): Prisma.UserWhereInput {

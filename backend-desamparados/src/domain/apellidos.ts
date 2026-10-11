@@ -8,7 +8,7 @@
  * distintas.
  */
 
-export interface Apellidos {
+interface Apellidos {
   apellidos: string;
   primerApellido: string | null;
   segundoApellido: string | null;

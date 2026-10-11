@@ -30,10 +30,7 @@ export interface FichaDeModulo {
   requiere: ClaveModulo[]
 }
 
-export const CATALOGO_MODULOS = CATALOGO.modulos as FichaDeModulo[]
-
-export const esClaveDeModulo = (valor: unknown): valor is ClaveModulo =>
-  typeof valor === 'string' && (CLAVES_MODULO as readonly string[]).includes(valor)
+const CATALOGO_MODULOS = CATALOGO.modulos as FichaDeModulo[]
 
 export const fichaDeModulo = (clave: ClaveModulo): FichaDeModulo => CATALOGO_MODULOS.find((m) => m.clave === clave)!
 

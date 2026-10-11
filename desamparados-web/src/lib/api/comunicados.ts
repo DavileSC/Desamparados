@@ -1,7 +1,7 @@
 import { llamarApi } from './cliente'
 
 export type TipoComunicado = 'BOLETIN' | 'AVISO'
-export type EstadoComunicado = 'BORRADOR' | 'ENVIANDO' | 'ENVIADO'
+type EstadoComunicado = 'BORRADOR' | 'ENVIANDO' | 'ENVIADO'
 
 /** A quién va, además de ser activo (y suscrito, en el boletín). Vacío no filtra. */
 export interface Segmento {
@@ -12,7 +12,7 @@ export interface Segmento {
   poblacion?: string | null
 }
 
-export interface Comunicado {
+interface Comunicado {
   id: number
   tipo: TipoComunicado
   asunto: string

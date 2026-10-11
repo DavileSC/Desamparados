@@ -12,7 +12,7 @@ interface Props {
 }
 
 /** Lo que se espera a que se deje de teclear antes de buscar. */
-export const ESPERA_BUSQUEDA_MS = 400
+const ESPERA_BUSQUEDA_MS = 400
 
 /**
  * Caja de búsqueda de un listado. Se escribe aquí y llega a la URL un momento

@@ -12,7 +12,7 @@ import type { Barrio } from './barrio'
  * tampoco se piden letras a nadie.
  */
 export const ORO = '#dec72b'
-export const FONDO_MAPA = '#0b0a0c'
+const FONDO_MAPA = '#0b0a0c'
 const FUENTE = ['OpenSansSemibold']
 
 const vacia = { type: 'FeatureCollection' as const, features: [] }

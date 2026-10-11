@@ -4,7 +4,7 @@ import { Role } from '@prisma/client';
 // 1. Importamos tu interfaz extendida que sí tiene el req.user tipado
 
 /** Código del 403 por sesión que no nació en el CMS (lo lee `lib/api/client.ts` del frontend). */
-export const SESION_NO_CMS = 'SESION_NO_CMS';
+const SESION_NO_CMS = 'SESION_NO_CMS';
 
 /** Código del 403 por cuenta del equipo sin doble factor (lo lee `lib/api/cliente.ts` del frontend). */
 export const FALTA_DOBLE_FACTOR = 'FALTA_DOBLE_FACTOR';

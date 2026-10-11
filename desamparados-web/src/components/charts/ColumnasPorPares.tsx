@@ -5,7 +5,7 @@ import { columna, escalaDesdeCero, pasoEtiquetas } from './ejes'
 import { useAnchoMedido } from './useAnchoMedido'
 import { Degradado } from './brillo'
 
-export interface PuntoPar {
+interface PuntoPar {
   clave: string
   a: number
   b: number

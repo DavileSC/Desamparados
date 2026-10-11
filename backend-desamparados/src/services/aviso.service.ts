@@ -5,7 +5,7 @@ import { fechaLimite, puedeDarPorHecho } from '../domain/avisos.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from './auditoria.service.js';
 
 /** Un aviso tal y como lo pinta el Inicio. */
-export interface AvisoDelPanel {
+interface AvisoDelPanel {
   id: number;
   texto: string;
   /** Un cargo, o null si es para toda la junta. */
@@ -18,7 +18,7 @@ export interface AvisoDelPanel {
   createdAt: string;
 }
 
-export interface DatosAviso {
+interface DatosAviso {
   texto: string;
   para: Role | null;
   hasta?: string | null;

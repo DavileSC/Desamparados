@@ -6,7 +6,7 @@ import { diaMadrid } from './contabilidad.js';
  * del 3 de noviembre aunque se apuntara a medianoche en hora universal.
  */
 
-export interface Aniversario {
+interface Aniversario {
   /** El día del próximo aniversario, AAAA-MM-DD (hoy, si es hoy). */
   dia: string;
   /** Los años que se cumplen ese día. */

@@ -18,7 +18,7 @@
  */
 export type Veredicto = 'ENTRA' | 'REPETIDA' | 'OTRA_SALIDA' | 'DE_BAJA' | 'ANULADA' | 'FALSO';
 
-export interface PapeletaEnLaPuerta {
+interface PapeletaEnLaPuerta {
   year: number;
   salidaId: number;
   entradaEl: Date | null;
@@ -36,7 +36,7 @@ export function veredicto(
   return papeleta.entradaEl ? 'REPETIDA' : 'ENTRA';
 }
 
-export interface TramoEnLaPuerta {
+interface TramoEnLaPuerta {
   /** Null: las papeletas sin tramo (trono, acólitos… o un cortejo sin repartir). */
   tramo: string | null;
   total: number;

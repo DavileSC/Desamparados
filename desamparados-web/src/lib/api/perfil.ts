@@ -145,7 +145,7 @@ export function actualizarFicha(id: number, cambios: CambiosDeFicha) {
   })
 }
 
-export interface DatosDeFichaNueva {
+interface DatosDeFichaNueva {
   nombre: string
   primerApellido: string
   segundoApellido: string
