@@ -22,6 +22,8 @@ const RAICES_PROHIBIDAS = [
   // Propias del proyecto: las primeras que probaría alguien que lo conozca.
   'desamparados', 'hermandad', 'grupoparroquial', 'cofradia', 'malaga',
   'semanasanta', 'parroquia', 'pasionistas',
+  // Y las cofrades que cualquiera probaría después: «nazareno12345» pasaba.
+  'nazareno', 'cofrade', 'hermano', 'procesion', 'costalero', 'penitente',
 ];
 
 /** Sustituciones con las que se suele disfrazar una palabra: `P4ssw0rd!`. */
@@ -38,6 +40,11 @@ function normalizar(valor: string): string {
     .replace(/\p{Diacritic}/gu, '')
     .replace(/[0413570$@]/g, (c) => DISFRACES[c] ?? c)
     .replace(/[^a-z0-9]/g, '');
+}
+
+/** Minúsculas, sin tildes y solo letras y cifras, pero sin deshacer disfraces. */
+function limpiar(valor: string): string {
+  return valor.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^a-z0-9]/g, '');
 }
 
 /** `true` si la cadena es un solo carácter repetido: `aaaaaaaaaaaa`. */
@@ -92,6 +99,7 @@ export function motivoContrasenaDebil(valor: string, laCorporacion: string): str
   }
 
   const normalizada = normalizar(valor);
+  const limpia = limpiar(valor);
   for (const raiz of RAICES_PROHIBIDAS) {
     const raizNormalizada = normalizar(raiz);
     if (!normalizada.includes(raizNormalizada)) continue;
@@ -101,7 +109,13 @@ export function motivoContrasenaDebil(valor: string, laCorporacion: string): str
     // que sobra no llega a cinco caracteres, la contraseña *es* esa palabra con
     // adornos —`Desamparados2026`— y no una frase que la contenga.
     const resto = normalizada.split(raizNormalizada).join('');
-    if (resto.length < 5) {
+    // Tampoco cuenta como frase un adorno que es una secuencia o un mismo
+    // carácter (`nazareno12345`, `hermano-aaaaa`). Se mira sin deshacer los
+    // disfraces, que convertirían `12345` en `i2eas`; si la palabra va
+    // disfrazada no se encuentra así, y queda solo la regla de la longitud.
+    const raizLimpia = limpiar(raiz);
+    const adorno = limpia.includes(raizLimpia) ? limpia.split(raizLimpia).join('') : resto;
+    if (resto.length < 5 || esUnSoloCaracter(adorno) || esSecuencia(adorno)) {
       return `es demasiado fácil de adivinar: evita palabras comunes o relacionadas con ${laCorporacion}`;
     }
   }
