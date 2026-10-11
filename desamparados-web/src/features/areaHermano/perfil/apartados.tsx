@@ -10,6 +10,7 @@ import {
 import { aniosCumplidos } from '../../altas/public/schema'
 import { useAuthStore } from '../../altas/auth/store'
 import Apartado, { Dato, Rejilla } from './Apartado'
+import { enfocarCampo } from './enfocarCampo'
 import { ESTADO_CIVIL, FORMAS_DE_PAGO, FORMA_DE_PAGO, PARENTESCO, SEXO, TITULARIDAD_CUENTA, aDia, diaLegible } from './etiquetas'
 import { deLaCorporacion } from '../../../domain/articulos'
 
@@ -61,17 +62,10 @@ function conEtiquetas<T>(valores: T, campos: (keyof T & string)[]): Fallo<T> | n
   return campo ? [campo, 'No puede llevar «<» ni «>».'] : null
 }
 
-const iguales = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
+/** Hoy, AAAA-MM-DD, para comparar con lo que da un campo de fecha. */
+const hoy = () => aDia(new Date().toISOString())
 
-/**
- * Lleva el foco al campo que falla. El de un desplegable de MUI es el
- * `combobox` de al lado: el `input` que tiene el `name` está oculto.
- */
-function enfocar(formulario: HTMLFormElement | null, campo: string) {
-  const elemento = formulario?.querySelector<HTMLElement>(`[name="${campo}"]`)
-  const destino = elemento?.classList.contains('MuiSelect-nativeInput') ? elemento.parentElement?.querySelector<HTMLElement>('[role="combobox"]') : elemento
-  destino?.focus()
-}
+const iguales = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
 /**
  * Lo común a los cuatro apartados: sus valores mientras se editan, validar,
@@ -111,7 +105,7 @@ function useApartado<T>(ficha: ApiProfile, desde: (f: ApiProfile) => T, validar:
       if (fallo) {
         const [clave, mensaje] = fallo
         setErrores({ [clave]: mensaje } as Partial<Record<keyof T, string>>); setError(null)
-        enfocar(formulario.current, clave)
+        enfocarCampo(formulario.current, clave)
         return
       }
       // Guardar sin tocar nada no es un cambio: ni petición ni «Guardado» (en
@@ -128,7 +122,7 @@ function useApartado<T>(ficha: ApiProfile, desde: (f: ApiProfile) => T, validar:
         const propios = e instanceof ErrorDeApi ? Object.entries(e.fields).filter(([clave]) => clave in (valores as object)) : []
         if (propios.length > 0) {
           setErrores(Object.fromEntries(propios) as Partial<Record<keyof T, string>>)
-          enfocar(formulario.current, propios[0]![0])
+          enfocarCampo(formulario.current, propios[0]![0])
         }
         setError(e instanceof Error ? e.message : 'No se ha podido guardar.')
       } finally {
@@ -203,6 +197,13 @@ export function DatosPersonales({ ficha, onGuardada, revision, onSucio }: PropsA
       // guardar lo demás (se le marca en rojo para que lo corrija cuando pueda).
       if (v.dni.trim() !== dniGuardado && v.dni.trim() && !esDniValido(v.dni)) return ['dni', 'La letra no corresponde con el número.']
       if (!v.fechaNacimiento) return ['fechaNacimiento', 'Falta la fecha de nacimiento.']
+      // Lo mismo que rechaza el servidor, pero solo si la cambia: una fecha del
+      // censo que ya estaba no debe impedir guardar lo demás.
+      if (v.fechaNacimiento !== aDia(ficha.fechaNacimiento)) {
+        if (v.fechaNacimiento > hoy()) return ['fechaNacimiento', 'No puede ser posterior a hoy.']
+        if (!aCargo && aniosCumplidos(v.fechaNacimiento) < 18) return ['fechaNacimiento', 'Con esa fecha serías menor de edad: revísala.']
+        if (aCargo && menor && aniosCumplidos(v.fechaNacimiento) >= 18) return ['fechaNacimiento', 'Para que pase a mayor de edad, habla con Secretaría.']
+      }
       return conEtiquetas(v, ['segundoApellido', 'lugarNacimiento', ...(menor ? [] : ['profesion' as const])])
     },
     (v) => ({
@@ -376,7 +377,14 @@ export function VidaDeHermano({ ficha, onGuardada, revision, onSucio }: PropsApa
   const a = useApartado(
     ficha,
     (f) => ({ fechaBautismo: aDia(f.fechaBautismo), lugarBautismo: f.lugarBautismo ?? '', parroquiaBautismo: f.parroquiaBautismo ?? '' }),
-    (v) => conEtiquetas(v, ['lugarBautismo', 'parroquiaBautismo']),
+    (v) => {
+      // Como el servidor: ni futura ni anterior al nacimiento (solo si la cambia).
+      if (v.fechaBautismo && v.fechaBautismo !== aDia(ficha.fechaBautismo)) {
+        if (v.fechaBautismo > hoy()) return ['fechaBautismo', 'No puede ser posterior a hoy.']
+        if (ficha.fechaNacimiento && v.fechaBautismo < aDia(ficha.fechaNacimiento)) return ['fechaBautismo', 'No puede ser anterior al nacimiento.']
+      }
+      return conEtiquetas(v, ['lugarBautismo', 'parroquiaBautismo'])
+    },
     (v) => ({ fechaBautismo: v.fechaBautismo || null, lugarBautismo: opcional(v.lugarBautismo), parroquiaBautismo: opcional(v.parroquiaBautismo) }),
     onGuardada,
     revision,
@@ -413,7 +421,7 @@ export function VidaDeHermano({ ficha, onGuardada, revision, onSucio }: PropsApa
             Son datos opcionales. Solo los ves tú y la Secretaría {deLaCorporacion()}.
           </Typography>
           <Rejilla>
-            <Campo nombre="fechaBautismo" etiqueta="Fecha de bautismo" valor={v.fechaBautismo} onCambiar={a.campo('fechaBautismo')} tipo="date" />
+            <Campo nombre="fechaBautismo" etiqueta="Fecha de bautismo" valor={v.fechaBautismo} onCambiar={a.campo('fechaBautismo')} error={a.errorDe('fechaBautismo')} tipo="date" />
             <Campo nombre="lugarBautismo" etiqueta="Bautizado/a en" valor={v.lugarBautismo} onCambiar={a.campo('lugarBautismo')} error={a.errorDe('lugarBautismo')} ayuda="La localidad" />
             <Campo nombre="parroquiaBautismo" etiqueta="Parroquia de bautismo" valor={v.parroquiaBautismo} onCambiar={a.campo('parroquiaBautismo')} error={a.errorDe('parroquiaBautismo')} completo />
           </Rejilla>

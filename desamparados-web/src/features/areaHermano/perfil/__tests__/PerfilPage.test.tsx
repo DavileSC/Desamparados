@@ -357,6 +357,20 @@ describe('PerfilPage: lo que se arregló en la revisión de octubre', () => {
     expect(screen.getByRole('tabpanel')).toHaveAttribute('tabindex', '0')
   })
 
+  it('las fechas se validan como en el servidor: el bautismo no puede ser anterior al nacimiento', async () => {
+    const user = userEvent.setup()
+    const simulado = responder([ficha(1, 'Ana')])
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true, ruta: '/area-hermano/perfil?apartado=hermano' })
+
+    await screen.findByText('Ana Pérez Ruiz')
+    await user.click(screen.getByRole('button', { name: /editar vida de hermano/i }))
+    await user.type(screen.getByLabelText('Fecha de bautismo'), '1970-01-01')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(await screen.findByText('No puede ser anterior al nacimiento.')).toBeInTheDocument()
+    expect(putsDe(simulado)).toHaveLength(0)
+  })
+
   it('a un menor no se le pide estado civil ni profesión, y sus fotos son «sus fotos»', async () => {
     const user = userEvent.setup()
     responder([ficha(1, 'Ana'), ficha(2, 'Bruno', { esTitular: false, parentesco: 'HIJO', fechaNacimiento: '2015-01-01T00:00:00.000Z' })])
