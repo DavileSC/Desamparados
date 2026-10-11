@@ -189,13 +189,17 @@ export class MesaService {
       select: {
         id: true, nombre: true, apellidos: true, fechaNacimiento: true, numeroHermano: true,
         activo: true, fechaBaja: true,
+        // Solo para decir si cuelga de la cuenta de custodia: el correo no sale.
+        user: { select: { email: true } },
         papeletas: { where: { year, salidaId }, select: { puesto: true } },
         solicitudes: { where: { year, salidaId, estado: EstadoSolicitud.PENDIENTE }, select: { puesto: true } },
       },
     });
-    return personas.map(({ activo, fechaBaja, papeletas, solicitudes, ...p }) => ({
+    return personas.map(({ activo, fechaBaja, papeletas, solicitudes, user, ...p }) => ({
       ...p,
       situacion: situacionDe({ activo, fechaBaja }),
+      /** Sin cuenta, en el censo importado: no puede ser tutora de nadie. */
+      enCensoImportado: esCuentaDeCustodia(user),
       apuntado: papeletas[0] ? { puesto: papeletas[0].puesto, recogida: true }
         : solicitudes[0] ? { puesto: solicitudes[0].puesto, recogida: false } : null,
     }));
@@ -409,11 +413,14 @@ export class MesaService {
         select: { userId: true, telefono: true, email: true, user: { select: { email: true, telefono: true } } },
       });
       if (!tutor) throw new NotFoundError('No se encontró al tutor en el censo.');
+      // El menor colgaría de la cuenta de custodia, que no es de nadie: ni
+      // tendría quien entrara por él ni familia, y heredaba su contacto de
+      // relleno (el teléfono «000000000»).
+      if (esCuentaDeCustodia(tutor.user)) {
+        throw new HttpError('Esa ficha está en el censo importado y no tiene cuenta: no puede ser tutora. Busca a otro tutor o dalo de alta como nuevo.', 400);
+      }
       cuenta = { id: tutor.userId };
-      // El contacto de la cuenta es el respaldo, salvo el de la de custodia,
-      // que es relleno: el menor heredaba el teléfono «000000000».
-      const deLaCuenta = esCuentaDeCustodia(tutor.user) ? null : tutor.user;
-      contacto = { telefono: dto.telefono?.trim() || tutor.telefono || deLaCuenta?.telefono || null, email: email || tutor.email || deLaCuenta?.email || null };
+      contacto = { telefono: dto.telefono?.trim() || tutor.telefono || tutor.user.telefono, email: email || tutor.email || tutor.user.email };
     } else {
       const t = dto.tutor.nuevo;
       const apellidosTutor = componerApellidos(t.primerApellido, t.segundoApellido ?? null).apellidos;

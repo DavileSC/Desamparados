@@ -2,8 +2,8 @@
 // («000000000»), su correo (@cuentas.invalido), su DNI y su nombre son relleno.
 // Ninguna pantalla los enseña como datos de una ficha que cuelga de ella, y las
 // demás fichas de la custodia no son su familia: ni en la ficha del censo, ni
-// en el buscador o el listado, ni en el ropero, ni en la mesa (la ficha y el
-// alta de un menor), ni como a quién dar el pésame.
+// en el buscador o el listado, ni en el ropero, ni en la mesa (la ficha, y no
+// es tutora de un menor), ni como a quién dar el pésame.
 
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
@@ -94,13 +94,16 @@ test('los datos de relleno de la cuenta de custodia no salen como datos de sus f
     sinRelleno(enLaMesa, 'La ficha de la mesa');
     assert.deepEqual(enLaMesa.familia, []);
 
-    // Un menor dado de alta en la mesa con ella de tutora no hereda el relleno.
-    const menor = await MesaService.darDeAlta({
-      nombre: 'Nieto', primerApellido: marca, fechaNacimiento: '2020-05-05', tutor: { hermanoId: sola.id }, parentesco: 'OTRO',
-    });
-    creadas.push(menor.id);
-    const contacto = await db.hermano.findUniqueOrThrow({ where: { id: menor.id }, select: { telefono: true, email: true } });
-    assert.deepEqual(contacto, { telefono: null, email: null });
+    // Una ficha de la custodia no es tutora de nadie: el menor colgaría de
+    // la cuenta de custodia, que no es de nadie. El buscador de la mesa la
+    // marca para que la pantalla no la ofrezca, y el alta la rechaza.
+    const encontradas = await MesaService.buscarPersonas(`Rosa ${marca}`, pasion, { acceso: { censo: true } });
+    assert.deepEqual(encontradas.map((p) => [p.id, p.enCensoImportado]), [[sola.id, true]]);
+    await assert.rejects(
+      MesaService.darDeAlta({ nombre: 'Nieto', primerApellido: marca, fechaNacimiento: '2020-05-05', tutor: { hermanoId: sola.id }, parentesco: 'OTRO' }),
+      (e: Error & { status?: number }) => e.status === 400 && /censo importado/.test(e.message),
+    );
+    assert.equal(await db.hermano.count({ where: { apellidos: { startsWith: marca }, nombre: 'Nieto' } }), 0);
 
     // El pésame: la otra ficha de la custodia no es su familia.
     await db.hermano.update({ where: { id: sola.id }, data: { activo: false, fechaBaja: new Date(), motivoBaja: MotivoBaja.FALLECIMIENTO } });
