@@ -383,17 +383,27 @@ export class AuthService {
    * token, y entonces la invitación ya no vale aunque el CMS la diera por viva.
    */
   static async crearEnlaceDeContrasena(userId: number, validezHoras: number, opciones: { invitacion?: boolean } = {}): Promise<string> {
+    const { token, datos } = this.enlaceSinGuardar(validezHoras, opciones);
+    await db.user.update({ where: { id: userId }, data: datos });
+    return token;
+  }
+
+  /**
+   * Lo mismo que `crearEnlaceDeContrasena`, pero sin escribirlo: el token
+   * para el correo y lo que hay que guardar en la cuenta. Es para quien
+   * guarda solo si el correo sale. Escrito antes, un correo que no salía ya
+   * había pisado el enlace anterior, que sí llegó: la invitación reenviada
+   * sin éxito quedaba «vigente» en el CMS y el enlace bueno, muerto.
+   */
+  static enlaceSinGuardar(validezHoras: number, opciones: { invitacion?: boolean } = {}) {
     const token = crypto.randomBytes(32).toString('hex');
     const caduca = new Date(Date.now() + validezHoras * 3600000);
-    await db.user.update({
-      where: { id: userId },
-      data: {
-        resetPasswordToken: hashDelTestigoDeRecuperacion(token),
-        resetPasswordExpires: caduca,
-        invitacionCaducaEn: opciones.invitacion ? caduca : null,
-      }
-    });
-    return token;
+    const datos = {
+      resetPasswordToken: hashDelTestigoDeRecuperacion(token),
+      resetPasswordExpires: caduca,
+      invitacionCaducaEn: opciones.invitacion ? caduca : null,
+    } satisfies Prisma.UserUpdateInput;
+    return { token, datos };
   }
 
   /**
@@ -434,11 +444,16 @@ export class AuthService {
     if (!user) return;
 
     // Una hora de validez: la persona está delante de la pantalla.
-    const resetToken = await this.crearEnlaceDeContrasena(user.id, 1);
+    const { token: resetToken, datos } = this.enlaceSinGuardar(1);
 
     // Enviamos el correo. OJO: se pasa el TOKEN en crudo; la URL completa la construye
     // EmailService (antes se construía aquí y el email la volvía a envolver: ?token=https://...?token=).
-    await EmailService.enviarRecuperacionContrasena(user.email, user.nombre, resetToken, { horas: 1, sexo: user.hermanos[0]?.sexo, area: contexto });
+    const enviado = await EmailService.enviarRecuperacionContrasena(user.email, user.nombre, resetToken, { horas: 1, sexo: user.hermanos[0]?.sexo, area: contexto });
+    // Se guarda solo si el correo ha salido: si no, el enlace que tuviera
+    // (el de su invitación, que sí le llegó) sigue valiendo. Queda un instante
+    // en que el correo ya ha salido y el token aún no está escrito; quien lo
+    // abra justo entonces ve «enlace no válido» y le basta con reintentar.
+    if (enviado) await db.user.update({ where: { id: user.id }, data: datos });
   }
 
   // 2. Aplicar la nueva contraseña

@@ -93,15 +93,20 @@ async function invitarUna(userId: number): Promise<void> {
     select: { email: true, nombre: true, hermanos: { where: { esTitular: true }, select: { sexo: true }, take: 1 } },
   });
   if (!cuenta) return;
-  const token = await AuthService.crearEnlaceDeContrasena(userId, VALIDEZ_INVITACION_HORAS, { invitacion: true });
+  const { token, datos } = AuthService.enlaceSinGuardar(VALIDEZ_INVITACION_HORAS, { invitacion: true });
   const ok = await EmailService.enviarInvitacionPrimerAcceso(cuenta.email, cuenta.nombre, token, {
     horas: VALIDEZ_INVITACION_HORAS, sexo: cuenta.hermanos[0]?.sexo ?? undefined,
   });
-  // Si no sale, sigue «sin invitar» (o con la fecha de la anterior) y el
-  // fallo queda en la auditoría: Secretaría lo ve y la reenvía. (Un reenvío
-  // que no sale ya ha pisado el enlace anterior y sale como vigente: el fallo
-  // solo se ve en la auditoría.)
-  if (ok) await db.user.update({ where: { id: userId }, data: { invitadoEn: new Date() } });
+  // El enlace se guarda solo si el correo ha salido, y de una vez con la
+  // fecha de la invitación. Si no sale, todo queda como estaba: «sin
+  // invitar», o la invitación anterior con su enlace, que sigue valiendo y
+  // es lo que el CMS dice; el fallo queda en la auditoría y Secretaría la
+  // reenvía. El envío es síncrono (se espera la respuesta del SMTP), así que
+  // `ok` es de verdad «salió». Queda un instante entre que sale y se guarda:
+  // quien abriera el correo justo entonces vería «enlace no válido», y si la
+  // escritura fallara, el correo llevaría un enlace que no vale; en los dos
+  // casos el CMS sigue diciendo la verdad y basta con reenviarla.
+  if (ok) await db.user.update({ where: { id: userId }, data: { ...datos, invitadoEn: new Date() } });
 }
 
 /** Manda lo que haya en la cola, de una en una. Solo hay uno en marcha a la vez. */
