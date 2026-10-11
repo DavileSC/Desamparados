@@ -6,8 +6,8 @@
 // que se anota en cada uno: el que estaba escrito a mano en el código.
 //
 // Los neutros (tintas, cremas, grises, blanco), el rojo de error y de gasto,
-// los colores de `dataviz` y los de significado (tipos de acto de la agenda
-// salvo «Culto», estados de recibos, conservación del inventario, el
+// los colores de `dataviz` y los de significado (tipos de acto de la agenda,
+// «Culto» incluido aunque su tono sea el burdeos de partida, estados de recibos, conservación del inventario, el
 // `ROSA_URGENTE` y los rojos/azules/verdes de las gráficas del Retablo) NO son
 // de marca: se quedan fijos donde están.
 
@@ -24,7 +24,7 @@ export interface PaletaDeMarca {
    *  `MuiButton` contained, `designTokens.colors.burgundy`, `GRANATE` de features/inicio/estilos.ts y
    *  components/estiloDeBoton.ts, `secondary.main` de BandaDeFondo, CMS claro (`accionTexto`, `enlace`,
    *  `GRAFICAS.claro.acento`, pomo y avatar de MarcoCms), EleccionCamino, PerfilPage, PasoFamilia,
-   *  `TIPOS.CULTO.color` de la agenda, cubierta del boletín. `alfa(principal, 0.07)` es el
+   *  cubierta del boletín. (`TIPOS.CULTO.color` de la agenda tiene su mismo hex, pero fijo: es de significado.) `alfa(principal, 0.07)` es el
    *  `accionFondo` del CMS claro y `componentes(principal)` el `velo` de PublicacionesDestacadas. */
   principal: string
   /** #5a131c · un escalón más oscuro que `principal`. `MuiButton` contained `:hover`; `secondary.dark` de BandaDeFondo. */
@@ -61,9 +61,11 @@ export interface PaletaDeMarca {
   principalGrafica: string
   /** #e06a78 · ≥ 4,5 sobre el mapa #0b0a0c. `BURDEOS_LEGIBLE` de RecorridoEnMapa. */
   principalLegible: string
-  /** #b8283d · ≥ 3 sobre blanco. El punto de «Culto» en el CMS claro (`EN_CLARO.CULTO` de cms/agenda/tiposEvento.ts). */
+  /** #b8283d · ≥ 3 sobre blanco. Sin uso: el punto de «Culto» en el CMS claro (`EN_CLARO.CULTO` de
+   *  cms/agenda/tiposEvento.ts) lleva este hex, pero fijo, porque es un color de significado. */
   principalPuntoClaro: string
-  /** #ff9fa6 · ≥ 3 sobre #0c0b0d. `TIPOS.CULTO.oscuro` de features/inicio/agenda.ts. */
+  /** #ff9fa6 · ≥ 3 sobre #0c0b0d. Sin uso: `TIPOS.CULTO.oscuro` de features/inicio/agenda.ts lleva este hex,
+   *  pero fijo, porque es un color de significado. */
   principalPuntoOscuro: string
   /** #fbe9e7 · ≥ 4,5 sobre `principal`. Texto y cifra de la cubierta del boletín (PublicacionesDestacadas). */
   sobrePrincipal: string

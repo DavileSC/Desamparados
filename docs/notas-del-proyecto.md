@@ -521,7 +521,10 @@ todos los tonos. Por eso:
   componente.
 - **La guardiana `src/__tests__/sin-colores-de-marca.test.ts`** recorre
   `src/` (ts, tsx y css) buscando el hex de cada papel de partida y los tres
-  números de su `rgba()`; solo se libra `theme/marca.ts`. Si salta, el color
+  números de su `rgba()`; solo se libra `theme/marca.ts` y, hex a hex, el
+  color de significado que coincide con uno de partida (`DE_SIGNIFICADO`, con
+  su porqué: el tipo de acto «Culto» lleva el burdeos de partida, pero fijo,
+  para no confundirse con Procesión en una marca morada). Si salta, el color
   va por `MARCA`.
 
 Lo que no es de marca (neutros, tintas, cremas, el rojo de error y de gasto,
