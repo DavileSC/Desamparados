@@ -1,4 +1,4 @@
-import { leerDatosEntidad, type Articulo, type DatosEntidad } from '../../../shared/datos-entidad.mjs';
+import { leerDatosEntidad, type Articulo, type DatosEntidad, type Marca } from '../../../shared/datos-entidad.mjs';
 
 // Se lee del disco al cargar el módulo, no se importa: el fichero es de cada
 // instalación (instalacion/datos-entidad.json, montado en el contenedor) y no
@@ -56,6 +56,13 @@ export interface Identidad {
 }
 
 export const identidad: Identidad = datos.identidad;
+
+/**
+ * Los dos colores de la corporación (`marca` del JSON; null = los de partida).
+ * De ellos salen los colores de los PDF y los correos: `IMPRENTA` en
+ * domain/marca.ts.
+ */
+export const coloresDeMarca: Marca = datos.marca;
 
 const informado = (valor: string | null | undefined): valor is string =>
   typeof valor === 'string' && valor.trim() !== '';
