@@ -23,6 +23,8 @@ export interface CuentaPrimerAcceso {
   /** Cuántas fichas cuelgan de ella además de la suya. */
   aCargo: number
   invitadoEn: string | null
+  /** Cuándo deja de valer el enlace de la última invitación (ISO), o null si no tiene. */
+  invitacionCaducaEn: string | null
   fichaConfirmadaEn: string | null
   /** Su invitación espera turno para salir. */
   enCola: boolean
