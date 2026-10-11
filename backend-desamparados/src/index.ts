@@ -41,6 +41,16 @@ try {
   process.exit(1);
 }
 
+// Secretaría, sede y redes, también en memoria antes de la primera petición:
+// los correos y los PDF los leen de ahí. La primera vez se siembran del fichero.
+const { CorporacionService } = await import('./services/corporacion.service');
+try {
+  await CorporacionService.cargar();
+} catch (error) {
+  console.error(`[Corporación] No se pudieron leer los datos de contacto de la base de datos: ${describirErrorParaLog(error)}`);
+  process.exit(1);
+}
+
 const PORT = puertoDeEscucha();
 const HOST = hostDeEscucha(); // 127.0.0.1 en producción; todas las interfaces en desarrollo
 

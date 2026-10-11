@@ -3,11 +3,12 @@ import { screen } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import DatosDeIdentificacion from '../DatosDeIdentificacion'
 import { site, faltanDatosIdentificativos, DATO_PENDIENTE } from '../../../config/site'
+import DATOS from '@instalacion/datos-entidad.json'
 
 describe('DatosDeIdentificacion', () => {
   it('muestra el correo de contacto real', () => {
     renderWithProviders(<DatosDeIdentificacion />)
-    expect(screen.getByText(site.contacto.email)).toBeInTheDocument()
+    expect(screen.getByText(DATOS.secretaria.email!)).toBeInTheDocument()
   })
 
   it('marca como pendientes los datos que el Grupo Parroquial no ha confirmado', () => {
@@ -42,7 +43,7 @@ describe('DatosDeIdentificacion', () => {
       [
         ['denominación', site.entidad.denominacion],
         ['domicilio', site.entidad.domicilio],
-        ['teléfono', site.contacto.telefono],
+        ['teléfono', DATOS.secretaria.telefono],
       ] as Array<[string, string | null]>
     ).filter((par): par is [string, string] => typeof par[1] === 'string')
 

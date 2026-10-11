@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Box, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import Boton from '../../../components/Boton'
-import { site } from '../../../config/site'
+import { useContacto } from '../../../hooks/useContacto'
 import { SERIF } from '../../inicio/estilos'
 import { FILETE_TARJETA } from './temaTarjeta'
 
@@ -27,6 +27,7 @@ interface SolicitudRecibidaProps {
  */
 export default function SolicitudRecibida({ nombre, email, fichas = 1, soloMenores = false }: SolicitudRecibidaProps) {
   const titulo = useRef<HTMLHeadingElement>(null)
+  const horario = useContacto()?.secretaria.horario
 
   useEffect(() => {
     titulo.current?.focus({ preventScroll: true })
@@ -55,7 +56,7 @@ export default function SolicitudRecibida({ nombre, email, fichas = 1, soloMenor
         <Typography sx={{ fontSize: 15, lineHeight: 1.7, maxWidth: '58ch', color: 'text.secondary' }}>
           Sigue lo que te decimos en el correo. Lo habitual es pasarse por Secretaría, en la casa parroquial,
           con el DNI y el certificado de bautismo de cada persona que apuntas
-          ({site.contacto.horario.toLowerCase()}): allí se formaliza el alta y se activa el acceso al área
+          {horario ? ` (${horario.toLowerCase()})` : ''}: allí se formaliza el alta y se activa el acceso al área
           de hermanos.
           {soloMenores && ' Desde ahí gestionarás sus fichas, aunque tú no seas hermano.'}
         </Typography>

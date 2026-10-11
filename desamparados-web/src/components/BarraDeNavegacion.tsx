@@ -5,7 +5,7 @@ import EscudoDelGrupo from './EscudoDelGrupo'
 import MenuEscritorio from './barra/MenuEscritorio'
 import CajonMovil from './barra/CajonMovil'
 import IconoDelMenu from './barra/IconoDelMenu'
-import { enlacesDeRedes } from './barra/redes'
+import { useEnlacesDeRedes } from './barra/redes'
 import { DESKTOP_NAV_MIN, VELO_ARRIBA, VELO_SCROLL, compactMq, desktopMq, socialMq, tinta } from './barra/estilos'
 import { site } from '../config/site'
 import { BOTON } from './estiloDeBoton'
@@ -28,6 +28,7 @@ export default function BarraDeNavegacion() {
   const theme = useTheme()
   const isMobile = useMediaQuery(`(max-width:${DESKTOP_NAV_MIN - 1}px)`)
   const [cajonAbierto, setCajonAbierto] = useState(false)
+  const enlacesDeRedes = useEnlacesDeRedes()
   const { activo } = useModulos()
 
   const barraRef = useRef<HTMLElement>(null)

@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
-import { site } from '../../../config/site'
+import DATOS from '@instalacion/datos-entidad.json'
 import AccesosRapidos from '../AccesosRapidos'
 import { textosDePrueba, responderPortada } from './ayudas'
 
-// `site` es de solo lectura en los tipos, pero en tiempo de ejecución es un objeto
-// normal: así se simula que alguien rellena el canal de YouTube en la configuración.
-const redes = site.redes as { youtube: string | null }
+// Las redes que siembran las pruebas en la caché (test/queryClient.ts) salen de
+// este objeto al montar: cambiándolo se simula que Secretaría rellena el canal
+// de YouTube en el CMS.
+const redes = DATOS.redes
 const youtubeOriginal = redes.youtube
 
 describe('AccesosRapidos', () => {

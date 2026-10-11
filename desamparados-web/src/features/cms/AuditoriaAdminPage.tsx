@@ -97,6 +97,7 @@ const ACCIONES: Record<string, string> = {
   AVISO_HECHO: 'Dar por hecho un aviso de la junta',
   INFORME_ANUAL_ACTUALIZAR: 'Escribir en el Informe anual',
   RETABLO_ACTUALIZAR: 'Cambiar la foto del retablo del Inicio',
+  CORPORACION_ACTUALIZAR: 'Cambiar los datos de contacto de la corporación',
   EVENTO_ACTUALIZAR: 'Editar un evento de la agenda',
   EVENTO_ELIMINAR: 'Borrar un evento de la agenda',
   ENSER_CREAR: 'Crear un enser',

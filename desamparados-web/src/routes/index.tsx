@@ -81,6 +81,7 @@ const TesoreriaAdminPage = lazy(() => import('../features/cms/TesoreriaAdminPage
 const InventarioAdminPage = lazy(() => import('../features/cms/InventarioAdminPage'))
 const ContabilidadAdminPage = lazy(() => import('../features/cms/ContabilidadAdminPage'))
 const AuditoriaAdminPage = lazy(() => import('../features/cms/AuditoriaAdminPage'))
+const DatosCorporacionPage = lazy(() => import('../features/cms/DatosCorporacionPage'))
 const AjustesInicioPage = lazy(() => import('../features/cms/AjustesInicioPage'))
 const DatosInformesPage = lazy(() => import('../features/cms/datos/DatosInformesPage'))
 const InformeAnualPage = lazy(() => import('../features/cms/datos/InformeAnualPage'))
@@ -323,6 +324,7 @@ const router = createBrowserRouter([
           { path: 'informe-anual/:anio', element: <ExigeRol roles={rolesPorRutaCms['informe-anual/:anio']}>{pagina(InformeAnualPage, 'informe-anual')}</ExigeRol> },
           { path: 'accesos', element: <ExigeRol roles={rolesPorRutaCms.accesos}>{pagina(AccesosAdminPage, 'nucleo')}</ExigeRol> },
           { path: 'modulos', element: <ExigeRol roles={rolesPorRutaCms.modulos}>{pagina(ModulosAdminPage, 'nucleo')}</ExigeRol> },
+          { path: 'corporacion', element: <ExigeRol roles={rolesPorRutaCms.corporacion}>{pagina(DatosCorporacionPage, 'nucleo')}</ExigeRol> },
           { path: 'auditoria', element: <ExigeRol roles={rolesPorRutaCms.auditoria}>{pagina(AuditoriaAdminPage, 'nucleo')}</ExigeRol> },
           { path: 'ajustes-inicio', element: <ExigeRol roles={rolesPorRutaCms['ajustes-inicio']}>{pagina(AjustesInicioPage, 'nucleo')}</ExigeRol> },
         ],

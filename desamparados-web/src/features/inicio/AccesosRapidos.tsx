@@ -12,7 +12,7 @@ import PlayCircleOutlinedIcon from '@mui/icons-material/PlayCircleOutlined'
 import { BOTON, VELO_SOBRE_GRANATE } from '../../components/estiloDeBoton'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import NorthEastIcon from '@mui/icons-material/NorthEast'
-import { site } from '../../config/site'
+import { useContacto } from '../../hooks/useContacto'
 import { GOLD, GRANATE, SERIF, TINTA, ceja } from './estilos'
 import { useTextosPortada, TEXTOS_POR_DEFECTO } from './useContenidoPortada'
 import type { TextosPortada } from '../../lib/api/portada'
@@ -226,6 +226,7 @@ export default function AccesosRapidos() {
     ?? TEXTOS_POR_DEFECTO.accesos.teselas.find((t) => t.clave === clave)!
 
   const { activos, activo } = useModulos()
+  const youtube = useContacto()?.redes.youtube
   // Sin el alta por la web no hay a dónde mandar con «Hazte hermano», y sin
   // Publicaciones los boletines no existen: ni placa ni tesela. Mientras no se
   // sabe se pintan como encendidas (la lista llega en milisegundos): retirarlas
@@ -234,8 +235,8 @@ export default function AccesosRapidos() {
   const conPlaca = sigueEncendido('alta-web')
   const teselas: Acceso[] = [
     ...ACCESOS.filter((a) => a.clave !== 'boletines' || sigueEncendido('publicaciones')),
-    ...(site.redes.youtube
-      ? [{ clave: 'youtube', icon: <PlayCircleOutlinedIcon fontSize="inherit" />, href: site.redes.youtube }]
+    ...(youtube
+      ? [{ clave: 'youtube', icon: <PlayCircleOutlinedIcon fontSize="inherit" />, href: youtube }]
       : []),
     CONTACTO,
   ]

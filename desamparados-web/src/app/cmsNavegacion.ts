@@ -28,6 +28,7 @@ import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
 import MailOutlinedIcon from '@mui/icons-material/MailOutlined'
 import DraftsOutlinedIcon from '@mui/icons-material/DraftsOutlined'
 import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined'
+import ContactMailOutlinedIcon from '@mui/icons-material/ContactMailOutlined'
 import CATALOGO from '../../../shared/paginas-publicas.json'
 import type { PanelResponse } from '../lib/api/panel'
 import { cumple, type ClaveModulo, type Requisito } from '../domain/modulos'
@@ -132,6 +133,8 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Accesos', href: '/cms/accesos', roles: ['ADMIN'], grupo: 'Sistema', icono: ManageAccountsOutlinedIcon, modulo: 'nucleo' },
   // Encender y apagar módulos abre pantallas a toda la junta: solo Administración.
   { label: 'Módulos', href: '/cms/modulos', roles: ['ADMIN'], grupo: 'Sistema', icono: ExtensionOutlinedIcon, modulo: 'nucleo' },
+  // Secretaría lleva el contacto del Grupo (horario, teléfono, sede, redes): lo cambia sin pedírselo a Administración.
+  { label: 'Datos de la corporación', href: '/cms/corporacion', roles: ['ADMIN', 'SECRETARIA'], grupo: 'Sistema', icono: ContactMailOutlinedIcon, modulo: 'nucleo' },
   { label: 'Auditoría', href: '/cms/auditoria', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Sistema', icono: FactCheckOutlinedIcon, modulo: 'nucleo' },
   { label: 'Ajustes del Inicio', href: '/cms/ajustes-inicio', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'cuenta', icono: TuneOutlinedIcon, modulo: 'nucleo' },
   { label: 'Mi seguridad', href: '/cms/mi-seguridad', roles: TODOS, grupo: 'cuenta', icono: ShieldOutlinedIcon, modulo: 'nucleo' },

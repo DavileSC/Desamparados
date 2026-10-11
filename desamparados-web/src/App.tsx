@@ -5,6 +5,7 @@ import AppRouter from './routes'
 import RedDeErrores from './components/RedDeErrores'
 import { useCargarSesion, useVaciarCacheAlCambiarDeUsuario } from './features/altas/auth/session'
 import { portadaDelInicio } from './lib/api/portada'
+import { CLAVE_CORPORACION, datosDeContacto } from './lib/api/corporacion'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,6 +26,13 @@ const queryClient = new QueryClient({
 if (window.location.pathname === '/') {
   void queryClient.prefetchQuery({ queryKey: ['home', 'portada'], queryFn: portadaDelInicio, staleTime: 5 * 60_000 })
 }
+
+/*
+ * Secretaría, la sede y las redes salen en el pie de todas las páginas: se
+ * piden ya, para que el pie no se pinte primero sin ellos. Misma clave y mismo
+ * tiempo que `useContacto`.
+ */
+void queryClient.prefetchQuery({ queryKey: CLAVE_CORPORACION, queryFn: datosDeContacto, staleTime: 10 * 60_000 })
 
 function App() {
   // Recupera la sesion de la cookie httpOnly. Una sola vez, al arrancar.

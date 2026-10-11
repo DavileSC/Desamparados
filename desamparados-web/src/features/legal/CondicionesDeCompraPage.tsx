@@ -3,6 +3,7 @@ import MarcoPaginaLegal from './MarcoPaginaLegal'
 import DatosDeIdentificacion from './DatosDeIdentificacion'
 import { Apartado, Enlace, Lista, P } from './piezas'
 import { legal, site } from '../../config/site'
+import { useContacto } from '../../hooks/useContacto'
 import { deLaCorporacion, laCorporacion, mayuscula, segunLaCorporacion } from '../../domain/articulos'
 
 /**
@@ -12,7 +13,11 @@ import { deLaCorporacion, laCorporacion, mayuscula, segunLaCorporacion } from '.
  * paso de pago de la cesta. Es una propuesta: la revisa el asesor del Grupo.
  */
 export default function CondicionesDeCompraPage() {
-  const horario = site.contacto.horario ? `, en su horario (${site.contacto.horario})` : ', en su horario de atención'
+  const contacto = useContacto()
+  const email = contacto?.secretaria.email ?? ''
+  const telefono = contacto?.secretaria.telefono
+  const horario = contacto?.secretaria.horario ? `, en su horario (${contacto.secretaria.horario})` : ', en su horario de atención'
+  const donde = [contacto?.sede.calle, contacto?.sede.localidad].filter(Boolean).join(', ')
   return (
     <MarcoPaginaLegal
       title="Condiciones de compra"
@@ -42,7 +47,7 @@ export default function CondicionesDeCompraPage() {
 
       <Apartado titulo="4. Recogida">
         <P>
-          El pedido se recoge en Secretaría ({site.sede.direccion}, {site.sede.localidad}){horario}, indicando el número de
+          El pedido se recoge en Secretaría{donde ? ` (${donde})` : ''}{horario}, indicando el número de
           pedido o el nombre con que se hizo.
         </P>
       </Apartado>
@@ -50,7 +55,7 @@ export default function CondicionesDeCompraPage() {
       <Apartado titulo="5. Derecho de desistimiento">
         <P>
           Quien compra como consumidor puede desistir de la compra, sin dar explicaciones, en los 14 días naturales siguientes
-          a la recogida. Basta con comunicarlo de forma clara por correo a {site.contacto.email} o en Secretaría, y devolver el
+          a la recogida. Basta con comunicarlo de forma clara por correo a {email} o en Secretaría, y devolver el
           producto en Secretaría, sin usar y en el estado en que se entregó. Puede usarse el modelo de formulario del final de
           estas condiciones, aunque no es obligatorio.
         </P>
@@ -73,8 +78,8 @@ export default function CondicionesDeCompraPage() {
 
       <Apartado titulo="7. Dudas y reclamaciones">
         <P>
-          Para cualquier duda o reclamación sobre un pedido puede escribirse a {site.contacto.email}
-          {site.contacto.telefono ? ` o llamar al ${site.contacto.telefono}` : ''}. Si no se llega a un acuerdo, quien compra
+          Para cualquier duda o reclamación sobre un pedido puede escribirse a {email}
+          {telefono ? ` o llamar al ${telefono}` : ''}. Si no se llega a un acuerdo, quien compra
           puede acudir a los servicios de consumo de su comunidad autónoma.
         </P>
       </Apartado>
@@ -98,7 +103,7 @@ export default function CondicionesDeCompraPage() {
         <P>Solo debe rellenarse y enviarse si se quiere desistir de la compra.</P>
         <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '6px', p: { xs: 2, md: 3 }, mb: 2 }}>
           <P>
-            A la atención de {legal(site.entidad.denominacion)}, {legal(site.entidad.domicilio)}, {site.contacto.email}:
+            A la atención de {legal(site.entidad.denominacion)}, {legal(site.entidad.domicilio)}, {email}:
           </P>
           <P>Por la presente le comunico que desisto de mi contrato de venta de los siguientes bienes:</P>
           <Lista>

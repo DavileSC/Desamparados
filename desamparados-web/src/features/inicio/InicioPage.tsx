@@ -1,4 +1,5 @@
 import MetaDePagina from '../../components/MetaDePagina'
+import DatosEstructurados from '../../components/DatosEstructurados'
 import Hero from './Hero'
 import CuentaAtrasDeSalida from './CuentaAtrasDeSalida'
 import NoticiasDestacadas from './NoticiasDestacadas'
@@ -17,6 +18,7 @@ export default function InicioPage() {
         conSufijo={false}
         descripcion={site.descripcion}
       />
+      <DatosEstructurados />
       {/* Lo útil primero (noticias y agenda) y la banda emocional como pausa antes del cierre.
           Ritmo por bloques: oscuro y foto a sangre se alternan y dos fotos nunca se tocan. */}
       <Hero />

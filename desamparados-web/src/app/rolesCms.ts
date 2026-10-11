@@ -59,6 +59,8 @@ export const rolesPorRutaCms = {
   accesos: ['ADMIN'],
   // Los módulos de la instalación: solo Administración, como los accesos.
   modulos: ['ADMIN'],
+  // Los datos de contacto: la guarda de /api/cms/corporacion.
+  corporacion: ['ADMIN', 'SECRETARIA'],
   auditoria: ['ADMIN', 'HERMANO_MAYOR'],
   // La foto del retablo del Inicio: la misma guarda que PUT /api/panel/retablo.
   'ajustes-inicio': ['ADMIN', 'HERMANO_MAYOR'],

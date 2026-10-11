@@ -1,7 +1,8 @@
 import MarcoPaginaLegal from './MarcoPaginaLegal'
 import DatosDeIdentificacion from './DatosDeIdentificacion'
 import { Apartado, Enlace, EnlaceFuera, Lista, P, Subapartado } from './piezas'
-import { emailDerechos, site } from '../../config/site'
+import { site } from '../../config/site'
+import { emailDerechos, useContacto } from '../../hooks/useContacto'
 import { aLaCorporacion, deLaCorporacion, laCorporacion, mayuscula, segunLaCorporacion } from '../../domain/articulos'
 import { useModulos } from '../../hooks/useModulos'
 
@@ -13,6 +14,8 @@ import { useModulos } from '../../hooks/useModulos'
  * pedidos. Es una propuesta: la revisa el asesor del Grupo.
  */
 export default function PoliticaDePrivacidadPage() {
+  const contacto = useContacto()
+  const derechos = contacto ? emailDerechos(contacto) : ''
   const { activo } = useModulos()
   const tienda = activo('tienda-web')
   const donativos = activo('donativos') || activo('apadrinamientos')
@@ -26,7 +29,7 @@ export default function PoliticaDePrivacidadPage() {
       <Apartado titulo="1. Responsable del tratamiento" primero>
         <P>El responsable de los datos personales que se recogen en esta web es:</P>
         <DatosDeIdentificacion />
-        <P>Para cualquier cuestión sobre protección de datos puede escribirse a {emailDerechos}.</P>
+        <P>Para cualquier cuestión sobre protección de datos puede escribirse a {derechos}.</P>
       </Apartado>
 
       <Apartado titulo="2. Qué datos se tratan, para qué y con qué base">
@@ -64,7 +67,7 @@ export default function PoliticaDePrivacidadPage() {
             vídeos de sus cultos, de la salida procesional y de otros actos. De un hermano solo se publican aquellas en que se le
             reconozca si lo ha autorizado (art. 6.1.a del RGPD); por un menor lo autoriza quien lo inscribe. La autorización
             se da o se retira cuando se quiera{activo('area-hermanos') ? ', desde el área de hermanos' : ''} o escribiendo a{' '}
-            {emailDerechos}, y entonces se retiran las fotos ya publicadas que dependan {deLaCorporacion()}.
+            {derechos}, y entonces se retiran las fotos ya publicadas que dependan {deLaCorporacion()}.
           </P>
           <P>
             Las imágenes de conjunto de un acto público, en que nadie es el protagonista, se publican sin esa autorización, como
@@ -85,7 +88,7 @@ export default function PoliticaDePrivacidadPage() {
           <Subapartado titulo="Boletín y avisos">
             <P>
               El correo de los hermanos se usa para enviarles el boletín y los avisos {deLaCorporacion()}, como parte de la
-              relación de pertenencia. Puede pedirse dejar de recibirlos en cualquier momento escribiendo a {emailDerechos}.
+              relación de pertenencia. Puede pedirse dejar de recibirlos en cualquier momento escribiendo a {derechos}.
             </P>
           </Subapartado>
         )}
@@ -170,7 +173,7 @@ export default function PoliticaDePrivacidadPage() {
         </P>
         <P>
           {activo('area-hermanos') ? 'Desde el área de hermanos se pueden descargar los propios datos y cerrar la cuenta. ' : ''}
-          También puede escribirse a {emailDerechos}, acreditando la identidad. {mayuscula(laCorporacion())}{' '}
+          También puede escribirse a {derechos}, acreditando la identidad. {mayuscula(laCorporacion())}{' '}
           {segunLaCorporacion('contesta', 'contestan')} en el plazo de un mes. Si no se está conforme con la respuesta, puede
           reclamarse ante la <EnlaceFuera a="https://www.aepd.es">Agencia Española de Protección de Datos</EnlaceFuera>.
         </P>

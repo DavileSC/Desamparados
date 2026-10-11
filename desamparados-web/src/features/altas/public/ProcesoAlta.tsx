@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
-import { site } from '../../../config/site'
+import { useContacto } from '../../../hooks/useContacto'
 import { GOLD, SERIF } from '../../inicio/estilos'
 import { enlaceConFlecha } from '../../../components/estiloDeBoton'
 import PedirReactivacion from './PedirReactivacion'
@@ -16,6 +16,7 @@ const enlaceLateral = { ...enlaceConFlecha, color: '#fff', fontSize: 14, '& svg'
  * Sin numerar a propósito: los números son de los pasos del formulario.
  */
 export default function ProcesoAlta() {
+  const secretaria = useContacto()?.secretaria
   return (
     <Box component="aside" aria-labelledby="despues-titulo">
       <Typography
@@ -31,7 +32,7 @@ export default function ProcesoAlta() {
         </Typography>
         <Typography sx={{ fontSize: 15, lineHeight: 1.65, color: 'text.secondary' }}>
           Para formalizar el alta, pásate por la casa parroquial con tu DNI y el certificado de
-          bautismo ({site.contacto.horario.toLowerCase()}). Entonces se activa tu acceso al área
+          bautismo{secretaria?.horario ? ` (${secretaria.horario.toLowerCase()})` : ''}. Entonces se activa tu acceso al área
           de hermanos.
         </Typography>
       </Box>
@@ -48,17 +49,19 @@ export default function ProcesoAlta() {
         <PedirReactivacion sx={enlaceLateral} />
       </Box>
       <Typography sx={{ mt: 1.5, fontSize: 13, lineHeight: 1.6, color: 'text.secondary' }}>
-        El alta de un menor se hace aquí mismo: elige arriba la opción que te toque. Si tienes cualquier duda,
-        escríbenos a{' '}
+        El alta de un menor se hace aquí mismo: elige arriba la opción que te toque.
+        {secretaria?.email && <>
+        {' '}Si tienes cualquier duda, escríbenos a{' '}
         <Box
           component="a"
-          href={`mailto:${site.contacto.email}`}
+          href={`mailto:${secretaria.email}`}
           // Alto para el dedo en el móvil, sin mover la línea.
           sx={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3, '&:hover': { color: GOLD }, display: 'inline-block', py: { xs: '12px', md: 0 }, my: { xs: '-12px', md: 0 } }}
         >
-          {site.contacto.email}
+          {secretaria.email}
         </Box>
         .
+        </>}
       </Typography>
     </Box>
   )

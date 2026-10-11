@@ -1,4 +1,4 @@
-import { leerDatosEntidad, type Articulo } from '../../../shared/datos-entidad.mjs';
+import { leerDatosEntidad, type Articulo, type DatosEntidad } from '../../../shared/datos-entidad.mjs';
 
 // Se lee del disco al cargar el módulo, no se importa: el fichero es de cada
 // instalación (instalacion/datos-entidad.json, montado en el contenedor) y no
@@ -79,10 +79,42 @@ export function direccionDeLaSede(sede: Sede): string | null {
   return [sede.calle.trim(), poblacion].filter(Boolean).join(', ');
 }
 
+/**
+ * Cómo se contacta con la corporación: Secretaría, la sede, las redes y el
+ * correo de los derechos del RGPD. Cambian más que la identidad (un horario,
+ * un teléfono), así que viven en la base y se editan en el CMS (Sistema →
+ * «Datos de la corporación»); el fichero de la instalación solo los pone la
+ * primera vez (`services/corporacion.service.ts`).
+ */
+export interface DatosDeContacto {
+  secretaria: { horario: string | null; telefono: string | null; email: string | null };
+  sede: Sede;
+  redes: DatosEntidad['redes'];
+  privacidad: DatosEntidad['privacidad'];
+}
+
+/** Los del fichero: con ellos se siembra la base y se arranca hasta leerla. */
+export const contactoDelFichero = (): DatosDeContacto => structuredClone({
+  secretaria: datos.secretaria, sede: datos.sede, redes: datos.redes, privacidad: datos.privacidad,
+});
+
 // La dirección de Secretaría sale de la sede: estaba escrita dos veces en el
 // JSON, y cambiar una sin la otra dejaba los correos y el pie de la web
 // mandando a sitios distintos.
-export const secretaria: DatosSecretaria = { ...datos.secretaria, direccion: direccionDeLaSede(datos.sede) };
+const secretariaDe = (c: DatosDeContacto): DatosSecretaria => ({ ...c.secretaria, direccion: direccionDeLaSede(c.sede) });
+
+/**
+ * Los de Secretaría que firman los correos y los PDF. Es un objeto que se
+ * cambia en su sitio (`aplicarContacto`) y no se sustituye: quien lo importa
+ * lee siempre el de ahora, sin tener que pedirlo a la base en cada correo.
+ * Por eso nadie debe copiar sus valores al cargar un módulo.
+ */
+export const secretaria: DatosSecretaria = secretariaDe(contactoDelFichero());
+
+/** Lo guardado en la base, a la memoria: al arrancar y al guardar en el CMS. */
+export function aplicarContacto(c: DatosDeContacto): void {
+  Object.assign(secretaria, secretariaDe(c));
+}
 
 /**
  * Las líneas del bloque «Atención al Hermano», en el orden en que se pintan y

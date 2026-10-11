@@ -9,6 +9,7 @@ import { crearTemaCms } from '../../../theme/cms'
 import POR_DEFECTO from '../../../../../shared/contenido-por-defecto.json'
 import { usePortada } from '../../inicio/useContenidoPortada'
 import PortadaAdminPage, { MAX_FOTOS_PORTADA } from '../PortadaAdminPage'
+import { sembrarContacto } from '../../../test/queryClient'
 
 interface Peticion { url: string; metodo: string; cuerpo?: unknown }
 
@@ -76,6 +77,10 @@ function montar({
     { initialEntries: ['/cms/portada'] },
   )
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
+  // La vista previa pinta los accesos, que leen el YouTube de los datos de
+  // contacto: como en `App.tsx`, ya pedidos. El `fetch` de arriba no sabría
+  // responder a /corporacion.
+  sembrarContacto(queryClient)
   const invalidar = vi.spyOn(queryClient, 'invalidateQueries')
 
   render(

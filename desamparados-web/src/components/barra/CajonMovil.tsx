@@ -17,7 +17,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { AnimatePresence, MotionConfig, m, useIsPresent, type Variants } from 'framer-motion'
 import EscudoDelGrupo from '../EscudoDelGrupo'
 import IconoDelMenu from './IconoDelMenu'
-import { enlacesDeRedes } from './redes'
+import { useEnlacesDeRedes } from './redes'
 import { esActiva, seccionActiva, tinta } from './estilos'
 import type { EntradaMenu } from '../../config/navegacion'
 import { useMenuPublico } from '../../hooks/useMenuPublico'
@@ -100,6 +100,7 @@ function Panel({ alCerrar }: { alCerrar: () => void }) {
   const theme = useTheme()
   const location = useLocation()
   const menu = useMenuPublico()
+  const enlacesDeRedes = useEnlacesDeRedes()
   const { activo } = useModulos()
   // Mientras sale, las rayas vuelven a su sitio a la vez que se van las capas.
   const presente = useIsPresent()

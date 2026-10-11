@@ -8,6 +8,7 @@ import CssBaseline from '@mui/material/CssBaseline'
 import theme from '../../../theme'
 import { renderWithProviders } from '../../../test/test-utils'
 import InicioPage from '../InicioPage'
+import { sembrarContacto } from '../../../test/queryClient'
 
 afterEach(() => { vi.unstubAllGlobals() })
 
@@ -62,6 +63,10 @@ describe('InicioPage', () => {
     ))
     vi.stubGlobal('fetch', fetchSimulado)
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    // Los datos de contacto sí, como los deja `App.tsx` pedidos al arrancar:
+    // esta prueba va de los módulos, y el `[]` del fetch no es una respuesta
+    // de /corporacion.
+    sembrarContacto(queryClient)
 
     render(
       <MemoryRouter>

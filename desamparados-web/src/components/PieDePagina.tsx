@@ -10,7 +10,8 @@ import { site } from '../config/site'
 import { aplanarMenu } from '../config/navegacion'
 import { useMenuPublico } from '../hooks/useMenuPublico'
 import ContenedorDePagina from './ContenedorDePagina'
-import { enlacesDeRedes } from './barra/redes'
+import { useEnlacesDeRedes } from './barra/redes'
+import { comoLlegar, mapaDeLaSede, useContacto } from '../hooks/useContacto'
 import { useConsentimientoDeCookies } from '../hooks/useConsentimientoDeCookies'
 import { useModulos } from '../hooks/useModulos'
 import { BOTON } from './estiloDeBoton'
@@ -72,6 +73,9 @@ export default function PieDePagina() {
   const [mapRequested, setMapRequested] = useState(false)
   const verMapa = aceptadas || mapRequested
   const { activo } = useModulos()
+  // Mientras llegan, sus huecos quedan vacíos: mejor que un dato inventado.
+  const contacto = useContacto()
+  const enlacesDeRedes = useEnlacesDeRedes()
   const year = new Date().getFullYear()
 
   return (
@@ -99,11 +103,13 @@ export default function PieDePagina() {
               >
                 {site.titular}
               </Typography>
-              <MuiLink href={site.sede.comoLlegar} target="_blank" rel="noopener noreferrer" sx={{ ...enlace, fontSize: 13, mt: { xs: '-4px', md: '2px' } }}>
-                {site.sede.nombre} · {site.sede.direccion}
-                <NorthEastIcon sx={{ fontSize: 12, ml: 0.5, verticalAlign: '-1px' }} />
-                <Box component="span" sx={visualmenteOculto}>(cómo llegar, se abre en Google Maps)</Box>
-              </MuiLink>
+              {contacto?.sede.nombre && (
+                <MuiLink href={comoLlegar(contacto)} target="_blank" rel="noopener noreferrer" sx={{ ...enlace, fontSize: 13, mt: { xs: '-4px', md: '2px' } }}>
+                  {[contacto.sede.nombre, contacto.sede.calle].filter(Boolean).join(' · ')}
+                  <NorthEastIcon sx={{ fontSize: 12, ml: 0.5, verticalAlign: '-1px' }} />
+                  <Box component="span" sx={visualmenteOculto}>(cómo llegar, se abre en Google Maps)</Box>
+                </MuiLink>
+              )}
             </Box>
 
             {enlacesDestacados.length > 0 && (
@@ -117,15 +123,17 @@ export default function PieDePagina() {
 
           {/* Contacto y redes */}
           <Box sx={{ display: 'grid', gap: { xs: 1.75, md: 1 }, alignContent: 'start' }}>
-            <Dato icono={<MailOutlinedIcon />}>
-              <MuiLink href={`mailto:${site.contacto.email}`} sx={{ ...enlace, fontSize: 13 }}>{site.contacto.email}</MuiLink>
-            </Dato>
-            {site.contacto.telefono && (
-              <Dato icono={<PhoneOutlinedIcon />}>
-                <MuiLink href={`tel:${site.contacto.telefono.replace(/\s/g, '')}`} sx={{ ...enlace, fontSize: 13 }}>{site.contacto.telefono}</MuiLink>
+            {contacto?.secretaria.email && (
+              <Dato icono={<MailOutlinedIcon />}>
+                <MuiLink href={`mailto:${contacto.secretaria.email}`} sx={{ ...enlace, fontSize: 13 }}>{contacto.secretaria.email}</MuiLink>
               </Dato>
             )}
-            {site.contacto.horario && <Dato icono={<AccessTimeIcon />}>{site.contacto.horario}</Dato>}
+            {contacto?.secretaria.telefono && (
+              <Dato icono={<PhoneOutlinedIcon />}>
+                <MuiLink href={`tel:${contacto.secretaria.telefono.replace(/\s/g, '')}`} sx={{ ...enlace, fontSize: 13 }}>{contacto.secretaria.telefono}</MuiLink>
+              </Dato>
+            )}
+            {contacto?.secretaria.horario && <Dato icono={<AccessTimeIcon />}>{contacto.secretaria.horario}</Dato>}
             {enlacesDeRedes.length > 0 && (
               <Box sx={{ display: 'flex', gap: 0.25, ml: -1.5, mt: { xs: 0, md: -0.5 } }}>
                 {enlacesDeRedes.map((social) => (
@@ -158,16 +166,16 @@ export default function PieDePagina() {
               justifyContent: 'center',
             }}
           >
-            {verMapa ? (
+            {verMapa && contacto ? (
               <Box
                 component="iframe"
-                src={site.sede.mapa}
+                src={mapaDeLaSede(contacto)}
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                title={`Mapa: ${site.sede.nombre}`}
+                title={`Mapa: ${contacto.sede.nombre ?? site.titular}`}
               />
             ) : (
               <Box sx={{ textAlign: 'center', px: 2 }}>

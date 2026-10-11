@@ -4,9 +4,12 @@ import DatosDeIdentificacion from './DatosDeIdentificacion'
 import { Enlace } from './piezas'
 import { useModulos } from '../../hooks/useModulos'
 import { site } from '../../config/site'
+import { useContacto } from '../../hooks/useContacto'
 import { deLaCorporacion, laCorporacion, mayuscula, segunLaCorporacion } from '../../domain/articulos'
 
 export default function AvisoLegalPage() {
+  // Mientras llegan, vacíos: los pide App.tsx al arrancar y casi siempre ya están.
+  const secretaria = useContacto()?.secretaria
   const tienda = useModulos().activo('tienda-web')
   return (
     <MarcoPaginaLegal
@@ -98,8 +101,8 @@ export default function AvisoLegalPage() {
         8. Contacto
       </Typography>
       <Typography component="p" sx={{ mb: 2 }}>
-        Para cualquier consulta sobre esta web puede escribirse a {site.contacto.email}
-        {site.contacto.telefono ? ` o llamarse al ${site.contacto.telefono}` : ''}.
+        Para cualquier consulta sobre esta web puede escribirse a {secretaria?.email}
+        {secretaria?.telefono ? ` o llamarse al ${secretaria.telefono}` : ''}.
       </Typography>
 
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>

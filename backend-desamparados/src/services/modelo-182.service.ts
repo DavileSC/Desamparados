@@ -59,17 +59,19 @@ export interface ConfiguracionModelo182 {
   cuotas: boolean;
 }
 
-const POR_DEFECTO: ConfiguracionModelo182 = {
+// Funciones y no constantes: los datos de Secretaría se cambian en el CMS, y
+// leídos al cargar el módulo se quedaban con los del arranque.
+const porDefecto = (): ConfiguracionModelo182 => ({
   nif: null,
   telefono: (secretaria.telefono ?? '').replace(/\D/g, '').slice(-9),
   contacto: '',
   firmanteNombre: '',
   firmanteCargo: 'Secretario',
   cuotas: true,
-};
+});
 
 /** La provincia de la sede: la de quien no tiene código postal en su ficha. */
-const PROVINCIA_DEL_GRUPO = provinciaDelCodigoPostal(/\b(\d{5})\b/.exec(secretaria.direccion ?? '')?.[1] ?? null);
+const provinciaDelGrupo = () => provinciaDelCodigoPostal(/\b(\d{5})\b/.exec(secretaria.direccion ?? '')?.[1] ?? null);
 
 interface Excluido {
   nombre: string;
@@ -98,9 +100,9 @@ const centimosDe = (d: Prisma.Decimal | number) => Math.round(Number(d) * 100);
 
 async function leerConfiguracion(): Promise<ConfiguracionModelo182> {
   const fila = await db.configuracion.findUnique({ where: { key: CLAVE } });
-  if (!fila) return { ...POR_DEFECTO };
-  try { return { ...POR_DEFECTO, ...(JSON.parse(fila.value) as Partial<ConfiguracionModelo182>) }; }
-  catch { return { ...POR_DEFECTO }; }
+  if (!fila) return porDefecto();
+  try { return { ...porDefecto(), ...(JSON.parse(fila.value) as Partial<ConfiguracionModelo182>) }; }
+  catch { return porDefecto(); }
 }
 
 function faltaParaElFichero(c: ConfiguracionModelo182): string[] {
@@ -233,7 +235,7 @@ export class Modelo182Service {
       telefono: c.telefono.replace(/\D/g, ''),
       contacto: c.contacto.trim(),
       firmanteNombre: c.firmanteNombre.trim(),
-      firmanteCargo: c.firmanteCargo.trim() || POR_DEFECTO.firmanteCargo,
+      firmanteCargo: c.firmanteCargo.trim() || porDefecto().firmanteCargo,
       cuotas: c.cuotas,
     };
     const antes = await leerConfiguracion();
@@ -255,7 +257,7 @@ export class Modelo182Service {
     const { lista, excluidos, anonimos } = await aportaciones(ejercicio, configuracion.cuotas);
     const declarados = declaradosDelEjercicio(lista, ejercicio).map((d) => ({
       ...d,
-      provincia: d.provincia ?? PROVINCIA_DEL_GRUPO ?? '99',
+      provincia: d.provincia ?? provinciaDelGrupo() ?? '99',
       provinciaSupuesta: d.provincia === null,
     }));
     const enviados = await db.configuracion.findUnique({ where: { key: claveEnviados(ejercicio) } });

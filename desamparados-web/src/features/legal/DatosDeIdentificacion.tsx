@@ -1,21 +1,23 @@
 import { Box, Typography } from '@mui/material'
 import { site, legal, faltanDatosIdentificativos, DATO_PENDIENTE } from '../../config/site'
+import { useContacto } from '../../hooks/useContacto'
 
 /**
  * Datos identificativos del responsable, comunes al aviso legal y a la
- * política de privacidad. Lee de `src/config/site.ts`: los campos que la
- * Grupo Parroquial aún no ha confirmado se muestran como pendientes y el aviso final
+ * política de privacidad. Lee de `src/config/site.ts` y de los datos de
+ * contacto: los campos que la corporación aún no ha confirmado se muestran como pendientes y el aviso final
  * desaparece solo en cuanto se rellenan allí.
  */
 export default function DatosDeIdentificacion() {
+  const secretaria = useContacto()?.secretaria
   const filas: Array<[string, string]> = [
     ['Denominación', legal(site.entidad.denominacion)],
     ['Domicilio', site.entidad.domicilio ?? `${DATO_PENDIENTE} (${site.entidad.localidad})`],
-    ['Correo de contacto', site.contacto.email],
+    ['Correo de contacto', secretaria?.email ?? ''],
   ]
 
-  if (site.contacto.telefono) {
-    filas.push(['Teléfono', site.contacto.telefono])
+  if (secretaria?.telefono) {
+    filas.push(['Teléfono', secretaria.telefono])
   }
 
   return (
