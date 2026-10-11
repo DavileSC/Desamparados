@@ -4,11 +4,14 @@
 // /robots.txt servidos al vuelo. No se escribe nada en la carpeta de la web,
 // que así no lleva datos de nadie.
 //
-// Solo al servir (apply: 'serve'): `vite build` deja las marcas sin rellenar,
-// para que una misma web compilada sirva a cualquier corporación.
+// Solo al servir (apply: 'serve', que incluye `vite preview`): `vite build`
+// deja las marcas sin rellenar, para que una misma web compilada sirva a
+// cualquier corporación. En el preview, el index.html de dist/ se rellena al
+// servirlo, como hace el contenedor al arrancar.
 //
 // Lo usa vite.config.ts; las pruebas no (src/test/setup.ts pone los datos).
 
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { leerDatosEntidad, rutaDeDatosEntidad } from '../../shared/datos-entidad.mjs'
 import { instalacionJs, manifest, rellenarIndex, robots } from './instalacion-web.mjs'
@@ -25,10 +28,7 @@ export function datosDeLaInstalacion() {
   let datos = null
   const alDia = () => (datos ??= leerDatosEntidad())
 
-  const servir = (logger) => (req, res, next) => {
-    const fichero = FICHEROS[req.url?.split('?')[0] ?? '']
-    if (!fichero) return next()
-    const [tipo, escribir] = fichero
+  const responder = (logger, res, tipo, escribir) => {
     let contenido
     try {
       contenido = escribir(alDia())
@@ -44,6 +44,23 @@ export function datosDeLaInstalacion() {
     res.setHeader('Content-Type', tipo)
     res.setHeader('Cache-Control', 'no-cache')
     res.end(contenido)
+  }
+
+  const servir = (logger) => (req, res, next) => {
+    const fichero = FICHEROS[req.url?.split('?')[0] ?? '']
+    if (!fichero) return next()
+    responder(logger, res, ...fichero)
+  }
+
+  // El index.html de dist/ conserva las marcas: sin esto, `vite preview`
+  // enseñaba {{nombre}} en el título y en la vista previa de los enlaces.
+  const servirIndex = (server) => {
+    const index = resolve(server.config.root, server.config.build.outDir, 'index.html')
+    return (req, res, next) => {
+      const ruta = req.url?.split('?')[0]
+      if (!['GET', 'HEAD'].includes(req.method ?? '') || (ruta !== '/' && ruta !== '/index.html')) return next()
+      responder(server.config.logger, res, 'text/html; charset=utf-8', (datos) => rellenarIndex(readFileSync(index, 'utf8'), datos))
+    }
   }
 
   return {
@@ -71,6 +88,13 @@ export function datosDeLaInstalacion() {
     },
     configurePreviewServer(server) {
       server.middlewares.use(servir(server.config.logger))
+      // Dos veces: antes que Vite, para «/» y «/index.html», que si no los
+      // sirve tal cual el estático de dist/; y al final (la función devuelta),
+      // para las rutas de la SPA, que el fallback de Vite ya ha reescrito a
+      // /index.html. Antes que Vite no puede ir con ellas: aún no ha pasado el
+      // proxy y una ruta sin extensión puede ser de /api.
+      server.middlewares.use(servirIndex(server))
+      return () => server.middlewares.use(servirIndex(server))
     },
     transformIndexHtml: {
       // Antes que Vite: si no, intentaría resolver el og:image con la marca.
