@@ -24,3 +24,11 @@ export const esCuentaDeCustodia = (cuenta: { email: string } | null | undefined)
 /** La ficha sin su cuenta (`user` a null) si cuelga de la de custodia. */
 export const sinCuentaDeCustodia = <T extends { user: { email: string } | null }>(ficha: T): T | (Omit<T, 'user'> & { user: null }) =>
   esCuentaDeCustodia(ficha.user) ? { ...ficha, user: null } : ficha;
+
+/**
+ * Si una dirección no es de nadie: las del dominio reservado `.invalido`, que
+ * es el de la cuenta de custodia y el de las fichas de la demo. Ningún correo
+ * debe salir hacia ellas (rebotaría en el buzón de Secretaría); para quien
+ * envía, es lo mismo que no tener correo.
+ */
+export const esDireccionDeNadie = (email: string): boolean => /\.invalido$/i.test(email.trim());

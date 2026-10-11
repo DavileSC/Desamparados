@@ -8,6 +8,7 @@ import { enmascararEmail } from '../../utils/log-privacidad.js';
 import { buzonDePruebas, buzonPedido, type CorreoParaBuzon } from '../../utils/buzon-pruebas.js';
 import { AuditoriaService, ACCIONES_AUDITORIA } from '../auditoria.service.js';
 import { aTexto, imagenesDe } from './plantilla.js';
+import { esDireccionDeNadie } from '../../domain/cuenta-de-custodia.js';
 
 /**
  * Lo único que `EmailService` necesita de un transporte. Lo cumplen tanto el de
@@ -160,6 +161,15 @@ export async function enviarCorreo(
   html: string,
   { replyTo, cuenta, adjuntos = [], uso = 'sin_clasificar' }: OpcionesDeEnvio = {},
 ): Promise<boolean> {
+  // Todos los correos pasan por aquí, y muchos caen en la dirección de la
+  // cuenta cuando la ficha no trae una (el aviso de baja, la papeleta, el
+  // recibo…): con una ficha de la cuenta de custodia, esa dirección es
+  // relleno. Se trata como «sin correo»: no sale, y no es un fallo que
+  // apuntar en la auditoría, porque no hay nada que Secretaría pueda reenviar.
+  if (esDireccionDeNadie(to)) {
+    console.warn(`✉️ El correo «${uso}» no se envía: ${enmascararEmail(to)} no es de nadie.`);
+    return false;
+  }
   try {
     await (cuenta?.transporter ?? transporte()).sendMail({
       from: `"${process.env.EMAIL_FROM_NAME || 'Secretaría'}" <${cuenta?.usuario ?? process.env.EMAIL_USER}>`,

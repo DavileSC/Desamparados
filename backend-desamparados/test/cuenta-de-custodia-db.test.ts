@@ -17,6 +17,8 @@ import { DifuntosService } from '../src/services/difuntos.service.js';
 import { anioDeLaMesa } from '../src/services/procesion/zonas.service.js';
 import { salida } from './fixtures/salidas.js';
 import { SIN_DB } from './fixtures/sin-db.js';
+import { enviarCorreo, ponerTransporte } from '../src/services/correos/envio.js';
+import { esDireccionDeNadie } from '../src/domain/cuenta-de-custodia.js';
 
 let dbDisponible = false;
 
@@ -111,4 +113,24 @@ test('los datos de relleno de la cuenta de custodia no salen como datos de sus f
     // La custodia solo se va si la creó esta prueba y se ha quedado vacía.
     if (!custodiaAntes && (await db.hermano.count({ where: { userId: custodia } })) === 0) await db.user.delete({ where: { id: custodia } });
   }
+});
+
+// Los correos que no traen dirección propia caen en la de la cuenta (el aviso
+// de baja, la papeleta, el recibo…): con una ficha de la custodia salían a
+// censo-importado@cuentas.invalido, que rebota en el buzón de Secretaría. Se
+// corta en el único sitio por donde salen todos, como si no hubiera correo.
+test('ningún correo sale a una dirección .invalido, la de la custodia incluida', async () => {
+  const enviados: unknown[] = [];
+  ponerTransporte({ sendMail: async (correo) => { enviados.push(correo); } });
+  try {
+    assert.equal(await enviarCorreo(CUENTA_CENSO_IMPORTADO.email, 'Aviso', '<p>Hola</p>', { uso: 'prueba' }), false);
+    assert.equal(await enviarCorreo('  Alguien@Demo.INVALIDO ', 'Aviso', '<p>Hola</p>', { uso: 'prueba' }), false);
+    assert.deepEqual(enviados, []);
+    assert.equal(await enviarCorreo('hermano@ejemplo.test', 'Aviso', '<p>Hola</p>', { uso: 'prueba' }), true);
+    assert.equal(enviados.length, 1);
+  } finally {
+    ponerTransporte(undefined);
+  }
+  assert.ok(esDireccionDeNadie(CUENTA_CENSO_IMPORTADO.email));
+  assert.ok(!esDireccionDeNadie('alguien@invalido.es'), 'solo el dominio de nivel superior .invalido');
 });
