@@ -90,7 +90,12 @@ export function rellenarIndex(plantilla, { identidad }) {
       .replace(/\{\{json:(\w+)\}\}/g, (_, clave) => json(valor(clave)))
       .replace(/\{\{(\w+)\}\}/g, (_, clave) => html(valor(clave))))
   // Sin cerrar con una coma colgando si la última propiedad era la quitada.
-  return lineas.join(salto).replace(/,(\s*\r?\n\s*[}\]])/g, '$1')
+  // Solo dentro del JSON-LD: en un <style> o en otro script esa coma puede
+  // ser de quien escribió la plantilla, y no es asunto de esta orden.
+  return lineas.join(salto).replace(
+    /(<script type="application\/ld\+json">)([\s\S]*?)(<\/script>)/g,
+    (_, abre, cuerpo, cierra) => abre + cuerpo.replace(/,(\s*\r?\n\s*[}\]])/g, '$1') + cierra,
+  )
 }
 
 /**
@@ -141,8 +146,11 @@ export const robots = ({ identidad }) => [
   '',
 ].join('\n')
 
-// Congelado: nada de la web puede cambiar por accidente los datos que leen las demás piezas.
-export const instalacionJs = (datos) => `window.__INSTALACION__=Object.freeze(${JSON.stringify(instalacionPublica(datos))});\n`
+// Congelado hasta el fondo: nada de la web puede cambiar por accidente los
+// datos que leen las demás piezas, y Object.freeze solo no llega a los objetos
+// de dentro (identidad, marca, normas).
+export const instalacionJs = (datos) =>
+  `window.__INSTALACION__=(function c(o){if(o&&typeof o==='object'){Object.values(o).forEach(c);Object.freeze(o)}return o})(${JSON.stringify(instalacionPublica(datos))});\n`
 
 const MONTAJE = 'En el contenedor de la web, ./instalacion tiene que estar montada en /app/instalacion (compose.yaml, servicio web).'
 

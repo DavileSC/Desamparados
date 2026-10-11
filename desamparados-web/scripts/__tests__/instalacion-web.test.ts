@@ -40,11 +40,14 @@ function jsonLd(html: string): Record<string, unknown> {
   return JSON.parse(bloque[1]) as Record<string, unknown>
 }
 
+type Publica = ReturnType<typeof instalacionPublica>
+
 /** Lo que dejaría /instalacion.js en el navegador, evaluado en un contexto aparte. */
 function evaluar(js: string) {
-  const ventana: { __INSTALACION__?: unknown } = {}
+  const ventana: { __INSTALACION__?: Publica } = {}
   runInNewContext(js, { window: ventana })
-  return { congelado: Object.isFrozen(ventana.__INSTALACION__), valor: JSON.parse(JSON.stringify(ventana.__INSTALACION__)) as unknown }
+  const instalacion = ventana.__INSTALACION__ as Publica
+  return { instalacion, valor: JSON.parse(JSON.stringify(instalacion)) as unknown }
 }
 
 describe('la orden instalacion-web.mjs', () => {
@@ -68,9 +71,18 @@ describe('la orden instalacion-web.mjs', () => {
   it('instalacion.js deja en window lo público de la identidad y la marca, congelado, y nada más', () => {
     const destino = carpetaNueva()
     expect(ejecutar(destino).status).toBe(0)
-    const { congelado, valor } = evaluar(leer(destino, 'instalacion.js'))
-    expect(congelado).toBe(true)
+    const { instalacion, valor } = evaluar(leer(destino, 'instalacion.js'))
     expect(valor).toEqual(instalacionPublica(datos))
+    // Congelado hasta el fondo: con freeze solo arriba, `identidad.nombre` se
+    // podía cambiar igual.
+    for (const objeto of [instalacion, instalacion.identidad, instalacion.marca, instalacion.identidad.normas]) {
+      if (objeto) expect(Object.isFrozen(objeto)).toBe(true)
+    }
+    // El módulo de la prueba es estricto: asignar a algo congelado lanza.
+    expect(() => {
+      (instalacion.identidad as { nombre: string }).nombre = 'Otra'
+    }).toThrow(TypeError)
+    expect(instalacion.identidad.nombre).toBe(identidad.nombre)
     // Secretaría, sede, redes y privacidad se cambian en el CMS y llegan de la
     // API; los módulos, también. Escritos aquí se quedarían viejos.
     for (const clave of ['secretaria', 'sede', 'redes', 'privacidad', 'modulos']) expect(valor).not.toHaveProperty(clave)
@@ -93,6 +105,16 @@ describe('la orden instalacion-web.mjs', () => {
     expect(sin).not.toHaveProperty('legalName')
     const con = jsonLd(rellenarIndex(plantilla, { ...datos, identidad: { ...identidad, denominacion: 'Hermandad de Ejemplo, inscrita' } }))
     expect(con.legalName).toBe('Hermandad de Ejemplo, inscrita')
+  })
+
+  it('quita la coma colgante solo dentro del JSON-LD: el resto del HTML no se toca', () => {
+    const plantilla = readFileSync(join(raiz, 'index.html'), 'utf8')
+    // Con el salto de la plantilla, que en Windows puede ser CRLF y se conserva.
+    const salto = plantilla.includes('\r\n') ? '\r\n' : '\n'
+    const estilo = `<style>a{b:c,${salto}}</style>`
+    const html = rellenarIndex(plantilla.replace('</head>', `${estilo}${salto}</head>`), { ...datos, identidad: { ...identidad, denominacion: null } })
+    expect(html).toContain(estilo)
+    expect(jsonLd(html)).not.toHaveProperty('legalName')
   })
 
   it('escapa las comillas, < > y & en los atributos y en el JSON-LD', () => {
