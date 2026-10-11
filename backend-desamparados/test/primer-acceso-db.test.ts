@@ -2,8 +2,8 @@
 // correo y queda apuntada; su enlace saluda sin gastarse, pone la contraseña y
 // abre la sesión de una vez, y no vale dos veces; confirmar exige los
 // obligatorios de cada ficha y el parentesco de las fichas a cargo, y quita la
-// marca para siempre; «no es de
-// mi familia» devuelve la ficha a la custodia con un aviso para Secretaría. Y
+// marca para siempre; Secretaría ve en qué está cada invitación (vale,
+// caducó, la pisó una recuperación o ya se estrenó); «no es de mi familia» devuelve la ficha a la custodia con un aviso para Secretaría. Y
 // las rutas: el listado y las invitaciones son de quien lleva el censo.
 
 import assert from 'node:assert/strict';
@@ -17,6 +17,7 @@ import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS, COOKIE_HERMANO } from '../src/utils/cookies.js';
 import { ponerTransporte } from '../src/services/correos/envio.js';
 import { PrimerAccesoService } from '../src/services/primer-acceso.service.js';
+import { AuthService } from '../src/services/auth.service.js';
 import { CUENTA_CENSO_IMPORTADO } from '../src/services/censo-hoja.service.js';
 import { ACCIONES_AUDITORIA } from '../src/services/auditoria.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
@@ -170,42 +171,127 @@ test('confirmar pide los obligatorios y el parentesco de las fichas a cargo, y q
   }
 });
 
-test('Secretaría ve cuándo caduca cada invitación, también las ya caducadas', async (t) => {
+type Invitacion = { estado: string; caducaEn: string | null } | null;
+
+/** Lo que ve Secretaría de esa cuenta: su invitación y en qué filtro sale. */
+async function vistaDeSecretaria(e: Awaited<ReturnType<typeof escenario>>) {
+  const listar = async (estado?: string) => {
+    const res = await pedir(`/api/hermanos/admin/primer-acceso?${estado ? `estado=${estado}&` : ''}q=${encodeURIComponent(e.cuenta.email)}`, { cookie: e.sesionStaff });
+    assert.equal(res.status, 200);
+    return (await res.json() as { data: { id: number; invitacion: Invitacion }[] }).data;
+  };
+  const [todas, sinInvitar, invitados] = await Promise.all([listar(), listar('sin-invitar'), listar('invitado')]);
+  assert.deepEqual(todas.map((c) => c.id), [e.cuenta.id]);
+  return {
+    invitacion: todas[0]!.invitacion,
+    filtro: sinInvitar.length ? 'sin-invitar' : invitados.length ? 'invitado' : 'ninguno',
+  };
+}
+
+/** Invita (o reenvía) por la ruta del CMS y devuelve el token del correo. */
+async function invitarYEsperar(e: Awaited<ReturnType<typeof escenario>>) {
+  const inv = await pedir('/api/hermanos/admin/primer-acceso/invitar', { metodo: 'POST', cookie: e.sesionStaff, cuerpo: { ids: [e.cuenta.id] } });
+  assert.equal(inv.status, 202);
+  await PrimerAccesoService.esperarCola();
+  const correo = enviados.filter((c) => c.to === e.cuenta.email).at(-1);
+  const token = /\/primer-acceso\?token=([a-f0-9]{64})/.exec(String(correo?.html))?.[1];
+  assert.ok(token, 'el correo lleva el enlace del primer acceso');
+  return token;
+}
+
+const CATORCE_DIAS = 14 * 24 * 3600_000;
+
+test('Secretaría ve si el enlace de la invitación vale, caducó o lo sustituyó una recuperación', async (t) => {
   if (!dbDisponible) { t.skip(SIN_DB); return; }
   const e = await escenario();
   try {
-    const listar = async (estado?: string) => {
-      const res = await pedir(`/api/hermanos/admin/primer-acceso?${estado ? `estado=${estado}&` : ''}q=${encodeURIComponent(e.cuenta.email)}`, { cookie: e.sesionStaff });
-      assert.equal(res.status, 200);
-      return (await res.json() as { data: { id: number; invitacionCaducaEn: string | null }[] }).data;
-    };
-    // Sin invitar: no hay nada que caduque.
-    assert.deepEqual((await listar()).map((c) => [c.id, c.invitacionCaducaEn]), [[e.cuenta.id, null]]);
+    assert.deepEqual(await vistaDeSecretaria(e), { invitacion: { estado: 'sin-invitar', caducaEn: null }, filtro: 'sin-invitar' });
 
-    // La invitación caduca a los 14 días de mandarla, no cuando diga el campo
-    // del enlace: ese campo lo comparte «¿Has olvidado tu contraseña?».
-    const invitadoEn = new Date(Date.now() - 20 * 24 * 3600_000);
-    const caducada = new Date(invitadoEn.getTime() + 14 * 24 * 3600_000);
-    await db.user.update({
-      where: { id: e.cuenta.id },
-      data: { invitadoEn, resetPasswordToken: 'x'.repeat(64), resetPasswordExpires: new Date(Date.now() - 3 * 24 * 3600_000) },
-    });
-    // Caducada, sigue entre los invitados, con la fecha para decir «caducó el…».
-    const invitados = await listar('invitado');
-    assert.deepEqual(invitados.map((c) => [c.id, c.invitacionCaducaEn]), [[e.cuenta.id, caducada.toISOString()]]);
+    // Invitada: vale catorce días desde que se crea su enlace.
+    const antes = Date.now();
+    await invitarYEsperar(e);
+    let vista = await vistaDeSecretaria(e);
+    assert.equal(vista.invitacion?.estado, 'vigente');
+    assert.equal(vista.filtro, 'invitado');
+    const caduca = Date.parse(vista.invitacion!.caducaEn!);
+    assert.ok(caduca >= antes + CATORCE_DIAS - 1000 && caduca <= Date.now() + CATORCE_DIAS, 'caduca a los catorce días');
+    const { invitadoEn } = await db.user.findUniqueOrThrow({ where: { id: e.cuenta.id } });
 
-    // Pedir una recuperación (enlace de una hora) no mueve la caducidad de la invitación.
-    await db.user.update({ where: { id: e.cuenta.id }, data: { resetPasswordToken: 'r'.repeat(64), resetPasswordExpires: new Date(Date.now() + 3600_000) } });
-    assert.equal((await listar('invitado'))[0]?.invitacionCaducaEn, caducada.toISOString());
+    // Pide una recuperación: su enlace pisa el de la invitación. El CMS no
+    // enseña la hora de la recuperación ni toca cuándo se le invitó.
+    await AuthService.prepararRecuperacion(e.cuenta.email);
+    vista = await vistaDeSecretaria(e);
+    assert.deepEqual(vista, { invitacion: { estado: 'sustituida', caducaEn: null }, filtro: 'invitado' });
+    assert.deepEqual((await db.user.findUniqueOrThrow({ where: { id: e.cuenta.id } })).invitadoEn, invitadoEn);
 
-    // Estrenada (el enlace ya se gastó) o confirmada: ya no hay invitación viva.
-    await db.user.update({ where: { id: e.cuenta.id }, data: { resetPasswordToken: null, resetPasswordExpires: null } });
-    assert.equal((await listar('invitado'))[0]?.invitacionCaducaEn, null);
-    await db.user.update({
-      where: { id: e.cuenta.id },
-      data: { primerAccesoPendiente: false, fichaConfirmadaEn: new Date(), resetPasswordToken: 'y'.repeat(64), resetPasswordExpires: new Date(Date.now() + 3600_000) },
-    });
-    assert.equal((await listar('confirmado'))[0]?.invitacionCaducaEn, null);
+    // Reenviar la deja viva otra vez.
+    await invitarYEsperar(e);
+    assert.equal((await vistaDeSecretaria(e)).invitacion?.estado, 'vigente');
+
+    // Pasado el plazo sin usarla: caducada, con su fecha, y sigue entre los invitados.
+    const vencida = new Date(Date.now() - 24 * 3600_000);
+    await db.user.update({ where: { id: e.cuenta.id }, data: { invitacionCaducaEn: vencida, resetPasswordExpires: vencida } });
+    assert.deepEqual(await vistaDeSecretaria(e), { invitacion: { estado: 'caducada', caducaEn: vencida.toISOString() }, filtro: 'invitado' });
+
+    // Y reenviar una caducada, también.
+    await invitarYEsperar(e);
+    assert.equal((await vistaDeSecretaria(e)).invitacion?.estado, 'vigente');
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('quien estrenó la invitación sale como que ya entró, aunque después pida una recuperación', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    const token = await invitarYEsperar(e);
+    const estreno = await pedir('/api/auth/primer-acceso', { metodo: 'POST', cuerpo: { token, newPassword: CONTRASENA } });
+    assert.equal(estreno.status, 200);
+    // Estrenar corta las sesiones de antes: confirma con la que abre.
+    const sesion = estreno.headers.getSetCookie().find((c) => c.startsWith(`${COOKIE_HERMANO}=`))!.split(';')[0];
+    assert.deepEqual(await vistaDeSecretaria(e), { invitacion: { estado: 'estrenada', caducaEn: null }, filtro: 'invitado' });
+
+    // Una recuperación que no usa vuelve a dejar un token, pero no una invitación.
+    await AuthService.prepararRecuperacion(e.cuenta.email);
+    assert.deepEqual(await vistaDeSecretaria(e), { invitacion: { estado: 'estrenada', caducaEn: null }, filtro: 'invitado' });
+
+    // Confirmada, ya no hay invitación de la que hablar.
+    await db.hermano.update({ where: { id: e.hija.id }, data: { parentesco: 'HIJO' } });
+    assert.equal((await pedir('/api/hermanos/primer-acceso/confirmar', { metodo: 'POST', cookie: sesion })).status, 200);
+    const res = await pedir(`/api/hermanos/admin/primer-acceso?estado=confirmado&q=${encodeURIComponent(e.cuenta.email)}`, { cookie: e.sesionStaff });
+    assert.deepEqual((await res.json() as { data: { invitacion: Invitacion }[] }).data.map((c) => c.invitacion), [null]);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('quien entra con una recuperación sin haber sido invitado deja de contar como «sin invitar»', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    // El censo trae su correo: puede entrar por «¿Has olvidado tu contraseña?»
+    // antes de que Secretaría le invite, y «Invitar a los que faltan» no debe
+    // mandarle una invitación que ya no necesita.
+    const token = await AuthService.crearEnlaceDeContrasena(e.cuenta.id, 1);
+    assert.deepEqual(await vistaDeSecretaria(e), { invitacion: { estado: 'sin-invitar', caducaEn: null }, filtro: 'sin-invitar' });
+    await AuthService.resetPassword(token, CONTRASENA);
+    assert.deepEqual(await vistaDeSecretaria(e), { invitacion: { estado: 'estrenada', caducaEn: null }, filtro: 'invitado' });
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('cambiar la contraseña con la sesión abierta también gasta el enlace de la invitación', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    const token = await invitarYEsperar(e);
+    await AuthService.resetPassword(token, CONTRASENA);
+    await invitarYEsperar(e);
+    assert.equal((await vistaDeSecretaria(e)).invitacion?.estado, 'vigente');
+    await AuthService.cambiarContrasena(e.cuenta.id, CONTRASENA, `${CONTRASENA}-2`, []);
+    assert.deepEqual((await vistaDeSecretaria(e)).invitacion, { estado: 'estrenada', caducaEn: null });
   } finally {
     await e.recoger();
   }

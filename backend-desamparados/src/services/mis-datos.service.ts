@@ -139,6 +139,7 @@ export class MisDatosService {
           twoFactorSecret: null,
           resetPasswordToken: null,
           resetPasswordExpires: null,
+          invitacionCaducaEn: null,
           tokenValidAfter: corteDeSesiones() // Mata todas las sesiones abiertas
         }
       });

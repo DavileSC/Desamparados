@@ -28,26 +28,36 @@ import { ModulosService } from './modulos.service.js';
 const VALIDEZ_INVITACION_HORAS = 14 * 24;
 
 /**
- * Cuándo deja de valer el enlace de la invitación, aunque ya haya pasado: sin
- * la fecha, una invitación caducada parecía en camino y nadie la reenviaba.
+ * En qué está la invitación de una cuenta con el primer acceso pendiente, para
+ * que Secretaría sepa a quién reenviarla:
  *
- * Se cuenta desde `invitadoEn` y no desde `resetPasswordExpires`, que es el
- * mismo campo de «¿Has olvidado tu contraseña?»: pedir una recuperación ponía
- * de caducidad la hora de ese enlace. (Ojo: esa recuperación sí deja muerto el
- * enlace del correo de la invitación, porque pisa el token; quien la pidió
- * entra por ella, así que la fecha sigue diciendo hasta cuándo valía la invitación.)
+ * - `sin-invitar`: no le ha salido ninguna (o la primera no llegó a salir).
+ * - `vigente` / `caducada`: el enlace del correo vale hasta `caducaEn`, o
+ *   dejó de valer entonces sin que lo usara.
+ * - `sustituida`: el enlace ya no vale porque pidió otro para recuperar la
+ *   contraseña (comparten el campo del token) y aún no lo ha usado.
+ * - `estrenada`: ya puso su contraseña; falta que confirme la ficha.
  *
- * Null si no se invitó, si ya confirmó o si ya estrenó el enlace. Para lo
- * último el único indicio fiable es el token: estrenarlo (o poner contraseña
- * con una recuperación, o cambiarla) lo deja a null en la misma sentencia que
- * guarda la contraseña. `tokenValidAfter` no sirve: también lo mueven un cambio
- * de rol o un cierre de sesiones, sin que nadie haya entrado. Queda un caso que
- * no se distingue: quien estrenó y luego pide una recuperación sin usarla vuelve
- * a tener token, y verá la fecha de la invitación hasta que confirme.
+ * Null si ya confirmó: no hay invitación de la que hablar.
+ *
+ * Una invitación viva manda sobre «ya entró»: si Secretaría reenvía a quien ya
+ * entró, lo que importa es que ese enlace vale. La vigencia no se deduce del
+ * token, que también lo deja una recuperación, sino de `invitacionCaducaEn`,
+ * que solo escribe la invitación y borra todo lo que gasta o pisa su token.
  */
-function caducidadDeLaInvitacion(c: { primerAccesoPendiente: boolean; invitadoEn: Date | null; resetPasswordToken: string | null }): string | null {
-  if (!c.primerAccesoPendiente || !c.invitadoEn || !c.resetPasswordToken) return null;
-  return new Date(c.invitadoEn.getTime() + VALIDEZ_INVITACION_HORAS * 3600_000).toISOString();
+export type EstadoInvitacion = 'sin-invitar' | 'vigente' | 'caducada' | 'sustituida' | 'estrenada';
+
+export function situacionDeLaInvitacion(
+  c: { primerAccesoPendiente: boolean; invitadoEn: Date | null; invitacionCaducaEn: Date | null; contrasenaPuestaEn: Date | null },
+  ahora = new Date(),
+): { estado: EstadoInvitacion; caducaEn: string | null } | null {
+  if (!c.primerAccesoPendiente) return null;
+  // Con `invitadoEn` vacío el correo no llegó a salir, aunque su token exista.
+  if (c.invitadoEn && c.invitacionCaducaEn) {
+    return { estado: c.invitacionCaducaEn > ahora ? 'vigente' : 'caducada', caducaEn: c.invitacionCaducaEn.toISOString() };
+  }
+  if (c.contrasenaPuestaEn) return { estado: 'estrenada', caducaEn: null };
+  return { estado: c.invitadoEn ? 'sustituida' : 'sin-invitar', caducaEn: null };
 }
 
 /** La misma pausa que los comunicados, que es la que Gmail aguanta sin cortar. */
@@ -58,11 +68,16 @@ const ENLACE_NO_VALIDO = 'El enlace de la invitación no es válido o ha caducad
 
 type EstadoPrimerAcceso = 'sin-invitar' | 'invitado' | 'confirmado';
 
-/** Las cuentas del primer acceso: las que lo tienen pendiente y las que ya lo hicieron. */
+/**
+ * Las cuentas del primer acceso: las que lo tienen pendiente y las que ya lo
+ * hicieron. Quien ya puso su contraseña sin invitación (entró por «¿Has
+ * olvidado tu contraseña?», que el censo trae su correo) cuenta con los
+ * invitados: «Invitar a los que faltan» no tiene que mandarle nada.
+ */
 function condicion(estado?: EstadoPrimerAcceso): Prisma.UserWhereInput {
   if (estado === 'confirmado') return { active: true, fichaConfirmadaEn: { not: null } };
-  if (estado === 'invitado') return { active: true, primerAccesoPendiente: true, invitadoEn: { not: null } };
-  if (estado === 'sin-invitar') return { active: true, primerAccesoPendiente: true, invitadoEn: null };
+  if (estado === 'invitado') return { active: true, primerAccesoPendiente: true, OR: [{ invitadoEn: { not: null } }, { contrasenaPuestaEn: { not: null } }] };
+  if (estado === 'sin-invitar') return { active: true, primerAccesoPendiente: true, invitadoEn: null, contrasenaPuestaEn: null };
   return { active: true, OR: [{ primerAccesoPendiente: true }, { fichaConfirmadaEn: { not: null } }] };
 }
 
@@ -78,12 +93,14 @@ async function invitarUna(userId: number): Promise<void> {
     select: { email: true, nombre: true, hermanos: { where: { esTitular: true }, select: { sexo: true }, take: 1 } },
   });
   if (!cuenta) return;
-  const token = await AuthService.crearEnlaceDeContrasena(userId, VALIDEZ_INVITACION_HORAS);
+  const token = await AuthService.crearEnlaceDeContrasena(userId, VALIDEZ_INVITACION_HORAS, { invitacion: true });
   const ok = await EmailService.enviarInvitacionPrimerAcceso(cuenta.email, cuenta.nombre, token, {
     horas: VALIDEZ_INVITACION_HORAS, sexo: cuenta.hermanos[0]?.sexo ?? undefined,
   });
   // Si no sale, sigue «sin invitar» (o con la fecha de la anterior) y el
-  // fallo queda en la auditoría: Secretaría lo ve y la reenvía.
+  // fallo queda en la auditoría: Secretaría lo ve y la reenvía. (Un reenvío
+  // que no sale ya ha pisado el enlace anterior y sale como vigente: el fallo
+  // solo se ve en la auditoría.)
   if (ok) await db.user.update({ where: { id: userId }, data: { invitadoEn: new Date() } });
 }
 
@@ -138,7 +155,7 @@ export class PrimerAccesoService {
         where,
         select: {
           id: true, nombre: true, apellidos: true, email: true, invitadoEn: true, fichaConfirmadaEn: true,
-          primerAccesoPendiente: true, resetPasswordToken: true,
+          primerAccesoPendiente: true, invitacionCaducaEn: true, contrasenaPuestaEn: true,
           hermanos: { where: { activo: true }, select: { esTitular: true, numeroHermano: true } },
         },
         orderBy: [{ apellidos: 'asc' }, { nombre: 'asc' }, { id: 'asc' }],
@@ -159,7 +176,7 @@ export class PrimerAccesoService {
       aCargo: c.hermanos.filter((h) => !h.esTitular).length,
       invitadoEn: c.invitadoEn,
       fichaConfirmadaEn: c.fichaConfirmadaEn,
-      invitacionCaducaEn: caducidadDeLaInvitacion(c),
+      invitacion: situacionDeLaInvitacion(c),
       enCola: cola.has(c.id),
     }));
     return { ...respuestaPaginada(data, total, paginacion), cifras: { sinInvitar, invitados, confirmados, enCola: cola.size } };
