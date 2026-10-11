@@ -799,6 +799,193 @@ la corporación es responsable de los datos de sus hermanos y quien instala y
 mantiene, encargado. Plantilla y cómo rellenarla en
 [`venta/contrato-encargado-tratamiento.md`](venta/contrato-encargado-tratamiento.md).
 
+### La marca
+
+Lo que hace reconocible a cada corporación sin tocar el código: **dos colores**,
+en el fichero de datos, y **unas imágenes** (el escudo, los iconos, la imagen de
+compartir y la de los correos), en `instalacion/marca/`. Las dos cosas viven
+fuera de git y fuera de las imágenes de Docker, como `datos-entidad.json`: una
+sola imagen sirve a cualquier corporación y un `git pull` no choca con la marca
+de nadie.
+
+Sin marca no se rompe nada: la web, los PDF y los correos salen con la **marca
+de partida** (`shared/marca-de-partida/`): el burdeos y el oro de siempre y un
+escudo genérico (un contorno de escudo con filete, sin símbolos). El arranque
+avisa de lo que falta.
+
+#### Los colores
+
+En el grupo `marca` de `instalacion/datos-entidad.json`:
+
+```json
+"marca": { "colorPrincipal": "#6e1822", "colorAcento": "#dec72b" }
+```
+
+- **`colorPrincipal`**: el de relleno con letra blanca encima (botones, avatar,
+  lo elegido). El de partida es el burdeos `#6e1822`.
+- **`colorAcento`**: el que se escribe sobre el fondo oscuro de la web (enlaces
+  activos, filetes, foco). El de partida es el oro `#dec72b`.
+- Formato **`#rrggbb`**. Las mayúsculas valen (se guardan en minúsculas); la
+  forma corta `#abc` y los nombres (`red`) son un error y no arranca nada.
+  `null`, o quitar el grupo, deja los de partida.
+
+De esos dos salen **todos** los tonos de la web, de los PDF y de los correos
+(`shared/colores-de-marca.mjs`): cada uno conserva el matiz del color dado y
+ajusta su luminosidad hasta cumplir el contraste que le toca. **Un color que no
+da el contraste no impide arrancar: se corrige y se avisa** con la cifra y el
+color que se usará en su lugar, por ejemplo:
+
+```
+marca.colorPrincipal #e8a0a0: con letra blanca da 2,1:1 (AA pide 4,5:1); los botones usarán #9c4a4a.
+```
+
+Se avisa también si los dos colores casi no se distinguen (menos de 1,3:1
+entre ellos). Con los colores de partida, o con `null`, cada tono es
+exactamente el de siempre: Desamparados no cambia ni un píxel.
+
+#### Las imágenes
+
+En `instalacion/marca/`, con estos nombres exactos. **Todos son opcionales** y
+**solo PNG o JPEG**: los PDF (PDFKit) no admiten WebP ni SVG, y Outlook no
+pinta WebP.
+
+| Fichero | Formato | Medidas | Para qué | Si falta |
+|---|---|---|---|---|
+| `escudo-sobre-oscuro.png` | PNG con transparencia | alto ≥ 176; ideal 176–480; hasta 150 KB | La web: barra, cajón, CMS, área de hermanos, acceso, placas de las noticias sin foto | El de partida (blanco) |
+| `escudo-sobre-claro.png` | PNG con transparencia | alto ≥ 200; ideal ~300 | El membrete de los correos y el pie de los PDF | El de partida (casi negro) |
+| `escudo-destacado.png` | PNG con transparencia | alto ≥ 200 | La papeleta (web y PDF) y los membretes de los PDF | `escudo-sobre-claro.png` en papel; `escudo-sobre-oscuro.png` en la banda negra de los informes y en la web |
+| `favicon-32.png` | PNG | 32×32 exactos | La pestaña del navegador | El de partida |
+| `apple-touch-icon.png` | PNG **opaco** | 180×180 exactos | El icono de iOS en la pantalla de inicio | El de partida |
+| `icono-192.png` | PNG | 192×192 exactos | El manifest (Android) | El de partida |
+| `icono-512.png` | PNG | 512×512 exactos | El manifest; y la imagen de compartir si no hay `compartir.jpg` | El de partida |
+| `compartir.jpg` | JPEG | ideal 1200×630; ancho ≥ 600; hasta 1 MB | `og:image` al compartir un enlace y la imagen de los datos estructurados | `icono-512.png`, en pequeño (`twitter:card=summary`) |
+| `correo-cabecera.jpg` | JPEG | ancho ≥ 600, ideal 1200; hasta 150 KB | La imagen bajo el membrete de los correos a los hermanos | Los correos van sin imagen |
+
+Las subcarpetas (`originales/`, para guardar los ficheros de partida del
+cliente) y los ficheros que empiezan por `.` se ignoran.
+
+**Errores y avisos.** Lo comprueban al arrancar la web (`instalacion-web.mjs`,
+desde `40-instalacion.sh`) y la API (`src/domain/marca.ts`), con la misma
+lectura (`shared/marca.mjs`).
+
+- **Error: no arranca ni la web ni la API**, con el fichero y el motivo en
+  `docker compose logs web api`. Un fichero que **está pero no sirve**: no es
+  PNG ni JPEG, o es de un formato con la extensión de otro (un WebP renombrado
+  a `.png`: cambiar la extensión no basta, hay que convertirlo); está cortado o
+  roto; no se puede leer (permisos: ver abajo); un icono sin su medida exacta;
+  más de 2 MB (casi seguro un original sin preparar); o la carpeta misma no se
+  puede leer.
+- **Aviso: arranca**, y el aviso queda en el registro (`[marca] …`). Falta un
+  fichero (se usa el de partida o su respaldo); medidas por debajo de lo
+  recomendado o muy por encima de lo que se ve; peso alto; un escudo sin
+  transparencia; un `apple-touch-icon.png` con canal alfa (iOS pinta de negro
+  lo transparente); un fichero que no es de la marca, con el nombre que
+  probablemente quería ser (`escudo-sobre-oscuro.webp` → «¿`escudo-sobre-oscuro.png`?»);
+  no hay carpeta (todo de partida).
+
+Un PNG entrelazado no es error: PDFKit lo lee bien (hay prueba que lo compara).
+
+#### Preparar los ficheros: `npm run marca`
+
+`desamparados-web/scripts/preparar-marca.mjs`. Usa `sharp` del backend (no es
+dependencia de la web), así que pide `npm install` en `backend-desamparados/`.
+Desde la raíz, las rutas son relativas a donde se lanza:
+
+```bash
+# Los cuatro iconos (favicon, apple-touch-icon, 192 y 512) de una instalación,
+# a partir de su escudo para fondo oscuro, centrado sobre la tinta #100e11 y
+# sin canal alfa (así apple-touch-icon sale opaco).
+npm --prefix desamparados-web run marca -- --escudo escudo-blanco.png --destino instalacion/marca
+
+# El escudo de la web reducido (176–300 px de alto) y en PNG de paleta: va en
+# todas las páginas y el original pesaría demasiado. El de Desamparados queda
+# en ~25 KB.
+npm --prefix desamparados-web run marca -- --optimizar escudo-blanco.png --destino instalacion/marca/escudo-sobre-oscuro.png
+
+# Rehace los PNG de shared/marca-de-partida/ desde su escudo.svg. Solo si
+# cambia el SVG; esos PNG están en git.
+npm --prefix desamparados-web run marca -- --partida
+```
+
+`compartir.jpg` y `correo-cabecera.jpg` se preparan a mano (recortar y
+exportar en JPEG); el escudo sobre claro y el destacado, también.
+
+#### Permisos
+
+El arranque copia la marca a `dist/marca/` del contenedor de la web, siempre
+en `0644`, y nginx la sirve desde ahí; la API la lee del montaje, como el
+usuario `node`. Aun así, **los ficheros de `instalacion/marca/` tienen que poder
+leerlos otros usuarios**: en `0644`, y la carpeta en `755`. No copiarlos como
+`datos-entidad.json` (`-m 640`): la API no podría leerlos y no arrancaría
+(«no se puede leer (EACCES)… chmod 644»).
+
+```bash
+sudo install -d -o desamparados -g desamparados -m 755 /srv/desamparados/instalacion/marca
+sudo install -o desamparados -g desamparados -m 644 <ficheros> /srv/desamparados/instalacion/marca/
+```
+
+En Windows, nunca con `>` de PowerShell: escribe en UTF-16 y estropea los
+binarios. `cp` o `copy`, o Git Bash.
+
+#### Aplicar un cambio
+
+Nada se construye: se cambian los ficheros (o los colores) y se reinicia lo
+que los lee. Las dos los leen al arrancar.
+
+```bash
+sudo docker compose -f compose.yaml -f compose.servidor.yaml restart web api
+# o, si cambió también el compose: … up -d --force-recreate web api
+```
+
+Para ver de dónde sale cada imagen:
+
+```bash
+sudo docker compose -f compose.yaml -f compose.servidor.yaml logs web api | grep -i marca
+```
+
+La web dice `[marca] <fichero>: de la instalación` o `de la marca de partida`
+por fichero; la API, una línea `[Marca] escudo sobre claro: … · escudo
+destacado: … · cabecera de los correos: …`.
+
+**Caché.** nginx sirve `/marca/` con una semana de caché, pero cada URL lleva
+`?v=` con los 8 primeros caracteres del sha256 del fichero, e `index.html` no
+se cachea: **un escudo nuevo se ve en cuanto se recarga la página**. Lo que no
+se puede cambiar: los correos ya enviados (llevan las imágenes incrustadas),
+el icono de un móvil que ya añadió la web a su pantalla de inicio y la imagen
+que una red social ya guardó de un enlace. Los iconos de antes de esta etapa
+(`/favicon.ico`, `/favicon-32.png`, `/apple-touch-icon.png`, `/icono-192.png`,
+`/icono-512.png`, en la raíz) redirigen con un 301 a `/marca/`.
+
+#### Antes del primer despliegue con la marca fuera de git (Desamparados)
+
+Desde la etapa 4 de la Fase 8 (octubre de 2026), la imagen ya no lleva el
+escudo ni los iconos de Desamparados. **Sin este paso, el VPS arrancaría con el
+escudo genérico** (no se rompe nada, pero se ve). Se hace antes de lanzar el
+despliegue.
+
+En el PC, desde PowerShell en la carpeta del proyecto (con `instalacion/marca/`
+completa: ver `notas-del-proyecto.md` §13 si no la tiene):
+
+```powershell
+scp -r instalacion\marca ubuntu@51.255.45.220:/tmp/marca
+```
+
+(`/tmp/marca` no debe existir antes: si existe, `scp -r` la mete dentro, en
+`/tmp/marca/marca`.)
+
+En el servidor:
+
+```bash
+sudo install -d -o desamparados -g desamparados -m 755 /srv/desamparados/instalacion/marca
+sudo install -o desamparados -g desamparados -m 644 /tmp/marca/*.* /srv/desamparados/instalacion/marca/
+rm -r /tmp/marca
+ls -l /srv/desamparados/instalacion/marca
+```
+
+`*.*` deja fuera `originales/`, que no hace falta en el servidor. Tras el
+despliegue, el `grep -i marca` de arriba tiene que decir «de la instalación»
+en los nueve ficheros y ningún «Falta …».
+
 ### Instalar una nueva
 
 En un servidor limpio con Docker y su plugin compose:

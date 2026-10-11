@@ -67,6 +67,11 @@ DAO**: los servicios consultan con `db` directamente.
   se reconoce en `esConflictoDeConcurrencia` y sale como 409.
 - Correos: `services/correos/`; en pruebas nunca se envían. Los datos del Grupo
   (dirección, horario…) salen de `instalacion/datos-entidad.json`, nunca a mano.
+- Marca en PDF y correos (`domain/marca.ts`): colores de `IMPRENTA` (`burdeos`,
+  `oro`, `oroTexto`, `acentoCorreo`…), nunca un hex del burdeos o el oro a
+  mano; escudos y cabecera de `IMAGENES_MARCA`, eligiendo el escudo por el
+  fondo (`escudoDestacadoEnPapel` o `escudoDestacadoEnNegro`). No hay imágenes
+  de marca en `src/`: viven en `instalacion/marca/`, solo PNG o JPEG.
 - Variables de entorno nuevas: validarlas en `config/entorno.ts` y añadirlas a
   los `.env.example`.
 

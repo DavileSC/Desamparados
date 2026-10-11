@@ -161,6 +161,9 @@ reproducibles. Por razones distintas:
   falla al verlos en `public/` y `vite build` los copiaría a `dist/` con los
   datos de la corporación dentro. Se pueden borrar antes o después.
 
+**Tras el pull de la etapa 4 de la Fase 8**, el escudo y los iconos ya no
+están en git: hay que ponerlos en `instalacion/marca/` (§13 dice cómo).
+
 **La plantilla no se edita pensando en que la rellene `vite build`.** El
 `index.html` de `dist/` sale con las marcas y lo rellena
 `scripts/instalacion-web.mjs` al arrancar el contenedor. Dos trampas que
@@ -386,14 +389,16 @@ El aviso interno a Secretaría y el del formulario de contacto siguen en el
 código: no los lee ningún hermano.
 
 **Los correos salen deliberadamente incompletos.** El horario de Secretaría, la
-dirección, el teléfono y el escudo viven en `instalacion/datos-entidad.json` con el
+dirección y el teléfono viven en `instalacion/datos-entidad.json` con el
 mismo criterio que `config/site.ts` en la web: `null` es «pendiente de confirmar»
 y el bloque entero **desaparece** del correo. Antes iban escritos a mano en la
 plantilla una «C/ Falsa, 123, 29000 Málaga», un horario inventado y un
 `secretaria@tucofradia.com` que no es nuestro. Un correo automático no se puede
 corregir una vez enviado: es mejor que salga corto a que mande a un solicitante a
 una calle que no existe. **En cuanto el Grupo Parroquial confirme esos datos, se
-rellenan ahí y aparecen solos.**
+rellenan ahí y aparecen solos.** El escudo y la imagen bajo el membrete no
+van ahí: son ficheros de `instalacion/marca/` (§13); sin `correo-cabecera.jpg`
+el correo va sin imagen.
 
 **El aviso de rechazo se envía después de borrar la cuenta.**
 `rechazarSolicitud` elimina el usuario entero cuando nunca llegó a aprobarse, así
@@ -493,6 +498,35 @@ verdad cumplen WCAG AA:
 
 Antes de meter un color nuevo, calcular el contraste. El cálculo es el de WCAG
 sobre la luminancia relativa; cualquier comprobador en línea vale.
+
+**Los colores de marca no se escriben a mano** (desde la etapa 4 de la Fase
+8). El burdeos y el oro de la tabla son los de partida: cada corporación pone
+los suyos en `marca` de `instalacion/datos-entidad.json`, y de esos dos salen
+todos los tonos. Por eso:
+
+- **En la web, de `theme/marca.ts`**: `MARCA.<papel>` (`MARCA.principal` para
+  un relleno con letra blanca, `MARCA.acento` para escribir sobre el fondo
+  oscuro, etc.) y `alfa(MARCA.acento, 0.4)` en lugar de un `rgba(…)`. Qué papel
+  va en cada sitio y con qué suelo de contraste lo dice
+  `shared/colores-de-marca.d.mts`, papel a papel. Una hoja `.css`, que no puede
+  importar, usa las variables `--marca-principal` y `--marca-acento`, que
+  cuelga en `:root` el tema público (así lo hace `features/inicio/home.css`).
+- **En la API, de `IMPRENTA`** (`src/domain/marca.ts`), para los PDF y los
+  correos: `burdeos`, `oro`, `oroTexto`, `acentoCorreo`…
+- **Los suelos los garantizan `paletaDeMarca` y `paletaDeImprenta`**: con un
+  color que no da el contraste de un papel, conservan su matiz y ajustan la
+  luminosidad hasta cumplirlo (y el arranque avisa con la cifra). Con los de
+  partida, o `null`, devuelven exactamente los hex de siempre. Un papel nuevo
+  se declara allí, con su valor de partida y su suelo; no se calcula en el
+  componente.
+- **La guardiana `src/__tests__/sin-colores-de-marca.test.ts`** recorre
+  `src/` (ts, tsx y css) buscando el hex de cada papel de partida y los tres
+  números de su `rgba()`; solo se libra `theme/marca.ts`. Si salta, el color
+  va por `MARCA`.
+
+Lo que no es de marca (neutros, tintas, cremas, el rojo de error y de gasto,
+los colores de `dataviz` y los de significado, como los tipos de acto de la
+agenda) sigue escrito donde está, y para eso vale lo de arriba.
 
 ---
 
@@ -599,3 +633,73 @@ y `useModulos` invalida `['modulos']`: una sesión abierta se entera de lo que
 Administración apagó desde otra sin recargar. En una prueba, un `fetch`
 simulado que responda ese 404 provoca una petición a `/modulos` que el
 simulado tiene que saber contestar.
+
+---
+
+## 13. La marca: imágenes fuera de git
+
+El escudo, los iconos y las imágenes de compartir y de los correos de cada
+corporación viven en `instalacion/marca/`, fuera de git; qué ficheros son, sus
+medidas y cómo se suben, en `despliegue.md`, «La marca». Lo que no se ve en el
+código:
+
+**Solo PNG y JPEG.** PDFKit no lee WebP ni SVG, y Outlook no pinta WebP en un
+correo. Un `.webp` renombrado a `.png` es un error al arrancar (se leen los
+bytes, no la extensión): hay que convertirlo.
+
+**Lo que copia el arranque va en 0644, y lo de la instalación también tiene
+que poder leerse.** `instalacion-web.mjs` copia la marca a `dist/marca/` con
+`chmod 0644` explícito (el `mode` de `writeFileSync` pasa por la umask): si
+conservara el modo de un original en 640, como `datos-entidad.json` en el VPS,
+nginx (que corre con su propio usuario) daría 403. La API, en cambio, lee
+directamente del montaje como `node`: un fichero en 640 de otro usuario la
+deja sin arrancar. Ficheros en 644 y la carpeta en 755.
+
+**`>` de PowerShell 5.1 estropea los binarios**: escribe en UTF-16 con BOM. Un
+`git show <commit>:<ruta> > fichero.png` desde PowerShell deja un fichero que
+el arranque rechaza («no es una imagen PNG»). Con Git Bash, o `cp`.
+
+**La marca de partida está en git, en `shared/marca-de-partida/`**: el
+`escudo.svg` genérico y los PNG que salen de él (`npm run marca -- --partida`,
+solo si cambia el SVG). Es lo que usa una instalación sin `instalacion/marca/`
+y, siempre, **lo que usan las pruebas**: `rutaDeMarca()` da `null` con Vitest
+o el ejecutor de Node (`VITEST`, `NODE_TEST_CONTEXT`), así que la marca de
+Desamparados de este PC no cuenta nunca en una prueba. Para probar una
+instalación con todos los ficheros, `MARCA=shared/__fixtures__/marca/completa`.
+
+**Las 301 de los iconos viejos llevan `absolute_redirect off`.** Detrás del
+nginx del sistema, una redirección absoluta llevaría el host y el esquema de
+dentro del contenedor (`http://127.0.0.1/marca/…`). Está en
+`ubicaciones.conf` y en `sitio-local.conf` (que no incluye el primero: lo que
+se añada a uno va también en el otro).
+
+**`home.css` toma los colores de las variables `--marca-*`**, que cuelga en
+`:root` el `MuiCssBaseline` del tema público (`VARIABLES_MARCA` de
+`theme/marca.ts`). Una hoja `.css` nueva que necesite el color de marca usa
+esas variables; un hex escrito en ella lo para la guardiana (§11).
+
+**En el otro PC, tras el pull de la etapa 4**, los ficheros de marca ya no
+están en git y la web y la API arrancan con el escudo genérico (y avisos)
+hasta que se ponen en `instalacion/marca/`. Lo más sencillo es copiar esa
+carpeta entera del PC B. Si no, recuperarlos de la historia **con Git Bash,
+nunca con `>` de PowerShell**, desde la raíz; `d825015` es el último commit de
+`main` que los tenía todos:
+
+```bash
+mkdir -p instalacion/marca/originales
+C=d825015
+git show $C:backend-desamparados/src/services/informes/imagenes/escudo.png     > instalacion/marca/escudo-sobre-claro.png
+git show $C:backend-desamparados/src/services/informes/imagenes/escudo-oro.png > instalacion/marca/escudo-destacado.png
+git show $C:backend-desamparados/src/services/correos/imagenes/virgen.jpg      > instalacion/marca/correo-cabecera.jpg
+for f in favicon-32 apple-touch-icon icono-192 icono-512; do
+  git show $C:desamparados-web/public/$f.png > instalacion/marca/$f.png
+done
+git show $C:docs/marca/escudo-original.png > instalacion/marca/originales/escudo-original.png
+git show $C:desamparados-web/public/images/escudo-grupo.png > /tmp/escudo-grupo.png
+npm --prefix desamparados-web run marca -- --optimizar /tmp/escudo-grupo.png --destino instalacion/marca/escudo-sobre-oscuro.png
+cp desamparados-web/public/images/hero.jpg instalacion/marca/compartir.jpg
+```
+
+El `apple-touch-icon.png` de la historia tiene canal alfa y da un aviso (no un
+error); el del PC B ya está guardado sin él. Comprobarlo: `npm run dev` de la
+web y la API sin ningún «Falta …» ni «se usa la marca de partida».
