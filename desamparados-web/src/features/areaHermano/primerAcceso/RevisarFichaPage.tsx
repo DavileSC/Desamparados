@@ -21,6 +21,7 @@ import { site } from '../../../config/site'
 import PasoTusDatos from './PasoTusDatos'
 import PasoFamilia from './PasoFamilia'
 import { enUnaFrase, faltanDeLaCuota, faltanDeTusDatos, faltanDelFamiliar } from './obligatorios'
+import { MARCA, alfa } from '../../../theme/marca'
 
 type ClavePaso = 'datos' | 'cuota' | 'familia' | 'confirmar'
 
@@ -402,7 +403,7 @@ function ItemIndice({ numero, etiqueta, hecho, actual, onClick }: { numero: numb
           display: 'flex', alignItems: 'center', gap: 1.5, px: 1.25, py: 1.1, borderRadius: '8px',
           cursor: onClick ? 'pointer' : 'default',
           color: actual ? 'text.primary' : 'text.secondary', fontWeight: actual ? 600 : 500, fontSize: 15,
-          backgroundColor: actual ? 'rgba(160,61,68,0.22)' : 'transparent',
+          backgroundColor: actual ? alfa(MARCA.principalMedio, 0.22) : 'transparent',
           '&:hover': onClick ? { backgroundColor: 'rgba(255,255,255,0.05)' } : undefined,
           '&:focus-visible': { outline: '2px solid', outlineColor: 'secondary.main', outlineOffset: 2 },
         }}

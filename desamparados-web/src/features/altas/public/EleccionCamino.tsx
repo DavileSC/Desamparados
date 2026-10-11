@@ -5,6 +5,7 @@ import EscalatorWarningIcon from '@mui/icons-material/EscalatorWarning'
 import { GOLD, SERIF } from '../../inicio/estilos'
 import { FILETE_TARJETA } from './temaTarjeta'
 import type { Camino } from './schema'
+import { MARCA, alfa } from '../../../theme/marca'
 
 /**
  * Lo primero que pregunta el alta: quién se apunta.
@@ -66,9 +67,9 @@ export default function EleccionCamino({ valor, onElegir }: { valor: Camino | nu
               font: 'inherit',
               border: '1px solid',
               borderColor: elegido ? GOLD : FILETE_TARJETA,
-              backgroundColor: elegido ? 'rgba(222, 199, 43, 0.08)' : 'transparent',
+              backgroundColor: elegido ? alfa(MARCA.acento, 0.08) : 'transparent',
               transition: 'border-color .2s ease, background-color .2s ease',
-              '&:hover': { borderColor: elegido ? GOLD : '#6e1822' },
+              '&:hover': { borderColor: elegido ? GOLD : MARCA.principal },
               '& svg': { fontSize: 26, color: elegido ? GOLD : 'text.secondary' },
             }}
           >

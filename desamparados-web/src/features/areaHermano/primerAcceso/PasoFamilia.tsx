@@ -11,6 +11,7 @@ import { aniosCumplidos } from '../../altas/public/schema'
 import { Contacto, CuotaYPago, DatosPersonales } from '../perfil/apartados'
 import { aDia, diaLegible } from '../perfil/etiquetas'
 import { enUnaFrase, faltanDelFamiliar } from './obligatorios'
+import { MARCA } from '../../../theme/marca'
 
 const nombreCompleto = (f: ApiProfile) => `${f.nombre} ${f.apellidos}`.trim()
 
@@ -124,10 +125,10 @@ export default function PasoFamilia({ familia, titular, conCuotas, onGuardada, o
                       sx={{
                         minHeight: 48, borderRadius: 0, textTransform: 'none', letterSpacing: 0, fontSize: 15, px: { xs: 1.25, sm: 2 },
                         fontWeight: elegido ? 600 : 500, color: 'text.primary',
-                        border: '1px solid', borderColor: elegido ? '#6e1822' : 'rgba(255,255,255,0.22)',
-                        backgroundColor: elegido ? '#6e1822' : 'transparent',
-                        '&:hover': { backgroundColor: elegido ? '#6e1822' : 'rgba(255,255,255,0.06)' },
-                        '&:focus-visible': { outline: '2px solid #dec72b', outlineOffset: 2 },
+                        border: '1px solid', borderColor: elegido ? MARCA.principal : 'rgba(255,255,255,0.22)',
+                        backgroundColor: elegido ? MARCA.principal : 'transparent',
+                        '&:hover': { backgroundColor: elegido ? MARCA.principal : 'rgba(255,255,255,0.06)' },
+                        '&:focus-visible': { outline: `2px solid ${MARCA.acento}`, outlineOffset: 2 },
                       }}
                     >
                       {p.label}

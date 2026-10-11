@@ -16,6 +16,7 @@ import { PARENTESCO, aDia, diaLegible } from './etiquetas'
 import { site } from '../../../config/site'
 import { useModulos } from '../../../hooks/useModulos'
 import type { Requisito } from '../../../domain/modulos'
+import { MARCA, alfa } from '../../../theme/marca'
 
 /** La del titular primero; luego las de quienes tiene a su cargo, de mayor a menor. */
 const ordenar = (fichas: ApiProfile[]) =>
@@ -159,10 +160,10 @@ export default function PerfilPage() {
               <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: 2, rowGap: 1.5 }}>
                 <Box aria-hidden="true" sx={{
                   width: { xs: 46, md: 56 }, height: { xs: 46, md: 56 }, flexShrink: 0, borderRadius: '50%', display: 'grid', placeItems: 'center',
-                  backgroundColor: '#6e1822', color: '#fff', fontWeight: 600, fontSize: { xs: 16, md: 19 },
+                  backgroundColor: MARCA.principal, color: '#fff', fontWeight: 600, fontSize: { xs: 16, md: 19 },
                 }}>{iniciales(ficha)}</Box>
                 <Box sx={{ minWidth: 0, flex: '1 1 240px' }}>
-                  <Typography component="h1" sx={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255, 179, 180, 0.85)' }}>Mi perfil</Typography>
+                  <Typography component="h1" sx={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: alfa(MARCA.principalPalido, 0.85) }}>Mi perfil</Typography>
                   <Typography component="p" sx={{ fontSize: { xs: 21, md: 24 }, fontWeight: 600, lineHeight: 1.2 }}>{ficha.nombre} {ficha.apellidos}</Typography>
                   {/* Sin partir: en el móvil, «Activo» se quedaba solo en una línea y el
                       número en otra. El texto se parte dentro, por el «·». */}
@@ -224,9 +225,9 @@ export default function PerfilPage() {
                         appearance: 'none', cursor: 'pointer', font: 'inherit', fontSize: { xs: 14, lg: 15 }, fontWeight: 600,
                         minWidth: 0, minHeight: 44, px: 1, border: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                         color: elegida ? '#fff' : 'text.secondary',
-                        backgroundColor: { xs: elegida ? 'rgba(160, 61, 68, 0.45)' : 'rgba(26, 24, 27, 0.72)', sm: 'transparent' },
+                        backgroundColor: { xs: elegida ? alfa(MARCA.principalMedio, 0.45) : 'rgba(26, 24, 27, 0.72)', sm: 'transparent' },
                         borderRadius: { xs: '6px', sm: 0 },
-                        boxShadow: { sm: elegida ? 'inset 0 -2px 0 #ffb3b4' : 'none' },
+                        boxShadow: { sm: elegida ? `inset 0 -2px 0 ${MARCA.principalPalido}` : 'none' },
                         transition: 'color .2s ease, background-color .2s ease',
                         '&:hover': { color: '#fff' },
                         '&:focus-visible': { outline: '2px solid', outlineColor: 'secondary.main', outlineOffset: -2 },

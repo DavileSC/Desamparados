@@ -1,6 +1,7 @@
 import type { ApiEvent } from '../../../lib/api/agenda'
 import { segunModo } from '../../../theme/cms'
 import { TIPOS } from '../../inicio/agenda'
+import { MARCA } from '../../../theme/marca'
 
 /** Los tipos en el orden del desplegable, con el nombre que ve el visitante («Convivencia», no SOCIAL). */
 export const TIPOS_EVENTO = (['CULTO', 'PROCESION', 'FORMACION', 'ENSAYO', 'REUNION', 'SOCIAL', 'OTRO'] as const)
@@ -14,7 +15,7 @@ export const TIPOS_EVENTO = (['CULTO', 'PROCESION', 'FORMACION', 'ENSAYO', 'REUN
  * pasan de 3:1 con la tarjeta y con el lienzo.
  */
 const EN_CLARO: Record<ApiEvent['type'], string> = {
-  CULTO: '#b8283d',
+  CULTO: MARCA.principalPuntoClaro,
   PROCESION: '#8a4fd0',
   FORMACION: '#2f7cc9',
   ENSAYO: '#d2661c',

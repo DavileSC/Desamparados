@@ -5,6 +5,7 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import TarjetaCristal from '../../../components/TarjetaCristal'
 import Boton from '../../../components/Boton'
+import { MARCA, alfa } from '../../../theme/marca'
 
 interface Props {
   titulo: string
@@ -110,7 +111,7 @@ export function Dato({ etiqueta, valor, completo = false }: { etiqueta: string; 
   const vacio = valor === null || valor === undefined || valor === ''
   return (
     <Box sx={{ minWidth: 0, ...(completo ? { gridColumn: '1 / -1', '@container (min-width: 400px)': { gridColumn: 'span 2' } } : {}) }}>
-      <Typography component="dt" sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: (t) => (t.palette.mode === 'light' ? '#81262e' : 'rgba(255, 179, 180, 0.85)') }}>{etiqueta}</Typography>
+      <Typography component="dt" sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: (t) => (t.palette.mode === 'light' ? MARCA.principalOscuro : alfa(MARCA.principalPalido, 0.85)) }}>{etiqueta}</Typography>
       <Typography component="dd" sx={{ m: 0, mt: 0.5, fontSize: 15, fontWeight: vacio ? 400 : 500, overflowWrap: 'anywhere', color: vacio ? 'text.disabled' : 'text.primary' }}>{vacio ? '—' : valor}</Typography>
     </Box>
   )
