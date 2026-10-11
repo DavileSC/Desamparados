@@ -3,6 +3,11 @@
 # Imagen de la web: construye la SPA con Vite y la sirve con nginx, que además
 # hace de proxy de la API y sirve los archivos subidos desde el CMS.
 #
+# No lleva los datos de ninguna corporación: los lee al arrancar de
+# /app/instalacion/datos-entidad.json (el mismo montaje que la API) y escribe
+# con ellos index.html, el manifest, robots.txt, /instalacion.js y el sitio de
+# nginx (docker/nginx/40-instalacion.sh). Una sola imagen para todas.
+#
 # El contexto de construcción es la raíz del repositorio (igual que la API),
 # porque aquí se copian tanto `desamparados-web/` como `docker/nginx/`.
 
@@ -29,17 +34,12 @@ COPY desamparados-web/ ./
 # esto llega a la imagen final: de esta etapa solo sale `dist/`.
 COPY shared /app/shared
 COPY backend-desamparados/src /app/backend-desamparados/src
-# Los datos de la corporación, que no están en git: en GitHub Actions los
-# escribe desplegar.yml desde la variable DATOS_ENTIDAD antes de construir, y en
-# un servidor que construye él mismo son los suyos. Van dentro de la web
-# compilada (títulos, textos legales, index.html), así que esta imagen es de una
-# corporación. La de la API no los lleva: los lee del volumen al arrancar.
-COPY instalacion/datos-entidad.json /app/instalacion/datos-entidad.json
 
-# `npm run build` regenera antes la identidad y la lista de rutas públicas
-# (script `prebuild`; esta última va a shared/ y aquí no sale de la etapa: el
-# sitemap lo sirve la API con la versionada), y después hace
-# `tsc -b && vite build`.
+# `npm run build` regenera antes la lista de rutas públicas (script
+# `prebuild`; va a shared/ y aquí no sale de la etapa: el sitemap lo sirve la
+# API con la versionada), y después hace `tsc -b && vite build`. El index.html
+# que sale conserva las marcas de los datos de la corporación: los pone el
+# arranque.
 #
 # VITE_API_URL se queda sin definir a propósito: el cliente cae entonces en
 # `/api` (src/lib/api/client.ts), que es una ruta del mismo dominio. Apuntar a
@@ -49,14 +49,12 @@ RUN npm run build
 # Cada fichero de texto, comprimido una vez aquí: nginx sirve el .gz ya hecho
 # (gzip_static, en comun.conf) y el VPS no gasta CPU en cada visita. Sin esto
 # el móvil se bajaba ~1,1 MB de JS en vez de ~300 KB.
+#
+# index.html no: aquí es la plantilla con las marcas, y gzip_static serviría
+# ese .gz en vez del relleno. Su .gz lo escribe el arranque, con los datos.
 RUN find dist -type f \( -name '*.js' -o -name '*.css' -o -name '*.html' -o -name '*.svg' \
       -o -name '*.json' -o -name '*.xml' -o -name '*.txt' -o -name '*.webmanifest' \) \
-      -size +1k -exec gzip -k -9 {} +
-
-# El sitio de nginx con el dominio de la corporación, del mismo fichero que la
-# web: aquí hay Node y en la imagen de nginx no.
-COPY docker/nginx/sitio.conf docker/nginx/generar-sitio.mjs /app/nginx/
-RUN node /app/nginx/generar-sitio.mjs /app/instalacion/datos-entidad.json /app/nginx/sitio.conf /app/nginx/sitio-generado.conf
+      ! -name index.html -size +1k -exec gzip -k -9 {} +
 
 # ---------------------------------------------------------------------------
 # La rama estable fijada, no `latest`: un `up --build` cualquiera no debe
@@ -68,6 +66,10 @@ FROM nginx:1.30-alpine AS servidor
 # 80 antes que el nuestro.
 RUN rm -f /etc/nginx/conf.d/default.conf && mkdir -p /etc/nginx/snippets
 
+# Node, para escribir al arrancar los ficheros con los datos de la corporación
+# (unos 60 MB más de imagen). Solo Node: la orden no tiene dependencias.
+RUN apk add --no-cache nodejs
+
 # Directivas del contexto `http` (conf.d se incluye ahí dentro): el formato de
 # registro sin la consulta de la URL, y server_tokens.
 COPY docker/nginx/comun.conf /etc/nginx/conf.d/00-comun.conf
@@ -78,16 +80,29 @@ COPY docker/nginx/seguridad-sin-hsts.conf /etc/nginx/snippets/desamparados-segur
 # Las rutas del sitio, comunes al de producción y al de detrás de otro nginx.
 COPY docker/nginx/ubicaciones.conf /etc/nginx/snippets/desamparados-ubicaciones.conf
 
-# El sitio de producción. En local, compose.local.yaml monta encima de esta
-# misma ruta el de docker/nginx/sitio-local.conf.
-COPY --from=construccion /app/nginx/sitio-generado.conf /etc/nginx/conf.d/desamparados.conf
+# Lo que necesita el arranque, con la misma estructura que el repositorio bajo
+# /app: shared/datos-entidad.mjs busca los datos en ../instalacion y el
+# catálogo de módulos en ./modulos.json, relativos a sí mismo.
+COPY shared/datos-entidad.mjs shared/modulos.json /app/shared/
+COPY desamparados-web/scripts/instalacion-web.mjs /app/desamparados-web/scripts/
+# El sitio de producción no va en la imagen: lo escribe el arranque con el
+# dominio de la corporación. En el servidor y en local, el compose monta
+# encima otro (sitio-tras-proxy.conf, sitio-local.conf) y entonces no se toca.
+COPY docker/nginx/generar-sitio.mjs docker/nginx/sitio.conf /app/docker/nginx/
+# 40: los datos de la corporación, después de los guiones de la imagen oficial.
+# 90: la recarga del certificado, en segundo plano.
+COPY --chmod=755 docker/nginx/40-instalacion.sh docker/nginx/90-recargar-certificado.sh /docker-entrypoint.d/
 
 COPY --from=construccion /app/desamparados-web/dist /var/www/desamparados/dist
+# La plantilla, fuera de la carpeta servida: el arranque la rellena en cada
+# reinicio y tiene que partir siempre de las marcas.
+RUN mv /var/www/desamparados/dist/index.html /app/desamparados-web/index.plantilla.html
 
 # Punto de montaje de los archivos subidos (llega en solo lectura desde el
 # disco del servidor) y carpeta del desafío de Let's Encrypt.
 RUN mkdir -p /srv/storage/public /var/www/certbot
 
-# nginx recarga cada seis horas para tomar el certificado que haya renovado
-# certbot; sin esto seguiría sirviendo el viejo hasta el siguiente reinicio.
-CMD ["sh", "-c", "while :; do sleep 6h & wait $!; nginx -s reload; done & exec nginx -g 'daemon off;'"]
+# Tiene que empezar por `nginx`: si no, el docker-entrypoint.sh oficial no
+# lanza /docker-entrypoint.d/ y la web arrancaría sin los datos. La recarga del
+# certificado cada seis horas va en 90-recargar-certificado.sh.
+CMD ["nginx", "-g", "daemon off;"]
