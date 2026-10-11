@@ -43,6 +43,21 @@ describe('rechazo de contraseñas débiles', () => {
     }
   });
 
+  test('rechaza las palabras cofrades obvias, también con una secuencia detrás', () => {
+    // «nazareno12345» se aceptaba: la palabra no estaba en la lista y, aunque
+    // lo estuviera, los cinco caracteres que sobran bastaban. Una secuencia
+    // pegada a la palabra no es una frase: sigue siendo la palabra.
+    for (const debil of ['nazareno12345', 'Nazareno2026', 'cofrade123456', 'hermano-12345', 'procesion1234', 'Procesión2026', 'costalero2026', 'penitente2026', 'desamparados-abcde']) {
+      assert.equal(esContrasenaAceptable(debil), false, `debería rechazar "${debil}"`);
+    }
+  });
+
+  test('una palabra cofrade dentro de algo más largo sigue valiendo', () => {
+    // Es la de desarrollo de la siembra: tiene que seguir cumpliendo.
+    assert.equal(esContrasenaAceptable('Nazareno-Local-2026'), true);
+    assert.equal(esContrasenaAceptable('el nazareno de la calle Carretería'), true);
+  });
+
   test('los disfraces habituales no burlan la lista', () => {
     // P4ssw0rd es password con las sustituciones de toda la vida.
     assert.equal(esContrasenaAceptable('P4ssw0rdP4ss'), false);

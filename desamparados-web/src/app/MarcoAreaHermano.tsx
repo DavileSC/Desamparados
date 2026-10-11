@@ -155,7 +155,8 @@ export default function MarcoAreaHermano() {
         sx={{
           width: { md: `calc(100% - ${ANCHO_CAJON}px)` },
           ml: { md: `${ANCHO_CAJON}px` },
-          backgroundColor: 'rgba(18, 17, 19, 0.95)',
+          // Opaca: al 95 % el título de la página se transparentaba al desplazarse por debajo.
+          backgroundColor: 'rgb(18, 17, 19)',
           borderBottom: '1px solid rgba(204, 196, 201, 0.2)',
           display: { md: 'none' },
         }}

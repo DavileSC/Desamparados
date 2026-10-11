@@ -106,6 +106,20 @@ const FALTA_DOBLE_FACTOR = 'FALTA_DOBLE_FACTOR'
  */
 const MODULO_NO_ACTIVADO = 'MODULO_NO_ACTIVADO'
 
+/**
+ * El 403 de una cuenta del censo importado que aún no ha revisado su ficha: la
+ * API solo le deja la sesión, sus fichas y la propia revisión. Llega si una
+ * pantalla del área se adelanta a la guarda (otra pestaña, un enlace guardado);
+ * en vez de enseñar el error, se marca la sesión y `ExigeSesion` la lleva a
+ * `/primer-acceso/ficha`.
+ */
+const PRIMER_ACCESO_PENDIENTE = 'PRIMER_ACCESO_PENDIENTE'
+
+function marcarPrimerAccesoPendiente() {
+  const { hermano } = useAuthStore.getState()
+  if (hermano && hermano.primerAccesoPendiente !== true) useAuthStore.setState({ hermano: { ...hermano, primerAccesoPendiente: true } })
+}
+
 type OyenteDeModulo = (modulo: string) => void
 const oyentesDeModuloNoActivado = new Set<OyenteDeModulo>()
 
@@ -194,6 +208,9 @@ export async function llamarApi<T>(path: string, options: ApiRequestOptions = {}
     }
     if (res.status === 403 && (datos as { error?: unknown } | null)?.error === FALTA_DOBLE_FACTOR) {
       void refrescarSesiones()
+    }
+    if (res.status === 403 && (datos as { error?: unknown } | null)?.error === PRIMER_ACCESO_PENDIENTE) {
+      marcarPrimerAccesoPendiente()
     }
     throw new ErrorDeApi(mensajeDeError(datos) ?? `Error ${res.status}`, res.status, datos)
   }

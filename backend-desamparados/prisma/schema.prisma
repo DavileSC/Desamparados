@@ -165,6 +165,17 @@ model User {
   // Cuándo confirmó su ficha. Queda aunque la marca de arriba ya esté quitada:
   // es lo que distingue «confirmó» de «nunca tuvo que hacerlo».
   fichaConfirmadaEn     DateTime?
+  // Hasta cuándo vale el enlace de la invitación. El token es el mismo campo
+  // que el de «¿Has olvidado tu contraseña?», así que no basta con mirar si
+  // hay token: se escribe junto con el token de la invitación y se borra en
+  // toda escritura que lo gaste o lo sustituya. No nulo y futuro = el enlace
+  // del correo sirve; no nulo y pasado = caducó sin usarse.
+  invitacionCaducaEn    DateTime?
+  // La última vez que su dueño puso la contraseña (con un enlace o
+  // cambiándola). Distingue «ya entró» de «su enlace lo pisó una recuperación
+  // que no usó»: en los dos casos no queda invitación viva. `tokenValidAfter`
+  // no sirve, que también lo mueven un cambio de rol o un cierre de sesiones.
+  contrasenaPuestaEn    DateTime?
 
   // --- JUNTA DE GOBIERNO ---
   esJuntaDeGobierno Boolean @default(false)
@@ -1153,6 +1164,11 @@ model AvisoJunta {
   // no debe impedir nada sobre la cuenta, y el cargo ya queda guardado aquí.
   creadoPorId Int?
   creadorRol  Role
+  // La ficha de la que trata, para que el Inicio la enlace («No es de mi
+  // familia»). Sin relación, por lo mismo que creadoPorId: el aviso no debe
+  // impedir borrar ni mover la ficha, y si desaparece el texto sigue diciendo
+  // de quién era.
+  hermanoId   Int?
   createdAt   DateTime  @default(now())
   hechoAt     DateTime?
   hechoPorId  Int?

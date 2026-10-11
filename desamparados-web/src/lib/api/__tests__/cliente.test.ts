@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { llamarApi, ErrorDeApi, alModuloNoActivado } from '../cliente'
+import { useAuthStore } from '../../../features/altas/auth/store'
 
 function responder(status: number, cuerpo: unknown) {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
@@ -71,5 +72,26 @@ describe('llamarApi ante un 404 de módulo apagado', () => {
     responder(404, { status: 'error', error: 'MODULO_NO_ACTIVADO', modulo: 'tienda', message: 'apagado' })
     await errorDe('/tienda/productos')
     expect(oyente).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('llamarApi ante un 403 de primer acceso pendiente', () => {
+  const ana = { id: 7, email: 'ana@ejemplo.test', role: 'USER', perfiles: [] }
+
+  it('marca la sesión de hermano como pendiente, para que la guarda la lleve a revisar su ficha', async () => {
+    useAuthStore.setState({ status: 'listo', cms: null, hermano: { ...ana, primerAccesoPendiente: false } })
+    responder(403, { status: 'error', error: 'PRIMER_ACCESO_PENDIENTE', message: 'Antes, revisa tu ficha.' })
+    const error = await errorDe('/hermanos/papeletas')
+
+    expect(error.status).toBe(403)
+    expect(useAuthStore.getState().hermano?.primerAccesoPendiente).toBe(true)
+  })
+
+  it('un 403 cualquiera no toca la sesión', async () => {
+    useAuthStore.setState({ status: 'listo', cms: null, hermano: { ...ana, primerAccesoPendiente: false } })
+    responder(403, { message: 'No tienes permisos para realizar esta acción' })
+    await errorDe('/hermanos/papeletas')
+
+    expect(useAuthStore.getState().hermano?.primerAccesoPendiente).toBe(false)
   })
 })

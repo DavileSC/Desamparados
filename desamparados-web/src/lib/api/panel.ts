@@ -36,6 +36,8 @@ export interface AvisoJunta {
   creadoPorId: number | null
   /** USER: lo puso un hermano desde su primer acceso («no es de mi familia»). */
   creadorRol: CargoJunta | 'USER'
+  /** La ficha de la que trata (el «no es de mi familia»), para ir a ella desde el Inicio; null si no es de ninguna. */
+  hermanoId: number | null
   createdAt: string
 }
 

@@ -27,6 +27,39 @@ import { ModulosService } from './modulos.service.js';
 /** Dos semanas: es un correo que mucha gente abre días después. */
 const VALIDEZ_INVITACION_HORAS = 14 * 24;
 
+/**
+ * En qué está la invitación de una cuenta con el primer acceso pendiente, para
+ * que Secretaría sepa a quién reenviarla:
+ *
+ * - `sin-invitar`: no le ha salido ninguna (o la primera no llegó a salir).
+ * - `vigente` / `caducada`: el enlace del correo vale hasta `caducaEn`, o
+ *   dejó de valer entonces sin que lo usara.
+ * - `sustituida`: el enlace ya no vale porque pidió otro para recuperar la
+ *   contraseña (comparten el campo del token) y aún no lo ha usado.
+ * - `estrenada`: ya puso su contraseña; falta que confirme la ficha.
+ *
+ * Null si ya confirmó: no hay invitación de la que hablar.
+ *
+ * Una invitación viva manda sobre «ya entró»: si Secretaría reenvía a quien ya
+ * entró, lo que importa es que ese enlace vale. La vigencia no se deduce del
+ * token, que también lo deja una recuperación, sino de `invitacionCaducaEn`,
+ * que solo escribe la invitación y borra todo lo que gasta o pisa su token.
+ */
+export type EstadoInvitacion = 'sin-invitar' | 'vigente' | 'caducada' | 'sustituida' | 'estrenada';
+
+export function situacionDeLaInvitacion(
+  c: { primerAccesoPendiente: boolean; invitadoEn: Date | null; invitacionCaducaEn: Date | null; contrasenaPuestaEn: Date | null },
+  ahora = new Date(),
+): { estado: EstadoInvitacion; caducaEn: string | null } | null {
+  if (!c.primerAccesoPendiente) return null;
+  // Con `invitadoEn` vacío el correo no llegó a salir, aunque su token exista.
+  if (c.invitadoEn && c.invitacionCaducaEn) {
+    return { estado: c.invitacionCaducaEn > ahora ? 'vigente' : 'caducada', caducaEn: c.invitacionCaducaEn.toISOString() };
+  }
+  if (c.contrasenaPuestaEn) return { estado: 'estrenada', caducaEn: null };
+  return { estado: c.invitadoEn ? 'sustituida' : 'sin-invitar', caducaEn: null };
+}
+
 /** La misma pausa que los comunicados, que es la que Gmail aguanta sin cortar. */
 const pausa = () => Number(process.env.COMUNICADOS_PAUSA_MS ?? 1500);
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -35,11 +68,16 @@ const ENLACE_NO_VALIDO = 'El enlace de la invitación no es válido o ha caducad
 
 type EstadoPrimerAcceso = 'sin-invitar' | 'invitado' | 'confirmado';
 
-/** Las cuentas del primer acceso: las que lo tienen pendiente y las que ya lo hicieron. */
+/**
+ * Las cuentas del primer acceso: las que lo tienen pendiente y las que ya lo
+ * hicieron. Quien ya puso su contraseña sin invitación (entró por «¿Has
+ * olvidado tu contraseña?», que el censo trae su correo) cuenta con los
+ * invitados: «Invitar a los que faltan» no tiene que mandarle nada.
+ */
 function condicion(estado?: EstadoPrimerAcceso): Prisma.UserWhereInput {
   if (estado === 'confirmado') return { active: true, fichaConfirmadaEn: { not: null } };
-  if (estado === 'invitado') return { active: true, primerAccesoPendiente: true, invitadoEn: { not: null } };
-  if (estado === 'sin-invitar') return { active: true, primerAccesoPendiente: true, invitadoEn: null };
+  if (estado === 'invitado') return { active: true, primerAccesoPendiente: true, OR: [{ invitadoEn: { not: null } }, { contrasenaPuestaEn: { not: null } }] };
+  if (estado === 'sin-invitar') return { active: true, primerAccesoPendiente: true, invitadoEn: null, contrasenaPuestaEn: null };
   return { active: true, OR: [{ primerAccesoPendiente: true }, { fichaConfirmadaEn: { not: null } }] };
 }
 
@@ -55,12 +93,14 @@ async function invitarUna(userId: number): Promise<void> {
     select: { email: true, nombre: true, hermanos: { where: { esTitular: true }, select: { sexo: true }, take: 1 } },
   });
   if (!cuenta) return;
-  const token = await AuthService.crearEnlaceDeContrasena(userId, VALIDEZ_INVITACION_HORAS);
+  const token = await AuthService.crearEnlaceDeContrasena(userId, VALIDEZ_INVITACION_HORAS, { invitacion: true });
   const ok = await EmailService.enviarInvitacionPrimerAcceso(cuenta.email, cuenta.nombre, token, {
     horas: VALIDEZ_INVITACION_HORAS, sexo: cuenta.hermanos[0]?.sexo ?? undefined,
   });
   // Si no sale, sigue «sin invitar» (o con la fecha de la anterior) y el
-  // fallo queda en la auditoría: Secretaría lo ve y la reenvía.
+  // fallo queda en la auditoría: Secretaría lo ve y la reenvía. (Un reenvío
+  // que no sale ya ha pisado el enlace anterior y sale como vigente: el fallo
+  // solo se ve en la auditoría.)
   if (ok) await db.user.update({ where: { id: userId }, data: { invitadoEn: new Date() } });
 }
 
@@ -89,6 +129,14 @@ function procesarCola(): Promise<void> {
   return enMarcha;
 }
 
+/**
+ * La etiqueta de un campo dicha en la frase del 409. La del parentesco es una
+ * pregunta del formulario («Qué es para ti»), que en «Faltan datos en la
+ * ficha de Lucía: qué es para ti» no se entiende. Se cambia aquí y no en
+ * `shared/ficha-obligatoria.json`, que es lo que pinta la web junto al campo.
+ */
+const enLaFrase = (c: { campo: string; etiqueta: string }) => (c.campo === 'parentesco' ? { ...c, etiqueta: 'el parentesco' } : c);
+
 export class PrimerAccesoService {
   // --- CMS --------------------------------------------------------------------
 
@@ -107,6 +155,7 @@ export class PrimerAccesoService {
         where,
         select: {
           id: true, nombre: true, apellidos: true, email: true, invitadoEn: true, fichaConfirmadaEn: true,
+          primerAccesoPendiente: true, invitacionCaducaEn: true, contrasenaPuestaEn: true,
           hermanos: { where: { activo: true }, select: { esTitular: true, numeroHermano: true } },
         },
         orderBy: [{ apellidos: 'asc' }, { nombre: 'asc' }, { id: 'asc' }],
@@ -127,6 +176,7 @@ export class PrimerAccesoService {
       aCargo: c.hermanos.filter((h) => !h.esTitular).length,
       invitadoEn: c.invitadoEn,
       fichaConfirmadaEn: c.fichaConfirmadaEn,
+      invitacion: situacionDeLaInvitacion(c),
       enCola: cola.has(c.id),
     }));
     return { ...respuestaPaginada(data, total, paginacion), cifras: { sinInvitar, invitados, confirmados, enCola: cola.size } };
@@ -201,7 +251,7 @@ export class PrimerAccesoService {
         hermanos: {
           where: { activo: true },
           select: {
-            esTitular: true, nombre: true, apellidos: true, primerApellido: true, dni: true, fechaNacimiento: true,
+            id: true, esTitular: true, nombre: true, apellidos: true, primerApellido: true, dni: true, fechaNacimiento: true,
             sexo: true, estadoCivil: true, fechaBautismo: true, email: true, telefono: true, direccion: true,
             codigoPostal: true, poblacion: true, parentesco: true,
             formaPagoPref: true, iban: true, titularidadCuenta: true, titularCuenta: true,
@@ -217,7 +267,9 @@ export class PrimerAccesoService {
       const faltan = faltanEnLaFicha(ficha, conCuotas);
       if (faltan.length === 0) continue;
       const de = ficha.esTitular ? 'tu ficha' : `la ficha de ${ficha.nombre}`;
-      throw new HttpError(`Faltan datos obligatorios en ${de}: ${enUnaFrase(faltan)}.`, 409);
+      throw new HttpError(`Faltan datos obligatorios en ${de}: ${enUnaFrase(faltan.map(enLaFrase))}.`, 409, {
+        fichaIncompleta: { id: ficha.id, nombre: ficha.nombre, esTitular: ficha.esTitular, campos: faltan.map((c) => c.campo) },
+      });
     }
 
     await db.user.update({ where: { id: userId }, data: { primerAccesoPendiente: false, fichaConfirmadaEn: new Date() } });
@@ -246,7 +298,7 @@ export class PrimerAccesoService {
       await tx.hermano.update({ where: { id: hermanoId }, data: { userId: custodia, parentesco: null } });
       await tx.avisoJunta.create({
         // El aviso admite 160 caracteres: con nombres muy largos se recorta.
-        data: { texto: texto.length > 160 ? `${texto.slice(0, 159)}…` : texto, para: Role.SECRETARIA, creadoPorId: userId, creadorRol: Role.USER },
+        data: { texto: texto.length > 160 ? `${texto.slice(0, 159)}…` : texto, para: Role.SECRETARIA, hermanoId, creadoPorId: userId, creadorRol: Role.USER },
       });
     });
     await AuditoriaService.log(ACCIONES_AUDITORIA.PRIMER_ACCESO_FICHA_AJENA, meta, 'hermano', hermanoId);

@@ -16,11 +16,18 @@ import { describirErrorParaLog, rutaParaRegistro } from './log-privacidad.js';
  */
 export class HttpError extends Error {
   public readonly status: number;
+  /**
+   * Campos que viajan en el cuerpo junto a `error`, para que la web pueda
+   * actuar sin analizar la frase (p. ej. qué ficha está incompleta). Nunca
+   * datos internos: se envían tal cual, como el mensaje.
+   */
+  public readonly datos?: Record<string, unknown>;
 
-  constructor(message: string, status: number = 400) {
+  constructor(message: string, status: number = 400, datos?: Record<string, unknown>) {
     super(message);
     this.name = 'HttpError';
     this.status = status;
+    this.datos = datos;
     Object.setPrototypeOf(this, HttpError.prototype);
   }
 }
@@ -202,7 +209,8 @@ const handleHttp = (
   }
 
   // 2. Respuesta al cliente
-  res.status(status).json({ error: message });
+  const datos = errorRaw instanceof HttpError ? errorRaw.datos : undefined;
+  res.status(status).json({ ...datos, error: message });
 };
 
 export { handleHttp };

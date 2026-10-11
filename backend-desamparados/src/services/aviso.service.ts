@@ -15,6 +15,8 @@ interface AvisoDelPanel {
   urgente: boolean;
   creadoPorId: number | null;
   creadorRol: Role;
+  /** La ficha de la que trata, para enlazarla; null si no trata de ninguna. */
+  hermanoId: number | null;
   createdAt: string;
 }
 
@@ -27,7 +29,7 @@ interface DatosAviso {
 
 const aPanel = (a: {
   id: number; texto: string; para: Role | null; hasta: Date | null; urgente: boolean
-  creadoPorId: number | null; creadorRol: Role; createdAt: Date
+  creadoPorId: number | null; creadorRol: Role; hermanoId: number | null; createdAt: Date
 }): AvisoDelPanel => ({
   id: a.id,
   texto: a.texto,
@@ -36,6 +38,7 @@ const aPanel = (a: {
   urgente: a.urgente,
   creadoPorId: a.creadoPorId,
   creadorRol: a.creadorRol,
+  hermanoId: a.hermanoId,
   createdAt: a.createdAt.toISOString(),
 });
 

@@ -134,12 +134,23 @@ test('ni el código ni las plantillas escriben la corporación ni la salida a ma
 // instalaciones (la auditoría del 07-10-2026 encontró un «No tienes permisos
 // para apuntar a este cofrade» que leía el hermano en su área). Solo el
 // backend: sus mensajes de error llegan tal cual a la pantalla.
+//
+// La única excepción es RAICES_PROHIBIDAS de domain/password-debil.ts: ahí
+// 'cofrade' es una raíz de diccionario que se busca dentro de la contraseña
+// («cofrade2026» se rechaza) y nunca se enseña. Se quita solo ese elemento
+// exacto de la lista, con sus comillas, y solo en ese fichero: un mensaje
+// que diga «cofrade» en el mismo fichero (o en la misma línea) sigue cayendo.
+// Partir la palabra en el código para esquivar la prueba la dejaría ciega.
+const RAIZ_DE_CONTRASENA = { fichero: 'backend-desamparados/src/domain/password-debil.ts', elemento: /'cofrade',/g };
+
 test('los mensajes del backend llaman «hermanos» a los miembros, no «cofrades»', () => {
   const hallazgos: string[] = [];
   for (const f of ficheros(join(RAIZ, 'backend-desamparados/src'))) {
+    const rel = relative(RAIZ, f).replace(/\\/g, '/');
     lineasDe(readFileSync(f, 'utf8')).forEach((l, i) => {
-      const texto = sinComentarios(l);
-      if (/['"`][^'"`]*\bcofrades?\b/i.test(texto)) hallazgos.push(`${relative(RAIZ, f).replace(/\\/g, '/')}:${i + 1}: ${texto.trim()}`);
+      const linea = rel === RAIZ_DE_CONTRASENA.fichero ? l.replace(RAIZ_DE_CONTRASENA.elemento, '') : l;
+      const texto = sinComentarios(linea);
+      if (/['"`][^'"`]*\bcofrades?\b/i.test(texto)) hallazgos.push(`${rel}:${i + 1}: ${texto.trim()}`);
     });
   }
   assert.deepEqual(hallazgos, [], `«cofrade» en un texto visible:\n${hallazgos.join('\n')}`);

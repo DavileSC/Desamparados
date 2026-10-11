@@ -377,15 +377,20 @@ export class AuthService {
    *
    * Lo usan dos flujos con plazos distintos: el «he olvidado mi contraseña»
    * (una hora, la persona está delante) y la emancipación desde secretaría
-   * (tres días, la persona se entera cuando abra el correo).
+   * (tres días, la persona se entera cuando abra el correo). La invitación del
+   * primer acceso (dos semanas) lo dice con `invitacion`, y su caducidad queda
+   * apuntada aparte en la misma escritura: cualquier otro enlace pisa el
+   * token, y entonces la invitación ya no vale aunque el CMS la diera por viva.
    */
-  static async crearEnlaceDeContrasena(userId: number, validezHoras: number): Promise<string> {
+  static async crearEnlaceDeContrasena(userId: number, validezHoras: number, opciones: { invitacion?: boolean } = {}): Promise<string> {
     const token = crypto.randomBytes(32).toString('hex');
+    const caduca = new Date(Date.now() + validezHoras * 3600000);
     await db.user.update({
       where: { id: userId },
       data: {
         resetPasswordToken: hashDelTestigoDeRecuperacion(token),
-        resetPasswordExpires: new Date(Date.now() + validezHoras * 3600000)
+        resetPasswordExpires: caduca,
+        invitacionCaducaEn: opciones.invitacion ? caduca : null,
       }
     });
     return token;
@@ -458,6 +463,10 @@ export class AuthService {
         password: hashedPassword,
         resetPasswordToken: null,
         resetPasswordExpires: null,
+        // Sea el de la invitación o el de una recuperación, ya ha entrado: el
+        // CMS deja de pedir que se le reenvíe.
+        invitacionCaducaEn: null,
+        contrasenaPuestaEn: new Date(),
         // Invalidamos TODAS las sesiones abiertas (por si la contraseña se cambió
         // por robo de cuenta: el atacante con token viejo queda fuera)
         tokenValidAfter: corteDeSesiones()
@@ -532,9 +541,11 @@ export class AuthService {
       where: { id: userId },
       data: {
         password: await encrypt(nueva),
-        // Un enlace de recuperación pedido antes ya no debe servir.
+        // Un enlace de recuperación (o de invitación) pedido antes ya no debe servir.
         resetPasswordToken: null,
         resetPasswordExpires: null,
+        invitacionCaducaEn: null,
+        contrasenaPuestaEn: new Date(),
         tokenValidAfter: corte,
       },
     });

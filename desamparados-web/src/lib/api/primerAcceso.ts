@@ -13,6 +13,14 @@ export function devolverFichaAjena(id: number) {
 
 export type EstadoPrimerAcceso = 'sin-invitar' | 'invitado' | 'confirmado'
 
+/**
+ * En qué está la invitación, según el servidor: el enlace comparte campo con
+ * «¿Has olvidado tu contraseña?» y desde aquí no se puede deducir.
+ * `sustituida`: pidió una recuperación y el enlace del correo ya no vale.
+ * `estrenada`: ya puso su contraseña y falta que confirme la ficha.
+ */
+export type EstadoInvitacion = 'sin-invitar' | 'vigente' | 'caducada' | 'sustituida' | 'estrenada'
+
 /** Una cuenta del censo importado, como la ve Secretaría. */
 export interface CuentaPrimerAcceso {
   id: number
@@ -23,6 +31,8 @@ export interface CuentaPrimerAcceso {
   /** Cuántas fichas cuelgan de ella además de la suya. */
   aCargo: number
   invitadoEn: string | null
+  /** Null si ya confirmó. `caducaEn` (ISO) solo en `vigente` y `caducada`. */
+  invitacion: { estado: EstadoInvitacion; caducaEn: string | null } | null
   fichaConfirmadaEn: string | null
   /** Su invitación espera turno para salir. */
   enCola: boolean

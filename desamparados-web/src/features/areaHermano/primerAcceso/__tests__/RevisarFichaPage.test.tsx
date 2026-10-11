@@ -194,4 +194,112 @@ describe('RevisarFichaPage', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Tu familia' })).toBeInTheDocument()
     expect(screen.getByText('Paso 3 de 4')).toBeInTheDocument()
   })
+
+  it('lo cambiado se guarda con el avance: al volver, el repaso sigue diciendo «Cambiado»', async () => {
+    const usuario = userEvent.setup()
+    responder([ficha(1, 'Ana', { estadoCivil: null })])
+    const { unmount } = renderWithProviders(<RevisarFichaPage />)
+
+    await screen.findByRole('heading', { level: 1, name: 'Tus datos' })
+    // Con un solo dato que falta, la frase va en singular.
+    expect(screen.getByText('Nos falta tu estado civil')).toBeInTheDocument()
+    expect(screen.getByText(/El censo no traía ese dato y la Secretaría lo necesita/)).toBeInTheDocument()
+    await usuario.click(screen.getByRole('combobox', { name: /Estado civil/ }))
+    await usuario.click(await screen.findByRole('option', { name: 'Casado o casada' }))
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument())
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Sí, es correcto' })).toBeEnabled())
+    await waitFor(() => expect(JSON.parse(window.localStorage.getItem('primer-acceso:sin-cuenta') ?? '{}')).toMatchObject({ cambiados: ['datos'] }))
+    unmount()
+
+    window.localStorage.setItem('primer-acceso:sin-cuenta', JSON.stringify({ actual: 2, alcanzado: 2, cambiados: ['datos'] }))
+    responder([ficha(1, 'Ana')])
+    renderWithProviders(<RevisarFichaPage />)
+    const repaso = await screen.findByRole('list', { name: 'Lo que has revisado' })
+    expect(within(repaso).getByText('Tus datos').parentElement).toHaveTextContent('Cambiado')
+    expect(within(repaso).getByText('Cuota y pago').parentElement).toHaveTextContent('Sin cambios')
+  })
+
+  it('si al confirmar falta algo (409), lleva al paso donde falta con el motivo', async () => {
+    const usuario = userEvent.setup()
+    window.localStorage.setItem('primer-acceso:sin-cuenta', JSON.stringify({ actual: 2, alcanzado: 2 }))
+    const simulado = responder([ficha(1, 'Ana')])
+    let lecturas = 0
+    simulado.mockImplementation((url: string, init: RequestInit = {}) => {
+      if (String(url).includes('/primer-acceso/confirmar')) return Promise.resolve(json({ error: 'Faltan datos obligatorios en tu ficha: localidad.', fichaIncompleta: { id: 1, nombre: 'Ana', esTitular: true, campos: ['poblacion'] } }, 409))
+      if (init.method) return Promise.resolve(json({}))
+      // La segunda lectura, la de después del 409: otra pestaña dejó la localidad vacía.
+      lecturas += 1
+      const fichas = [ficha(1, 'Ana', lecturas > 1 ? { poblacion: null } : {})]
+      return Promise.resolve(json({ data: fichas, meta: { total: 1, page: 1, limit: 50, totalPages: 1 } }))
+    })
+    renderWithProviders(<RevisarFichaPage />)
+
+    await screen.findByRole('heading', { level: 1, name: 'Repaso final' })
+    await usuario.click(screen.getByRole('checkbox', { name: /Declaro que los datos son correctos/ }))
+    await usuario.click(screen.getByRole('button', { name: 'Confirmar mi ficha' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Tus datos' })).toBeInTheDocument()
+    expect(screen.getByText('Faltan datos obligatorios en tu ficha: localidad.')).toBeInTheDocument()
+    expect(screen.getByText('Nos falta tu localidad')).toBeInTheDocument()
+  })
+
+  it('si lo que falta al confirmar es de un familiar, lleva a «Tu familia»', async () => {
+    const usuario = userEvent.setup()
+    window.localStorage.setItem('primer-acceso:sin-cuenta', JSON.stringify({ actual: 3, alcanzado: 3 }))
+    const simulado = responder([ficha(1, 'Ana'), hijo(2, 'Bruno', { parentesco: 'HIJO' })])
+    simulado.mockImplementation((url: string) => Promise.resolve(String(url).includes('/primer-acceso/confirmar')
+      ? json({ error: 'Faltan datos obligatorios en la ficha de Bruno: fecha de nacimiento.', fichaIncompleta: { id: 2, nombre: 'Bruno', esTitular: false, campos: ['fechaNacimiento'] } }, 409)
+      : json({ data: [ficha(1, 'Ana'), hijo(2, 'Bruno', { parentesco: 'HIJO' })], meta: { total: 2, page: 1, limit: 50, totalPages: 1 } })))
+    renderWithProviders(<RevisarFichaPage />)
+
+    await screen.findByRole('heading', { level: 1, name: 'Repaso final' })
+    await usuario.click(screen.getByRole('checkbox', { name: /Declaro que los datos son correctos/ }))
+    await usuario.click(screen.getByRole('button', { name: 'Confirmar mi ficha' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Tu familia' })).toBeInTheDocument()
+    expect(screen.getByText('Faltan datos obligatorios en la ficha de Bruno: fecha de nacimiento.')).toBeInTheDocument()
+  })
+
+  it('al pasar de paso, el foco va al título del nuevo', async () => {
+    const usuario = userEvent.setup()
+    responder()
+    renderWithProviders(<RevisarFichaPage />)
+
+    await screen.findByRole('heading', { level: 1, name: 'Tus datos' })
+    await usuario.click(screen.getByRole('button', { name: 'Sí, es correcto' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Cuota y pago' })).toHaveFocus()
+  })
+
+  it('lo que falta se guarda con Intro, y cada aviso va en su campo', async () => {
+    const usuario = userEvent.setup()
+    const simulado = responder([ficha(1, 'Ana', { telefono: null, poblacion: null })])
+    renderWithProviders(<RevisarFichaPage />)
+
+    await screen.findByRole('heading', { level: 1, name: 'Tus datos' })
+    const movil = screen.getByRole('textbox', { name: /Teléfono móvil/ })
+    await usuario.type(movil, '6000{Enter}')
+    expect(await screen.findByText('Tiene que tener 9 cifras.')).toBeInTheDocument()
+    expect(movil).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByRole('textbox', { name: /Localidad/ })).toHaveAttribute('aria-invalid', 'true')
+    expect(movil).toHaveFocus()
+    expect(cuerposPut(simulado)).toEqual([])
+
+    await usuario.clear(movil)
+    await usuario.type(movil, '600111222')
+    await usuario.type(screen.getByRole('textbox', { name: /Localidad/ }), 'Málaga{Enter}')
+    await waitFor(() => expect(cuerposPut(simulado)).toEqual([['1', { telefono: '600111222', poblacion: 'Málaga' }]]))
+  })
+
+  it('con un solo familiar sin completar no dice «0 de 1 listos», y el número no se pega al nombre', async () => {
+    const usuario = userEvent.setup()
+    responder()
+    renderWithProviders(<RevisarFichaPage />)
+
+    await pasarFichaPropia(usuario)
+    await screen.findByRole('heading', { level: 1, name: 'Tu familia' })
+    expect(screen.getByText('Falta por completar.')).toBeInTheDocument()
+    expect(screen.queryByText(/0 de 1/)).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: /^Bruno Pérez Ruiz n\.º\s302$/ })).toBeInTheDocument()
+  })
 })

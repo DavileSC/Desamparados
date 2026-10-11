@@ -40,7 +40,10 @@ export async function validateSessionAgainstDb(
 
   const dbUser = await db.user.findUnique({
     where: { id: payload.id },
-    select: { role: true, active: true, twoFactorEnabled: true, tokenValidAfter: true, cmsValidoDesde: true, hermanoValidoDesde: true }
+    select: {
+      role: true, active: true, twoFactorEnabled: true, primerAccesoPendiente: true,
+      tokenValidAfter: true, cmsValidoDesde: true, hermanoValidoDesde: true,
+    }
   });
 
   if (!dbUser || !dbUser.active) return null;
@@ -54,7 +57,7 @@ export async function validateSessionAgainstDb(
   if (issuedAtMs < corte) return null;
 
   // Devolvemos el payload con el rol REAL de la BD (no el que viajaba en el JWT)
-  return { ...payload, role: dbUser.role, dobleFactor: dbUser.twoFactorEnabled };
+  return { ...payload, role: dbUser.role, dobleFactor: dbUser.twoFactorEnabled, primerAccesoPendiente: dbUser.primerAccesoPendiente };
 }
 
 /** Lee una cookie de sesión y la valida; `null` si no está, no vale o no es de su área. */
@@ -87,11 +90,58 @@ export const resolverSesiones = async (req: Request, _res: Response, next: NextF
   next();
 };
 
-/** Estricto: sin ninguna de las dos sesiones, bloquea. */
+/** Código del 403 por primer acceso sin confirmar (lo lee el cliente de la API de la web). */
+export const PRIMER_ACCESO_PENDIENTE = 'PRIMER_ACCESO_PENDIENTE';
+
+/**
+ * Lo único que abre una sesión del área con el primer acceso sin confirmar:
+ * lo que llaman de verdad las pantallas de la revisión
+ * (`desamparados-web/src/features/areaHermano/primerAcceso/` y los apartados
+ * de «Mi perfil» que reutiliza). `/auth/me` y `/auth/logout` no pasan por
+ * aquí: no llevan `authenticateToken`. Una pantalla nueva en la revisión que
+ * llame a otra ruta tiene que añadirla aquí, o recibirá el 403.
+ */
+const RUTAS_DE_LA_REVISION: { metodo: string; ruta: RegExp }[] = [
+  { metodo: 'GET', ruta: /^\/api\/hermanos\/mis-perfiles\/?$/i },
+  { metodo: 'PUT', ruta: /^\/api\/hermanos\/mis-perfiles\/[^/]+\/?$/i },
+  { metodo: '*', ruta: /^\/api\/hermanos\/primer-acceso\/./i },
+];
+
+function esDeLaRevision(req: Request): boolean {
+  const ruta = req.originalUrl.split('?')[0];
+  return RUTAS_DE_LA_REVISION.some((r) => (r.metodo === '*' || r.metodo === req.method) && r.ruta.test(ruta));
+}
+
+/**
+ * Estricto: sin ninguna de las dos sesiones, bloquea.
+ *
+ * Y frena aquí a la cuenta que aún no ha confirmado su ficha del primer
+ * acceso: la web la manda a la revisión, pero la API no puede fiarse de la
+ * web, y con la cookie a mano se pedían papeletas, se veían los recibos o se
+ * daba de baja a un familiar sin que Secretaría lo viera llegar. Va aquí, y
+ * no en cada router del área, por lo mismo que el 2FA va en `checkRole`: es
+ * el paso obligado de todas sus rutas, y un router olvidado quedaría abierto.
+ *
+ * Solo cuenta para la sesión del área de hermanos, que es la que la revisión
+ * bloquea: fuera de la revisión esa sesión se descarta, y si además hay una
+ * del CMS la petición sigue con ella (es la que usan las rutas de staff, que
+ * `checkRole` vuelve a mirar). El dato sale de la base en cada petición
+ * (`validateSessionAgainstDb`), así que confirmar abre el área al instante.
+ */
 export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   await resolverSesiones(req, res, () => {});
   if (!req.sesiones.cms && !req.sesiones.hermano) {
     return res.status(401).json({ error: 'NO_TOKEN_PROVIDED', message: 'Se requiere una sesión iniciada' });
+  }
+  if (req.sesiones.hermano?.primerAccesoPendiente && !esDeLaRevision(req)) {
+    req.sesiones = { cms: req.sesiones.cms, hermano: null };
+    req.user = req.sesiones.cms ?? undefined;
+    if (!req.sesiones.cms) {
+      return res.status(403).json({
+        error: PRIMER_ACCESO_PENDIENTE,
+        message: 'Antes de usar el área de hermanos tienes que revisar y confirmar tu ficha.',
+      });
+    }
   }
   next();
 };

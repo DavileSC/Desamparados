@@ -7,14 +7,17 @@ import VistaPrimerAcceso from '../VistaPrimerAcceso'
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 const cuenta = (id: number, nombre: string, extra: Record<string, unknown> = {}) => ({
   id, nombre, apellidos: 'Ruiz Montes', email: `${nombre.toLowerCase()}@ejemplo.test`, numeroHermano: 200 + id, aCargo: 0,
-  invitadoEn: null, fichaConfirmadaEn: null, enCola: false, ...extra,
+  invitadoEn: null, invitacion: { estado: 'sin-invitar', caducaEn: null }, fichaConfirmadaEn: null, enCola: false, ...extra,
 })
 
 function api() {
   const filas = [
     cuenta(1, 'Antonio', { aCargo: 2 }),
-    cuenta(2, 'Carmen', { invitadoEn: '2026-10-05T10:00:00.000Z' }),
-    cuenta(3, 'Pedro', { invitadoEn: '2026-10-05T10:00:00.000Z', fichaConfirmadaEn: '2026-10-06T10:00:00.000Z' }),
+    cuenta(2, 'Carmen', { invitadoEn: '2026-10-05T10:00:00.000Z', invitacion: { estado: 'vigente', caducaEn: '2099-10-19T10:00:00.000Z' } }),
+    cuenta(4, 'Dolores', { invitadoEn: '2026-09-01T10:00:00.000Z', invitacion: { estado: 'caducada', caducaEn: '2026-09-15T10:00:00.000Z' } }),
+    cuenta(5, 'Elena', { invitadoEn: '2026-10-01T10:00:00.000Z', invitacion: { estado: 'sustituida', caducaEn: null } }),
+    cuenta(6, 'Francisco', { invitadoEn: '2026-10-01T10:00:00.000Z', invitacion: { estado: 'estrenada', caducaEn: null } }),
+    cuenta(3, 'Pedro', { invitadoEn: '2026-10-05T10:00:00.000Z', invitacion: null, fichaConfirmadaEn: '2026-10-06T10:00:00.000Z' }),
   ]
   const simulado = vi.fn().mockImplementation((_url: string, init: RequestInit = {}) => Promise.resolve(init.method === 'POST'
     ? json({ encoladas: 1 }, 202)
@@ -54,6 +57,40 @@ describe('VistaPrimerAcceso', () => {
     await usuario.click(await screen.findByRole('button', { name: 'Invitar a los que faltan (1)' }))
     await usuario.click(await screen.findByRole('button', { name: 'Mandar invitaciones' }))
     await waitFor(() => expect(posts(simulado)).toEqual([[expect.stringContaining('/primer-acceso/invitar'), {}]]))
-    expect(await screen.findByText(/1 invitación en camino/)).toBeInTheDocument()
+    // En la cola no queda ninguna: ya han salido, y no se dice que tardarán.
+    expect(await screen.findByText('1 invitación enviada.')).toBeInTheDocument()
+  })
+
+  it('dice si el enlace vale, caducó o lo pisó una recuperación, y destaca el reenvío cuando ya no vale', async () => {
+    api()
+    renderWithProviders(<VistaPrimerAcceso />)
+
+    const lista = await screen.findByRole('list', { name: 'Cuentas del censo importado' })
+    const fila = (nombre: string) => within(lista).getByText(new RegExp(`Ruiz Montes, ${nombre}`)).closest('li') as HTMLElement
+    const reenviar = (nombre: string) => within(lista).getByRole('button', { name: `Reenviar la invitación a ${nombre} Ruiz Montes` })
+
+    expect(within(fila('Carmen')).getByText(/Invitado · el enlace vale hasta el 19 oct 2099/)).toBeInTheDocument()
+    expect(reenviar('Carmen')).toHaveClass('MuiButton-outlined')
+
+    expect(within(fila('Dolores')).getByText(/El enlace caducó el 15 sept 2026/)).toBeInTheDocument()
+    expect(reenviar('Dolores')).toHaveClass('MuiButton-contained')
+
+    expect(within(fila('Elena')).getByText('El enlace ya no vale: pidió otro para recuperar la contraseña')).toBeInTheDocument()
+    expect(reenviar('Elena')).toHaveClass('MuiButton-contained')
+
+    expect(within(fila('Francisco')).getByText('Ya entró; falta que confirme la ficha')).toBeInTheDocument()
+    expect(reenviar('Francisco')).toHaveClass('MuiButton-outlined')
+  })
+
+  it('la búsqueda espera a que se deje de teclear', async () => {
+    const usuario = userEvent.setup()
+    const simulado = api()
+    renderWithProviders(<VistaPrimerAcceso />)
+
+    await screen.findByRole('list', { name: 'Cuentas del censo importado' })
+    await usuario.type(screen.getByRole('textbox', { name: 'Buscar por nombre o correo' }), 'carmen')
+    await waitFor(() => expect(simulado.mock.calls.some(([url]) => String(url).includes('q=carmen'))).toBe(true))
+    // Una petición con lo buscado, no una por letra.
+    expect(simulado.mock.calls.filter(([url]) => /[?&]q=/.test(String(url)))).toHaveLength(1)
   })
 })

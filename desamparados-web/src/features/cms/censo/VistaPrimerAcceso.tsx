@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert, Box, Button, Chip, CircularProgress, Paper, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, Chip, CircularProgress, Paper, Stack, Typography } from '@mui/material'
 import { invitarPrimerAcceso, listarPrimerAcceso, type CifrasPrimerAcceso, type CuentaPrimerAcceso, type EstadoPrimerAcceso } from '../../../lib/api/primerAcceso'
 import { usePaginacion } from '../../../hooks/usePaginacion'
 import Paginador from '../../../components/Paginador'
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
+import CampoBusqueda from '../listados/CampoBusqueda'
 import type { MetaPaginacion } from '../../../lib/api/tipos'
 
 /** Mientras salen invitaciones, la lista se pone al día sola cada tanto. */
@@ -11,11 +12,30 @@ const REFRESCO_MS = 5000
 
 const dia = (iso: string) => new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
 
-function situacion(c: CuentaPrimerAcceso): { texto: string; color: string } {
-  if (c.fichaConfirmadaEn) return { texto: `Confirmó el ${dia(c.fichaConfirmadaEn)}`, color: 'success.main' }
-  if (c.enCola) return { texto: 'Invitación saliendo', color: 'text.secondary' }
-  if (c.invitadoEn) return { texto: `Invitado el ${dia(c.invitadoEn)}`, color: 'warning.main' }
-  return { texto: 'Sin invitar', color: 'text.secondary' }
+/**
+ * En qué está la cuenta. Lo que importa a Secretaría es si el enlace del
+ * correo aún le sirve: si caducó o lo pisó una recuperación, hay que
+ * reenviarlo, y el botón se destaca (`reenviar`). La situación la calcula el
+ * servidor; aquí solo se dice.
+ */
+function situacion(c: CuentaPrimerAcceso): { texto: string; color: string; reenviar: boolean } {
+  if (c.fichaConfirmadaEn || !c.invitacion) {
+    return { texto: c.fichaConfirmadaEn ? `Confirmó el ${dia(c.fichaConfirmadaEn)}` : 'Confirmó', color: 'success.main', reenviar: false }
+  }
+  if (c.enCola) return { texto: 'Invitación saliendo', color: 'text.secondary', reenviar: false }
+  const { estado, caducaEn } = c.invitacion
+  switch (estado) {
+    case 'vigente':
+      return { texto: `Invitado · el enlace vale hasta el ${caducaEn ? dia(caducaEn) : '—'}`, color: 'warning.main', reenviar: false }
+    case 'caducada':
+      return { texto: `El enlace caducó el ${caducaEn ? dia(caducaEn) : '—'}`, color: 'error.main', reenviar: true }
+    case 'sustituida':
+      return { texto: 'El enlace ya no vale: pidió otro para recuperar la contraseña', color: 'error.main', reenviar: true }
+    case 'estrenada':
+      return { texto: 'Ya entró; falta que confirme la ficha', color: 'text.primary', reenviar: false }
+    default:
+      return { texto: 'Sin invitar', color: 'text.secondary', reenviar: false }
+  }
 }
 
 const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`
@@ -32,7 +52,10 @@ export default function VistaPrimerAcceso() {
   const [meta, setMeta] = useState<MetaPaginacion | null>(null)
   const [cifras, setCifras] = useState<CifrasPrimerAcceso | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [aviso, setAviso] = useState<string | null>(null)
+  // Cuántas se acaban de mandar: el aviso dice «en camino» mientras salen y
+  // «enviadas» cuando ya no queda ninguna en cola (antes se quedaba puesto
+  // «tardarán unos minutos» con todas ya fuera).
+  const [mandadas, setMandadas] = useState<number | null>(null)
   const [preguntar, setPreguntar] = useState(false)
   const [trabajando, setTrabajando] = useState(false)
   // Guarda síncrona: un doble clic llegaría antes que el estado.
@@ -62,11 +85,11 @@ export default function VistaPrimerAcceso() {
   const invitar = async (ids?: number[]) => {
     if (enMarcha.current) return
     enMarcha.current = true
-    setTrabajando(true); setError(null); setAviso(null)
+    setTrabajando(true); setError(null); setMandadas(null)
     try {
       const { encoladas } = await invitarPrimerAcceso(ids)
-      setAviso(`${plural(encoladas, 'invitación', 'invitaciones')} en camino. Salen de una en una: ${encoladas > 1 ? 'tardarán unos minutos' : 'llegará enseguida'}.`)
       await cargar()
+      setMandadas(encoladas)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se han podido mandar las invitaciones.')
     } finally {
@@ -74,6 +97,10 @@ export default function VistaPrimerAcceso() {
       setTrabajando(false)
     }
   }
+
+  const aviso = mandadas === null ? null : saliendo
+    ? `${plural(mandadas, 'invitación', 'invitaciones')} en camino. Salen de una en una: ${mandadas > 1 ? 'tardarán unos minutos' : 'llegará enseguida'}.`
+    : `${plural(mandadas, 'invitación enviada', 'invitaciones enviadas')}.`
 
   const filtro = (valor: EstadoPrimerAcceso | '', etiqueta: string) => (
     <Chip
@@ -104,13 +131,10 @@ export default function VistaPrimerAcceso() {
         </Button>
       </Stack>
 
-      <TextField
-        size="small"
-        label="Buscar por nombre o correo"
-        value={busqueda}
-        onChange={(e) => { setBusqueda(e.target.value); irAPagina(1) }}
-        sx={{ mb: 2, width: { xs: '100%', sm: 320 } }}
-      />
+      {/* Con espera, como las demás búsquedas del CMS: una petición por letra saturaba el limitador. */}
+      <Box sx={{ mb: 2, display: 'flex', width: { xs: '100%', sm: 320 } }}>
+        <CampoBusqueda etiqueta="Buscar por nombre o correo" valor={busqueda} onCambiar={(q) => { setBusqueda(q); irAPagina(1) }} />
+      </Box>
 
       {saliendo && <Alert severity="info" sx={{ mb: 2 }}>Saliendo: {plural(cifras!.enCola, 'invitación pendiente', 'invitaciones pendientes')} de enviar.</Alert>}
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -123,13 +147,13 @@ export default function VistaPrimerAcceso() {
       ) : (
         <Box component="ul" aria-label="Cuentas del censo importado" sx={{ listStyle: 'none', m: 0, p: 0 }}>
           {filas.map((c) => {
-            const { texto, color } = situacion(c)
+            const { texto, color, reenviar } = situacion(c)
             return (
               <Box component="li" key={c.id} sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2, py: 1.75, borderTop: 1, borderColor: 'divider' }}>
                 <Box sx={{ minWidth: 0, flex: '1 1 260px' }}>
                   <Typography sx={{ fontWeight: 600 }}>
                     {c.apellidos}, {c.nombre}
-                    {c.numeroHermano !== null && <Box component="span" sx={{ fontWeight: 400, color: 'text.secondary' }}> · n.º {c.numeroHermano}</Box>}
+                    {c.numeroHermano !== null && <Box component="span" sx={{ fontWeight: 400, color: 'text.secondary', whiteSpace: 'nowrap' }}> · n.º{'\u00a0'}{c.numeroHermano}</Box>}
                   </Typography>
                   <Typography variant="body2" sx={{ color: 'text.secondary', overflowWrap: 'anywhere' }}>
                     {c.email}{c.aCargo > 0 && ` · ${plural(c.aCargo, 'ficha', 'fichas')} a su cargo`}
@@ -139,7 +163,7 @@ export default function VistaPrimerAcceso() {
                   <Typography variant="body2" sx={{ color, fontWeight: 600 }}>{texto}</Typography>
                   {!c.fichaConfirmadaEn && !c.enCola && (
                     <Button
-                      variant="outlined"
+                      variant={reenviar ? 'contained' : 'outlined'}
                       size="small"
                       disabled={trabajando}
                       onClick={() => void invitar([c.id])}

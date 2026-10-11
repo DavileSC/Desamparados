@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Alert, Box, Skeleton, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
@@ -10,7 +10,7 @@ import Boton from '../../../components/Boton'
 import CampoContrasena from '../../../components/CampoContrasena'
 import { datosInvitacion, estrenarCuenta } from '../../../lib/api/auth'
 import { ErrorDeApi } from '../../../lib/api/cliente'
-import { contrasenaNueva } from '../../../lib/politicaDeContrasena'
+import { LONGITUD_MINIMA, contrasenaNueva } from '../../../lib/politicaDeContrasena'
 import { useAuthStore } from '../../altas/auth/store'
 import { laCorporacion, mayuscula } from '../../../domain/articulos'
 import { site } from '../../../config/site'
@@ -29,6 +29,7 @@ export default function PrimerAccesoPage() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const entrarSesion = useAuthStore((s) => s.entrarSesion)
+  const pendiente = useAuthStore((s) => s.hermano?.primerAccesoPendiente === true)
   const token = params.get('token') ?? ''
   const valido = ENLACE.test(token)
 
@@ -55,6 +56,10 @@ export default function PrimerAccesoPage() {
       setError('root', { message: e instanceof ErrorDeApi ? e.message : 'No se ha podido guardar la contraseña. Inténtalo otra vez.' })
     }
   }
+
+  // Sin enlace pero ya dentro y a medias (volvió atrás, o guardó esta
+  // dirección): su sitio es la revisión, no «El enlace ya no vale».
+  if (!token && pendiente) return <Navigate to="/primer-acceso/ficha" replace />
 
   const caducado = !valido || invitacion.isError
   const nombre = invitacion.data?.nombre
@@ -95,7 +100,7 @@ export default function PrimerAccesoPage() {
               <TextField label="Tu correo (con él entrarás)" value={invitacion.data?.email ?? ''} autoComplete="username" slotProps={{ input: { readOnly: true }, inputLabel: { shrink: true } }} fullWidth />
               {/* Sin «Repítela»: el ojo del campo deja ver lo escrito, y una
                   segunda casilla era un paso más en una entrada que ya es larga. */}
-              <CampoContrasena label="Crea tu contraseña" autoComplete="new-password" fullWidth error={!!errors.password} helperText={errors.password?.message ?? 'Pulsa el ojo para ver lo que escribes.'} {...register('password')} />
+              <CampoContrasena label="Crea tu contraseña" autoComplete="new-password" fullWidth error={!!errors.password} helperText={errors.password?.message ?? `Al menos ${LONGITUD_MINIMA} caracteres. Pulsa el ojo para ver lo que escribes.`} {...register('password')} />
               {errors.root?.message && <Alert severity="error">{errors.root.message}</Alert>}
               <Boton type="submit" fullWidth disabled={isSubmitting || !invitacion.data}>Empezar</Boton>
             </Box>

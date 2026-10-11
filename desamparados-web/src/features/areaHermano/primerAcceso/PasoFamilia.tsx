@@ -70,7 +70,8 @@ export default function PasoFamilia({ familia, titular, conCuotas, onGuardada, o
     <>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
         <Typography role="status" sx={{ fontSize: 15, color: 'text.secondary' }}>
-          {listos === familia.length ? (familia.length === 1 ? 'Lista.' : 'Todos, listos.') : `${listos} de ${familia.length} listos`}
+          {/* Con uno solo, «0 de 1 listos» no es castellano. */}
+          {listos === familia.length ? (familia.length === 1 ? 'Lista.' : 'Todos, listos.') : familia.length === 1 ? 'Falta por completar.' : `${listos} de ${familia.length} listos`}
         </Typography>
         {familia.length > 1 && !todosHijos && (
           <Boton appVariant="claro" onClick={() => void ponerParentesco(familia.filter((f) => f.parentesco !== 'HIJO'), 'HIJO')} disabled={guardando.size > 0} sx={{ minHeight: 44, px: 2.25, fontSize: 15 }}>
@@ -95,7 +96,10 @@ export default function PasoFamilia({ familia, titular, conCuotas, onGuardada, o
               <Box sx={{ minWidth: 0 }}>
                 <Typography component="h2" sx={{ fontSize: { xs: 19, md: 21 }, fontWeight: 600 }}>
                   {nombreCompleto(f)}
-                  {f.numeroHermano && <Box component="span" sx={{ fontSize: 14, fontWeight: 500, color: 'text.secondary', ml: 1 }}>n.º {f.numeroHermano}</Box>}
+                  {/* El espacio va en el texto, no solo en el margen: sin él el nombre
+                      accesible salía pegado («Ruizn.º 307»). Y duro, para que el número
+                      no se quede solo en la línea siguiente en el móvil. */}
+                  {f.numeroHermano && <>{' '}<Box component="span" sx={{ fontSize: 14, fontWeight: 500, color: 'text.secondary', ml: 0.5, whiteSpace: 'nowrap' }}>n.º{'\u00a0'}{f.numeroHermano}</Box></>}
                 </Typography>
                 <Typography sx={{ fontSize: { xs: 14, md: 15 }, color: 'text.secondary', mt: 0.5 }}>{detalle}</Typography>
               </Box>

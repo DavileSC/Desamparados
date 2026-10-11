@@ -32,6 +32,14 @@ export interface Tarea {
   accion: { texto: string; href: string } | null
   /** Solo en los avisos de la junta: se dan por hecho desde el propio Inicio. */
   aviso?: { id: number; creadoPorId: number | null }
+  /** La ficha del censo de la que trata, si trata de una: el aviso enlaza a ella. */
+  hermanoId?: number
+  /**
+   * El texto se lee entero, sin recortar en una línea: el de «no es de mi
+   * familia» lo escribe el servidor con el número y los dos nombres, y
+   * cortado no decía de qué ficha se trataba.
+   */
+  entero?: boolean
   /** De qué módulo es el asunto: apagado, no se enseña. Los avisos de la junta son del núcleo. */
   modulo: Modulo
 }
@@ -73,6 +81,8 @@ export function tareaDeAviso(aviso: AvisoJunta, hoy: Date = new Date()): Tarea {
     roles: aviso.para ? [aviso.para, 'ADMIN', 'HERMANO_MAYOR'] : JUNTA,
     accion: null,
     aviso: { id: aviso.id, creadoPorId: aviso.creadoPorId },
+    ...(aviso.hermanoId !== null && { hermanoId: aviso.hermanoId }),
+    entero: aviso.creadorRol === 'USER',
     modulo: 'nucleo',
   }
 }

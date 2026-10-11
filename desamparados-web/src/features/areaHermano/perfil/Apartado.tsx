@@ -1,4 +1,4 @@
-import { useId, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type FormEvent, type ReactNode, type RefObject } from 'react'
 import { Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/material'
 import { visuallyHidden } from '@mui/utils'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -24,15 +24,35 @@ interface Props {
   candado?: ReactNode
   /** El título lo pone ya la pantalla de alrededor: solo para lectores de pantalla. */
   tituloOculto?: boolean
+  /** El formulario, para que quien valida pueda llevar el foco al campo que falla. */
+  refFormulario?: RefObject<HTMLFormElement | null>
 }
+
+/** Lo primero que se puede escribir o elegir; el `input` oculto de un desplegable de MUI no cuenta. */
+const PRIMER_CAMPO = 'input:not([type="hidden"]):not([disabled]):not([aria-hidden="true"]):not([tabindex="-1"]), textarea:not([disabled]), [role="combobox"]'
 
 /**
  * Un apartado de la ficha: se lee y, si se puede, se edita él solo, sin tocar
  * los demás. Cada uno guarda sus propios campos.
  */
-export default function Apartado({ titulo, vista, formulario, editando, onEditar, onCancelar, onGuardar, guardando = false, error, hecho, candado, tituloOculto = false }: Props) {
+export default function Apartado({ titulo, vista, formulario, editando, onEditar, onCancelar, onGuardar, guardando = false, error, hecho, candado, tituloOculto = false, refFormulario }: Props) {
   const idTitulo = useId()
   const enviar = (evento: FormEvent) => { evento.preventDefault(); onGuardar?.() }
+  const propio = useRef<HTMLFormElement>(null)
+  const formularioRef = refFormulario ?? propio
+  const botonEditar = useRef<HTMLButtonElement>(null)
+
+  // Al abrir la edición, el foco al primer campo; al cerrarla (guarde o
+  // cancele), de vuelta al lápiz. Sin esto se quedaba en un botón que ya no
+  // existe y el lector de pantalla volvía al principio de la página. Solo en
+  // el cambio: un apartado que nace abierto (la revisión) no roba el foco.
+  const antes = useRef(editando)
+  useEffect(() => {
+    if (antes.current === editando) return
+    antes.current = editando
+    if (editando) formularioRef.current?.querySelector<HTMLElement>(PRIMER_CAMPO)?.focus()
+    else botonEditar.current?.focus()
+  }, [editando, formularioRef])
 
   return (
     <TarjetaCristal component="section" aria-labelledby={idTitulo} sx={{ p: { xs: 2.5, md: 3 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -44,7 +64,7 @@ export default function Apartado({ titulo, vista, formulario, editando, onEditar
         {!editando && formulario && onEditar && (
           // En el móvil, solo el lápiz: con la palabra, títulos como «Datos
           // personales» se partían en dos líneas.
-          <Button size="small" startIcon={<EditOutlinedIcon />} onClick={onEditar} aria-label={`Editar ${titulo.toLowerCase()}`} sx={{
+          <Button ref={botonEditar} size="small" startIcon={<EditOutlinedIcon />} onClick={onEditar} aria-label={`Editar ${titulo.toLowerCase()}`} sx={{
             color: 'primary.light', fontWeight: 600, minHeight: 40, flexShrink: 0,
             minWidth: { xs: 40, sm: 64 }, '& .MuiButton-startIcon': { mx: { xs: 0, sm: undefined } },
           }}>
@@ -54,11 +74,12 @@ export default function Apartado({ titulo, vista, formulario, editando, onEditar
       </Box>
 
       {editando && formulario ? (
-        <Box component="form" noValidate onSubmit={enviar} sx={{ display: 'flex', flexDirection: 'column', gap: 2.25 }}>
+        <Box component="form" ref={formularioRef} noValidate onSubmit={enviar} sx={{ display: 'flex', flexDirection: 'column', gap: 2.25 }}>
           {formulario}
           {error && <Alert severity="error">{error}</Alert>}
           <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
-            <Button onClick={onCancelar} disabled={guardando} sx={{ color: 'text.secondary' }}>Cancelar</Button>
+            {/* Con el mismo estilo de letra que «Guardar»: en mayúsculas parecía de otra pantalla. */}
+            <Button onClick={onCancelar} disabled={guardando} sx={{ color: 'text.secondary', textTransform: 'none', letterSpacing: '0.01em', fontSize: 15, fontWeight: 600 }}>Cancelar</Button>
             <Boton type="submit" disabled={guardando} sx={{ py: 1.25, px: 3 }}>
               {guardando ? <CircularProgress size={20} color="inherit" aria-label="Guardando" /> : 'Guardar'}
             </Boton>

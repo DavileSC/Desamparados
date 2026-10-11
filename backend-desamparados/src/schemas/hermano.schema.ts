@@ -1,5 +1,5 @@
 import { type } from 'arktype';
-import { dni, textoRequerido, textoOpcional, telefono, email, iban, password, ordenQuery } from '../config/common';
+import { dni, textoRequerido, textoOpcional, telefono, email, iban, password, ordenQuery, codigoPostal } from '../config/common';
 import { ORDENES_CENSO } from '../domain/ordenacion.js';
 
 // ==========================================
@@ -17,14 +17,19 @@ const datosProcesionSchema = type({
 const diaOpcional = type("string").matching(/^\d{4}-\d{2}-\d{2}$/).describe("una fecha AAAA-MM-DD").or("null");
 const opcional = textoOpcional.or("null");
 
-// El cuerpo base para actualizar: lo que el hermano edita de su ficha o de la
-// de alguien a su cargo. `null` vacía un dato opcional.
+// El cuerpo base para actualizar una ficha, común al hermano y a Secretaría.
+// `null` vacía un dato opcional.
 //
 // `apellidos` juntos se sigue admitiendo por los clientes de antes; los
 // formularios nuevos mandan los dos por separado y el servidor los compone.
+// Sin `<>`, como todo texto libre: se enseñan en el CMS y en los correos.
+//
+// La dirección, la población y el código postal admiten aquí el blanco porque
+// Secretaría guarda fichas del censo antiguo que no los tienen (el formulario
+// del CMS los manda vacíos). El hermano no: ver `updateProfileSchema`.
 const baseUpdateBody = type({
     "nombre?": textoRequerido,
-    "apellidos?": "string",
+    "apellidos?": textoOpcional,
     "primerApellido?": textoRequerido,
     "segundoApellido?": opcional,
     "fechaNacimiento?": type("string").matching(/^\d{4}-\d{2}-\d{2}$/),
@@ -37,9 +42,9 @@ const baseUpdateBody = type({
     "telefonoFijo?": telefono.or("null"),
     "email?": email,
     "email2?": email.or("null"),
-    "direccion?": "string",
-    "poblacion?": "string",
-    "codigoPostal?": "string",
+    "direccion?": textoOpcional,
+    "poblacion?": textoOpcional,
+    "codigoPostal?": textoOpcional,
     "provincia?": opcional,
     "comunidadAutonoma?": opcional,
     "pais?": opcional,
@@ -68,7 +73,7 @@ const baseUpdateBody = type({
 export const addProfileSchema = type({
     body: type({
         nombre: textoRequerido,
-        "apellidos?": "string",
+        "apellidos?": textoOpcional,
         "primerApellido?": textoRequerido,
         "segundoApellido?": opcional,
         fechaNacimiento: type("string").matching(/^\d{4}-\d{2}-\d{2}$/),
@@ -84,8 +89,18 @@ export const addProfileSchema = type({
 
 // 2. Actualizar mi propio perfil o el de un dependiente
 // SIN datos cofrades
+//
+// Lo que el hermano escribe se exige como en el alta: si manda la dirección,
+// la población o el código postal, no pueden ir en blanco (son obligatorios
+// de la ficha y la web ya los pide), y el código postal es el de 5 cifras del
+// alta. La tarjeta no la elige él: es de ventanilla, y la web no la ofrece.
 export const updateProfileSchema = type({
-    body: baseUpdateBody
+    body: baseUpdateBody.merge({
+        "direccion?": textoRequerido,
+        "poblacion?": textoRequerido,
+        "codigoPostal?": codigoPostal,
+        "formaPagoPref?": "'EFECTIVO' | 'BIZUM' | 'TRANSFERENCIA' | 'DOMICILIACION'",
+    })
 });
 
 const fechaDia = type("string").matching(/^\d{4}-\d{2}-\d{2}$/).describe("una fecha AAAA-MM-DD");
