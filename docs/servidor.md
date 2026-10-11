@@ -173,15 +173,18 @@ sudo grep -E '^[A-Z_]+=' /srv/desamparados/.env | sed -E 's/=.+/=****/; s/=$/= (
 
 Y los datos de la corporación, que tampoco están en git
 (`instalacion/datos-entidad.json`, ver «Los datos de la corporación» en
-`despliegue.md`). La API los lee del volumen al arrancar y sin ellos no
-arranca; `desplegar-desamparados` se para antes si faltan. Son los mismos que
-la variable `DATOS_ENTIDAD` de GitHub (paso 6), con la que se compila la web.
+`despliegue.md`). La API y la web los leen del volumen al arrancar y sin ellos
+no arrancan; `desplegar-desamparados` se para antes si faltan, y después
+comprueba que la web sirve `/instalacion.js`. Ninguna imagen los lleva: tras
+cambiarlos basta `docker compose -f compose.yaml -f compose.servidor.yaml
+restart api web`.
 
 **Se sube con `scp`, no pegándolo en `nano`.** El 08-10-2026 se pegó desde
 una consola de Windows y llegó con los acentos estropeados («M├ílaga»). El
 JSON seguía siendo válido, así que nada falló: la API arrancó y los correos,
 los PDF y el emisor del 2FA salieron con esos caracteres hasta el día
-siguiente. La web no se enteró, porque se compila con la variable de GitHub.
+siguiente. Hoy los leería también la web, al arrancar: el nombre estropeado
+saldría además en los títulos y en los textos legales.
 
 Desde PowerShell, en la carpeta del proyecto del PC:
 
@@ -261,12 +264,11 @@ repository secret:
   `sudo shred -u /home/despliegue/clave-actions`.
 - **`VPS_HUELLA`**: lo que sale de `ssh-keyscan -t ed25519 51.255.45.220 2>/dev/null`.
 
-Y en la pestaña **Variables** de esa misma página (no es un secreto: todo sale
-en la web), **`DATOS_ENTIDAD`**: el contenido entero de
-`instalacion/datos-entidad.json`. `desplegar.yml` lo escribe antes de construir
-la imagen de la web, que los lleva compilados dentro; sin la variable, el
-despliegue se para. Al cambiar los datos hay que cambiar los dos: la variable
-(la web) y el fichero del servidor (la API).
+No hace falta ninguna variable con los datos de la corporación: las imágenes
+no los llevan, y la API y la web los leen del fichero del servidor al
+arrancar. (Hasta octubre de 2026 la web los compilaba dentro y había una
+variable `DATOS_ENTIDAD` en la pestaña **Variables**; si sigue ahí, sobra y se
+borra tras el primer despliegue bueno sin ella.)
 
 ### 7. El subdominio en el nginx del sistema
 

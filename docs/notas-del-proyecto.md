@@ -142,11 +142,35 @@ mata en cuanto `head` cierra la tubería. Para dejarlo vivo, redirigir a un fich
 de log.
 
 **Sin `instalacion/datos-entidad.json` no arranca nada**: ni la API, ni
-`npm run dev` de la web, ni el build. Está fuera de git, así que tras clonar, o
-en el PC que haga el `git pull` en que salió de git, hay que crearlo (el
-comando está en «Los datos de la corporación», en `despliegue.md`). Ese mismo
-pull borra además `index.html`, el manifest y `robots.txt` de la web, que
-ahora se generan solos con `npm run dev` o `npm run identidad`.
+`npm run dev` de la web, ni el contenedor de la web. El build sí (`npm run
+build`): la web compilada no lleva los datos, los lee al cargar de
+`/instalacion.js`. Está fuera de git, así que tras clonar hay que crearlo (el
+comando está en «Los datos de la corporación», en `despliegue.md`).
+
+**El pull que trajo la etapa 2 de la Fase 8 (octubre de 2026) choca si no se
+borran antes** `desamparados-web/index.html`, `public/manifest.json` y
+`public/robots.txt`: eran los que generaba `generar-identidad.mjs`, sin
+seguir por git, y ahora `index.html` está en git (es la plantilla, con sus
+marcas `{{…}}`). Son reproducibles; se borran y se hace el pull. El manifest
+y `robots.txt` ya no se generan en la carpeta: los sirve el plugin de Vite en
+desarrollo, y una prueba falla si vuelven a aparecer en `public/`.
+
+**La plantilla no se edita pensando en que la rellene `vite build`.** El
+`index.html` de `dist/` sale con las marcas y lo rellena
+`scripts/instalacion-web.mjs` al arrancar el contenedor. Dos trampas que
+costaron verlas:
+
+- **`gzip_static` sirve el `.gz` que encuentra al lado.** El build comprimía
+  todo `dist/`, también `index.html`: el navegador habría recibido la
+  plantilla con `{{nombre}}` aunque el `index.html` de al lado estuviera
+  relleno. Por eso el `find … gzip` de `web.Dockerfile` excluye `index.html`
+  y la orden escribe su `.gz` (`--comprimir`).
+- **El entrypoint de nginx solo lanza `/docker-entrypoint.d/` si el CMD
+  empieza por `nginx`.** Con el `sh -c "while …; exec nginx"` de antes, el
+  guion de los datos no se habría ejecutado nunca y la web habría salido sin
+  ellos. El CMD es `["nginx", "-g", "daemon off;"]` y el bucle que recarga
+  el certificado vive en `90-recargar-certificado.sh`. No volver a envolverlo
+  en un `sh -c`.
 
 ---
 

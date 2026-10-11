@@ -1,7 +1,8 @@
 // Dónde están los datos de la corporación de ESTA instalación, para todo lo que
 // los lee en Node: la API, la siembra, los guiones de la web y la configuración
-// de Vite. La web, en el navegador, los recibe por el alias
-// `@instalacion/datos-entidad.json`, que Vite resuelve con esta misma función.
+// de Vite y el arranque del contenedor de la web. La web, en el navegador, los
+// recibe en `window.__INSTALACION__` (/instalacion.js), que escribe con esta
+// misma función desamparados-web/scripts/instalacion-web.mjs.
 //
 // El fichero de cada instalación vive fuera de git (instalacion/, junto al
 // .env): si estuviera versionado, un «git pull» chocaría con los datos de cada
