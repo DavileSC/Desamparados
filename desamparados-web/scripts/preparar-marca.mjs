@@ -137,7 +137,8 @@ if (op.partida) {
   mkdirSync(dirname(destino), { recursive: true })
   await sharp(origen)
     .resize({ height: Math.min(height, ALTO_WEB.maximo), withoutEnlargement: true })
-    .png({ palette: true, quality: 90, effort: 10, compressionLevel: 9 })
+    // Calidad 80: a 300 px no se distingue de 90 y baja de ~30 a ~25 KB (el escudo de Desamparados).
+    .png({ palette: true, quality: 80, effort: 10, compressionLevel: 9 })
     .toFile(destino)
   const { width: ancho, height: alto } = await sharp(destino).metadata()
   console.log(`· ${destino}: ${ancho}×${alto}, ${kb(destino)} (el original, ${kb(origen)})`)

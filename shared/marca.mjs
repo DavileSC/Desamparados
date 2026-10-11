@@ -283,7 +283,7 @@ function comprobar(entrada, bytes, errores, avisos) {
     avisos.push(`${f}: pesa ${Math.round(bytes.length / KB)} KB (lo recomendable es hasta ${Math.round(entrada.pesoAviso / KB)} KB); va en ${entrada.para}.`)
   }
   if (entrada.transparencia === 'si' && !cabecera.transparencia) avisos.push(`${f}: no tiene transparencia; se verá un recuadro alrededor del escudo.`)
-  if (entrada.transparencia === 'no' && cabecera.transparencia) avisos.push(`${f}: tiene transparencia; iOS la pinta de negro. Mejor un fondo opaco.`)
+  if (entrada.transparencia === 'no' && cabecera.transparencia) avisos.push(`${f}: tiene canal de transparencia (alfa), y iOS pinta de negro lo transparente. Si es opaco, guárdalo sin canal alfa (los iconos de «npm run marca -- --escudo» ya salen así).`)
   return cabecera
 }
 
