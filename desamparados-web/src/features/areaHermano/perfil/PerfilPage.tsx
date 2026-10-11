@@ -61,7 +61,8 @@ export default function PerfilPage() {
   const botones = useRef<(HTMLButtonElement | null)[]>([])
   // Una edición a medias en el apartado abierto. Cambiar de pestaña, de ficha
   // o de pantalla lo desmonta y se perdía lo escrito sin avisar: ahora se
-  // pregunta antes, como en Hazte hermano y en las fichas del CMS. Las
+  // pregunta antes, como en Hazte hermano y en las fichas del CMS; también con
+  // algo escrito en la contraseña, que se pierde igual. Las
   // pestañas y la ficha van en la URL, así que basta con mirar la navegación.
   const [sucio, setSucio] = useState(false)
   const bloqueo = useBlocker(({ currentLocation, nextLocation }) =>
@@ -247,13 +248,13 @@ export default function PerfilPage() {
                 {abierta.clave === 'hermano' && <VidaDeHermano ficha={ficha} onGuardada={guardada} onSucio={setSucio} />}
                 {abierta.clave === 'cuota' && <CuotaYPago ficha={ficha} onGuardada={guardada} onSucio={setSucio} />}
                 {/* De la cuenta, no de la ficha: es la misma sea cual sea la persona elegida. */}
-                {abierta.clave === 'contrasena' && <ApartadoContrasena />}
+                {abierta.clave === 'contrasena' && <ApartadoContrasena onSucio={setSucio} />}
               </Box>
             </>
           )}
 
           {/* Sin ficha que enseñar, la contraseña de la cuenta sigue a mano. */}
-          {!cargando && !ficha && <Box sx={{ maxWidth: 640 }}><ApartadoContrasena /></Box>}
+          {!cargando && !ficha && <Box sx={{ maxWidth: 640 }}><ApartadoContrasena onSucio={setSucio} /></Box>}
         </ContenedorDePagina>
       </SeccionAnimada>
     </>

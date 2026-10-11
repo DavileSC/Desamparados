@@ -448,6 +448,42 @@ describe('PerfilPage: cambiar la contraseña', () => {
     expect(llamadasA(simulado, '/auth/me')).toHaveLength(0)
   })
 
+  it('con algo escrito en la contraseña, cambiar de pestaña pregunta antes y no lo pierde', async () => {
+    const user = userEvent.setup()
+    simular(() => conCuerpo({ message: 'ok' }))
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
+    await screen.findByText('Ana Pérez Ruiz')
+    await user.click(screen.getByRole('tab', { name: 'Contraseña' }))
+    await user.click(screen.getByRole('button', { name: 'Cambiar' }))
+    // Basta con uno de los tres campos: la repetición sola también es trabajo.
+    await user.type(screen.getByLabelText('Repite la contraseña nueva'), 'Otra')
+    await user.click(screen.getByRole('tab', { name: 'Datos personales' }))
+
+    expect(await screen.findByRole('dialog', { name: 'Hay cambios sin guardar' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Seguir editando' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.getByLabelText('Repite la contraseña nueva')).toHaveValue('Otra')
+    expect(screen.getByRole('tab', { name: 'Contraseña' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('con la contraseña abierta pero vacía, o ya cambiada, cambiar de pestaña no pregunta', async () => {
+    const user = userEvent.setup()
+    simular(() => conCuerpo({ message: 'Contraseña cambiada.' }))
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
+    await screen.findByText('Ana Pérez Ruiz')
+    await user.click(screen.getByRole('tab', { name: 'Contraseña' }))
+    await user.click(screen.getByRole('button', { name: 'Cambiar' }))
+    await user.click(screen.getByRole('tab', { name: 'Datos personales' }))
+    expect(screen.getByRole('tab', { name: 'Datos personales' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await rellenar(user)
+    expect(await screen.findByText('Contraseña cambiada.')).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: 'Datos personales' }))
+    expect(screen.getByRole('tab', { name: 'Datos personales' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
   it('el error de un campo va bajo su casilla', async () => {
     const user = userEvent.setup()
     simular(() => conCuerpo({ error: 'Error de validación', errors: [{ field: 'nueva', message: 'La contraseña es demasiado común' }] }, 400))

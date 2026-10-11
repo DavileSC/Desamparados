@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useEffect, useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Alert, Box, Button, Stack } from '@mui/material'
 import CampoContrasena from '../../../components/CampoContrasena'
@@ -16,6 +16,11 @@ interface Props {
   onCancelar?: () => void
   /** Tras cambiarla, con el mensaje del servidor. */
   onHecho?: (mensaje: string) => void
+  /**
+   * Si hay algo escrito, para que quien lo contiene pregunte antes de tirarlo
+   * (el área de hermanos, al cambiar de pestaña o de pantalla).
+   */
+  onSucio?: (sucio: boolean) => void
 }
 
 const VACIO: CambiarContrasenaFormData = { actual: '', nueva: '', confirmacion: '' }
@@ -29,14 +34,24 @@ const CAMPOS = ['actual', 'nueva'] as const
  * navegador, así que al terminar se vuelve a preguntar por ellas: lo que tenía
  * el store eran las de antes del corte.
  */
-export default function CambiarContrasena({ variante, onCancelar, onHecho }: Props) {
+export default function CambiarContrasena({ variante, onCancelar, onHecho, onSucio }: Props) {
   const ponerSesiones = useAuthStore((state) => state.ponerSesiones)
   const [error, setError] = useState<string | null>(null)
   const [hecho, setHecho] = useState<string | null>(null)
-  const { register, handleSubmit, reset, setError: marcarCampo, formState: { errors, isSubmitting } } = useForm<CambiarContrasenaFormData>({
+  const { register, handleSubmit, reset, control, setError: marcarCampo, formState: { errors, isSubmitting } } = useForm<CambiarContrasenaFormData>({
     resolver: zodResolver(cambiarContrasenaSchema),
     defaultValues: VACIO,
   })
+
+  // Cualquiera de los tres cuenta: aunque solo esté la actual, volver a
+  // escribirla tras perderla por un clic en otra pestaña es lo que se evita.
+  const escritos = useWatch({ control })
+  const sucio = Object.values(escritos).some((valor) => !!valor)
+  useEffect(() => {
+    onSucio?.(sucio)
+    // Al cerrarse (Cancelar, hecho, otra pestaña) ya no queda nada a medias.
+    return () => onSucio?.(false)
+  }, [sucio, onSucio])
 
   const enviar = async (datos: CambiarContrasenaFormData) => {
     setError(null)

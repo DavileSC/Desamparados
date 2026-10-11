@@ -9,7 +9,7 @@ import CambiarContrasena from '../../altas/auth/CambiarContrasena'
  * ficha. Va aparte de ellos porque es de la cuenta y no de una ficha: no
  * cambia al elegir otra persona de la familia.
  */
-export default function ApartadoContrasena() {
+export default function ApartadoContrasena({ onSucio }: { onSucio?: (sucio: boolean) => void }) {
   const idTitulo = useId()
   const [abierto, setAbierto] = useState(false)
   const [hecho, setHecho] = useState<string | null>(null)
@@ -28,7 +28,7 @@ export default function ApartadoContrasena() {
         )}
       </Box>
       {abierto ? (
-        <CambiarContrasena variante="area" onCancelar={() => setAbierto(false)} onHecho={(mensaje) => { setHecho(mensaje); setAbierto(false) }} />
+        <CambiarContrasena variante="area" onCancelar={() => setAbierto(false)} onHecho={(mensaje) => { setHecho(mensaje); setAbierto(false) }} onSucio={onSucio} />
       ) : (
         <>
           <Typography sx={{ fontSize: 15, color: 'text.secondary', maxWidth: '62ch' }}>
