@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!--
+      Una sola web para cualquier corporación: lo que dice quién es no se
+      compila dentro. Las marcas entre llaves dobles de este fichero (nunca
+      en un comentario: se publicarían tal cual) y /instalacion.js
+      (window.__INSTALACION__, que lee src/config/instalacion.ts) los escribe
+      scripts/instalacion-web.mjs con instalacion/datos-entidad.json: al
+      arrancar el contenedor de la web y, en desarrollo, el plugin de Vite.
+
+      Script clásico, sin defer y antes que el código de la web: tiene que
+      estar ejecutado cuando arranque main.tsx. Vite avisa al construir de que
+      no lo empaqueta; es lo que se quiere.
+    -->
+    <script src="/instalacion.js"></script>
+
+    <!--
       El escudo del Grupo, sobre la tinta del sitio. Los genera
       `scripts/generar-iconos.mjs` a partir de `images/escudo-grupo.png`, que es
       blanco sobre transparente y como icono suelto no se vería.
@@ -55,8 +69,8 @@
       Está aquí y no en React por lo mismo que las etiquetas de arriba: así
       viaja en el HTML tal cual, sin depender de que nadie ejecute JavaScript.
       Aquí va solo lo que no cambia: el nombre, la denominación jurídica y la
-      dirección de la web, de `instalacion/datos-entidad.json` al generar
-      index.html (scripts/generar-identidad.mjs), los mismos que lee
+      dirección de la web, de `instalacion/datos-entidad.json` al rellenar
+      este fichero (scripts/instalacion-web.mjs), los mismos que lee
       `src/config/site.ts`. El correo, el teléfono, la sede y los perfiles se
       cambian en el CMS, y escritos aquí se quedarían viejos: los añade la
       portada (components/DatosEstructurados.tsx), que Google también lee.

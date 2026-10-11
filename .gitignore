@@ -51,9 +51,8 @@ graphify-out/.graphify_python
 graphify-out/.graphify_root
 
 # Lo de cada instalación: los datos de la corporación (se crean copiando
-# shared/datos-entidad.ejemplo.json) y lo que la web genera de ellos antes de
-# dev y de build. En git chocarían con cada cliente en cada «git pull».
+# shared/datos-entidad.ejemplo.json). En git chocarían con cada cliente en cada
+# «git pull». Lo que la web escribe de ellos (index.html relleno, manifest,
+# robots.txt, instalacion.js) ya no se genera en la carpeta de la web: lo
+# escribe el contenedor al arrancar y, en desarrollo, lo sirve el plugin de Vite.
 /instalacion/
-desamparados-web/index.html
-desamparados-web/public/manifest.json
-desamparados-web/public/robots.txt

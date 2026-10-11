@@ -5,12 +5,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/generar-identidad.mjs",
     "dev": "vite",
-    "identidad": "node scripts/generar-identidad.mjs",
     "sitemap": "node scripts/generar-sitemap.mjs",
     "iconos": "node scripts/generar-iconos.mjs",
-    "prebuild": "node scripts/generar-identidad.mjs && node scripts/generar-sitemap.mjs",
+    "prebuild": "node scripts/generar-sitemap.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
