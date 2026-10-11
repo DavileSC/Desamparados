@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useLocation } from 'react-router-dom'
 import { renderWithProviders } from '../../../../test/test-utils'
 import PerfilPage from '../PerfilPage'
 import { FICHAS_POR_FAMILIA } from '../../../../lib/api/perfil'
@@ -56,7 +57,7 @@ describe('PerfilPage', () => {
   it('pinta la ficha por apartados en pestañas, con lo de Secretaría a la vista pero sin editar', async () => {
     const user = userEvent.setup()
     responder([ficha(1, 'Ana')])
-    renderWithProviders(<PerfilPage />)
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
 
     expect(await screen.findByText('Ana Pérez Ruiz')).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Datos personales' })).toHaveAttribute('aria-selected', 'true')
@@ -82,7 +83,7 @@ describe('PerfilPage', () => {
    */
   it('pide la familia entera, no una página corta', async () => {
     const simulado = responder([ficha(1, 'Ana'), ficha(2, 'Bruno', { esTitular: false }), ficha(3, 'Carla', { esTitular: false })])
-    renderWithProviders(<PerfilPage />)
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
 
     await waitFor(() => expect(simulado.mock.calls.length).toBeGreaterThan(0))
     const pedida = new URL(String(simulado.mock.calls[0]?.[0]), 'http://localhost')
@@ -99,7 +100,7 @@ describe('PerfilPage', () => {
       ficha(2, 'Bruno', { esTitular: false, parentesco: 'SOBRINO', fechaNacimiento: '2014-06-01T00:00:00.000Z', numeroHermano: 118 }),
       ficha(1, 'Ana'),
     ])
-    renderWithProviders(<PerfilPage />)
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
 
     expect(await screen.findByText('Ana Pérez Ruiz')).toBeInTheDocument()
     const selector = screen.getByRole('combobox', { name: /ficha que estás viendo/i })
@@ -116,7 +117,7 @@ describe('PerfilPage', () => {
   it('cada apartado guarda solo sus campos, y el del sobrino va a su ficha', async () => {
     const user = userEvent.setup()
     const simulado = responder([ficha(1, 'Ana'), ficha(2, 'Bruno', { esTitular: false, parentesco: 'SOBRINO', fechaNacimiento: '2014-06-01T00:00:00.000Z' })])
-    renderWithProviders(<PerfilPage />, { ruta: '/area-hermano/perfil?ficha=2&apartado=contacto' })
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true, ruta: '/area-hermano/perfil?ficha=2&apartado=contacto' })
 
     await screen.findByText('Bruno Pérez Ruiz')
     await user.click(screen.getByRole('button', { name: /editar contacto y domicilio/i }))
@@ -138,7 +139,7 @@ describe('PerfilPage', () => {
   it('la cuenta bancaria no se reenvía si no se escribe una nueva, y una mal copiada no se guarda', async () => {
     const user = userEvent.setup()
     const simulado = responder([ficha(1, 'Ana')])
-    renderWithProviders(<PerfilPage />, { ruta: '/area-hermano/perfil?apartado=cuota' })
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true, ruta: '/area-hermano/perfil?apartado=cuota' })
 
     await screen.findByText('Ana Pérez Ruiz')
     await user.click(screen.getByRole('button', { name: /editar cuota y pago/i }))
@@ -157,7 +158,7 @@ describe('PerfilPage', () => {
   // Sin Procesión ni Cuotas en línea (ni Remesas) instalados, esos dos apartados no existen.
   it('sin Procesión ni Cuotas en línea, no hay Vida de hermano ni Cuota y pago', async () => {
     responder([ficha(1, 'Ana')])
-    renderWithProviders(<PerfilPage />, { modulos: ['area-hermanos'] })
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true, modulos: ['area-hermanos'] })
 
     expect(await screen.findByText('Ana Pérez Ruiz')).toBeInTheDocument()
     expect(screen.getAllByRole('tab').map((t) => t.getAttribute('aria-label'))).toEqual(['Datos personales', 'Contacto y domicilio', 'Contraseña'])
@@ -166,7 +167,7 @@ describe('PerfilPage', () => {
   // Con remesas y sin pago en línea, el IBAN se carga en la domiciliación: el hermano tiene que poder cambiarlo.
   it('con Remesas, aunque no haya Cuotas en línea, está Cuota y pago', async () => {
     responder([ficha(1, 'Ana')])
-    renderWithProviders(<PerfilPage />, { modulos: ['area-hermanos', 'remesas'] })
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true, modulos: ['area-hermanos', 'remesas'] })
 
     expect(await screen.findByText('Ana Pérez Ruiz')).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Cuota y pago' })).toBeInTheDocument()
@@ -176,7 +177,7 @@ describe('PerfilPage', () => {
   // hijo como si fuera la suya. Ahora ve las de sus menores, y le ofrece hacerse hermano.
   it('sin ficha propia ofrece hacerse hermano y enseña las de sus menores', async () => {
     responder([ficha(2, 'Bruno', { esTitular: false, parentesco: 'HIJO', fechaNacimiento: '2015-01-01T00:00:00.000Z' })])
-    renderWithProviders(<PerfilPage />)
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
 
     expect(await screen.findByText(/no tienes ficha de hermano/i)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /hacerme hermano/i })).toHaveAttribute('href', '/area-hermano/familia')
@@ -194,7 +195,7 @@ describe('PerfilPage', () => {
     simulado.mockImplementation((_url: string, init: RequestInit = {}) => Promise.resolve(init.method === 'PUT'
       ? new Response(JSON.stringify({ error: mensaje }), { status, headers: { 'Content-Type': 'application/json' } })
       : json({ data: [ficha(1, 'Ana')], meta: { total: 1, page: 1, limit: FICHAS_POR_FAMILIA, totalPages: 1 } })))
-    renderWithProviders(<PerfilPage />)
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
 
     await screen.findByText('Ana Pérez Ruiz')
     await user.click(screen.getByRole('button', { name: /editar datos personales/i }))
@@ -214,7 +215,7 @@ describe('PerfilPage: lo que se arregló en la revisión de octubre', () => {
     const user = userEvent.setup()
     useAuthStore.setState({ status: 'listo', cms: null, hermano: { id: 9, email: 'cuenta@ejemplo.test', role: 'USER', perfiles: [] } })
     responder([ficha(1, 'Ana')])
-    renderWithProviders(<PerfilPage />, { ruta: '/area-hermano/perfil?apartado=contacto' })
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true, ruta: '/area-hermano/perfil?apartado=contacto' })
 
     expect(await screen.findByText('cuenta@ejemplo.test')).toBeInTheDocument()
     expect(screen.getByText('Correo con el que entras')).toBeInTheDocument()
@@ -228,7 +229,7 @@ describe('PerfilPage: lo que se arregló en la revisión de octubre', () => {
   it('un DNI guardado con la letra mal no impide guardar lo demás, ni se reenvía, y se marca en rojo', async () => {
     const user = userEvent.setup()
     const simulado = responder([ficha(1, 'Ana', { dni: '12345678A' })])
-    renderWithProviders(<PerfilPage />)
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
 
     await screen.findByText('Ana Pérez Ruiz')
     await user.click(screen.getByRole('button', { name: /editar datos personales/i }))
@@ -245,7 +246,7 @@ describe('PerfilPage: lo que se arregló en la revisión de octubre', () => {
   it('el error va en el campo que falla, con su motivo, y el foco a él', async () => {
     const user = userEvent.setup()
     const simulado = responder([ficha(1, 'Ana')])
-    renderWithProviders(<PerfilPage />, { ruta: '/area-hermano/perfil?apartado=contacto' })
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true, ruta: '/area-hermano/perfil?apartado=contacto' })
 
     await screen.findByText('Ana Pérez Ruiz')
     await user.click(screen.getByRole('button', { name: /editar contacto y domicilio/i }))
@@ -262,7 +263,7 @@ describe('PerfilPage: lo que se arregló en la revisión de octubre', () => {
   it('Editar lleva el foco al primer campo, y Cancelar lo devuelve al lápiz', async () => {
     const user = userEvent.setup()
     responder([ficha(1, 'Ana')])
-    renderWithProviders(<PerfilPage />)
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
 
     await screen.findByText('Ana Pérez Ruiz')
     await user.click(screen.getByRole('button', { name: /editar datos personales/i }))
@@ -274,7 +275,7 @@ describe('PerfilPage: lo que se arregló en la revisión de octubre', () => {
   it('guardar sin cambiar nada no manda nada ni dice «Guardado»', async () => {
     const user = userEvent.setup()
     const simulado = responder([ficha(1, 'Ana')])
-    renderWithProviders(<PerfilPage />)
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
 
     await screen.findByText('Ana Pérez Ruiz')
     await user.click(screen.getByRole('button', { name: /editar datos personales/i }))
@@ -288,7 +289,7 @@ describe('PerfilPage: lo que se arregló en la revisión de octubre', () => {
   it('pagando en efectivo no enseña la cuenta vacía, y si queda una se puede quitar', async () => {
     const user = userEvent.setup()
     const simulado = responder([ficha(1, 'Ana', { formaPagoPref: 'EFECTIVO', ibanEnmascarado: null })])
-    const { unmount } = renderWithProviders(<PerfilPage />, { ruta: '/area-hermano/perfil?apartado=cuota' })
+    const { unmount } = renderWithProviders(<PerfilPage />, { routerDeDatos: true, ruta: '/area-hermano/perfil?apartado=cuota' })
     await screen.findByText('Ana Pérez Ruiz')
     expect(screen.queryByText('IBAN')).not.toBeInTheDocument()
     expect(screen.queryByText('Titular de la cuenta')).not.toBeInTheDocument()
@@ -298,7 +299,7 @@ describe('PerfilPage: lo que se arregló en la revisión de octubre', () => {
     expect(putsDe(simulado)).toHaveLength(0)
 
     const otro = responder([ficha(1, 'Ana', { formaPagoPref: 'EFECTIVO' })])
-    renderWithProviders(<PerfilPage />, { ruta: '/area-hermano/perfil?apartado=cuota' })
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true, ruta: '/area-hermano/perfil?apartado=cuota' })
     await screen.findByText('Ana Pérez Ruiz')
     await user.click(screen.getByRole('button', { name: /editar cuota y pago/i }))
     await user.click(screen.getByRole('checkbox', { name: /Quitar la cuenta/ }))
@@ -306,10 +307,60 @@ describe('PerfilPage: lo que se arregló en la revisión de octubre', () => {
     await waitFor(() => expect(cuerpoDelPut(otro)).toEqual({ formaPagoPref: 'EFECTIVO', iban: null, titularidadCuenta: null, titularCuenta: null }))
   })
 
+  it('con una edición a medias, cambiar de pestaña pregunta antes y no pierde lo escrito', async () => {
+    const user = userEvent.setup()
+    responder([ficha(1, 'Ana')])
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
+
+    await screen.findByText('Ana Pérez Ruiz')
+    await user.click(screen.getByRole('button', { name: /editar datos personales/i }))
+    await user.type(screen.getByRole('textbox', { name: 'Profesión' }), 'Maestra')
+    await user.click(screen.getByRole('tab', { name: 'Contacto y domicilio' }))
+
+    expect(await screen.findByRole('dialog', { name: 'Hay cambios sin guardar' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Seguir editando' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.getByRole('textbox', { name: 'Profesión' })).toHaveValue('Maestra')
+    expect(screen.getByRole('tab', { name: 'Datos personales' })).toHaveAttribute('aria-selected', 'true')
+
+    await user.click(screen.getByRole('tab', { name: 'Contacto y domicilio' }))
+    await user.click(await screen.findByRole('button', { name: 'Salir sin guardar' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.getByRole('tab', { name: 'Contacto y domicilio' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('sin nada a medias, cambiar de pestaña no pregunta', async () => {
+    const user = userEvent.setup()
+    responder([ficha(1, 'Ana')])
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
+
+    await screen.findByText('Ana Pérez Ruiz')
+    await user.click(screen.getByRole('button', { name: /editar datos personales/i }))
+    await user.click(screen.getByRole('tab', { name: 'Contacto y domicilio' }))
+    expect(screen.getByRole('tab', { name: 'Contacto y domicilio' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('un ?ficha= que no es de la cuenta se quita de la dirección', async () => {
+    responder([ficha(1, 'Ana')])
+    function Direccion() { return <span data-testid="direccion">{useLocation().search}</span> }
+    renderWithProviders(<><PerfilPage /><Direccion /></>, { routerDeDatos: true, ruta: '/area-hermano/perfil?ficha=77&apartado=contacto' })
+
+    await screen.findByText('Ana Pérez Ruiz')
+    await waitFor(() => expect(screen.getByTestId('direccion')).toHaveTextContent('?apartado=contacto'))
+  })
+
+  it('el panel de la pestaña se alcanza con el tabulador', async () => {
+    responder([ficha(1, 'Ana')])
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
+    await screen.findByText('Ana Pérez Ruiz')
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('tabindex', '0')
+  })
+
   it('a un menor no se le pide estado civil ni profesión, y sus fotos son «sus fotos»', async () => {
     const user = userEvent.setup()
     responder([ficha(1, 'Ana'), ficha(2, 'Bruno', { esTitular: false, parentesco: 'HIJO', fechaNacimiento: '2015-01-01T00:00:00.000Z' })])
-    renderWithProviders(<PerfilPage />, { ruta: '/area-hermano/perfil?ficha=2' })
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true, ruta: '/area-hermano/perfil?ficha=2' })
 
     await screen.findByText('Bruno Pérez Ruiz')
     expect(screen.queryByText('Estado civil')).not.toBeInTheDocument()
@@ -351,7 +402,7 @@ describe('PerfilPage: cambiar la contraseña', () => {
   it('manda la actual y la nueva, enseña el mensaje y vuelve a pedir las sesiones', async () => {
     const user = userEvent.setup()
     const simulado = simular(() => conCuerpo({ message: 'Contraseña cambiada. Se han cerrado las sesiones abiertas en otros dispositivos.' }))
-    renderWithProviders(<PerfilPage />)
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
     await rellenar(user)
 
     expect(await screen.findByText(/Contraseña cambiada/)).toBeInTheDocument()
@@ -365,7 +416,7 @@ describe('PerfilPage: cambiar la contraseña', () => {
   it('no manda nada si la nueva no se repite igual', async () => {
     const user = userEvent.setup()
     const simulado = simular(() => conCuerpo({ message: 'ok' }))
-    renderWithProviders(<PerfilPage />)
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
     await rellenar(user, 'Otra-Clave-2026-Larga', 'Otra-Clave-2026-Larg')
 
     expect(await screen.findByText('Las contraseñas no coinciden')).toBeInTheDocument()
@@ -375,7 +426,7 @@ describe('PerfilPage: cambiar la contraseña', () => {
   it('la actual equivocada (400) se dice, y no se toma por una sesión caducada', async () => {
     const user = userEvent.setup()
     const simulado = simular(() => conCuerpo({ error: 'La contraseña actual no es correcta.' }, 400))
-    renderWithProviders(<PerfilPage />)
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
     await rellenar(user)
 
     expect(await screen.findByText('La contraseña actual no es correcta.')).toBeInTheDocument()
@@ -386,7 +437,7 @@ describe('PerfilPage: cambiar la contraseña', () => {
   it('el error de un campo va bajo su casilla', async () => {
     const user = userEvent.setup()
     simular(() => conCuerpo({ error: 'Error de validación', errors: [{ field: 'nueva', message: 'La contraseña es demasiado común' }] }, 400))
-    renderWithProviders(<PerfilPage />)
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
     await rellenar(user)
 
     expect(await screen.findByText('La contraseña es demasiado común')).toBeInTheDocument()

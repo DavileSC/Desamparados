@@ -1,11 +1,13 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { Alert, Box, Chip, CircularProgress, MenuItem, TextField, Typography } from '@mui/material'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useBlocker, useSearchParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import ContenedorDePagina from '../../../components/ContenedorDePagina'
 import SeccionAnimada from '../../../components/SeccionAnimada'
 import TarjetaCristal from '../../../components/TarjetaCristal'
 import Boton from '../../../components/Boton'
+import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
+import { useAvisoAlCerrarLaPestana } from '../../../hooks/useAvisoAlCerrarLaPestana'
 import { misFichas, type ApiProfile } from '../../../lib/api/perfil'
 import { aniosCumplidos } from '../../altas/public/schema'
 import { Contacto, CuotaYPago, DatosPersonales, VidaDeHermano } from './apartados'
@@ -23,7 +25,7 @@ const ordenar = (fichas: ApiProfile[]) =>
 function subtitulo(ficha: ApiProfile) {
   const quien = ficha.esTitular ? 'Tú' : ficha.parentesco ? PARENTESCO[ficha.parentesco] : 'A tu cargo'
   if (!ficha.activo) return `${quien} · pendiente`
-  if (ficha.esTitular) return ficha.numeroHermano ? `${quien} · n.º ${ficha.numeroHermano}` : quien
+  if (ficha.esTitular) return ficha.numeroHermano ? `${quien} · n.º\u00a0${ficha.numeroHermano}` : quien
   return `${quien} · ${aniosCumplidos(aDia(ficha.fechaNacimiento))} años`
 }
 
@@ -57,6 +59,14 @@ export default function PerfilPage() {
   const [error, setError] = useState<string | null>(null)
   const base = useId()
   const botones = useRef<(HTMLButtonElement | null)[]>([])
+  // Una edición a medias en el apartado abierto. Cambiar de pestaña, de ficha
+  // o de pantalla lo desmonta y se perdía lo escrito sin avisar: ahora se
+  // pregunta antes, como en Hazte hermano y en las fichas del CMS. Las
+  // pestañas y la ficha van en la URL, así que basta con mirar la navegación.
+  const [sucio, setSucio] = useState(false)
+  const bloqueo = useBlocker(({ currentLocation, nextLocation }) =>
+    sucio && (currentLocation.pathname !== nextLocation.pathname || currentLocation.search !== nextLocation.search))
+  useAvisoAlCerrarLaPestana(sucio)
 
   useEffect(() => {
     let cancelado = false
@@ -79,6 +89,18 @@ export default function PerfilPage() {
   const pestanas = PESTANAS.filter((p) => !p.modulo || activo(p.modulo))
   const abierta = pestanas.find((p) => p.clave === params.get('apartado')) ?? pestanas[0]!
 
+  // Un `?ficha=` que no es de esta cuenta (un enlace viejo, otra familia) cae
+  // en la propia: se quita de la dirección para que no diga una cosa y se vea otra.
+  const fichaAjena = fichas.length > 0 && params.has('ficha') && !fichas.some((f) => f.id === pedida)
+  useEffect(() => {
+    if (!fichaAjena) return
+    setParams((anteriores) => {
+      const siguientes = new URLSearchParams(anteriores)
+      siguientes.delete('ficha')
+      return siguientes
+    }, { replace: true })
+  }, [fichaAjena, setParams])
+
   const guardada = (nueva: ApiProfile) => setFichas((actuales) => actuales.map((f) => (f.id === nueva.id ? nueva : f)))
   const cambiar = (clave: string, valor: string) => setParams((anteriores) => {
     const siguientes = new URLSearchParams(anteriores)
@@ -99,6 +121,16 @@ export default function PerfilPage() {
   return (
     <>
       <Helmet><title>{`Mi perfil | ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
+      <DialogoConfirmacion
+        abierto={bloqueo.state === 'blocked'}
+        titulo="Hay cambios sin guardar"
+        mensaje="Si sales ahora se van a perder los cambios que has hecho en este apartado."
+        textoConfirmar="Salir sin guardar"
+        textoCancelar="Seguir editando"
+        peligro
+        onConfirmar={() => bloqueo.proceed?.()}
+        onCancelar={() => bloqueo.reset?.()}
+      />
       {/* En PC, sin margen propio: el del marco del área basta, y así la ficha
           cabe en la pantalla sin desplazarse (1280×552 con el escalado al 150 %). */}
       <SeccionAnimada sx={{ py: { xs: 1, md: 0 } }}>
@@ -131,13 +163,16 @@ export default function PerfilPage() {
                 <Box sx={{ minWidth: 0, flex: '1 1 240px' }}>
                   <Typography component="h1" sx={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255, 179, 180, 0.85)' }}>Mi perfil</Typography>
                   <Typography component="p" sx={{ fontSize: { xs: 21, md: 24 }, fontWeight: 600, lineHeight: 1.2 }}>{ficha.nombre} {ficha.apellidos}</Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.25, mt: 0.5 }}>
+                  {/* Sin partir: en el móvil, «Activo» se quedaba solo en una línea y el
+                      número en otra. El texto se parte dentro, por el «·». */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mt: 0.5 }}>
                     {ficha.activo
-                      ? <Chip size="small" label="Activo" color="success" variant="outlined" />
-                      : <Chip size="small" label="Pendiente de Secretaría" color="warning" />}
+                      ? <Chip size="small" label="Activo" color="success" variant="outlined" sx={{ flexShrink: 0 }} />
+                      : <Chip size="small" label="Pendiente de Secretaría" color="warning" sx={{ flexShrink: 0 }} />}
                     {ficha.activo && (
-                      <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
-                        {ficha.numeroHermano ? `Hermano n.º ${ficha.numeroHermano}` : 'Número pendiente de asignar'} · desde el {diaLegible(ficha.fechaAlta)}
+                      <Typography sx={{ fontSize: 14, color: 'text.secondary', minWidth: 0 }}>
+                        <Box component="span" sx={{ whiteSpace: 'nowrap' }}>{ficha.numeroHermano ? `Hermano n.º\u00a0${ficha.numeroHermano}` : 'Número pendiente de asignar'}</Box>
+                        {' · '}<Box component="span" sx={{ whiteSpace: 'nowrap' }}>desde el {diaLegible(ficha.fechaAlta)}</Box>
                       </Typography>
                     )}
                   </Box>
@@ -203,12 +238,14 @@ export default function PerfilPage() {
                 })}
               </Box>
 
-              {/* `key`: al cambiar de ficha o de pestaña, el apartado empieza de cero, sin arrastrar una edición a medias. */}
-              <Box key={`${ficha.id}-${abierta.clave}`} role="tabpanel" id={`${base}-panel`} aria-labelledby={`${base}-pestana-${abierta.clave}`} sx={{ mt: 2, minWidth: 0 }}>
-                {abierta.clave === 'personales' && <DatosPersonales ficha={ficha} onGuardada={guardada} />}
-                {abierta.clave === 'contacto' && <Contacto ficha={ficha} onGuardada={guardada} />}
-                {abierta.clave === 'hermano' && <VidaDeHermano ficha={ficha} onGuardada={guardada} />}
-                {abierta.clave === 'cuota' && <CuotaYPago ficha={ficha} onGuardada={guardada} />}
+              {/* `key`: al cambiar de ficha o de pestaña, el apartado empieza de cero
+                  (antes, si había algo a medias, se ha preguntado). `tabIndex`: el
+                  panel se alcanza con el tabulador, como pide el patrón de pestañas. */}
+              <Box key={`${ficha.id}-${abierta.clave}`} role="tabpanel" tabIndex={0} id={`${base}-panel`} aria-labelledby={`${base}-pestana-${abierta.clave}`} sx={{ mt: 2, minWidth: 0, '&:focus-visible': { outline: '2px solid', outlineColor: 'secondary.main', outlineOffset: 4 } }}>
+                {abierta.clave === 'personales' && <DatosPersonales ficha={ficha} onGuardada={guardada} onSucio={setSucio} />}
+                {abierta.clave === 'contacto' && <Contacto ficha={ficha} onGuardada={guardada} onSucio={setSucio} />}
+                {abierta.clave === 'hermano' && <VidaDeHermano ficha={ficha} onGuardada={guardada} onSucio={setSucio} />}
+                {abierta.clave === 'cuota' && <CuotaYPago ficha={ficha} onGuardada={guardada} onSucio={setSucio} />}
                 {/* De la cuenta, no de la ficha: es la misma sea cual sea la persona elegida. */}
                 {abierta.clave === 'contrasena' && <ApartadoContrasena />}
               </Box>
