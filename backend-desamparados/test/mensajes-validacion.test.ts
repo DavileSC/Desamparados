@@ -60,3 +60,14 @@ test('textoRequerido no pasa de 191 caracteres', () => {
   assert.ok(!(esquema({ titulo: 'a'.repeat(191) }) instanceof ArkErrors));
   assert.match(mensajes(esquema, { titulo: 'a'.repeat(192) }).titulo, /191/);
 });
+
+// Un campo obligatorio vacío (o solo con espacios) decía «Debe ser un texto
+// válido sin caracteres especiales (<, >)…», que hacía buscar un «<» que no
+// estaba. El vacío lleva su propio mensaje; el de «<» y «>» no cambia.
+test('textoRequerido vacío dice que no puede quedar vacío', () => {
+  const esquema = type({ direccion: textoRequerido });
+  assert.equal(mensajes(esquema, { direccion: '' }).direccion, 'No puede quedar vacío');
+  assert.equal(mensajes(esquema, { direccion: '   ' }).direccion, 'No puede quedar vacío');
+  assert.match(mensajes(esquema, { direccion: 'Calle <b>' }).direccion, /<, >/);
+  assert.match(mensajes(esquema, { direccion: 'Calle <b>' }).direccion, /^Debe ser /);
+});

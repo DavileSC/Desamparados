@@ -9,10 +9,16 @@ import { provinciaDelCodigoPostal } from '../domain/modelo-182.js';
 // 1. Texto obligatorio SIN caracteres HTML (Prevención XSS). Con tope de 191,
 // el ancho por defecto de un String de Prisma en MariaDB (VARCHAR(191)): sin
 // él, un valor más largo llegaba a la base y salía como 500 (P2000).
+//
+// El vacío va aparte y con su propio motivo: con todo en un solo `.describe()`,
+// una dirección en blanco respondía «Debe ser un texto válido sin caracteres
+// especiales (<, >)…» y mandaba a buscar un «<» que no había. ArkType comprueba
+// el tope y el patrón antes que el predicado, así que el vacío solo llega a
+// este rechazo cuando lo demás está bien.
 export const textoRequerido = type("string <= 191")
-    .narrow((s) => s.trim().length > 0)
-    .matching(/^[^<>]+$/) // Prohíbe inyección de etiquetas HTML
-    .describe("un texto válido sin caracteres especiales (<, >), de 191 caracteres como mucho");
+    .matching(/^[^<>]*$/) // Prohíbe inyección de etiquetas HTML
+    .describe("un texto válido sin caracteres especiales (<, >), de 191 caracteres como mucho")
+    .narrow((s, ctx) => s.trim().length > 0 || ctx.reject({ problem: 'no puede quedar vacío' }));
 
 // Email: una sola dirección, de 254 caracteres como mucho (el máximo del
 // estándar). Sin tope y admitiendo comas, el formulario público de contacto
