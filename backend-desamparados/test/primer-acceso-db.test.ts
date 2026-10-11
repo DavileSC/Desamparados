@@ -182,14 +182,21 @@ test('Secretaría ve cuándo caduca cada invitación, también las ya caducadas'
     // Sin invitar: no hay nada que caduque.
     assert.deepEqual((await listar()).map((c) => [c.id, c.invitacionCaducaEn]), [[e.cuenta.id, null]]);
 
-    const caducada = new Date(Date.now() - 3 * 24 * 3600_000);
+    // La invitación caduca a los 14 días de mandarla, no cuando diga el campo
+    // del enlace: ese campo lo comparte «¿Has olvidado tu contraseña?».
+    const invitadoEn = new Date(Date.now() - 20 * 24 * 3600_000);
+    const caducada = new Date(invitadoEn.getTime() + 14 * 24 * 3600_000);
     await db.user.update({
       where: { id: e.cuenta.id },
-      data: { invitadoEn: new Date(Date.now() - 20 * 24 * 3600_000), resetPasswordToken: 'x'.repeat(64), resetPasswordExpires: caducada },
+      data: { invitadoEn, resetPasswordToken: 'x'.repeat(64), resetPasswordExpires: new Date(Date.now() - 3 * 24 * 3600_000) },
     });
     // Caducada, sigue entre los invitados, con la fecha para decir «caducó el…».
     const invitados = await listar('invitado');
     assert.deepEqual(invitados.map((c) => [c.id, c.invitacionCaducaEn]), [[e.cuenta.id, caducada.toISOString()]]);
+
+    // Pedir una recuperación (enlace de una hora) no mueve la caducidad de la invitación.
+    await db.user.update({ where: { id: e.cuenta.id }, data: { resetPasswordToken: 'r'.repeat(64), resetPasswordExpires: new Date(Date.now() + 3600_000) } });
+    assert.equal((await listar('invitado'))[0]?.invitacionCaducaEn, caducada.toISOString());
 
     // Estrenada (el enlace ya se gastó) o confirmada: ya no hay invitación viva.
     await db.user.update({ where: { id: e.cuenta.id }, data: { resetPasswordToken: null, resetPasswordExpires: null } });

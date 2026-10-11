@@ -27,6 +27,29 @@ import { ModulosService } from './modulos.service.js';
 /** Dos semanas: es un correo que mucha gente abre días después. */
 const VALIDEZ_INVITACION_HORAS = 14 * 24;
 
+/**
+ * Cuándo deja de valer el enlace de la invitación, aunque ya haya pasado: sin
+ * la fecha, una invitación caducada parecía en camino y nadie la reenviaba.
+ *
+ * Se cuenta desde `invitadoEn` y no desde `resetPasswordExpires`, que es el
+ * mismo campo de «¿Has olvidado tu contraseña?»: pedir una recuperación ponía
+ * de caducidad la hora de ese enlace. (Ojo: esa recuperación sí deja muerto el
+ * enlace del correo de la invitación, porque pisa el token; quien la pidió
+ * entra por ella, así que la fecha sigue diciendo hasta cuándo valía la invitación.)
+ *
+ * Null si no se invitó, si ya confirmó o si ya estrenó el enlace. Para lo
+ * último el único indicio fiable es el token: estrenarlo (o poner contraseña
+ * con una recuperación, o cambiarla) lo deja a null en la misma sentencia que
+ * guarda la contraseña. `tokenValidAfter` no sirve: también lo mueven un cambio
+ * de rol o un cierre de sesiones, sin que nadie haya entrado. Queda un caso que
+ * no se distingue: quien estrenó y luego pide una recuperación sin usarla vuelve
+ * a tener token, y verá la fecha de la invitación hasta que confirme.
+ */
+function caducidadDeLaInvitacion(c: { primerAccesoPendiente: boolean; invitadoEn: Date | null; resetPasswordToken: string | null }): string | null {
+  if (!c.primerAccesoPendiente || !c.invitadoEn || !c.resetPasswordToken) return null;
+  return new Date(c.invitadoEn.getTime() + VALIDEZ_INVITACION_HORAS * 3600_000).toISOString();
+}
+
 /** La misma pausa que los comunicados, que es la que Gmail aguanta sin cortar. */
 const pausa = () => Number(process.env.COMUNICADOS_PAUSA_MS ?? 1500);
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -115,7 +138,7 @@ export class PrimerAccesoService {
         where,
         select: {
           id: true, nombre: true, apellidos: true, email: true, invitadoEn: true, fichaConfirmadaEn: true,
-          primerAccesoPendiente: true, resetPasswordToken: true, resetPasswordExpires: true,
+          primerAccesoPendiente: true, resetPasswordToken: true,
           hermanos: { where: { activo: true }, select: { esTitular: true, numeroHermano: true } },
         },
         orderBy: [{ apellidos: 'asc' }, { nombre: 'asc' }, { id: 'asc' }],
@@ -136,14 +159,7 @@ export class PrimerAccesoService {
       aCargo: c.hermanos.filter((h) => !h.esTitular).length,
       invitadoEn: c.invitadoEn,
       fichaConfirmadaEn: c.fichaConfirmadaEn,
-      // Cuándo deja de valer el enlace que tiene en el correo, aunque ya haya
-      // pasado: sin la fecha, una invitación caducada parecía en camino y
-      // nadie la reenviaba. Null si no hay enlace sin gastar (no se invitó,
-      // ya lo estrenó) o ya confirmó. El enlace es el mismo campo que el de
-      // «¿Has olvidado tu contraseña?»: si lo pide, manda la fecha de ese.
-      invitacionCaducaEn: c.primerAccesoPendiente && c.invitadoEn && c.resetPasswordToken && c.resetPasswordExpires
-        ? c.resetPasswordExpires.toISOString()
-        : null,
+      invitacionCaducaEn: caducidadDeLaInvitacion(c),
       enCola: cola.has(c.id),
     }));
     return { ...respuestaPaginada(data, total, paginacion), cifras: { sinInvitar, invitados, confirmados, enCola: cola.size } };
