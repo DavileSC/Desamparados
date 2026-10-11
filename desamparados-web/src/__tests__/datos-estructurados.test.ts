@@ -33,7 +33,8 @@ describe('los datos estructurados de index.html', () => {
     // Un `null` en `site.redes` significa «todavía no nos han dado la URL».
     // Anunciarle a Google un perfil que no existe es peor que no anunciarlo.
     const declarados = Object.values(site.redes).filter((u): u is string => u !== null)
-    expect(jsonLd().sameAs).toEqual(declarados)
+    // Sin ninguna, la línea no se escribe.
+    expect(jsonLd().sameAs ?? []).toEqual(declarados)
   })
 
   it('sitúa la parroquia donde dice site.sede', () => {

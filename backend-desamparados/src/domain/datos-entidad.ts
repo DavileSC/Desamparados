@@ -1,8 +1,9 @@
-import { leerDatosEntidad } from '../../../shared/datos-entidad.mjs';
+import { leerDatosEntidad, type Articulo } from '../../../shared/datos-entidad.mjs';
 
 // Se lee del disco al cargar el módulo, no se importa: el fichero es de cada
 // instalación (instalacion/datos-entidad.json, montado en el contenedor) y no
-// viaja en la imagen. Si falta, la API no arranca y dice qué hacer.
+// viaja en la imagen. Si falta o tiene un dato mal puesto, la API no arranca y
+// dice cuál (shared/datos-entidad.mjs, `validarDatosEntidad`).
 const datos = leerDatosEntidad();
 
 /**
@@ -28,12 +29,11 @@ interface DatosSecretaria {
 /**
  * El artículo que concuerda con la corporación o con una salida: se guarda el
  * artículo y no el género porque hay corporaciones y salidas en plural (las
- * Cofradías Fusionadas, los Santos Oficios). Vive aquí y no en
- * `domain/articulos.ts` porque ese módulo necesita leer `identidad` (un valor)
- * de este fichero; si `Identidad` importara el tipo desde allí, el import
- * circular rompería la carga. `articulos.ts` lo reexporta.
+ * Cofradías Fusionadas, los Santos Oficios). Lo define el validador del
+ * fichero, que es quien garantiza que no llega otro; `articulos.ts` lo
+ * reexporta desde aquí.
  */
-export type Articulo = 'el' | 'la' | 'los' | 'las';
+export type { Articulo } from '../../../shared/datos-entidad.mjs';
 
 /**
  * Quién es la corporación: nombre, tipo, advocación, localidad y dominio. Lo que
@@ -55,9 +55,7 @@ export interface Identidad {
   descripcion: string;
 }
 
-// `as Identidad`: el JSON trae el artículo como `string`, no como el tipo
-// literal `Articulo`, así que la asignación directa no compila.
-export const identidad: Identidad = datos.identidad as Identidad;
+export const identidad: Identidad = datos.identidad;
 
 const informado = (valor: string | null | undefined): valor is string =>
   typeof valor === 'string' && valor.trim() !== '';

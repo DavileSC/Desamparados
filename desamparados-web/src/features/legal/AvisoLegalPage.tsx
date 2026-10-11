@@ -24,11 +24,11 @@ export default function AvisoLegalPage() {
 
       <DatosDeIdentificacion />
 
-      {site.documentos.estatutos && (
+      {site.normas && (
         <Typography component="p" sx={{ mb: 2 }}>
-          {mayuscula(laCorporacion())} {segunLaCorporacion('se rige', 'se rigen')} por las{' '}
-          <Link href={site.documentos.estatutos} target="_blank" rel="noopener noreferrer" sx={{ color: 'secondary.main' }}>
-            normas diocesanas de los Grupos Parroquiales
+          {mayuscula(laCorporacion())} {segunLaCorporacion('se rige', 'se rigen')} por{' '}
+          <Link href={site.normas.url} target="_blank" rel="noopener noreferrer" sx={{ color: 'secondary.main' }}>
+            {site.normas.titulo}
           </Link>
           .
         </Typography>

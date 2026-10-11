@@ -1,11 +1,10 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
-import { rutaDeDatosEntidad } from '../shared/datos-entidad.mjs'
+import { datosDeLaInstalacion } from './scripts/instalacion-vite.mjs'
 
 export default defineConfig({
-  plugins: [react()],
-  // El mismo alias que vite.config.ts; en las pruebas resuelve al ejemplo.
-  resolve: { alias: { '@instalacion/datos-entidad.json': rutaDeDatosEntidad() } },
+  // El mismo módulo que vite.config.ts; en las pruebas, con el ejemplo.
+  plugins: [react(), datosDeLaInstalacion()],
   test: {
     environment: 'jsdom',
     globals: true,

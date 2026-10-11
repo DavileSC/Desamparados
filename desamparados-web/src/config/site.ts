@@ -16,14 +16,16 @@
  */
 import ENTIDAD from '@instalacion/datos-entidad.json'
 
-type DatoPendiente = null
 
 /**
  * Quién es la corporación y cómo se la contacta: vive en
  * `instalacion/datos-entidad.json`, que lee también la API (correos, PDF). Montar la
  * web para otra corporación empieza por ese fichero, no por el código.
  */
-const { identidad, secretaria, sede } = ENTIDAD
+const { identidad, secretaria, sede, redes, privacidad } = ENTIDAD
+
+/** Lo que se busca en Google Maps para llegar: la sede con su calle y su localidad. */
+const busquedaDeLaSede = [sede.nombre, sede.calle, sede.localidad].filter(Boolean).join(', ')
 
 export const site = {
   /** Nombre comercial con el que se identifica la web. */
@@ -42,9 +44,9 @@ export const site = {
 
   entidad: {
     /** Denominación jurídica exacta inscrita. */
-    denominacion: identidad.denominacion as string | DatoPendiente,
+    denominacion: identidad.denominacion,
     /** Domicilio social completo (vía, número, CP y municipio). */
-    domicilio: 'Calle Corregidor Paz Guzmán, 13, 29006 Málaga' as string | DatoPendiente,
+    domicilio: identidad.domicilio,
     /** Localidad conocida, usable mientras no haya domicilio completo. */
     localidad: identidad.localidad,
   },
@@ -53,7 +55,7 @@ export const site = {
   contacto: {
     email: secretaria.email ?? '',
     /** Teléfono oficial, el mismo que el de Secretaría. */
-    telefono: secretaria.telefono as string | DatoPendiente,
+    telefono: secretaria.telefono,
     /** El de Secretaría: los textos del alta lo citan entre paréntesis, en minúscula. */
     horario: secretaria.horario ?? '',
   },
@@ -67,13 +69,15 @@ export const site = {
     nombre: sede.nombre,
     direccion: sede.calle,
     localidad: sede.localidad,
-    /** Abre Google Maps en otra pestaña con la parroquia buscada. */
-    comoLlegar: 'https://www.google.com/maps/search/?api=1&query=Iglesia%20Parroquial%20Santa%20Mar%C3%ADa%20Goretti%2C%20M%C3%A1laga',
+    /** Abre Google Maps en otra pestaña con la sede buscada. */
+    comoLlegar: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(busquedaDeLaSede)}`,
+    /** El mapa del pie: la misma búsqueda, incrustada (sin clave de la API de Google). */
+    mapa: `https://www.google.com/maps?q=${encodeURIComponent(busquedaDeLaSede)}&output=embed`,
   },
 
   /** Canal para ejercer los derechos RGPD. Cae al email general si no hay uno propio. */
   privacidad: {
-    emailDerechos: 'goretti.desamparados@gmail.com' as string | DatoPendiente,
+    emailDerechos: privacidad.emailDerechos,
   },
 
   /**
@@ -81,31 +85,22 @@ export const site = {
    * facilitado la URL: la interfaz oculta ese enlace en vez de publicar uno
    * muerto que lleve a `#`.
    */
-  redes: {
-    facebook: 'https://www.facebook.com/desamparadosmalaga/' as string | DatoPendiente,
-    instagram: 'https://www.instagram.com/desamparadosmalaga/' as string | DatoPendiente,
-    x: 'https://x.com/GPDesamparados' as string | DatoPendiente,
-    tiktok: 'https://www.tiktok.com/@desamparadosmalaga' as string | DatoPendiente,
-    youtube: 'https://www.youtube.com/@desamparadosmalaga' as string | DatoPendiente,
-  },
+  redes,
 
   /** Retransmisión en directo desde la sede. `null` si no hay stream publicado. */
   directo: {
-    urlAlternativa: null as string | DatoPendiente,
+    urlAlternativa: null as string | null,
   },
 
-  /** Documentos públicos. */
-  documentos: {
-    /** Las normas diocesanas de los Grupos Parroquiales, por las que se rige: se enlazan desde el aviso legal. */
-    estatutos: 'https://www.dropbox.com/scl/fi/qm6eg5f22lghfnnt9ens3/01-Grupos-Parroquiales.pdf?rlkey=o4bkqz058m9faddsyd8y59k7r&dl=0' as string | DatoPendiente,
-  },
+  /** Las normas o estatutos por los que se rige, que enlaza el aviso legal ({ titulo, url }), o null. */
+  normas: identidad.normas,
 } as const
 
 /** Texto a mostrar cuando un dato legal obligatorio aún no está confirmado. */
 export const DATO_PENDIENTE = 'pendiente de confirmar'
 
 /** Devuelve el valor si está informado, o el aviso de pendiente. */
-export function legal(valor: string | DatoPendiente): string {
+export function legal(valor: string | null): string {
   return valor ?? DATO_PENDIENTE
 }
 

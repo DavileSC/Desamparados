@@ -20,10 +20,15 @@ vi.mock('@instalacion/datos-entidad.json', () => ({
       dominio: 'www.fusionadas.ejemplo',
       descripcion: 'Cofradías de ejemplo, para las pruebas.',
       denominacion: null,
+      domicilio: null,
+      normas: { titulo: 'las normas diocesanas', url: 'https://normas.ejemplo/normas.pdf' },
     },
-    secretaria: { horario: null, direccion: null, telefono: null, email: 'secretaria@fusionadas.ejemplo' },
+    marca: { colorPrincipal: null, colorAcento: null },
+    secretaria: { horario: null, telefono: null, email: 'secretaria@fusionadas.ejemplo' },
     sede: { nombre: 'Casa de las Cofradías', calle: 'C. de Ejemplo, 1', codigoPostal: '29200', localidad: 'Antequera' },
-    escudoUrl: null,
+    redes: { facebook: null, instagram: null, x: null, tiktok: null, youtube: null },
+    privacidad: { emailDerechos: null },
+    modulos: { activos: [] },
   },
 }))
 
@@ -36,7 +41,7 @@ describe('otra instalación, en plural', () => {
   it('el aviso legal: «se rigen» y la descripción con su advocación y su localidad', async () => {
     const { default: AvisoLegalPage } = await import('../AvisoLegalPage')
     renderWithProviders(<AvisoLegalPage />)
-    expect(await screen.findByText(/Las Cofradías Fusionadas se rigen por las/)).toBeInTheDocument()
+    expect((await screen.findByRole('link', { name: 'las normas diocesanas' })).closest('p')).toHaveTextContent('Las Cofradías Fusionadas se rigen por las normas diocesanas.')
     await waitFor(() => expect(descripcion()).toBe(
       'Datos identificativos de las Cofradías Fusionadas de Nuestra Señora de la Paz de Antequera y condiciones de uso de esta web, conforme a la LSSI-CE.',
     ))

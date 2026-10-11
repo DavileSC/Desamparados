@@ -1,4 +1,5 @@
 import datos from '@instalacion/datos-entidad.json'
+import type { Articulo } from '../../../shared/datos-entidad.mjs'
 
 /**
  * El artículo de la corporación o de una salida, y las frases que salen de él.
@@ -7,7 +8,7 @@ import datos from '@instalacion/datos-entidad.json'
  * contraen «de el» y «a el»: con eso basta para no escribir nunca «del Grupo»
  * a mano. La misma copia vive en backend-desamparados/src/domain/articulos.ts.
  */
-export type Articulo = 'el' | 'la' | 'los' | 'las'
+export type { Articulo } from '../../../shared/datos-entidad.mjs'
 export const ARTICULOS: readonly Articulo[] = ['el', 'la', 'los', 'las']
 
 export const conArticulo = (art: Articulo, nombre: string) => `${art} ${nombre}`
@@ -29,10 +30,9 @@ interface OpcionesCorporacion {
   identidad?: { articulo: Articulo; tipo: string; tipoCorto: string }
 }
 
-// Se lee directamente del JSON compartido, igual que `config/site.ts`, y no de
-// ese módulo: el dominio no depende de la configuración, es al revés.
-// `as`: el import JSON no estrecha "el" al tipo literal `Articulo`, solo a `string`.
-const deEstaInstalacion = datos.identidad as { articulo: Articulo; tipo: string; tipoCorto: string }
+// Se lee directamente de los datos de la instalación, igual que `config/site.ts`,
+// y no de ese módulo: el dominio no depende de la configuración, es al revés.
+const deEstaInstalacion = datos.identidad
 
 const partes = ({ corto = false, identidad = deEstaInstalacion }: OpcionesCorporacion = {}) =>
   [identidad.articulo, corto ? identidad.tipoCorto : identidad.tipo] as const

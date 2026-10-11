@@ -6,10 +6,6 @@
     "module": "esnext",
     "types": ["vite/client"],
     "allowArbitraryExtensions": true,
-    /* Los tipos de los datos de la corporación salen del ejemplo, que está en
-       git: el fichero de cada instalación tiene la misma forma, y así tsc no
-       depende de que exista. Qué fichero se empaqueta lo decide vite.config.ts. */
-    "paths": { "@instalacion/datos-entidad.json": ["../shared/datos-entidad.ejemplo.json"] },
     "skipLibCheck": true,
 
     /* Bundler mode */

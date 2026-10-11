@@ -18,10 +18,15 @@ vi.mock('@instalacion/datos-entidad.json', () => ({
       dominio: 'www.desamparadosmalaga.com',
       descripcion: 'Hermandad de Nuestra Señora de los Desamparados de Málaga.',
       denominacion: 'Hermandad de Ejemplo, inscrita',
+      domicilio: null,
+      normas: { titulo: 'las normas diocesanas', url: 'https://normas.ejemplo/normas.pdf' },
     },
-    secretaria: { horario: null, direccion: null, telefono: null, email: 'goretti.desamparados@gmail.com' },
+    marca: { colorPrincipal: null, colorAcento: null },
+    secretaria: { horario: null, telefono: null, email: 'goretti.desamparados@gmail.com' },
     sede: { nombre: 'Casa Hermandad', calle: 'C. de Ejemplo, 1', codigoPostal: '29001', localidad: 'Málaga' },
-    escudoUrl: null,
+    redes: { facebook: null, instagram: null, x: null, tiktok: null, youtube: null },
+    privacidad: { emailDerechos: null },
+    modulos: { activos: [] },
   },
 }))
 
@@ -34,7 +39,7 @@ describe('AvisoLegalPage con otra instalación', () => {
     renderWithProviders(<AvisoLegalPage />)
     expect(await screen.findByText(/información sobre la Hermandad, sus actividades/)).toBeInTheDocument()
     expect(screen.getByText(/son propiedad de la Hermandad o de terceros/)).toBeInTheDocument()
-    expect(screen.getByText(/La Hermandad se rige por las/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'las normas diocesanas' }).closest('p')).toHaveTextContent('La Hermandad se rige por las normas diocesanas.')
     // La frase provisional («debe ser revisado… antes de su puesta en producción») ya no sale en público.
     expect(screen.queryByText(/puesta en producción/)).not.toBeInTheDocument()
     // La denominación jurídica inscrita no es una frase calculada, pero tampoco

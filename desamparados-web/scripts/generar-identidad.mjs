@@ -18,7 +18,7 @@ import { dirname, join, resolve } from 'node:path'
 import { leerDatosEntidad } from '../../shared/datos-entidad.mjs'
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..')
-const { identidad, secretaria, sede } = leerDatosEntidad()
+const { identidad, secretaria, sede, redes } = leerDatosEntidad()
 
 const url = `https://${identidad.dominio}`
 const valores = {
@@ -34,6 +34,8 @@ const valores = {
   sedeCalle: sede.calle,
   sedeCodigoPostal: sede.codigoPostal,
   sedeLocalidad: sede.localidad,
+  // Las redes que haya: anunciarle a Google un perfil que no existe es peor que no anunciarlo.
+  sameAs: Object.values(redes).filter(Boolean),
 }
 
 const html = (v) => String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -44,8 +46,10 @@ function indexHtml() {
   const salto = plantilla.includes('\r\n') ? '\r\n' : '\n'
   const lineas = plantilla.split(/\r?\n/)
     // Un dato pendiente (null) no se inventa: su línea del JSON-LD desaparece.
-    .filter((linea) => ![...linea.matchAll(/\{\{json:(\w+)\}\}/g)].some(([, clave]) => valores[clave] == null))
+    // Una lista vacía, igual.
+    .filter((linea) => ![...linea.matchAll(/\{\{(?:json|lista):(\w+)\}\}/g)].some(([, clave]) => valores[clave] == null || (Array.isArray(valores[clave]) && valores[clave].length === 0)))
     .map((linea) => linea
+      .replace(/\{\{lista:(\w+)\}\}/g, (_, clave) => JSON.stringify(valor(clave)).replace(/</g, '\\u003c'))
       .replace(/\{\{json:(\w+)\}\}/g, (_, clave) => json(valor(clave)))
       .replace(/\{\{(\w+)\}\}/g, (_, clave) => html(valor(clave))))
   // Sin cerrar con una coma colgando si la última propiedad era la quitada.

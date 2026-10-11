@@ -20,7 +20,9 @@
       "articulo: el que concuerda con tipo y tipoCorto («el» Grupo Parroquial, pero «la» Hermandad, «los» Santos Oficios…);",
       "se guarda el artículo y no el género porque hay corporaciones en plural. titular: la advocación, en los pies de foto",
       "y las bendiciones. dominio: sin https y con «www.», el de la web pública. denominacion: la jurídica exacta inscrita,",
-      "la de los textos legales y el legalName de index.html; null mientras no esté confirmada."
+      "la de los textos legales y el legalName de index.html; null mientras no esté confirmada.",
+      "domicilio: el domicilio social completo de los textos legales (vía, número, CP y municipio); null mientras no esté confirmado.",
+      "normas: las normas o estatutos por los que se rige, que enlaza el aviso legal: { titulo, url }, con el título tal como va tras «se rige por» («los estatutos de la Hermandad»), o null."
     ],
     "nombre": "Hermandad de Nuestra Señora de la Esperanza",
     "tipo": "Hermandad",
@@ -31,12 +33,24 @@
     "localidad": "Villanueva",
     "dominio": "www.corporacion.example",
     "descripcion": "Hermandad de Nuestra Señora de la Esperanza de Villanueva. Una corporación de ejemplo para instalar la web.",
-    "denominacion": null
+    "denominacion": null,
+    "domicilio": null,
+    "normas": null
+  },
+  "marca": {
+    "_comentario": [
+      "Los colores de la web: el principal (barra, botones, cabeceras) y el de acento (detalles en oro).",
+      "null deja los de partida. El escudo y las imágenes de los correos no van aquí: son ficheros de",
+      "instalacion/marca/ (docs/despliegue.md, «La marca»)."
+    ],
+    "colorPrincipal": null,
+    "colorAcento": null
   },
   "secretaria": {
     "_comentario": [
       "La dirección de Secretaría es la de la sede (abajo): los correos y los PDF la componen de",
-      "sede.calle, sede.codigoPostal y sede.localidad."
+      "sede.calle, sede.codigoPostal y sede.localidad.",
+      "Solo vale para el primer arranque: la API lo guarda en la base y desde entonces se cambia en el CMS (Sistema → «Datos de la corporación»)."
     ],
     "horario": "Martes y jueves, de 20:00 a 21:30",
     "telefono": null,
@@ -45,12 +59,31 @@
   "sede": {
     "_comentario": [
       "Dónde está la corporación, para quien quiere ir: el pie de la web, las condiciones de compra y la",
-      "location del JSON-LD de index.html."
+      "location del JSON-LD de index.html.",
+      "Solo vale para el primer arranque: la API lo guarda en la base y desde entonces se cambia en el CMS (Sistema → «Datos de la corporación»)."
     ],
     "nombre": "Iglesia Parroquial de San Juan",
     "calle": "Plaza Mayor, 1",
     "codigoPostal": "00000",
     "localidad": "Villanueva"
+  },
+  "redes": {
+    "_comentario": [
+      "Los perfiles oficiales, con https://. null oculta el enlace en vez de publicar uno muerto.",
+      "Como secretaria y sede, solo valen para el primer arranque: después se cambian en el CMS."
+    ],
+    "facebook": null,
+    "instagram": null,
+    "x": null,
+    "tiktok": null,
+    "youtube": null
+  },
+  "privacidad": {
+    "_comentario": [
+      "El correo para ejercer los derechos del RGPD, si es otro que el de Secretaría (null: el de Secretaría).",
+      "Se siembra la primera vez y se cambia en el CMS."
+    ],
+    "emailDerechos": null
   },
   "modulos": {
     "_comentario": [
@@ -60,11 +93,30 @@
       "que no esté aquí arranca apagado. El ejemplo arranca con todos."
     ],
     "activos": [
-      "noticias", "publicaciones", "agenda", "comunicados", "alta-web", "area-hermanos",
-      "procesion", "puerta", "cortejo-directo", "inventario", "cartas", "difuntos", "apadrinamientos",
-      "remesas", "pago-en-linea", "cuotas-en-linea", "donativos", "tienda", "tienda-web", "loteria", "modelo-182", "contabilidad",
-      "cabildos", "informe-anual"
+      "noticias",
+      "publicaciones",
+      "agenda",
+      "comunicados",
+      "alta-web",
+      "area-hermanos",
+      "procesion",
+      "puerta",
+      "cortejo-directo",
+      "inventario",
+      "cartas",
+      "difuntos",
+      "apadrinamientos",
+      "remesas",
+      "pago-en-linea",
+      "cuotas-en-linea",
+      "donativos",
+      "tienda",
+      "tienda-web",
+      "loteria",
+      "modelo-182",
+      "contabilidad",
+      "cabildos",
+      "informe-anual"
     ]
-  },
-  "escudoUrl": null
+  }
 }

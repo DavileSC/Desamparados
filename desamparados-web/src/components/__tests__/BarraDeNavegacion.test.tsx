@@ -1,8 +1,15 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../test/test-utils'
 import BarraDeNavegacion from '../BarraDeNavegacion'
+import type { DatosEntidad } from '../../../../shared/datos-entidad.mjs'
+
+// El ejemplo no tiene redes (son null): una, para ver que el menú la enlaza.
+vi.mock('@instalacion/datos-entidad.json', async (original) => {
+  const { default: datos } = await original<{ default: DatosEntidad }>()
+  return { default: { ...datos, redes: { ...datos.redes, instagram: 'https://www.instagram.com/corporacion.example/' } } }
+})
 
 /**
  * jsdom no trae `matchMedia`, y sin él MUI da por hecho que ninguna media query
