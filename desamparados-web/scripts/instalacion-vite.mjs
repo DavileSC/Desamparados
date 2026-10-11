@@ -58,8 +58,10 @@ export function datosDeLaInstalacion() {
       const ruta = rutaDeDatosEntidad()
       // Fuera de la carpeta de la web: Vite no lo vigila si no se le pide.
       server.watcher.add(ruta)
-      server.watcher.on('change', (cambiado) => {
-        if (resolve(cambiado) !== ruta) return
+      // También al borrarlo o al volver a crearlo: un editor que guarda
+      // escribiendo uno nuevo y renombrándolo no siempre da «change».
+      server.watcher.on('all', (evento, cambiado) => {
+        if (!['add', 'change', 'unlink'].includes(evento) || resolve(cambiado) !== ruta) return
         datos = null
         server.ws.send({ type: 'full-reload' })
       })
