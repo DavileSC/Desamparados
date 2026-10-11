@@ -85,8 +85,8 @@ describe('los avisos por la API', () => {
     const aviso = await creado.json();
     avisos.push(aviso.id);
     assert.deepEqual(
-      { texto: aviso.texto, para: aviso.para, hasta: aviso.hasta, urgente: aviso.urgente, creadorRol: aviso.creadorRol, creadoPorId: aviso.creadoPorId },
-      { texto: 'ZZ Preparar el cabildo', para: 'TESORERIA', hasta: '2026-11-20', urgente: true, creadorRol: 'SECRETARIA', creadoPorId: secretaria.id },
+      { texto: aviso.texto, para: aviso.para, hasta: aviso.hasta, urgente: aviso.urgente, creadorRol: aviso.creadorRol, creadoPorId: aviso.creadoPorId, hermanoId: aviso.hermanoId },
+      { texto: 'ZZ Preparar el cabildo', para: 'TESORERIA', hasta: '2026-11-20', urgente: true, creadorRol: 'SECRETARIA', creadoPorId: secretaria.id, hermanoId: null },
     );
 
     const panel = await (await pedir('', secretaria.cookie)).json();

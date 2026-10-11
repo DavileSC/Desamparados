@@ -1153,6 +1153,11 @@ model AvisoJunta {
   // no debe impedir nada sobre la cuenta, y el cargo ya queda guardado aquí.
   creadoPorId Int?
   creadorRol  Role
+  // La ficha de la que trata, para que el Inicio la enlace («No es de mi
+  // familia»). Sin relación, por lo mismo que creadoPorId: el aviso no debe
+  // impedir borrar ni mover la ficha, y si desaparece el texto sigue diciendo
+  // de quién era.
+  hermanoId   Int?
   createdAt   DateTime  @default(now())
   hechoAt     DateTime?
   hechoPorId  Int?

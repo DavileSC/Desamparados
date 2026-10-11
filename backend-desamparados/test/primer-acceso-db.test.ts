@@ -217,6 +217,10 @@ test('«no es de mi familia» devuelve la ficha a la custodia y avisa a Secretar
     const aviso = await db.avisoJunta.findFirstOrThrow({ where: { creadoPorId: e.cuenta.id } });
     assert.equal(aviso.para, Role.SECRETARIA);
     assert.match(aviso.texto, /Lucía Ruiz Montes/);
+    // El aviso apunta a la ficha, y el Inicio del CMS lo devuelve con ella para enlazarla.
+    assert.equal(aviso.hermanoId, e.hija.id);
+    const panel = await (await pedir('/api/panel', { cookie: e.sesionStaff })).json() as { avisos: { id: number; hermanoId: number | null }[] };
+    assert.equal(panel.avisos.find((a) => a.id === aviso.id)?.hermanoId, e.hija.id);
 
     // Sin fichas a cargo, ya puede confirmar.
     assert.equal((await pedir('/api/hermanos/primer-acceso/confirmar', { metodo: 'POST', cookie: e.sesionHermano })).status, 200);

@@ -265,7 +265,7 @@ export class PrimerAccesoService {
       await tx.hermano.update({ where: { id: hermanoId }, data: { userId: custodia, parentesco: null } });
       await tx.avisoJunta.create({
         // El aviso admite 160 caracteres: con nombres muy largos se recorta.
-        data: { texto: texto.length > 160 ? `${texto.slice(0, 159)}…` : texto, para: Role.SECRETARIA, creadoPorId: userId, creadorRol: Role.USER },
+        data: { texto: texto.length > 160 ? `${texto.slice(0, 159)}…` : texto, para: Role.SECRETARIA, hermanoId, creadoPorId: userId, creadorRol: Role.USER },
       });
     });
     await AuditoriaService.log(ACCIONES_AUDITORIA.PRIMER_ACCESO_FICHA_AJENA, meta, 'hermano', hermanoId);
