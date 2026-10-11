@@ -129,10 +129,13 @@ function cabeceraPng(b) {
   return { formato: 'png', ancho, alto, transparencia, entrelazado }
 }
 
+const EOI = Buffer.from([0xff, 0xd9])
+
 function cabeceraJpeg(b) {
   let i = 2
   let medidas = null
   let progresivo = false
+  let datosTrasElFin = 0
   while (i + 4 <= b.length) {
     if (b[i] !== 0xff) throw new Error('JPEG roto: un marcador no empieza por 0xFF.')
     const marcador = b[i + 1]
@@ -144,30 +147,43 @@ function cabeceraJpeg(b) {
     if (largo < 2 || i + 2 + largo > b.length) throw new Error('JPEG cortado: un segmento no cabe en el fichero.')
     // SOF0…SOF15 menos DHT (C4), JPG (C8) y DAC (CC): ahí van las medidas.
     if (marcador >= 0xc0 && marcador <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marcador)) {
+      // Precisión, alto y ancho: 8 bytes con la longitud. Uno más corto
+      // haría leer fuera del segmento (o del fichero, con el error crudo de Node).
+      if (largo < 8) throw new Error('JPEG roto: el segmento de medidas (SOF) es demasiado corto.')
       medidas = { alto: b.readUInt16BE(i + 5), ancho: b.readUInt16BE(i + 7) }
       progresivo = marcador === 0xc2 || marcador === 0xc6 || marcador === 0xca || marcador === 0xce
     }
     // Tras SOS vienen los datos comprimidos, sin marcadores que leer: se
-    // comprueba solo que el fichero acaba en EOI (FFD9), que es lo que falta
-    // en una subida a medias.
+    // comprueba solo que llega el EOI (FFD9), que es lo que falta en una
+    // subida a medias. El primero tras el SOS es el de verdad: dentro de los
+    // datos un 0xFF va siempre seguido de 00 o de un RSTn. No se exige que
+    // sea lo último: las fotos en movimiento de Android llevan un vídeo
+    // detrás, y algunos editores dejan restos; los visores lo ignoran, y
+    // `comprobar` solo lo avisa por lo que pesa.
     if (marcador === 0xda) {
+      const eoi = b.indexOf(EOI, i + 2 + largo)
+      if (eoi === -1) throw new Error('JPEG cortado: no llega al marcador de fin (EOI).')
+      // El relleno de ceros o saltos de línea del final no cuenta como resto.
       let fin = b.length
-      while (fin > 0 && (b[fin - 1] === 0x00 || b[fin - 1] === 0x0a || b[fin - 1] === 0x0d)) fin--
-      if (b[fin - 2] !== 0xff || b[fin - 1] !== 0xd9) throw new Error('JPEG cortado: no acaba en el marcador de fin (EOI).')
+      while (fin > eoi + 2 && (b[fin - 1] === 0x00 || b[fin - 1] === 0x0a || b[fin - 1] === 0x0d)) fin--
+      datosTrasElFin = fin - (eoi + 2)
       break
     }
     i += 2 + largo
   }
   if (!medidas) throw new Error('JPEG sin medidas (SOF): está roto o cortado.')
   if (!medidas.ancho || !medidas.alto) throw new Error('JPEG con medidas a cero.')
-  return { formato: 'jpeg', ...medidas, transparencia: false, entrelazado: progresivo }
+  const cabecera = { formato: 'jpeg', ...medidas, transparencia: false, entrelazado: progresivo }
+  // Solo si los hay, para que la cabecera de un JPEG normal no cambie de forma.
+  return datosTrasElFin ? { ...cabecera, datosTrasElFin } : cabecera
 }
 
 /**
  * El formato y las medidas de una imagen, leídos de sus bytes. Null si no es ni
  * PNG ni JPEG (un WebP, un texto, una página de error guardada como .png).
  * Lanza si tiene la firma de uno de los dos pero está cortada o rota.
- * `entrelazado`: PNG Adam7, o JPEG progresivo.
+ * `entrelazado`: PNG Adam7, o JPEG progresivo. `datosTrasElFin`: en un JPEG,
+ * los bytes que siguen al EOI (el vídeo de una foto en movimiento), si los hay.
  */
 export function leerCabeceraImagen(buffer) {
   const b = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer)
@@ -199,18 +215,24 @@ const enPruebas = (entorno) => Boolean(entorno.NODE_TEST_CONTEXT || entorno.VITE
 
 /**
  * La carpeta de la marca, absoluta: la de `MARCA` si se da (relativa a la raíz
- * del repositorio; lanza si no existe), null en las pruebas (solo la marca de
- * partida: no dependen de las imágenes de esta máquina) y, si no,
- * instalacion/marca, exista o no (si no, `resolverMarca` lo avisa).
+ * del repositorio; lanza si no existe) y, si no, instalacion/marca, exista o no
+ * (si no, `resolverMarca` lo avisa).
+ *
+ * En las pruebas, null (solo la marca de partida: no dependen de las imágenes
+ * de esta máquina), y `MARCA` no cuenta: el backend carga su .env con dotenv, y
+ * una `MARCA` puesta allí para el servidor se colaría en todas las pruebas. La
+ * prueba que quiera otra carpeta la pide con `MARCA_DE_PRUEBA`, que solo se
+ * mira en las pruebas.
  */
 export function rutaDeMarca(entorno = process.env) {
-  const pedida = entorno.MARCA?.trim()
+  const variable = enPruebas(entorno) ? 'MARCA_DE_PRUEBA' : 'MARCA'
+  const pedida = entorno[variable]?.trim()
   if (pedida) {
     const ruta = resolve(raiz, pedida)
-    if (!existsSync(ruta)) throw new Error(`MARCA apunta a ${ruta}, que no existe.`)
+    if (!existsSync(ruta)) throw new Error(`${variable} apunta a ${ruta}, que no existe.`)
     return ruta
   }
-  return enPruebas(entorno) ? null : resolve(raiz, RUTA_MARCA)
+  return variable === 'MARCA_DE_PRUEBA' ? null : resolve(raiz, RUTA_MARCA)
 }
 
 const version = (bytes) => createHash('sha256').update(bytes).digest('hex').slice(0, 8)
@@ -232,6 +254,14 @@ function distancia(a, b) {
 
 /** El aviso de un fichero que no es de la marca, con el nombre que probablemente quería ser. */
 function avisoDesconocido(nombre) {
+  // Solo cambian las mayúsculas (escudo-sobre-oscuro.PNG, lo que deja la
+  // cámara o Windows): no se usa, porque en el servidor (Linux) el nombre que
+  // se busca no es ese, y lo que en este PC funcionaría saldría con el escudo
+  // genérico al desplegar. Mejor el mismo aviso aquí que allí.
+  const sinMayusculas = CATALOGO_MARCA.find((e) => e.fichero === nombre.toLowerCase())
+  if (sinMayusculas) {
+    return `${nombre}: renómbralo a ${sinMayusculas.fichero}, en minúsculas (en el servidor las mayúsculas cuentan). Mientras, se ignora.`
+  }
   const base = nombre.slice(0, nombre.length - extname(nombre).length).toLowerCase()
   const mismoNombre = CATALOGO_MARCA.find((e) => e.fichero.slice(0, -extname(e.fichero).length) === base)
   if (mismoNombre) {
@@ -278,6 +308,10 @@ function comprobar(entrada, bytes, errores, avisos) {
   if (entrada.proporcion) {
     const [pa, pb] = entrada.proporcion
     if (Math.abs(ancho / alto - pa / pb) > 0.15) avisos.push(`${f}: mide ${ancho}×${alto}; las redes la recortan a ${pa}×${pb} (1,91:1) y se perderá parte.`)
+  }
+  if (cabecera.datosTrasElFin) {
+    avisos.push(`${f}: lleva ${Math.ceil(cabecera.datosTrasElFin / KB)} KB de datos tras el final de la imagen (¿una foto en movimiento, o restos de un editor?). ` +
+      'No se ven y pesan en cada correo y página; quítalos guardándola de nuevo (npm run marca -- --optimizar …).')
   }
   if (entrada.pesoAviso && bytes.length > entrada.pesoAviso) {
     avisos.push(`${f}: pesa ${Math.round(bytes.length / KB)} KB (lo recomendable es hasta ${Math.round(entrada.pesoAviso / KB)} KB); va en ${entrada.para}.`)

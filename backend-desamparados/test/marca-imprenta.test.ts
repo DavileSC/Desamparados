@@ -84,7 +84,9 @@ describe('con una marca completa y otros colores', () => {
 
   const ejecucion = spawnSync(process.execPath, ['--import', 'tsx', 'test/fixtures/marca-en-papel.ts'], {
     cwd: BACKEND,
-    env: { ...process.env, MARCA: 'shared/__fixtures__/marca/completa', DATOS_ENTIDAD: ficheroDatos },
+    // MARCA_DE_PRUEBA y no MARCA: el proceso hereda NODE_TEST_CONTEXT y, en las
+    // pruebas, rutaDeMarca ignora MARCA (la del .env se colaría en todas).
+    env: { ...process.env, MARCA_DE_PRUEBA: 'shared/__fixtures__/marca/completa', DATOS_ENTIDAD: ficheroDatos },
     encoding: 'utf8',
     timeout: 120_000,
   });

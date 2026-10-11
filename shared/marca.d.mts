@@ -9,7 +9,8 @@
 //   const ficheros = leerMarca()
 //
 // En las pruebas `rutaDeMarca()` da null (solo la marca de partida, sin
-// avisos); con `MARCA=shared/__fixtures__/marca/completa` se prueba una
+// avisos) aunque el .env defina `MARCA`; con
+// `MARCA_DE_PRUEBA=shared/__fixtures__/marca/completa` se prueba una
 // instalación con todos los ficheros (backend-desamparados/test/marca.test.ts
 // dice qué hay en cada carpeta de fixtures).
 
@@ -56,6 +57,8 @@ export interface CabeceraImagen {
   transparencia: boolean
   /** PNG Adam7 o JPEG progresivo. PDFKit 0.17 los lee bien: no es error. */
   entrelazado: boolean
+  /** Solo en un JPEG con bytes tras el EOI (foto en movimiento, restos de un editor): cuántos. Sirve, con aviso. */
+  datosTrasElFin?: number
 }
 
 export interface FicheroMarca {
@@ -96,8 +99,9 @@ export declare const CATALOGO_MARCA: readonly Readonly<EntradaCatalogo>[]
 export declare function leerCabeceraImagen(buffer: Uint8Array): CabeceraImagen | null
 /**
  * La carpeta de la marca, absoluta: `MARCA` (relativa a la raíz del
- * repositorio; lanza si no existe), null en las pruebas y, si no,
- * instalacion/marca aunque no exista.
+ * repositorio; lanza si no existe) o, si no, instalacion/marca aunque no
+ * exista. En las pruebas `MARCA` no cuenta: null, o `MARCA_DE_PRUEBA` si la
+ * fija la propia prueba.
  */
 export declare function rutaDeMarca(entorno?: Readonly<Record<string, string | undefined>>): string | null
 /** `carpeta` null: solo la partida, sin avisos. `partida`: por defecto CARPETA_PARTIDA. */

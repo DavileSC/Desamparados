@@ -664,8 +664,10 @@ el arranque rechaza («no es una imagen PNG»). Con Git Bash, o `cp`.
 solo si cambia el SVG). Es lo que usa una instalación sin `instalacion/marca/`
 y, siempre, **lo que usan las pruebas**: `rutaDeMarca()` da `null` con Vitest
 o el ejecutor de Node (`VITEST`, `NODE_TEST_CONTEXT`), así que la marca de
-Desamparados de este PC no cuenta nunca en una prueba. Para probar una
-instalación con todos los ficheros, `MARCA=shared/__fixtures__/marca/completa`.
+Desamparados de este PC no cuenta nunca en una prueba. En las pruebas tampoco
+cuenta `MARCA` (el backend carga su `.env` con dotenv, y una `MARCA` puesta
+allí se colaría en todas): una prueba que quiera una instalación con todos los
+ficheros pone `MARCA_DE_PRUEBA=shared/__fixtures__/marca/completa`.
 
 **Las 301 de los iconos viejos llevan `absolute_redirect off`.** Detrás del
 nginx del sistema, una redirección absoluta llevaría el host y el esquema de

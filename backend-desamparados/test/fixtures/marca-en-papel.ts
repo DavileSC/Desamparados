@@ -5,11 +5,13 @@
 // hermano y a Secretaría, y una papeleta y un Informe anual en PDF.
 //
 // Se ejecuta en un proceso aparte (test/marca-imprenta.test.ts lo lanza con
-// otra `MARCA` y otro `DATOS_ENTIDAD`): la marca y los colores se leen una vez,
+// otra `MARCA_DE_PRUEBA` y otro `DATOS_ENTIDAD`): la marca y los colores se leen una vez,
 // al importar src/domain/marca.ts, igual que en el servidor, y dentro del
 // mismo proceso de la prueba ya estarían fijados.
 //
 //   node --import tsx test/fixtures/marca-en-papel.ts [carpeta]
+//
+// A mano, fuera de las pruebas, la carpeta de la marca se da con `MARCA`.
 //
 // Imprime un JSON en la última línea. Con `carpeta`, deja allí los dos PDF y
 // los dos correos en HTML (con las imágenes dentro) para verlos a ojo.

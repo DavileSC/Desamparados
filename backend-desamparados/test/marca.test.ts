@@ -97,6 +97,52 @@ test('en las pruebas no hay carpeta de instalación: solo la marca de partida', 
   assert.throws(() => rutaDeMarca({ MARCA: 'shared/no-existe' }), /MARCA apunta a .*no existe/);
 });
 
+test('en las pruebas no cuenta la MARCA del entorno (la del .env); solo MARCA_DE_PRUEBA', () => {
+  // dotenv vuelca el .env del backend en process.env: si define MARCA, las
+  // pruebas no deben ver las imágenes de esta máquina.
+  const enPruebas = { NODE_TEST_CONTEXT: 'child-v8' };
+  assert.equal(rutaDeMarca({ ...enPruebas, MARCA: 'shared/__fixtures__/marca/completa' }), null);
+  assert.equal(rutaDeMarca({ VITEST: 'true', MARCA: 'shared/__fixtures__/marca/completa' }), null);
+  assert.equal(rutaDeMarca({ ...enPruebas, MARCA_DE_PRUEBA: 'shared/__fixtures__/marca/completa' }), COMPLETA);
+  assert.throws(() => rutaDeMarca({ ...enPruebas, MARCA_DE_PRUEBA: 'shared/no-existe' }), /MARCA_DE_PRUEBA apunta a .*no existe/);
+  // Fuera de las pruebas, MARCA_DE_PRUEBA no pinta nada.
+  assert.equal(rutaDeMarca({ MARCA_DE_PRUEBA: 'shared/__fixtures__/marca/completa' }), join(fileURLToPath(new URL('../../', import.meta.url)), 'instalacion', 'marca'));
+});
+
+test('un JPEG con datos tras el fin (foto en movimiento, restos de un editor) sirve, con aviso', () => {
+  const foto = readFileSync(join(COMPLETA, 'correo-cabecera.jpg'));
+  // Lo que añade una foto en movimiento de Android: un vídeo MP4 tras el EOI,
+  // con un FFD9 suelto dentro para que no baste con mirar el final.
+  const video = Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from('ftypmp42'), Buffer.alloc(3000, 7), Buffer.from([0xff, 0xd9, 1, 2])]);
+  const conVideo = Buffer.concat([foto, video]);
+  assert.deepEqual(
+    { ...leerCabeceraImagen(conVideo), datosTrasElFin: undefined },
+    { ...leerCabeceraImagen(foto), datosTrasElFin: undefined },
+  );
+  const { errores, avisos, ficheros } = resolverMarca({ carpeta: carpetaCon({ 'correo-cabecera.jpg': conVideo }) });
+  assert.deepEqual(errores, []);
+  assert.equal(ficheros.correoCabecera?.origen, 'instalacion');
+  assert.ok(avisos.some((a) => a.startsWith('correo-cabecera.jpg:') && a.includes('tras el final de la imagen')), avisos.join('\n'));
+  // Sin el EOI en ninguna parte sigue siendo un JPEG cortado.
+  assert.throws(() => cabecera(suelto('cortado.jpg')), /JPEG cortado/);
+});
+
+test('un JPEG con el segmento de medidas (SOF) demasiado corto da un error claro', () => {
+  const corto = Buffer.from([0xff, 0xd8, 0xff, 0xc0, 0x00, 0x04, 0x08, 0x00]);
+  assert.throws(() => leerCabeceraImagen(corto), /JPEG roto: el segmento de medidas \(SOF\) es demasiado corto/);
+});
+
+test('un nombre de la marca con mayúsculas en la extensión: se pide renombrarlo', () => {
+  const { avisos, ficheros } = resolverMarca({
+    carpeta: carpetaCon({ 'escudo-sobre-oscuro.PNG': join(COMPLETA, 'escudo-sobre-oscuro.png') }),
+  });
+  const aviso = avisos.find((a) => a.startsWith('escudo-sobre-oscuro.PNG:')) ?? '';
+  assert.match(aviso, /renómbralo a escudo-sobre-oscuro\.png/);
+  assert.doesNotMatch(aviso, /Tiene que ser PNG|convertido/);
+  // No se usa: en el servidor (Linux) ese nombre no es el que se lee.
+  assert.equal(ficheros.escudoSobreOscuro.origen, 'partida');
+});
+
 test('la marca de partida: sin avisos, PNG sin entrelazar y nulas las que no tiene', () => {
   const { ficheros, errores, avisos } = resolverMarca({ carpeta: null });
   assert.deepEqual(errores, []);
