@@ -127,7 +127,9 @@ if (op.partida) {
 } else if (op.escudo) {
   if (!op.destino) throw new Error('Falta --destino <carpeta> (normalmente instalacion/marca).')
   const origen = desde(op.escudo)
-  await iconos(desde(op.destino), (alto) => sharp(origen).resize({ height: alto, fit: 'contain' }).png().toBuffer())
+  // Cabe en un cuadrado de `lado`, no solo de alto: un escudo apaisado
+  // reducido por el alto saldría más ancho que el icono y sharp no lo compone.
+  await iconos(desde(op.destino), (lado) => sharp(origen).resize({ width: lado, height: lado, fit: 'inside' }).png().toBuffer())
 } else if (op.optimizar) {
   if (!op.destino) throw new Error('Falta --destino <fichero.png> (normalmente instalacion/marca/escudo-sobre-oscuro.png).')
   const origen = desde(op.optimizar)
