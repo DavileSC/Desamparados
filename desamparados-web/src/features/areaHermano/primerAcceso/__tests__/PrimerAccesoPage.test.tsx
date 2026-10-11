@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { Route, Routes } from 'react-router-dom'
 import { renderWithProviders } from '../../../../test/test-utils'
 import PrimerAccesoPage from '../PrimerAccesoPage'
 import { useAuthStore } from '../../../altas/auth/store'
@@ -44,5 +45,26 @@ describe('PrimerAccesoPage', () => {
     renderWithProviders(<PrimerAccesoPage />, { ruta: '/primer-acceso' })
     expect(screen.getByRole('heading', { name: 'El enlace ya no vale' })).toBeInTheDocument()
     expect(simulado.mock.calls.filter(([url]) => String(url).includes('primer-acceso'))).toHaveLength(0)
+  })
+
+  it('dice desde el principio el mínimo de la contraseña', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(json({ nombre: 'Antonio', email: 'antonio@ejemplo.test' }))))
+    renderWithProviders(<PrimerAccesoPage />, { ruta: `/primer-acceso?token=${TOKEN}` })
+
+    await screen.findByRole('heading', { name: 'Te damos la bienvenida, Antonio' })
+    expect(screen.getByText(/Al menos 12 caracteres/)).toBeInTheDocument()
+  })
+
+  it('sin enlace pero con la revisión a medias, lleva a la revisión', async () => {
+    vi.stubGlobal('fetch', vi.fn())
+    useAuthStore.setState({ hermano: { id: 7, email: 'antonio@ejemplo.test', role: 'USER', perfiles: [], primerAccesoPendiente: true } })
+    renderWithProviders(
+      <Routes>
+        <Route path="/primer-acceso" element={<PrimerAccesoPage />} />
+        <Route path="/primer-acceso/ficha" element={<p>La revisión</p>} />
+      </Routes>,
+      { ruta: '/primer-acceso' },
+    )
+    expect(await screen.findByText('La revisión')).toBeInTheDocument()
   })
 })
