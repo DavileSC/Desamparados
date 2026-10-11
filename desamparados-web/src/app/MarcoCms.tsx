@@ -24,6 +24,7 @@ import { usePanelDeHoy } from './usePanelDeHoy'
 import { useModulos } from '../hooks/useModulos'
 import { designTokens } from '../theme'
 import { site } from '../config/site'
+import { MARCA } from '../theme/marca'
 
 const SIDEBAR = superficiesCms('oscuro').sidebar // #070608, la misma en los dos modos
 
@@ -331,7 +332,7 @@ function OpcionModoOscuro() {
           width: 36, height: 20, p: 0, flexShrink: 0, borderRadius: 10, pointerEvents: 'none',
           '& .MuiSwitch-switchBase': { p: '2px', '&.Mui-checked': { transform: 'translateX(16px)' } },
           '& .MuiSwitch-track': { borderRadius: 10, backgroundColor: 'text.disabled', opacity: 1 },
-          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#a03d44', opacity: 1 },
+          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: MARCA.principalMedio, opacity: 1 },
         }}
       />
     </MenuItem>

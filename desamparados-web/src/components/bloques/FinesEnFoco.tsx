@@ -9,6 +9,7 @@ import { esDestinoValido } from '../../lib/destinos'
 import { useModoEdicion } from './modoEdicion'
 import { anchoMaximo } from './presentacion'
 import type { BloqueAnillos as Datos } from '../../lib/api/contenido'
+import { MARCA, alfa } from '../../theme/marca'
 
 /** Lo que tarda el foco en pasar solo a la palabra siguiente. */
 export const PASO_DEL_FOCO_MS = 3200
@@ -82,7 +83,7 @@ export default function FinesEnFoco({ bloque }: { bloque: Datos }) {
         // Que se desvanezca hacia los bordes: sin esto, el grano dibuja un rectángulo.
         maskImage: 'radial-gradient(ellipse 50% 50% at 50% 50%, #000 55%, transparent 100%)',
         WebkitMaskImage: 'radial-gradient(ellipse 50% 50% at 50% 50%, #000 55%, transparent 100%)',
-        background: 'radial-gradient(60% 55% at 15% 25%, rgba(110,24,34,0.28), transparent 70%), radial-gradient(55% 60% at 90% 70%, rgba(222,199,43,0.06), transparent 70%)',
+        background: `radial-gradient(60% 55% at 15% 25%, ${alfa(MARCA.principal, 0.28)}, transparent 70%), radial-gradient(55% 60% at 90% 70%, ${alfa(MARCA.acento, 0.06)}, transparent 70%)`,
       }}>
         <Box component="svg" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.08, mixBlendMode: 'overlay' }}>
           <filter id={idGrano}><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves={2} stitchTiles="stitch" /></filter>
@@ -145,7 +146,7 @@ export default function FinesEnFoco({ bloque }: { bloque: Datos }) {
           id={idDetalle}
           key={foco}
           sx={{
-            display: 'flex', flexDirection: 'column', gap: 2.5, pl: { xs: 2.5, md: 5 }, borderLeft: `1px solid rgba(222,199,43,0.4)`,
+            display: 'flex', flexDirection: 'column', gap: 2.5, pl: { xs: 2.5, md: 5 }, borderLeft: `1px solid ${alfa(MARCA.acento, 0.4)}`,
             animation: `${llega} .7s ease-out both`, '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
           }}
         >

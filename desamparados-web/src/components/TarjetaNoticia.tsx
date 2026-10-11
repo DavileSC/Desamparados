@@ -6,6 +6,7 @@ import { GOLD, GRANATE, PANTALLA_ALTA, SERIF } from '../features/inicio/estilos'
 import type { Noticia } from '../types'
 import Hueso, { Lineas } from './esqueleto/Hueso'
 import { propsDeFoto } from '../lib/fotoSubida'
+import { MARCA, alfa } from '../theme/marca'
 
 interface TarjetaNoticiaProps {
   noticia: Noticia
@@ -37,7 +38,7 @@ const recorte = (lineas: number) => ({ display: '-webkit-box', WebkitLineClamp: 
 // Las placas de las noticias sin foto alternan tono: tres seguidas del mismo color pesan como un solo bloque.
 // Tonos velados, no planos: una placa de color liso parecía un hueco por rellenar.
 const TONOS_PLACA = [
-  { tono: 'granate', fondo: `radial-gradient(120% 90% at 30% 20%, #5a1620, ${GRANATE} 40%, #2a0a0f)` },
+  { tono: 'granate', fondo: `radial-gradient(120% 90% at 30% 20%, ${MARCA.principalProfundo}, ${GRANATE} 40%, ${MARCA.principalSombra})` },
   { tono: 'tinta', fondo: 'radial-gradient(120% 90% at 30% 20%, #2a2620, #0d0c0e 60%)' },
   { tono: 'piedra', fondo: 'radial-gradient(120% 90% at 30% 20%, #3a353a, #1c1a1e 65%)' },
 ] as const
@@ -108,7 +109,7 @@ export default function TarjetaNoticia({ noticia, indice = 0, destacada = false,
         '& .noticia-foto': { transition: 'transform .6s ease' },
         '&:focus-visible': { outline: `2px solid ${GOLD}`, outlineOffset: 3 },
         '@media (hover: hover)': {
-          '&:hover': { transform: 'translateY(-3px)', borderColor: 'rgba(222, 199, 43, 0.35)' },
+          '&:hover': { transform: 'translateY(-3px)', borderColor: alfa(MARCA.acento, 0.35) },
           '&:hover .noticia-titulo': { color: '#fff' },
           '&:hover .noticia-foto': { transform: 'scale(1.04)' },
         },

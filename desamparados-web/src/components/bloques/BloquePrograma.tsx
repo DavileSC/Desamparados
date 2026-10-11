@@ -9,6 +9,7 @@ import { useModulos } from '../../hooks/useModulos'
 import { anchoMaximo } from './presentacion'
 import { anioDe, fechaDelActo, proximaFila } from './programa'
 import type { BloquePrograma as Datos, FilaDePrograma } from '../../lib/api/contenido'
+import { MARCA, alfa } from '../../theme/marca'
 
 /** Cuántos actos futuros se piden a la Agenda: sobran para encontrar el próximo culto de cualquier mes. */
 const ACTOS = 60
@@ -43,7 +44,7 @@ export default function BloquePrograma({ bloque }: { bloque: Datos }) {
         pb: 2.5, borderBottom: '1px solid', borderColor: 'divider',
       }}>
         {bloque.titulo
-          ? <Typography component="h2" sx={{ fontSize: 13, fontWeight: 500, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#c4af79', m: 0 }}>{bloque.titulo}</Typography>
+          ? <Typography component="h2" sx={{ fontSize: 13, fontWeight: 500, letterSpacing: '0.3em', textTransform: 'uppercase', color: MARCA.acentoApagado, m: 0 }}>{bloque.titulo}</Typography>
           : <span />}
         <Typography component="span" sx={{ fontSize: 14, color: 'text.secondary' }}>{anioDe()}</Typography>
       </Box>
@@ -80,7 +81,7 @@ function Fila({ fila, proximo, fecha }: { fila: FilaDePrograma; proximo: boolean
         {proximo && (
           <>
             {/* Un rótulo con filete, no un bloque relleno: el amarillo macizo era lo único así en la web. */}
-            <Typography component="span" sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.22em', color: 'secondary.main', border: '1px solid', borderColor: 'rgba(222, 199, 43, 0.5)', px: 1, py: 0.5, lineHeight: 1.4 }}>
+            <Typography component="span" sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.22em', color: 'secondary.main', border: '1px solid', borderColor: alfa(MARCA.acento, 0.5), px: 1, py: 0.5, lineHeight: 1.4 }}>
               PRÓXIMO
             </Typography>
             {fecha && <Typography component="span" sx={{ fontSize: 15.5, color: 'text.primary' }}>{fecha}</Typography>}

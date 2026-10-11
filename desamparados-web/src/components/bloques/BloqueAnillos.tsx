@@ -10,9 +10,10 @@ import FinesEnFoco from './FinesEnFoco'
 import { enlaceConFlecha } from '../estiloDeBoton'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import type { BloqueAnillos as Datos, FinDeAnillo } from '../../lib/api/contenido'
+import { MARCA } from '../../theme/marca'
 
 /** El color de cada anillo, en orden: oro, rosa y crema. Pensados para fondo oscuro. */
-const COLORES = ['#dec72b', '#fc858a', '#e8dfcf'] as const
+const COLORES = [MARCA.acento, MARCA.principalClaro, '#e8dfcf'] as const
 
 /**
  * El dibujo, en unidades de un lienzo de 1100 × 700: los tres centros, el radio
@@ -99,7 +100,7 @@ function AnillosEntrelazados({ bloque }: { bloque: Datos }) {
           {bloque.centro && (
             <Typography component="span" sx={{
               position: 'absolute', left: '50%', top: '63.4%', transform: 'translateX(-50%)',
-              fontSize: 11, letterSpacing: '0.28em', textTransform: 'uppercase', color: '#c4af79', whiteSpace: 'nowrap',
+              fontSize: 11, letterSpacing: '0.28em', textTransform: 'uppercase', color: MARCA.acentoApagado, whiteSpace: 'nowrap',
             }}>
               {bloque.centro}
             </Typography>
@@ -124,7 +125,7 @@ function AnillosEntrelazados({ bloque }: { bloque: Datos }) {
             {anillos}
           </Box>
           {bloque.centro && (
-            <Typography component="span" sx={{ display: 'block', textAlign: 'center', mt: 1.5, fontSize: 11, letterSpacing: '0.28em', textTransform: 'uppercase', color: '#c4af79' }}>
+            <Typography component="span" sx={{ display: 'block', textAlign: 'center', mt: 1.5, fontSize: 11, letterSpacing: '0.28em', textTransform: 'uppercase', color: MARCA.acentoApagado }}>
               {bloque.centro}
             </Typography>
           )}

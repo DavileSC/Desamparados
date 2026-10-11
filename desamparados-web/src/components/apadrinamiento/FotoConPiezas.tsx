@@ -2,6 +2,7 @@ import type { MouseEvent } from 'react'
 import { Box, ButtonBase, Tooltip } from '@mui/material'
 import type { Pieza } from '../../lib/api/apadrinamientos'
 import { euros } from '../../lib/euros'
+import { MARCA, alfa } from '../../theme/marca'
 
 interface Props {
   foto: string
@@ -52,10 +53,10 @@ export default function FotoConPiezas({ foto, titulo, piezas, elegida = null, on
               onClick={(e) => { e.stopPropagation(); onElegir?.(p) }}
               sx={{
                 width: 30, height: 30, borderRadius: '50%', fontSize: 16, fontWeight: 700, lineHeight: 1,
-                border: '2px solid', borderColor: '#d9b36c',
-                bgcolor: p.apadrinada ? '#6e1a20' : 'rgba(20, 17, 17, 0.72)', color: p.apadrinada ? '#f3ebdc' : '#d9b36c',
-                boxShadow: elegida === p.id ? '0 0 0 4px rgba(217, 179, 108, 0.6)' : '0 1px 4px rgba(0,0,0,0.5)',
-                '&.Mui-disabled': { color: p.apadrinada ? '#f3ebdc' : '#d9b36c' },
+                border: '2px solid', borderColor: MARCA.acentoPieza,
+                bgcolor: p.apadrinada ? MARCA.principalPieza : 'rgba(20, 17, 17, 0.72)', color: p.apadrinada ? '#f3ebdc' : MARCA.acentoPieza,
+                boxShadow: elegida === p.id ? `0 0 0 4px ${alfa(MARCA.acentoPieza, 0.6)}` : '0 1px 4px rgba(0,0,0,0.5)',
+                '&.Mui-disabled': { color: p.apadrinada ? '#f3ebdc' : MARCA.acentoPieza },
                 '&:hover': pulsable ? { transform: 'scale(1.12)' } : undefined,
                 transition: 'transform .15s',
               }}

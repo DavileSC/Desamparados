@@ -5,9 +5,10 @@ import { SERIF, ceja } from '../../features/inicio/estilos'
 import { anchoMaximo } from './presentacion'
 import type { BloqueCarrusel as Datos, PiezaDeCarrusel } from '../../lib/api/contenido'
 import { propsDeFoto } from '../../lib/fotoSubida'
+import { MARCA } from '../../theme/marca'
 
 /** Oro apagado de la familia de la pieza, el mismo de la relación de cargos. */
-const ORO_SUAVE = '#c4af79'
+const ORO_SUAVE = MARCA.acentoApagado
 /** Lo que hay que deslizar el dedo sobre la foto para pasar de pieza. */
 const DESLIZ = 50
 
@@ -77,7 +78,7 @@ export default function BloqueCarrusel({ bloque }: { bloque: Datos }) {
         maxWidth: anchoMaximo(bloque, '1200px'),
         mx: 'auto',
         outline: 'none',
-        '&:focus-visible': { outline: '2px solid #dec72b', outlineOffset: 8 },
+        '&:focus-visible': { outline: `2px solid ${MARCA.acento}`, outlineOffset: 8 },
       }}
     >
       <Box
@@ -190,7 +191,7 @@ function CarruselMovil({ bloque, actual, pieza, total, ir, teclas, empieza, acab
           sm: `min(calc(100svh - ${BARRA_MOVIL.sm}px), 125vw)`,
         },
         minHeight: 460,
-        '&:focus-visible': { outline: '2px solid #dec72b', outlineOffset: -2 },
+        '&:focus-visible': { outline: `2px solid ${MARCA.acento}`, outlineOffset: -2 },
       }}
     >
       {bloque.piezas.map((p, i) => (
@@ -239,7 +240,7 @@ function CarruselMovil({ bloque, actual, pieza, total, ir, teclas, empieza, acab
               {hayCartela && (
                 <ButtonBase
                   onClick={() => setCartela(true)}
-                  sx={{ mt: 1, minHeight: 32, fontSize: 13, fontWeight: 500, letterSpacing: '0.04em', color: ORO_SUAVE, '&:focus-visible': { outline: '2px solid #dec72b', outlineOffset: 2 } }}
+                  sx={{ mt: 1, minHeight: 32, fontSize: 13, fontWeight: 500, letterSpacing: '0.04em', color: ORO_SUAVE, '&:focus-visible': { outline: `2px solid ${MARCA.acento}`, outlineOffset: 2 } }}
                 >
                   Ver cartela
                 </ButtonBase>
@@ -279,7 +280,7 @@ function CarruselMovil({ bloque, actual, pieza, total, ir, teclas, empieza, acab
       <ButtonBase
         aria-label="Cerrar la cartela"
         onClick={() => setCartela(false)}
-        sx={{ position: 'absolute', top: 12, right: 12, width: 40, height: 40, borderRadius: '50%', bgcolor: 'rgba(255,255,255,.1)', fontSize: 18, color: 'inherit', '&:focus-visible': { outline: '2px solid #dec72b', outlineOffset: 2 } }}
+        sx={{ position: 'absolute', top: 12, right: 12, width: 40, height: 40, borderRadius: '50%', bgcolor: 'rgba(255,255,255,.1)', fontSize: 18, color: 'inherit', '&:focus-visible': { outline: `2px solid ${MARCA.acento}`, outlineOffset: 2 } }}
       >
         <span aria-hidden="true">✕</span>
       </ButtonBase>
@@ -332,7 +333,7 @@ function Flecha({ etiqueta, onClick, claro = false, children }: { etiqueta: stri
         // Sobre la foto (en el móvil), siempre claras: allí no manda el tema de la página.
         width: 44, height: 44, fontSize: 22, fontWeight: 300, color: claro ? 'rgba(243,239,233,.75)' : 'text.secondary', transition: 'color .3s ease',
         '&:hover': { color: claro ? '#f3efe9' : 'text.primary' },
-        '&:focus-visible': { outline: '2px solid #dec72b', outlineOffset: 2 },
+        '&:focus-visible': { outline: `2px solid ${MARCA.acento}`, outlineOffset: 2 },
       }}
     >
       <span aria-hidden="true">{children}</span>

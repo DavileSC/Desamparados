@@ -4,10 +4,11 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { esDestinoValido } from '../../lib/destinos'
 import { anchoMaximo } from './presentacion'
 import type { BloqueRelacion as Datos, FilaDeRelacion } from '../../lib/api/contenido'
+import { MARCA } from '../../theme/marca'
 
 /** Oro del primer cargo y del título; el resto de cargos, en un oro más apagado. */
-const ORO = '#dec72b'
-const ORO_SUAVE = '#c4af79'
+const ORO = MARCA.acento
+const ORO_SUAVE = MARCA.acentoApagado
 
 /**
  * Relación de un órgano de gobierno: una fila por cargo, con el cargo en

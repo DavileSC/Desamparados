@@ -6,6 +6,7 @@ import { useModoEdicion } from './modoEdicion'
 import { ENCUADRE_POR_DEFECTO, srcSetDeCabecera } from './cabecera'
 import Hueso, { Lineas } from '../esqueleto/Hueso'
 import { caerALaOriginal, srcsetDeSubida } from '../../lib/fotoSubida'
+import { MARCA } from '../../theme/marca'
 
 /** Fondo de la página: la foto se funde a él por abajo. */
 const FONDO = '#121113'
@@ -80,7 +81,7 @@ export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encu
         // no avanzaría nunca.
         viewTimelineName: '--cabecera',
         // Sin foto (mientras carga o si se quita), granate casi negro: nunca un hueco gris.
-        backgroundColor: '#1d0a0e',
+        backgroundColor: MARCA.principalNoche,
       }}
     >
       {conFoto && (

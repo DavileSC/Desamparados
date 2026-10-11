@@ -12,6 +12,7 @@ import { GOLD } from '../../features/inicio/estilos'
 import { useModulos } from '../../hooks/useModulos'
 import { fichaDeModulo, type Modulo } from '../../domain/modulos'
 import type { Bloque } from '../../lib/api/contenido'
+import { MARCA, alfa } from '../../theme/marca'
 
 /** El aire encima de un bloque, según su espaciado. `normal` es el de siempre. */
 const ESPACIO = {
@@ -94,9 +95,9 @@ function BloqueDePagina({ bloque, indice = 0, primero = true, pegado = false }: 
       <MarcoEditable bloque={bloque} indice={indice}>
         {siDe(bloque, 'separador') && (
           <Box aria-hidden sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifyContent: 'center', mb: { xs: 4, md: 6 } }}>
-            <Box sx={{ width: 56, height: '1px', backgroundColor: 'rgba(222, 199, 43, 0.6)' }} />
+            <Box sx={{ width: 56, height: '1px', backgroundColor: alfa(MARCA.acento, 0.6) }} />
             <Box sx={{ width: 7, height: 7, transform: 'rotate(45deg)', border: `1px solid ${GOLD}` }} />
-            <Box sx={{ width: 56, height: '1px', backgroundColor: 'rgba(222, 199, 43, 0.6)' }} />
+            <Box sx={{ width: 56, height: '1px', backgroundColor: alfa(MARCA.acento, 0.6) }} />
           </Box>
         )}
         <BandaDeFondo fondo={fondo} foto={libreDe(bloque, 'fondoFoto')}>

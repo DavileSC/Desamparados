@@ -6,6 +6,7 @@ import { GOLD } from '../../features/inicio/estilos'
 import { anchoMaximo, valorDe } from './presentacion'
 import EsqueletoDelRecorrido from './EsqueletoDelRecorrido'
 import type { BloqueItinerario as Datos } from '../../lib/api/contenido'
+import { MARCA, alfa } from '../../theme/marca'
 
 // El mapa lleva MapLibre (unos 800 KB): se descarga aparte, solo en la página
 // que lo usa, y mientras llega se ve su esqueleto, del mismo tamaño.
@@ -51,7 +52,7 @@ export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
               {parada.hora || SIN_HORA}
             </Typography>
             <Box aria-hidden sx={{ position: 'relative', alignSelf: 'stretch', display: 'flex', justifyContent: 'center' }}>
-              <Box sx={{ position: 'absolute', top: i === 0 ? 12 : 0, bottom: i === ultima ? 'calc(100% - 12px)' : 0, width: '2px', backgroundColor: 'rgba(222, 199, 43, 0.35)' }} />
+              <Box sx={{ position: 'absolute', top: i === 0 ? 12 : 0, bottom: i === ultima ? 'calc(100% - 12px)' : 0, width: '2px', backgroundColor: alfa(MARCA.acento, 0.35) }} />
               <Box sx={{ position: 'relative', mt: '6px', width: 12, height: 12, borderRadius: '50%', border: `2px solid ${GOLD}`, backgroundColor: 'background.default' }} />
             </Box>
             <Typography sx={{ color: 'text.primary', pb: 3 }}>{parada.lugar}</Typography>
@@ -81,7 +82,7 @@ export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
               {parada.lugar}
             </Typography>
             <Box component="span" aria-hidden
-              sx={{ flex: '1 1 24px', minWidth: 24, borderBottom: '1px dotted rgba(222, 199, 43, 0.4)', transform: 'translateY(-4px)' }} />
+              sx={{ flex: '1 1 24px', minWidth: 24, borderBottom: `1px dotted ${alfa(MARCA.acento, 0.4)}`, transform: 'translateY(-4px)' }} />
             <Typography component="span" sx={{
               flexShrink: 0, fontVariantNumeric: 'tabular-nums',
               color: parada.hora ? 'secondary.main' : 'text.secondary',
@@ -120,7 +121,7 @@ export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
             <Box
               sx={{
                 minWidth: '80px', textAlign: 'center', px: 1.5, py: 1, borderRadius: '8px',
-                backgroundColor: 'rgba(110, 24, 34, 0.25)', color: 'secondary.main', fontWeight: 600,
+                backgroundColor: alfa(MARCA.principal, 0.25), color: 'secondary.main', fontWeight: 600,
               }}
             >
               {parada.hora || SIN_HORA}

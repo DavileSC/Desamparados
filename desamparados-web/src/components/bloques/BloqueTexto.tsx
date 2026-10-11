@@ -3,6 +3,7 @@ import { limpiarHtml } from '../../lib/limpiarHtml'
 import { SERIF } from '../../features/inicio/estilos'
 import { anchoMaximo, siDe, valorDe } from './presentacion'
 import type { BloqueTexto as Datos } from '../../lib/api/contenido'
+import { MARCA } from '../../theme/marca'
 
 /** Lo que cambia cada estilo del texto. `normal` es el de siempre. */
 const ESTILOS = {
@@ -16,7 +17,7 @@ const ESTILOS = {
   carta: {
     fontSize: '1.06rem', lineHeight: 1.85,
     '& > p:first-of-type': { fontSize: { xs: '1.12rem', md: '1.2rem' }, color: 'text.primary' },
-    '& h2, & h3': { fontSize: 13, fontWeight: 600, letterSpacing: '0.26em', textTransform: 'uppercase', color: '#c4af79', mt: 5, mb: 1 },
+    '& h2, & h3': { fontSize: 13, fontWeight: 600, letterSpacing: '0.26em', textTransform: 'uppercase', color: MARCA.acentoApagado, mt: 5, mb: 1 },
     '& h2 + p, & h3 + p': { mt: 0 },
   },
 } as const

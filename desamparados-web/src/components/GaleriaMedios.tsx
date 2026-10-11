@@ -12,6 +12,7 @@ import Carteles from './galeria/Carteles'
 import { imagenDe, useMedidas } from './galeria/formato'
 import { soloVideos } from './bloques/presentacion'
 import { propsDeFoto } from '../lib/fotoSubida'
+import { MARCA } from '../theme/marca'
 
 export type FormatoGaleria = 'pase' | 'cuadricula' | 'mosaico' | 'tiras' | 'estampas' | 'carteles'
 
@@ -142,7 +143,7 @@ function Rejilla({ medios, mosaico, columnas, onAbrir }: {
               sx={{
                 display: 'block', width: '100%', position: 'relative', overflow: 'hidden', borderRadius: '6px',
                 '& img': { transition: 'transform .5s ease' }, '&:hover img, &.Mui-focusVisible img': { transform: 'scale(1.04)' },
-                '&.Mui-focusVisible': { outline: '2px solid #dec72b', outlineOffset: 2 },
+                '&.Mui-focusVisible': { outline: `2px solid ${MARCA.acento}`, outlineOffset: 2 },
               }}
             >
               <Box component="img" {...propsDeFoto(imagenDe(medio), '(min-width: 900px) 33vw, 50vw')} alt="" loading="lazy" decoding="async"

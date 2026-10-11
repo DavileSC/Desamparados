@@ -2,6 +2,7 @@ import { useRef, type PointerEvent, type ReactNode } from 'react'
 import { Box, ButtonBase, Typography } from '@mui/material'
 import { useReducedMotion } from 'framer-motion'
 import { propsDeFoto } from '../lib/fotoSubida'
+import { MARCA } from '../theme/marca'
 
 interface Props {
   imagen: string
@@ -60,7 +61,7 @@ export default function CartelInclinado({ imagen, etiqueta, antetitulo, titulo, 
           transformStyle: 'preserve-3d', transition: 'transform .5s cubic-bezier(.2, .8, .2, 1)',
           boxShadow: '0 30px 50px -20px rgba(0,0,0,.75)', borderRadius: '4px',
           '&:hover .brillo, &.Mui-focusVisible .brillo': { opacity: 1 },
-          '&.Mui-focusVisible': { outline: '2px solid #dec72b', outlineOffset: 4 },
+          '&.Mui-focusVisible': { outline: `2px solid ${MARCA.acento}`, outlineOffset: 4 },
         }}
       >
         <Box component="img" {...propsDeFoto(imagen, '(min-width: 900px) 400px, 100vw')} alt="" loading="lazy" decoding="async"

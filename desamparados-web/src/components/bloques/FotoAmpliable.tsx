@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { ButtonBase, useMediaQuery, useTheme } from '@mui/material'
 import VisorGaleria from '../galeria/VisorGaleria'
 import { useMedidas } from '../galeria/formato'
+import { MARCA } from '../../theme/marca'
 
 /**
  * Una foto suelta que se abre a pantalla completa al pulsarla, con el mismo
@@ -19,7 +20,7 @@ export default function FotoAmpliable({ url, alt, pie, children }: { url: string
       <ButtonBase
         onClick={() => setAbierta(true)}
         aria-label={`Ampliar la foto: ${alt}`}
-        sx={{ display: 'block', width: '100%', cursor: 'zoom-in', '&.Mui-focusVisible': { outline: '2px solid #dec72b', outlineOffset: 3 } }}
+        sx={{ display: 'block', width: '100%', cursor: 'zoom-in', '&.Mui-focusVisible': { outline: `2px solid ${MARCA.acento}`, outlineOffset: 3 } }}
       >
         {children}
       </ButtonBase>

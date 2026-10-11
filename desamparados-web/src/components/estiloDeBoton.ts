@@ -15,10 +15,11 @@
  * - `oscuro`: filete apenas visible, para las acciones secundarias de los
  *   formularios («Cancelar», «Añadir»), que no deben quitarle protagonismo al principal.
  */
+import { MARCA } from '../theme/marca'
 
-const GRANATE = '#6e1822'
+const GRANATE = MARCA.principal
 const TINTA = '#1b1c1a'
-const ORO = '#dec72b'
+const ORO = MARCA.acento
 
 /** Al pasar el ratón: fondo blanco. El color de la letra lo pone cada estilo. */
 const aBlanco = (letra: string) => ({

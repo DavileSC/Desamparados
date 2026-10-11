@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type SyntheticEvent } from 'react'
 import { keyframes } from '@mui/material/styles'
 import type { MedioGaleria } from '../../lib/api/contenido'
+import { MARCA } from '../../theme/marca'
 
 /** Horizontal, vertical o casi cuadrada: decide cómo se encaja cada foto. */
 export type Formato = 'h' | 'v' | 'c'
@@ -47,10 +48,10 @@ export const botonRedondo = (tamano: number) => ({
   width: tamano, height: tamano, color: 'common.white', border: '1px solid rgba(255,255,255,0.28)',
   backgroundColor: 'rgba(7,6,8,0.5)', backdropFilter: 'blur(6px)',
   '&:hover': { backgroundColor: 'rgba(7,6,8,0.75)' },
-  '&.Mui-focusVisible': { outline: '2px solid #dec72b', outlineOffset: 2 },
+  '&.Mui-focusVisible': { outline: `2px solid ${MARCA.acento}`, outlineOffset: 2 },
 }) as const
 
-export const DORADO = '#dec72b'
+export const DORADO = MARCA.acento
 
 /** Lo que tarda en pasar de foto en escritorio (el «enfoque»). */
 const PASO = 1300

@@ -6,6 +6,7 @@ import ContenedorDePagina from '../ContenedorDePagina'
 import { GRANATE, PAPEL } from '../../features/inicio/estilos'
 import { VELO_SOBRE_GRANATE } from '../estiloDeBoton'
 import { propsDeFoto } from '../../lib/fotoSubida'
+import { MARCA } from '../../theme/marca'
 
 export type Fondo = 'ninguno' | 'papel' | 'granate' | 'oscuro' | 'foto'
 
@@ -34,7 +35,7 @@ export default function BandaDeFondo({ fondo, foto, children }: { fondo: Fondo; 
       mode: 'light',
       background: { default: PAPEL, paper: '#ffffff' },
       text: { primary: TINTA, secondary: TINTA_SUAVE },
-      secondary: { main: GRANATE, dark: '#5a131c', contrastText: '#ffffff' },
+      secondary: { main: GRANATE, dark: MARCA.principalHover, contrastText: '#ffffff' },
       divider: 'rgba(27, 28, 26, 0.12)',
     },
   }), [tema])

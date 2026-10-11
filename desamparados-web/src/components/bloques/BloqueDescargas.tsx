@@ -3,6 +3,7 @@ import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import { anchoMaximo, valorDe } from './presentacion'
 import type { BloqueDescargas as Datos } from '../../lib/api/contenido'
+import { MARCA, alfa } from '../../theme/marca'
 
 /**
  * Documentos para descargar: los PDF que se suben desde el CMS, en lista o en
@@ -28,8 +29,8 @@ export default function BloqueDescargas({ bloque }: { bloque: Datos }) {
                 ? { flexDirection: 'column', height: '100%', p: 3, border: '1px solid', borderColor: 'divider', borderRadius: '8px' }
                 : { py: 2 }),
               transition: 'border-color .2s ease',
-              '&:hover .titulo': { color: 'secondary.main' }, '&:hover': tarjetas ? { borderColor: 'rgba(222, 199, 43, 0.5)' } : {},
-              '&:focus-visible': { outline: '2px solid #dec72b', outlineOffset: 2 },
+              '&:hover .titulo': { color: 'secondary.main' }, '&:hover': tarjetas ? { borderColor: alfa(MARCA.acento, 0.5) } : {},
+              '&:focus-visible': { outline: `2px solid ${MARCA.acento}`, outlineOffset: 2 },
             }}>
             <PictureAsPdfOutlinedIcon aria-hidden sx={{ color: 'secondary.main', fontSize: tarjetas ? 36 : 28 }} />
             <Box sx={{ flex: 1, minWidth: 0 }}>
