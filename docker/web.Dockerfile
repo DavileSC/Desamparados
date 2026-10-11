@@ -6,7 +6,9 @@
 # No lleva los datos de ninguna corporación: los lee al arrancar de
 # /app/instalacion/datos-entidad.json (el mismo montaje que la API) y escribe
 # con ellos index.html, el manifest, robots.txt, /instalacion.js y el sitio de
-# nginx (docker/nginx/40-instalacion.sh). Una sola imagen para todas.
+# nginx (docker/nginx/40-instalacion.sh). Tampoco su marca: el escudo y los
+# iconos se copian al arrancar de /app/instalacion/marca a /marca/ (o, si
+# faltan, los genéricos de shared/marca-de-partida). Una sola imagen para todas.
 #
 # El contexto de construcción es la raíz del repositorio (igual que la API),
 # porque aquí se copian tanto `desamparados-web/` como `docker/nginx/`.
@@ -82,8 +84,14 @@ COPY docker/nginx/ubicaciones.conf /etc/nginx/snippets/desamparados-ubicaciones.
 
 # Lo que necesita el arranque, con la misma estructura que el repositorio bajo
 # /app: shared/datos-entidad.mjs busca los datos en ../instalacion y el
-# catálogo de módulos en ./modulos.json, relativos a sí mismo.
-COPY shared/datos-entidad.mjs shared/modulos.json /app/shared/
+# catálogo de módulos en ./modulos.json, relativos a sí mismo; marca.mjs, la
+# marca en ../instalacion/marca y la de partida en ./marca-de-partida. Uno a
+# uno y no `shared/` entero: un módulo nuevo que importe datos-entidad.mjs y
+# falte aquí hace que la imagen no arranque, y eso lo caza la prueba de humo
+# del CI; con la carpeta entera, viajarían también los fixtures y los JSON de
+# la web, que aquí no pinta nada.
+COPY shared/datos-entidad.mjs shared/colores-de-marca.mjs shared/marca.mjs shared/modulos.json /app/shared/
+COPY shared/marca-de-partida /app/shared/marca-de-partida
 COPY desamparados-web/scripts/instalacion-web.mjs /app/desamparados-web/scripts/
 # El sitio de producción no va en la imagen: lo escribe el arranque con el
 # dominio de la corporación. En el servidor y en local, el compose monta

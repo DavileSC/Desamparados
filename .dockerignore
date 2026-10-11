@@ -40,6 +40,9 @@ desamparados-web/public/robots.txt
 docs
 **/test
 **/__tests__
+# Las imágenes de prueba de la marca (las de una instalación inventada y las
+# rotas a propósito): ninguna imagen las sirve ni las lee al arrancar.
+**/__fixtures__
 **/*.test.ts
 **/*.test.tsx
 **/*.log
