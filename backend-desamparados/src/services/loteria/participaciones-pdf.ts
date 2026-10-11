@@ -11,7 +11,7 @@ import { identidad } from '../../domain/datos-entidad.js';
 import {
   LEYENDA_POR_DEFECTO, jugadoPorNumero, numeroImpreso, participacionesDelTalonario, type Reparto,
 } from '../../domain/loteria.js';
-import { A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, NEGRO, ORO, aBuffer, nuevoDocumento, rotulo, sinMargenes, versalitas, type Doc } from '../informes/pdf.js';
+import { A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, NEGRO, ORO, ORO_TEXTO, aBuffer, nuevoDocumento, rotulo, sinMargenes, versalitas, type Doc } from '../informes/pdf.js';
 import { eurosDeCentimos } from '../../utils/euros.js';
 
 interface SorteoParaImprimir extends Reparto {
@@ -26,7 +26,6 @@ const POR_HOJA = 5;
 const ALTO = A4.alto / POR_HOJA;
 const MATRIZ = 52 * MM;
 const MARGEN = 7 * MM;
-const ORO_TEXTO = '#8a6a30';
 const fechaLarga = new Intl.DateTimeFormat('es-ES', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' });
 /** «4,00 €», siempre con céntimos (en una participación se lee el precio exacto) y con espacio duro. */
 
@@ -50,7 +49,7 @@ function participacion(doc: Doc, s: SorteoParaImprimir, n: number, total: number
   const x = MATRIZ + MARGEN;
   const ancho = A4.ancho - x - MARGEN;
   const arriba = y + MARGEN;
-  doc.image(IMAGENES.escudoOro, x, arriba, { fit: [30, 36], align: 'center', valign: 'center' });
+  doc.image(IMAGENES.escudoDestacadoEnPapel, x, arriba, { fit: [30, 36], align: 'center', valign: 'center' });
   rotulo(doc, versalitas(identidad.tipo), x + 40, arriba + 4, { letra: LETRA.textoFuerte, tam: 7, color: ORO_TEXTO, espaciado: 1.8 });
   rotulo(doc, identidad.titular, x + 40, arriba + 15, { letra: LETRA.titulo, tam: 12, color: NEGRO, ancho: ancho - 150 });
   rotulo(doc, versalitas('Participación'), x, arriba + 4, { letra: LETRA.textoFuerte, tam: 7, color: ORO_TEXTO, espaciado: 1.5, ancho, alinear: 'right' });

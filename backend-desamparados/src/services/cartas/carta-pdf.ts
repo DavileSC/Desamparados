@@ -12,7 +12,7 @@ import { identidad, secretaria } from '../../domain/datos-entidad.js';
 import { rellenar, type DestinatarioDeCarta } from '../../domain/cartas.js';
 import { lineasDeDireccion, nombreCompleto } from '../../domain/etiquetas.js';
 import {
-  A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, NEGRO, ORO,
+  A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, NEGRO, ORO, ORO_TEXTO,
   aBuffer, nuevoDocumento, rombo, rotulo, sinMargenes, versalitas, type Doc,
 } from '../informes/pdf.js';
 
@@ -35,14 +35,13 @@ const MARGEN = 25 * MM;
 const ANCHO = A4.ancho - 2 * MARGEN;
 /** La ventana del sobre DL: a 105 mm del borde izquierdo y 50 mm del de arriba, 85 mm de ancho. */
 const VENTANA = { x: 105 * MM, y: 50 * MM, ancho: 85 * MM };
-const ORO_TEXTO = '#8a6a30';
 const fechaLarga = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'long', year: 'numeric' });
 
 /** El membrete, la dirección, la fecha y el asunto: lo de la primera hoja de cada carta. */
 function cabecera(doc: Doc, d: DestinatarioConDireccion, texto: TextoDeCarta, hoy: Date): number {
   sinMargenes(doc, () => {
     doc.rect(0, 0, A4.ancho, 4.5).fill(BURDEOS);
-    doc.image(IMAGENES.escudoOro, MARGEN, 30, { fit: [46, 56], align: 'center', valign: 'center' });
+    doc.image(IMAGENES.escudoDestacadoEnPapel, MARGEN, 30, { fit: [46, 56], align: 'center', valign: 'center' });
     const x = MARGEN + 62;
     rotulo(doc, versalitas(identidad.tipo), x, 38, { letra: LETRA.textoFuerte, tam: 7.5, color: ORO_TEXTO, espaciado: 2.2 });
     rotulo(doc, identidad.titular, x, 50, { letra: LETRA.titulo, tam: 15, color: NEGRO, ancho: 300 });

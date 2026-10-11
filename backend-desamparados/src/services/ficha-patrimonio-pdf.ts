@@ -17,7 +17,7 @@ import { publicStorageDir } from '../middleware/upload.middleware.js';
 import { nombreDeSubida } from '../utils/ficheros-publicos.js';
 import { enFilaDeFotos } from '../utils/fila-de-fotos.js';
 import {
-  A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, NEGRO, ORO,
+  A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, NEGRO, ORO, ORO_TEXTO,
   aBuffer, nuevoDocumento, rombo, rotulo, sinMargenes, versalitas, type Doc,
 } from './informes/pdf.js';
 import { euros } from '../utils/euros.js';
@@ -25,7 +25,6 @@ import { euros } from '../utils/euros.js';
 const MM = 72 / 25.4;
 const MARGEN = 20 * MM;
 const ANCHO = A4.ancho - 2 * MARGEN;
-const ORO_TEXTO = '#8a6a30';
 const fechaCorta = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'long', year: 'numeric' });
 
 /** La foto como JPEG, o null si no es una subida o no se puede leer. */
@@ -45,7 +44,7 @@ async function jpegDe(url: string | null | undefined, anchoPx: number): Promise<
 function membrete(doc: Doc) {
   sinMargenes(doc, () => {
     doc.rect(0, 0, A4.ancho, 4.5).fill(BURDEOS);
-    doc.image(IMAGENES.escudoOro, MARGEN, 26, { fit: [38, 46], align: 'center', valign: 'center' });
+    doc.image(IMAGENES.escudoDestacadoEnPapel, MARGEN, 26, { fit: [38, 46], align: 'center', valign: 'center' });
     rotulo(doc, versalitas(identidad.tipo), MARGEN + 52, 32, { letra: LETRA.textoFuerte, tam: 7, color: ORO_TEXTO, espaciado: 2 });
     rotulo(doc, identidad.titular, MARGEN + 52, 43, { letra: LETRA.titulo, tam: 13, color: NEGRO, ancho: 320 });
     rotulo(doc, versalitas('Ficha de patrimonio'), MARGEN, 38, { letra: LETRA.textoMedio, tam: 8, color: GRIS, espaciado: 1.6, ancho: ANCHO, alinear: 'right' });

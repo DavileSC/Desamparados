@@ -12,7 +12,7 @@ import { identidad, secretaria } from '../domain/datos-entidad.js';
 import { conArticulo, deArticulo, segunNumero } from '../domain/articulos.js';
 import type { Aportacion } from '../domain/modelo-182.js';
 import {
-  A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, NEGRO, ORO,
+  A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, NEGRO, ORO, ORO_TEXTO,
   aBuffer, nuevoDocumento, rombo, rotulo, sinMargenes, versalitas, type Doc,
 } from './informes/pdf.js';
 import type { ConfiguracionModelo182 } from './modelo-182.service.js';
@@ -30,7 +30,6 @@ interface CertificadoDe {
 const MM = 72 / 25.4;
 const MARGEN = 25 * MM;
 const ANCHO = A4.ancho - 2 * MARGEN;
-const ORO_TEXTO = '#8a6a30';
 const fechaLarga = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'long', year: 'numeric' });
 /** «2026-03-05» → «05/03/2026». */
 const dia = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
@@ -38,7 +37,7 @@ const dia = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`
 function membrete(doc: Doc) {
   sinMargenes(doc, () => {
     doc.rect(0, 0, A4.ancho, 4.5).fill(BURDEOS);
-    doc.image(IMAGENES.escudoOro, MARGEN, 30, { fit: [46, 56], align: 'center', valign: 'center' });
+    doc.image(IMAGENES.escudoDestacadoEnPapel, MARGEN, 30, { fit: [46, 56], align: 'center', valign: 'center' });
     const x = MARGEN + 62;
     rotulo(doc, versalitas(identidad.tipo), x, 38, { letra: LETRA.textoFuerte, tam: 7.5, color: ORO_TEXTO, espaciado: 2.2 });
     rotulo(doc, identidad.titular, x, 50, { letra: LETRA.titulo, tam: 15, color: NEGRO, ancho: 300 });
