@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "sitemap": "node scripts/generar-sitemap.mjs",
-    "iconos": "node scripts/generar-iconos.mjs",
+    "marca": "node scripts/preparar-marca.mjs",
     "prebuild": "node scripts/generar-sitemap.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
