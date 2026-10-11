@@ -40,6 +40,8 @@ services:
       - ./backend-desamparados/storage/public:/srv/storage/public:ro
       - ./docker/nginx/sitio-local.conf:/etc/nginx/conf.d/desamparados.conf:ro
       - certificados-local:/etc/nginx/certificados-local:ro
+      # Repetido por el !override, como en compose.servidor.yaml.
+      - ./instalacion:/app/instalacion:ro
     depends_on: !override
       api:
         condition: service_healthy

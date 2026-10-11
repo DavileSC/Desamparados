@@ -38,7 +38,7 @@ COMMIT="${1:-}"
 
 cd "$PROYECTO_DIR"
 [[ -f .env ]] || fallo "Falta $PROYECTO_DIR/.env."
-# La API los lee del volumen al arrancar; sin ellos no arranca.
+# La API y la web los leen del volumen al arrancar; sin ellos no arrancan.
 [[ -f instalacion/datos-entidad.json ]] || fallo "Falta $PROYECTO_DIR/instalacion/datos-entidad.json, los datos de la corporación (docs/servidor.md)."
 
 compose() { docker compose -f compose.yaml -f compose.servidor.yaml "$@"; }
@@ -105,6 +105,20 @@ if [[ "$SANA" -ne 1 ]]; then
   compose ps >&2
   compose logs --no-color --tail 60 api >&2 || true
   fallo "La API no ha quedado sana en cinco minutos."
+fi
+
+# La web escribe al arrancar los datos de la corporación (/instalacion.js,
+# index.html…) y, con un dato mal puesto en instalacion/datos-entidad.json, no
+# arranca: el compose la reintenta en bucle sin que nada lo diga.
+log "Comprobando la web…"
+WEB=0
+for _ in $(seq 1 15); do
+  if curl -fsS -o /dev/null http://127.0.0.1:8080/instalacion.js; then WEB=1; break; fi
+  sleep 2
+done
+if [[ "$WEB" -ne 1 ]]; then
+  compose logs --no-color --tail 40 web >&2 || true
+  fallo "La web no sirve /instalacion.js (mira el registro de arriba: ¿instalacion/datos-entidad.json mal puesto?)."
 fi
 
 # --- 7. Limpieza ---
