@@ -147,13 +147,19 @@ build`): la web compilada no lleva los datos, los lee al cargar de
 `/instalacion.js`. Está fuera de git, así que tras clonar hay que crearlo (el
 comando está en «Los datos de la corporación», en `despliegue.md`).
 
-**El pull que trajo la etapa 2 de la Fase 8 (octubre de 2026) choca si no se
-borran antes** `desamparados-web/index.html`, `public/manifest.json` y
-`public/robots.txt`: eran los que generaba `generar-identidad.mjs`, sin
-seguir por git, y ahora `index.html` está en git (es la plantilla, con sus
-marcas `{{…}}`). Son reproducibles; se borran y se hace el pull. El manifest
-y `robots.txt` ya no se generan en la carpeta: los sirve el plugin de Vite en
-desarrollo, y una prueba falla si vuelven a aparecer en `public/`.
+**Tras el pull de la etapa 2 de la Fase 8 (octubre de 2026) hay que borrar**
+`desamparados-web/index.html`, `public/manifest.json` y `public/robots.txt`,
+los que generaba `generar-identidad.mjs` sin seguir por git. Son
+reproducibles. Por razones distintas:
+
+- **Solo `index.html` hace chocar el pull**: ahora está en git (es la
+  plantilla, con sus marcas `{{…}}`) y Git no pisa el fichero suelto. Se
+  borra antes del pull.
+- **`manifest.json` y `robots.txt` no chocan**, pero sobran: ya no se
+  generan en la carpeta (los sirve el plugin de Vite en desarrollo y los
+  escribe el contenedor al arrancar). Si se quedan, la guardia de Vitest
+  falla al verlos en `public/` y `vite build` los copiaría a `dist/` con los
+  datos de la corporación dentro. Se pueden borrar antes o después.
 
 **La plantilla no se edita pensando en que la rellene `vite build`.** El
 `index.html` de `dist/` sale con las marcas y lo rellena
@@ -171,6 +177,12 @@ costaron verlas:
   ellos. El CMD es `["nginx", "-g", "daemon off;"]` y el bucle que recarga
   el certificado vive en `90-recargar-certificado.sh`. No volver a envolverlo
   en un `sh -c`.
+- **Ese bucle corre en una subshell que hereda `set -eu`.** Sin el `set +e`
+  de dentro, el primer `nginx -s reload` fallido lo mataba sin decir nada, y
+  con su salida a `/dev/null` nadie se enteraba. Escribe en
+  `/proc/1/fd/1` y `/proc/1/fd/2` (los de nginx, que es el proceso 1): así
+  llega a `docker logs` sin quedarse con la tubería del entrypoint. Para
+  probarlo sin esperar seis horas, `RECARGA_CERTIFICADO_CADA=3s`.
 
 ---
 
