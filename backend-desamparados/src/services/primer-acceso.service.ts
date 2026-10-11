@@ -89,6 +89,14 @@ function procesarCola(): Promise<void> {
   return enMarcha;
 }
 
+/**
+ * La etiqueta de un campo dicha en la frase del 409. La del parentesco es una
+ * pregunta del formulario («Qué es para ti»), que en «Faltan datos en la
+ * ficha de Lucía: qué es para ti» no se entiende. Se cambia aquí y no en
+ * `shared/ficha-obligatoria.json`, que es lo que pinta la web junto al campo.
+ */
+const enLaFrase = (c: { campo: string; etiqueta: string }) => (c.campo === 'parentesco' ? { ...c, etiqueta: 'el parentesco' } : c);
+
 export class PrimerAccesoService {
   // --- CMS --------------------------------------------------------------------
 
@@ -210,7 +218,7 @@ export class PrimerAccesoService {
         hermanos: {
           where: { activo: true },
           select: {
-            esTitular: true, nombre: true, apellidos: true, primerApellido: true, dni: true, fechaNacimiento: true,
+            id: true, esTitular: true, nombre: true, apellidos: true, primerApellido: true, dni: true, fechaNacimiento: true,
             sexo: true, estadoCivil: true, fechaBautismo: true, email: true, telefono: true, direccion: true,
             codigoPostal: true, poblacion: true, parentesco: true,
             formaPagoPref: true, iban: true, titularidadCuenta: true, titularCuenta: true,
@@ -226,7 +234,9 @@ export class PrimerAccesoService {
       const faltan = faltanEnLaFicha(ficha, conCuotas);
       if (faltan.length === 0) continue;
       const de = ficha.esTitular ? 'tu ficha' : `la ficha de ${ficha.nombre}`;
-      throw new HttpError(`Faltan datos obligatorios en ${de}: ${enUnaFrase(faltan)}.`, 409);
+      throw new HttpError(`Faltan datos obligatorios en ${de}: ${enUnaFrase(faltan.map(enLaFrase))}.`, 409, {
+        fichaIncompleta: { id: ficha.id, nombre: ficha.nombre, esTitular: ficha.esTitular, campos: faltan.map((c) => c.campo) },
+      });
     }
 
     await db.user.update({ where: { id: userId }, data: { primerAccesoPendiente: false, fichaConfirmadaEn: new Date() } });

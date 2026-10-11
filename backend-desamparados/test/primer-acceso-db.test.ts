@@ -136,12 +136,19 @@ test('confirmar pide los obligatorios y el parentesco de las fichas a cargo, y q
     await db.hermano.update({ where: { id: e.titular.id }, data: { telefono: null, estadoCivil: null } });
     const incompleta = await pedir('/api/hermanos/primer-acceso/confirmar', { metodo: 'POST', cookie: e.sesionHermano });
     assert.equal(incompleta.status, 409);
-    assert.match((await incompleta.json() as { error: string }).error, /tu ficha: estado civil y teléfono móvil/);
+    const cuerpoIncompleta = await incompleta.json() as { error: string; fichaIncompleta?: unknown };
+    assert.match(cuerpoIncompleta.error, /tu ficha: estado civil y teléfono móvil/);
+    // Además de la frase, qué ficha y qué campos: la web puede llevar ahí.
+    assert.deepEqual(cuerpoIncompleta.fichaIncompleta, { id: e.titular.id, nombre: 'Antonio', esTitular: true, campos: ['estadoCivil', 'telefono'] });
     await db.hermano.update({ where: { id: e.titular.id }, data: { telefono: '600000000', estadoCivil: 'CASADO' } });
 
     const sinParentesco = await pedir('/api/hermanos/primer-acceso/confirmar', { metodo: 'POST', cookie: e.sesionHermano });
     assert.equal(sinParentesco.status, 409);
-    assert.match((await sinParentesco.json() as { error: string }).error, /Lucía/);
+    const cuerpoSinParentesco = await sinParentesco.json() as { error: string; fichaIncompleta?: unknown };
+    // «el parentesco», no la etiqueta del formulario («Qué es para ti»), que
+    // en una frase del servidor no se entiende.
+    assert.equal(cuerpoSinParentesco.error, 'Faltan datos obligatorios en la ficha de Lucía: el parentesco.');
+    assert.deepEqual(cuerpoSinParentesco.fichaIncompleta, { id: e.hija.id, nombre: 'Lucía', esTitular: false, campos: ['parentesco'] });
 
     await db.hermano.update({ where: { id: e.hija.id }, data: { parentesco: 'HIJO' } });
     assert.equal((await pedir('/api/hermanos/primer-acceso/confirmar', { metodo: 'POST', cookie: e.sesionHermano })).status, 200);
