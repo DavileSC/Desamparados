@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { leerDatosEntidad } from '../../../shared/datos-entidad.mjs'
+import { CATALOGO_MARCA } from '../../../shared/marca.mjs'
 
 const raiz = process.cwd()
 const { identidad } = leerDatosEntidad()
@@ -22,6 +23,18 @@ describe('la web no lleva dentro los datos de ninguna corporación', () => {
     // Si estuvieran, Vite los copiaría a dist/ con los datos de esta máquina.
     expect(existsSync(join(raiz, 'public/manifest.json'))).toBe(false)
     expect(existsSync(join(raiz, 'public/robots.txt'))).toBe(false)
+  })
+
+  it('public/ no trae la marca de nadie: el escudo y los iconos vienen de instalacion/marca', () => {
+    // Vite copia public/ a dist/ tal cual: un escudo aquí iría en la imagen
+    // de todas las corporaciones, y uno con el nombre de un icono de la raíz
+    // taparía la 301 de nginx a /marca/.
+    const enPublic = (ruta: string) => existsSync(join(raiz, 'public', ruta))
+    for (const { fichero } of CATALOGO_MARCA) expect(enPublic(fichero), `public/${fichero}`).toBe(false)
+    expect(enPublic('marca'), 'public/marca').toBe(false)
+    expect(enPublic('favicon.ico'), 'public/favicon.ico').toBe(false)
+    const escudos = readdirSync(join(raiz, 'public/images')).filter((n) => /escudo/i.test(n))
+    expect(escudos).toEqual([])
   })
 
   it('index.html carga /instalacion.js antes que el código de la web y solo trae marcas, no datos', () => {
