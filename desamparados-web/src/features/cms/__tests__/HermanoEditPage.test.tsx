@@ -296,6 +296,21 @@ describe('HermanoEditPage', () => {
     expect(screen.queryByText(/depende de la cuenta/i)).not.toBeInTheDocument()
   })
 
+  // No hay familia de la que emanciparse: lo que se le da es la cuenta que
+  // no tiene. El camino es el mismo (cuenta nueva y enlace para la contraseña).
+  it('a un adulto del censo importado le ofrece darle cuenta propia, no emanciparlo', async () => {
+    responder({ ...dependiente, user: null, enCensoImportado: true })
+    montar(43)
+    const user = userEvent.setup()
+    const dar = await screen.findByRole('button', { name: 'Darle cuenta propia' })
+    // Antes de abrir el diálogo: abierto, el resto queda aria-hidden y esto pasaría sin mirar.
+    expect(screen.queryByRole('button', { name: /emancipar/i })).not.toBeInTheDocument()
+    await user.click(dar)
+    const dialogo = await screen.findByRole('dialog')
+    expect(within(dialogo).getByText(`Darle cuenta propia a ${dependiente.nombre} ${dependiente.apellidos}`)).toBeInTheDocument()
+    expect(within(dialogo).getByRole('button', { name: 'Crear su cuenta' })).toBeInTheDocument()
+  })
+
   it('avisa de que ya tiene edad para tener cuenta propia', async () => {
     responder(dependiente)
     montar(43)

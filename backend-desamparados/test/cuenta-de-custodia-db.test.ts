@@ -137,3 +137,29 @@ test('ningún correo sale a una dirección .invalido, la de la custodia incluida
   assert.ok(esDireccionDeNadie(CUENTA_CENSO_IMPORTADO.email));
   assert.ok(!esDireccionDeNadie('alguien@invalido.es'), 'solo el dominio de nivel superior .invalido');
 });
+
+// En el CMS, a un adulto de la custodia se le ofrece «Darle cuenta propia» en
+// vez de «Emancipar»: es el mismo camino, y con una ficha de la custodia ya
+// hace lo que tiene que hacer. La ficha sale de la custodia como titular de
+// su cuenta nueva, y la custodia sigue ahí para las demás.
+test('dar cuenta propia a un adulto de la custodia lo saca de ella como titular', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const custodiaAntes = await db.user.findUnique({ where: { email: CUENTA_CENSO_IMPORTADO.email }, select: { id: true } });
+  const custodia = await db.$transaction((tx) => cuentaDeCustodia(tx));
+  const marca = `${Date.now()}`.slice(-7);
+  const adulta = await db.hermano.create({
+    data: { userId: custodia, nombre: 'Rosa', apellidos: `Custodia ${marca}`, dni: `8${marca}T`, fechaNacimiento: new Date(Date.UTC(1970, 0, 1)), esTitular: false, activo: true },
+  });
+  const correo = `rosa-${marca}@ejemplo.test`;
+  try {
+    const cuenta = await CensoService.emancipateByStaff(adulta.id, { newEmail: correo });
+    const ficha = await db.hermano.findUniqueOrThrow({ where: { id: adulta.id }, select: { userId: true, esTitular: true } });
+    assert.deepEqual(ficha, { userId: cuenta.id, esTitular: true });
+    assert.ok(await db.user.findUnique({ where: { email: CUENTA_CENSO_IMPORTADO.email } }), 'la custodia sigue para las demás fichas');
+  } finally {
+    await db.auditLog.deleteMany({ where: { entityType: 'hermano', entityId: String(adulta.id) } });
+    await db.hermano.delete({ where: { id: adulta.id } });
+    await db.user.deleteMany({ where: { email: correo } });
+    if (!custodiaAntes && (await db.hermano.count({ where: { userId: custodia } })) === 0) await db.user.delete({ where: { id: custodia } });
+  }
+});

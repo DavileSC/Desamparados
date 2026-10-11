@@ -457,7 +457,9 @@ export default function HermanoEditPage() {
                   </Typography>
                 )}
                 <Button sx={{ mt: 2 }} disabled={!mayorDeEdad || estado !== 'activo' || trabajando} onClick={() => setEmancipando(true)}>
-                  {cuentaSuprimida ? 'Crear cuenta nueva' : 'Emancipar'}
+                  {/* Del censo importado no se emancipa: no hay familia de la que separarse.
+                      Es el mismo camino (cuenta nueva y enlace), dicho como lo que es. */}
+                  {cuentaSuprimida ? 'Crear cuenta nueva' : ficha.enCensoImportado ? 'Darle cuenta propia' : 'Emancipar'}
                 </Button>
               </Box>
             </>
@@ -535,7 +537,8 @@ export default function HermanoEditPage() {
 
       <Dialog open={emancipando} onClose={() => { if (!trabajando) setEmancipando(false) }} aria-labelledby="dialogo-emancipar">
         <DialogTitle id="dialogo-emancipar">
-          {cuentaSuprimida ? `Crear una cuenta nueva a ${nombreCompleto}` : `Emancipar a ${nombreCompleto}`}
+          {cuentaSuprimida ? `Crear una cuenta nueva a ${nombreCompleto}`
+            : ficha.enCensoImportado ? `Darle cuenta propia a ${nombreCompleto}` : `Emancipar a ${nombreCompleto}`}
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -551,7 +554,7 @@ export default function HermanoEditPage() {
         <DialogActions>
           <Button disabled={trabajando} onClick={() => setEmancipando(false)}>Volver</Button>
           <Button variant="contained" disabled={trabajando || !correoNuevo || (!ficha.dni && !dniNuevo)} onClick={() => void emancipar()}>
-            {trabajando ? 'Creando la cuenta…' : 'Emancipar hermano'}
+            {trabajando ? 'Creando la cuenta…' : ficha.enCensoImportado ? 'Crear su cuenta' : 'Emancipar hermano'}
           </Button>
         </DialogActions>
       </Dialog>
