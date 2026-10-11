@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { darAvisoPorHecho } from '../../../lib/api/panel'
 import { CLAVE_PANEL_HOY } from '../../../app/usePanelDeHoy'
+import { rolesPorRutaCms } from '../../../app/rolesCms'
 import { repartirTareas, type Prioridad, type Tarea } from './tareas'
 import { contar } from './plural'
 import { latido } from './animaciones'
@@ -57,7 +58,23 @@ const MarcaAviso = () => (
   </Box>
 )
 
-function Fila({ tarea, conBoton, userId }: { tarea: Tarea; conBoton: boolean; userId?: number }) {
+/**
+ * «Ver ficha»: abre la ficha en el censo, a la derecha de la lista. El nombre
+ * accesible lleva el texto entero del aviso, como el de «Hecho»: es el que
+ * dice de qué hermano se trata.
+ */
+const EnlaceFicha = ({ id, titulo }: { id: number; titulo: string }) => (
+  <Box
+    component={Link}
+    to={`/cms/hermanos?ficha=${id}`}
+    aria-label={`Ver la ficha: ${titulo}`}
+    sx={{ fontSize: 14, fontWeight: 600, color: ORO, textDecoration: 'none', whiteSpace: 'nowrap', '&:hover': { textDecoration: 'underline' }, '&:focus-visible': { outline: `2px solid ${ORO}`, outlineOffset: 2 } }}
+  >
+    Ver ficha →
+  </Box>
+)
+
+function Fila({ tarea, conBoton, userId, verFichas }: { tarea: Tarea; conBoton: boolean; userId?: number; verFichas: boolean }) {
   const color = COLOR[tarea.prioridad]
   // Un aviso lo da por hecho quien lo lleva y también quien lo puso.
   const puedeHacerlo = tarea.aviso !== undefined && (conBoton || (userId !== undefined && tarea.aviso.creadoPorId === userId))
@@ -91,7 +108,8 @@ function Fila({ tarea, conBoton, userId }: { tarea: Tarea; conBoton: boolean; us
         </Typography>
         {tarea.aviso && <MarcaAviso />}
       </Box>
-      <Box sx={{ gridArea: 'accion', justifySelf: 'end' }}>
+      <Box sx={{ gridArea: 'accion', justifySelf: 'end', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        {verFichas && tarea.hermanoId !== undefined && <EnlaceFicha id={tarea.hermanoId} titulo={tarea.titulo} />}
         {puedeHacerlo && tarea.aviso && <BotonHecho id={tarea.aviso.id} titulo={tarea.titulo} />}
         {conBoton && tarea.accion && (
           <Box component={Link} to={tarea.accion.href} sx={{ fontSize: 14, fontWeight: 600, color: ORO, textDecoration: 'none', whiteSpace: 'nowrap', '&:hover': { textDecoration: 'underline' } }}>
@@ -124,6 +142,9 @@ export default function Asuntos({ tareas, role, userId, todos, onTodos, filas = 
   const ordenadas = [...tuyas.map((t) => ({ t, conBoton: true })), ...deLaJunta.map((t) => ({ t, conBoton: false }))]
   const vista = aLaVista(ordenadas.length, filas)
   const visibles = todos ? ordenadas : ordenadas.slice(0, vista)
+  // La ficha del censo, solo a quien su guarda deja entrar: a los demás les
+  // rebotaría. Un aviso para toda la junta lo ve también Tesorería, por ejemplo.
+  const verFichas = role !== undefined && (rolesPorRutaCms.hermanos as readonly string[]).includes(role)
 
   return (
     <Box
@@ -166,7 +187,7 @@ export default function Asuntos({ tareas, role, userId, todos, onTodos, filas = 
         </Typography>
       ) : (
         <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, overflowY: 'auto', scrollbarWidth: 'thin', ...(todos && { flex: '1 1 0', minHeight: 0 }) }}>
-          {visibles.map(({ t, conBoton }) => <Fila key={t.clave} tarea={t} conBoton={conBoton} userId={userId} />)}
+          {visibles.map(({ t, conBoton }) => <Fila key={t.clave} tarea={t} conBoton={conBoton} userId={userId} verFichas={verFichas} />)}
         </Box>
       )}
 

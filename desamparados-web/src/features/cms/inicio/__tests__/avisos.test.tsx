@@ -11,7 +11,7 @@ import type { AvisoJunta } from '../../../../lib/api/panel'
 
 const AVISO: AvisoJunta = {
   id: 7, texto: 'Preparar el orden del día del cabildo', para: 'SECRETARIA', hasta: '2026-11-20', urgente: false,
-  creadoPorId: 3, creadorRol: 'HERMANO_MAYOR', createdAt: '2026-09-29T10:00:00.000Z',
+  creadoPorId: 3, creadorRol: 'HERMANO_MAYOR', hermanoId: null, createdAt: '2026-09-29T10:00:00.000Z',
 }
 const HOY = new Date('2026-09-29T10:00:00.000Z')
 
@@ -75,6 +75,29 @@ describe('los avisos en la lista de asuntos', () => {
     montar([tareaDeAviso(AVISO, HOY)], 'SECRETARIA', 99)
     await userEvent.setup().click(screen.getByRole('button', { name: /Dar por hecho/ }))
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringMatching(/\/panel\/avisos\/7\/hecho$/), expect.objectContaining({ method: 'POST' })))
+  })
+
+  const NO_ES_DE_MI_FAMILIA: AvisoJunta = {
+    ...AVISO, id: 8, creadorRol: 'USER', creadoPorId: 40, hasta: null, hermanoId: 305,
+    texto: 'N.º 305, Bruno Pérez Ruiz: Ana Pérez Ruiz dice que no es de su familia. Ha vuelto al censo importado.',
+  }
+
+  it('el de «no es de mi familia» enlaza a la ficha del hermano en el censo, sin quitar el «Hecho»', () => {
+    montar([tareaDeAviso(NO_ES_DE_MI_FAMILIA, HOY)], 'SECRETARIA', 99)
+    const enlace = screen.getByRole('link', { name: `Ver la ficha: ${NO_ES_DE_MI_FAMILIA.texto}` })
+    expect(enlace).toHaveAttribute('href', '/cms/hermanos?ficha=305')
+    expect(screen.getByRole('button', { name: `Dar por hecho: ${NO_ES_DE_MI_FAMILIA.texto}` })).toBeInTheDocument()
+  })
+
+  it('sin hermanoId, el aviso no enlaza a ninguna ficha', () => {
+    montar([tareaDeAviso(AVISO, HOY)], 'SECRETARIA', 99)
+    expect(screen.queryByRole('link', { name: /Ver la ficha/ })).not.toBeInTheDocument()
+  })
+
+  it('a quien no puede abrir el censo no se le ofrece la ficha, aunque el aviso sea para toda la junta', () => {
+    montar([tareaDeAviso({ ...NO_ES_DE_MI_FAMILIA, para: null }, HOY)], 'TESORERIA', 99)
+    expect(screen.queryByRole('link', { name: /Ver la ficha/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Dar por hecho/ })).toBeInTheDocument()
   })
 
   it('en pantallas bajas caben tres filas: con cuatro asuntos, dos y «Ver los 4»', () => {
