@@ -7,6 +7,7 @@ import type { Noticia } from '../types'
 import Hueso, { Lineas } from './esqueleto/Hueso'
 import { propsDeFoto } from '../lib/fotoSubida'
 import { MARCA, alfa } from '../theme/marca'
+import { RUTA_ESCUDO } from './EscudoDelGrupo'
 
 interface TarjetaNoticiaProps {
   noticia: Noticia
@@ -137,7 +138,7 @@ export default function TarjetaNoticia({ noticia, indice = 0, destacada = false,
           >
             <Box
               component="img"
-              src="/images/escudo-grupo.webp"
+              src={RUTA_ESCUDO}
               alt=""
               className="noticia-foto"
               sx={{ width: destacada ? '26%' : '34%', maxWidth: 220, opacity: 0.16, filter: 'grayscale(1) brightness(1.6)' }}

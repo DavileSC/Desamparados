@@ -57,6 +57,15 @@ export const site = {
 
   /** Las normas o estatutos por los que se rige, que enlaza el aviso legal ({ titulo, url }), o null. */
   normas: identidad.normas,
+
+  /**
+   * Las imágenes de la marca, como las sirve /marca/ (con `?v=`, que cambia con
+   * el fichero) y ya con su respaldo: `escudo`, el de sobre oscuro;
+   * `escudoDestacado`, el de la papeleta (o el de sobre oscuro); `compartir`,
+   * la de compartir (o el icono grande). Las de la instalación, o las de
+   * partida (un escudo genérico) si faltan.
+   */
+  imagenes: instalacion.marca.imagenes,
 } as const
 
 /** Texto a mostrar cuando un dato legal obligatorio aún no está confirmado. */

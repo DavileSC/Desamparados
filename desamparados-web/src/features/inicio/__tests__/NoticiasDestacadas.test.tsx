@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import NoticiasDestacadas from '../NoticiasDestacadas'
 import { responderPortada, textosDePrueba } from './ayudas'
+import { INSTALACION } from '../../../test/instalacion'
 
 afterEach(() => { vi.unstubAllGlobals() })
 
@@ -61,7 +62,7 @@ describe('NoticiasDestacadas', () => {
     expect(conFoto.querySelector('img')).toHaveAttribute('src', '/storage/apertura.jpg')
     const sinFoto = screen.getByRole('link', { name: /solemne triduo/i })
     // La única imagen es el escudo de la placa, no una foto.
-    expect(within(sinFoto).getByTestId('placa-noticia').querySelector('img')).toHaveAttribute('src', '/images/escudo-grupo.webp')
+    expect(within(sinFoto).getByTestId('placa-noticia').querySelector('img')).toHaveAttribute('src', INSTALACION.marca.imagenes.escudo)
     expect(sinFoto.querySelectorAll('img')).toHaveLength(1)
   })
 

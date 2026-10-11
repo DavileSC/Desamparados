@@ -4,6 +4,7 @@ import TarjetaCristal from './TarjetaCristal'
 import type { Publicacion } from '../types'
 import Hueso, { Lineas } from './esqueleto/Hueso'
 import { propsDeFoto } from '../lib/fotoSubida'
+import { RUTA_ESCUDO } from './EscudoDelGrupo'
 
 interface TarjetaPublicacionProps {
   publicacion: Publicacion
@@ -51,7 +52,7 @@ export default function TarjetaPublicacion({ publicacion }: TarjetaPublicacionPr
             aria-hidden="true"
             sx={{ height: 180, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'linear-gradient(160deg, #262227 0%, #141214 100%)' }}
           >
-            <Box component="img" src="/images/escudo-grupo.webp" alt="" sx={{ width: 84, opacity: 0.16, filter: 'grayscale(1) brightness(1.6)' }} />
+            <Box component="img" src={RUTA_ESCUDO} alt="" sx={{ width: 84, opacity: 0.16, filter: 'grayscale(1) brightness(1.6)' }} />
           </Box>
         ) : (
           <Box

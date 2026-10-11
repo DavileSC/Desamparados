@@ -1,13 +1,14 @@
 import { Box } from '@mui/material'
 import type { SxProps, Theme } from '@mui/material'
+import { site } from '../config/site'
 
 /**
- * El escudo del Grupo Parroquial, en blanco sobre fondo transparente. El
- * original es de trazo negro muy fino; el archivo de `public/images` ya viene
- * invertido y reducido, porque las barras donde se usa son todas de la misma
- * tinta oscura.
+ * El escudo de la corporación para fondo oscuro (claro sobre transparente):
+ * escudo-sobre-oscuro.png de su marca, o el genérico de partida. Las barras y
+ * los marcos donde se usa son todos de la misma tinta oscura, y las placas de
+ * las noticias y publicaciones sin foto lo ponen velado sobre su fondo.
  */
-const RUTA_ESCUDO = '/images/escudo-grupo.webp'
+export const RUTA_ESCUDO = site.imagenes.escudo
 
 /**
  * Se dimensiona por altura y el ancho lo pone la proporción del archivo, así

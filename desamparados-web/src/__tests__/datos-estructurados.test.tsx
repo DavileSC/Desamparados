@@ -69,4 +69,12 @@ describe('los datos estructurados de la portada', () => {
     expect(datos.sameAs ?? []).toEqual(declarados)
     expect(datos.taxID).toBeUndefined()
   })
+
+  it('llevan la imagen de compartir de la marca, la misma que index.html', async () => {
+    // En las pruebas no hay compartir.jpg: es el icono grande de partida.
+    const datos = await pintados()
+    expect(datos.image).toBe(`${site.url}${site.imagenes.compartir}`)
+    expect(datos.image).toMatch(/\/marca\/icono-512\.png\?v=[0-9a-f]{8}$/)
+    expect(jsonLd(html).image).toBe(datos.image)
+  })
 })

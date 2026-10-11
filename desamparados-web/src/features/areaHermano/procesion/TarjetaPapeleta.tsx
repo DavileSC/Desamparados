@@ -1,5 +1,6 @@
 import { Box, Typography } from '@mui/material'
 import type { FichaEnLaProcesion, SalidaDelHermano } from '../../../lib/api/procesion'
+import { site } from '../../../config/site'
 import { BURDEOS, CREMA, FILETE, GRIS, NEGRO, ORO, SERIFA, imagenDelQr } from './papeleta-estilo'
 
 /**
@@ -32,7 +33,7 @@ export default function TarjetaPapeleta({ ficha, salida }: { ficha: FichaEnLaPro
       sx={{ width: '100%', maxWidth: 400, bgcolor: NEGRO, color: CREMA, display: 'flex', flexDirection: 'column', pt: 2.75, px: 3, borderRadius: 1, overflow: 'hidden', boxShadow: '0 12px 32px rgba(0,0,0,0.35)' }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Box component="img" src="/images/escudo-oro.webp" alt="" sx={{ width: 38, height: 46, objectFit: 'contain' }} />
+        <Box component="img" src={site.imagenes.escudoDestacado} alt="" sx={{ width: 38, height: 46, objectFit: 'contain' }} />
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography sx={{ fontSize: 10, letterSpacing: '2.5px', textTransform: 'uppercase', color: ORO, fontWeight: 600 }}>Papeleta de sitio</Typography>
           <Typography sx={{ fontFamily: SERIFA, fontSize: 18, lineHeight: 1.2 }}>{salida.nombre} · {papeleta.year}</Typography>

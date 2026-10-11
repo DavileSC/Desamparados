@@ -3,6 +3,10 @@ import { fireEvent, screen, within } from '@testing-library/react'
 import { renderWithProviders } from '../../test/test-utils'
 import TarjetaNoticia from '../TarjetaNoticia'
 import type { Noticia } from '../../types'
+import { INSTALACION } from '../../test/instalacion'
+
+// El escudo de la marca de las pruebas (la de partida), con su `?v=`.
+const ESCUDO = INSTALACION.marca.imagenes.escudo
 
 const noticiaDePrueba: Noticia = {
   id: '1',
@@ -31,7 +35,7 @@ describe('TarjetaNoticia', () => {
 
   it('sin foto pone una placa con el escudo velado, y con foto la usa', () => {
     const { unmount } = renderWithProviders(<TarjetaNoticia noticia={noticiaDePrueba} />)
-    expect(screen.getByTestId('placa-noticia').querySelector('img')).toHaveAttribute('src', '/images/escudo-grupo.webp')
+    expect(screen.getByTestId('placa-noticia').querySelector('img')).toHaveAttribute('src', ESCUDO)
     unmount()
 
     renderWithProviders(<TarjetaNoticia noticia={{ ...noticiaDePrueba, imagen: '/storage/triduo.jpg' }} />)
@@ -50,6 +54,6 @@ describe('TarjetaNoticia', () => {
     expect(screen.getByTestId('placa-noticia')).toBeInTheDocument()
     // Ya no queda la foto rota: la única imagen es el escudo de la placa.
     const imagenes = [...screen.getByRole('link').querySelectorAll('img')].map((img) => img.getAttribute('src'))
-    expect(imagenes).toEqual(['/images/escudo-grupo.webp'])
+    expect(imagenes).toEqual([ESCUDO])
   })
 })
