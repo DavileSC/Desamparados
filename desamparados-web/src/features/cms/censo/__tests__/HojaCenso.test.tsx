@@ -49,7 +49,7 @@ describe('HojaCenso', () => {
     expect(await within(ventana).findByText('De 5 filas, entran 3.')).toBeInTheDocument()
     expect(within(ventana).getByText(/1 recibe su propia cuenta/)).toBeInTheDocument()
     expect(within(ventana).getByText(/1 trae el correo de otro hermano: queda en su cuenta/)).toBeInTheDocument()
-    expect(within(ventana).getByText(/1 queda sin cuenta: se les da con «Emancipar»/)).toBeInTheDocument()
+    expect(within(ventana).getByText(/1 queda sin cuenta: se les da con «Darle cuenta propia»/)).toBeInTheDocument()
     expect(within(ventana).getByText(/2 activos no traen número/)).toBeInTheDocument()
     expect(within(ventana).getByText(/Columnas que no se usan: «Observaciones»/)).toBeInTheDocument()
     expect(within(ventana).getByText('Fila 5: Falta el nombre.')).toBeInTheDocument()

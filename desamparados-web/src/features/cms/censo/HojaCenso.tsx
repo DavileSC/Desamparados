@@ -122,7 +122,7 @@ export default function HojaCenso({ onImportado, onError }: Props) {
             )}
             {previa.importables - previa.conCuenta - previa.aCargo > 0 && (
               <Typography component="li" variant="body2">
-                {plural(previa.importables - previa.conCuenta - previa.aCargo, 'queda', 'quedan')} sin cuenta: se les da con «Emancipar» desde su ficha cuando la pidan.
+                {plural(previa.importables - previa.conCuenta - previa.aCargo, 'queda', 'quedan')} sin cuenta: se les da con «Darle cuenta propia» desde su ficha cuando la pidan.
               </Typography>
             )}
             {previa.sinNumero > 0 && (

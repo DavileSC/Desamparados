@@ -118,7 +118,7 @@
       "porDefecto": {
         "asunto": "Su cuenta en el área de hermanos",
         "titulo": "Su cuenta en el área de hermanos",
-        "cuerpo": "{{saludo}}\n\nLa Secretaría le ha creado una **cuenta propia en el área de hermanos**, separada de la de su familia. Para entrar por primera vez, elija su contraseña:\n\n[[enlace]]\n\nEl enlace caduca en {{plazo}} y solo puede usarse una vez. Si caduca, pida uno nuevo desde «He olvidado mi contraseña».",
+        "cuerpo": "{{saludo}}\n\nLa Secretaría le ha creado una **cuenta propia en el área de hermanos**. Para entrar por primera vez, elija su contraseña:\n\n[[enlace]]\n\nEl enlace caduca en {{plazo}} y solo puede usarse una vez. Si caduca, pida uno nuevo desde «He olvidado mi contraseña».",
         "despedida": ""
       }
     },
