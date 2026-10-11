@@ -7,35 +7,43 @@
  * cuando se retoca el diseño, no cuando se añade un aviso nuevo.
  *
  * El aire es el de una carta de Secretaría: membrete con el escudo, la imagen
- * de la Virgen, lugar y fecha, etiquetas en cursiva como en un impreso y la
+ * de cabecera (si la marca la trae), lugar y fecha, etiquetas en cursiva como en un impreso y la
  * cruz antes de la firma. Negro para el texto, el escudo y los botones, y
- * burdeos de acento, sobre una hoja blanca.
+ * el color de acento de la marca (el burdeos), sobre una hoja blanca.
  *
  * Todo va con tablas y estilos en línea: es lo único que Gmail, Outlook y el
  * correo del móvil pintan igual. El único <style> es el del ajuste al móvil,
  * que quien no lo entiende ignora sin romper nada.
  */
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { emailDeSecretaria, identidad, lineasDeSecretaria, type Identidad } from '../../domain/datos-entidad.js';
 import { deLaCorporacion, laCorporacion, segunLaCorporacion } from '../../domain/articulos.js';
+import { FICHEROS_MARCA, IMPRENTA } from '../../domain/marca.js';
 
 /**
  * Las imágenes van dentro del correo (adjuntos en línea, `cid:`) y no enlazadas
  * a la web: así se ven aunque la web aún no esté publicada, y no dependen de
  * que el lector de correo quiera descargar imágenes de fuera.
+ *
+ * Salen de la marca de la instalación (domain/marca.ts). Los `cid` no nombran
+ * a ninguna corporación: viajan en las cabeceras de cada correo enviado. La
+ * cabecera no tiene marca de partida: sin `correo-cabecera.jpg`, no está.
  */
-const IMAGENES = {
-  escudo: { cid: 'escudo@desamparados', archivo: fileURLToPath(new URL('./imagenes/escudo.png', import.meta.url)), tipo: 'image/png' },
-  virgen: { cid: 'virgen@desamparados', archivo: fileURLToPath(new URL('./imagenes/virgen.jpg', import.meta.url)), tipo: 'image/jpeg' },
-} as const;
+interface ImagenDeCorreo { cid: string; archivo: string; tipo: string }
+const IMAGENES: { escudo: ImagenDeCorreo; cabecera: ImagenDeCorreo | null } = {
+  escudo: { cid: 'escudo@marca', archivo: FICHEROS_MARCA.escudoSobreClaro.ruta, tipo: FICHEROS_MARCA.escudoSobreClaro.tipo },
+  cabecera: FICHEROS_MARCA.correoCabecera
+    ? { cid: 'cabecera@marca', archivo: FICHEROS_MARCA.correoCabecera.ruta, tipo: FICHEROS_MARCA.correoCabecera.tipo }
+    : null,
+};
+const conImagen = Object.entries(IMAGENES).flatMap(([nombre, imagen]) => (imagen ? [[nombre, imagen] as const] : []));
 
 // Los colores de la casa. Los grises están elegidos para leerse bien sobre su
 // fondo (contraste 4,5:1 como poco), también en el móvil y a pleno sol.
 export const COLORES = {
   negro: '#141111',      // Escudo, títulos, botones, cabecera de la papeleta
   fondo: '#eeeae7',      // Alrededor de la hoja
-  burdeos: '#6e1a20',    // Acento: filete bajo la Virgen, cruz, títulos de recuadro
+  burdeos: IMPRENTA.acentoCorreo, // Acento de la marca (#6e1a20 de partida): filete bajo la cabecera, cruz, títulos de recuadro
   papel: '#ffffff',
   panel: '#f5f2f0',      // Recuadros dentro del papel
   linea: '#ddd5d0',
@@ -193,7 +201,7 @@ export function bloqueDeSecretaria(titulo: string): string {
 // --- EL ARMAZÓN ---
 
 /**
- * A quién va el correo, que decide el pie y si lleva la imagen de la Virgen:
+ * A quién va el correo, que decide el pie y si lleva la imagen de cabecera:
  *  - `hermano`: a un hermano o solicitante. Se puede responder: la respuesta
  *    llega a Secretaría. Lleva la nota de protección de datos.
  *  - `interno`: al buzón de Secretaría (aviso de solicitud nueva).
@@ -236,13 +244,13 @@ export function pie(para: Destinatario, identidadInstalacion: Identidad = identi
   ].join('');
 }
 
-/** El HTML completo de un correo: membrete, Virgen, carta y pie. */
+/** El HTML completo de un correo: membrete, cabecera, carta y pie. */
 export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'hermano', identidad: identidadInstalacion = identidad }: Maqueta): string {
   const { negro, burdeos, fondo, papel, texto, suave } = COLORES;
   const year = new Date().getFullYear();
-  // La Virgen, en lo que recibe un hermano; los avisos internos, sin ella:
+  // La cabecera, en lo que recibe un hermano; los avisos internos, sin ella:
   // son trámite y se leen de un vistazo.
-  const conVirgen = para === 'hermano';
+  const cabecera = para === 'hermano' ? IMAGENES.cabecera : null;
 
   return `<!DOCTYPE html>
 <html lang="es" xmlns="http://www.w3.org/1999/xhtml">
@@ -283,10 +291,10 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
               </table>
             </td>
           </tr>
-          ${conVirgen ? `
+          ${cabecera ? `
           <tr>
             <td style="line-height: 0; font-size: 0;">
-              <img src="cid:${IMAGENES.virgen.cid}" alt="${esc(identidadInstalacion.titular)}" width="600" style="display: block; width: 100%; max-width: 600px; height: auto; border: 0;">
+              <img src="cid:${cabecera.cid}" alt="${esc(identidadInstalacion.titular)}" width="600" style="display: block; width: 100%; max-width: 600px; height: auto; border: 0;">
             </td>
           </tr>` : ''}
           <tr>
@@ -328,14 +336,18 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
  */
 let enLinea: [string, string][] | null = null;
 export function conImagenesEnLinea(html: string): string {
-  enLinea ??= Object.values(IMAGENES).map((i) => [`cid:${i.cid}`, `data:${i.tipo};base64,${readFileSync(i.archivo).toString('base64')}`]);
+  enLinea ??= conImagen.map(([, i]) => [`cid:${i.cid}`, `data:${i.tipo};base64,${readFileSync(i.archivo).toString('base64')}`]);
   return enLinea.reduce((h, [cid, datos]) => h.split(cid).join(datos), html);
 }
 
+// La extensión del adjunto sale del tipo que ha leído la marca en los bytes, no
+// del nombre: hay lectores que se guían por ella al descargar la imagen.
+const EXTENSION: Record<string, string> = { 'image/png': '.png', 'image/jpeg': '.jpg' };
+
 export function imagenesDe(html: string) {
-  return Object.entries(IMAGENES)
+  return conImagen
     .filter(([, imagen]) => html.includes(`cid:${imagen.cid}`))
-    .map(([nombre, imagen]) => ({ filename: `${nombre}${imagen.tipo === 'image/png' ? '.png' : '.jpg'}`, path: imagen.archivo, cid: imagen.cid, contentType: imagen.tipo }));
+    .map(([nombre, imagen]) => ({ filename: `${nombre}${EXTENSION[imagen.tipo] ?? ''}`, path: imagen.archivo, cid: imagen.cid, contentType: imagen.tipo }));
 }
 
 // --- LA VERSIÓN EN TEXTO ---

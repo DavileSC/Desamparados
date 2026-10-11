@@ -217,7 +217,9 @@ describe('EmailService', () => {
     assert.match(correo.html, /papeleta del Rosario vespertino/);
   });
 
-  test('el escudo y la Virgen van dentro del correo; los avisos internos, solo con el escudo', async () => {
+  // Con la marca de partida (la de las pruebas) no hay imagen de cabecera: la
+  // del correo a un hermano con una marca completa, en marca-imprenta.test.ts.
+  test('el escudo va dentro del correo, en el de un hermano y en el aviso interno', async () => {
     const general = transporteFalso();
     ponerTransporte(general);
     process.env.EMAIL_USER = 'secretaria@example.es';
@@ -227,9 +229,9 @@ describe('EmailService', () => {
 
     const [alHermano, interno] = general.enviados;
     const cids = (c: Enviado) => (c.attachments ?? []).flatMap((a) => ('cid' in a ? [a.cid] : [])).sort();
-    assert.deepEqual(cids(alHermano), ['escudo@desamparados', 'virgen@desamparados']);
-    assert.match(alHermano.html, /src="cid:virgen@desamparados"/);
-    assert.deepEqual(cids(interno), ['escudo@desamparados']);
+    assert.deepEqual(cids(alHermano), ['escudo@marca']);
+    assert.match(alHermano.html, /src="cid:escudo@marca"/);
+    assert.deepEqual(cids(interno), ['escudo@marca']);
   });
 
   test('cada correo lleva también su versión en texto, sin etiquetas y con el nombre tal cual', async () => {
