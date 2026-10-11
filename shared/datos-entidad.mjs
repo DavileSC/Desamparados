@@ -17,6 +17,9 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+// Lo importa también el arranque del contenedor de nginx: docker/web.Dockerfile
+// tiene que copiar este módulo junto a datos-entidad.mjs.
+import { avisosDeMarca } from './colores-de-marca.mjs'
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -136,7 +139,10 @@ export function validarDatosEntidad(crudo) {
 
   if (!esObjeto(crudo)) return { datos: null, errores: ['El fichero tiene que ser un objeto JSON { … }.'], avisos }
   for (const clave of Object.keys(crudo)) {
-    if (clave === 'escudoUrl') avisos.push('escudoUrl ya no se usa: el escudo va en instalacion/marca/ (docs/despliegue.md). Se puede quitar.')
+    if (clave === 'escudoUrl') {
+      avisos.push('escudoUrl ya no se usa y se puede quitar: el escudo es un fichero, instalacion/marca/escudo-sobre-oscuro.png ' +
+        '(y escudo-sobre-claro.png y escudo-destacado.png para correos y PDF). Ver docs/despliegue.md, «La marca».')
+    }
     else if (clave !== '_comentario' && !GRUPOS.includes(clave)) errores.push(`${clave}: no es un dato conocido (los del fichero son ${GRUPOS.join(', ')}).`)
   }
 
@@ -172,10 +178,15 @@ export function validarDatosEntidad(crudo) {
   }
 
   const m = grupo('marca', crudo.marca, ['colorPrincipal', 'colorAcento'], { puedeFaltar: true })
+  // En minúsculas: así se comparan con los de partida y salen igual en el CSS.
+  const color = (ruta, v) => opcional(ruta, v, COLOR, 'tiene que ser un color #rrggbb, como #6e1822 (sin nombres ni la forma corta #abc)')?.toLowerCase() ?? null
   const marca = {
-    colorPrincipal: opcional('marca.colorPrincipal', m.colorPrincipal, COLOR, 'tiene que ser un color como #6e1822'),
-    colorAcento: opcional('marca.colorAcento', m.colorAcento, COLOR, 'tiene que ser un color como #c9a227'),
+    colorPrincipal: color('marca.colorPrincipal', m.colorPrincipal),
+    colorAcento: color('marca.colorAcento', m.colorAcento),
   }
+  // Un color que no da el contraste no impide arrancar: la paleta lo corrige
+  // (shared/colores-de-marca.mjs) y aquí se dice con qué cifra y por cuál.
+  if (!errores.some((e) => e.startsWith('marca.'))) avisos.push(...avisosDeMarca(marca))
 
   const se = grupo('secretaria', crudo.secretaria, ['horario', 'telefono', 'email'])
   const sd = grupo('sede', crudo.sede, ['nombre', 'calle', 'codigoPostal', 'localidad'])

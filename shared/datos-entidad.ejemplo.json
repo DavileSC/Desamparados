@@ -39,9 +39,13 @@
   },
   "marca": {
     "_comentario": [
-      "Los colores de la web: el principal (barra, botones, cabeceras) y el de acento (detalles en oro).",
-      "null deja los de partida. El escudo y las imágenes de los correos no van aquí: son ficheros de",
-      "instalacion/marca/ (docs/despliegue.md, «La marca»)."
+      "Los dos colores de la corporación, como #rrggbb (en minúsculas, sin nombres ni la forma corta #abc).",
+      "colorPrincipal: el de relleno con letra blanca encima (botones, avatar, lo elegido); el de partida es el burdeos #6e1822.",
+      "colorAcento: el que se escribe sobre el fondo oscuro (enlaces activos, filetes, foco); el de partida es el oro #dec72b.",
+      "De cada uno salen todos los tonos de la web, los PDF y los correos (shared/colores-de-marca.mjs). Si uno no da el",
+      "contraste que pide la accesibilidad (AA), se corrige solo y al arrancar se avisa con la cifra y el color que se usa.",
+      "null deja los de partida. El escudo, los iconos y las imágenes de compartir y de los correos no van aquí: son",
+      "ficheros de instalacion/marca/ (escudo-sobre-oscuro.png, escudo-sobre-claro.png…; docs/despliegue.md, «La marca»)."
     ],
     "colorPrincipal": null,
     "colorAcento": null
