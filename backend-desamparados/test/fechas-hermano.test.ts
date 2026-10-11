@@ -6,6 +6,7 @@ import { describe, test } from 'node:test';
 import {
   aniosCumplidos,
   comprobarBajaNoFutura,
+  comprobarBautismo,
   comprobarFechasHermano,
   comprobarMayoriaDeEdad,
   diaDeHoy,
@@ -68,5 +69,28 @@ describe('mayoría de edad para la emancipación', () => {
 
   test('sin fecha de nacimiento se pide completarla', () => {
     assert.throws(() => comprobarMayoriaDeEdad(null), /fecha de nacimiento/i);
+  });
+});
+
+describe('la fecha de bautismo', () => {
+  const NACIMIENTO = new Date(Date.UTC(1980, 0, 1));
+  const HOY = '2026-10-11';
+
+  test('el mismo día del nacimiento o después, y hasta hoy, vale', () => {
+    assert.doesNotThrow(() => comprobarBautismo(NACIMIENTO, new Date('1980-01-01T00:00:00+01:00'), HOY));
+    assert.doesNotThrow(() => comprobarBautismo(NACIMIENTO, new Date('2026-10-11T00:00:00+02:00'), HOY));
+  });
+
+  test('sin bautismo, o sin nacimiento con que compararlo, no hay nada que comprobar', () => {
+    assert.doesNotThrow(() => comprobarBautismo(NACIMIENTO, null, HOY));
+    assert.doesNotThrow(() => comprobarBautismo(null, new Date('1990-01-01'), HOY));
+  });
+
+  test('un bautismo futuro se rechaza', () => {
+    assert.throws(() => comprobarBautismo(NACIMIENTO, new Date('2026-10-12T00:00:00+02:00'), HOY), /bautismo.*posterior a hoy/i);
+  });
+
+  test('un bautismo anterior al nacimiento se rechaza', () => {
+    assert.throws(() => comprobarBautismo(NACIMIENTO, new Date('1979-12-31T00:00:00+01:00'), HOY), /bautismo.*anterior.*nacimiento/i);
   });
 });

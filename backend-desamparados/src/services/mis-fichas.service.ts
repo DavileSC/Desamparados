@@ -12,7 +12,7 @@ import {
 } from './hermanos/comunes.js';
 import { encrypt } from '../utils/bcrypt.handle';
 import { CreateHermanoDto, UpdateHermanoDto, EmancipateHermanoDto } from '../dtos/hermano.dto';
-import { comprobarEsAdulto, comprobarEsMenor, comprobarFechasHermano } from '../domain/fechas-hermano';
+import { comprobarBautismo, comprobarEsAdulto, comprobarEsMenor, comprobarFechasHermano } from '../domain/fechas-hermano';
 import { diferenciasFicha, valorParaAuditoria } from '../domain/cambios-ficha';
 import { apellidosTrasCambio, partirApellidos } from '../domain/apellidos.js';
 import { enmascararIban } from '../domain/iban.js';
@@ -167,6 +167,25 @@ export class MisFichasService {
     // emanciparlo (y con ello probar DNI y correos).
     if (dataToUpdate.fechaNacimiento !== undefined && hermano.activo && !hermano.esTitular) {
       throw new HttpError(MENSAJE_FECHA_DE_SECRETARIA, 409);
+    }
+    // Las mismas reglas que al apuntarla: la ficha propia es de un adulto y
+    // la de alguien a cargo, de un menor. Sin esto, la edición deshacía lo
+    // que el alta comprobó (un menor pendiente se hacía adulto antes de que
+    // Secretaría lo viera; el titular podía quedarse con seis años).
+    const nacimientoNuevo = dataToUpdate.fechaNacimiento instanceof Date ? dataToUpdate.fechaNacimiento : undefined;
+    if (nacimientoNuevo) {
+      if (hermano.esTitular) comprobarEsAdulto(nacimientoNuevo);
+      else comprobarEsMenor(nacimientoNuevo, hermano.nombre);
+    }
+    // El bautismo, contra la fecha de nacimiento que quedará: la nueva o la
+    // guardada. Solo si cambia alguna de las dos: una ficha antigua con datos
+    // raros no se bloquea entera por corregirle el teléfono.
+    const bautismoNuevo = dataToUpdate.fechaBautismo;
+    if (nacimientoNuevo || bautismoNuevo instanceof Date) {
+      comprobarBautismo(
+        nacimientoNuevo ?? hermano.fechaNacimiento,
+        bautismoNuevo !== undefined ? (bautismoNuevo as Date | null) : hermano.fechaBautismo,
+      );
     }
     // La ficha del titular no es de nadie: no lleva parentesco.
     if (hermano.esTitular) delete dataToUpdate.parentesco;

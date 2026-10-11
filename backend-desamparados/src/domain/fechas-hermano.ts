@@ -129,3 +129,25 @@ export function comprobarEsAdulto(fechaNacimiento: Date, hoy: string = diaDeHoy(
     );
   }
 }
+
+/**
+ * El bautismo, al editar la ficha: ni futuro ni anterior al nacimiento. Es un
+ * dato opcional y sin él no hay nada que mirar; sin nacimiento, solo lo
+ * primero. Se razona en días de Madrid porque el bautismo se guarda al
+ * comienzo del día en Madrid y el nacimiento a medianoche UTC (ver
+ * `instanteDeDia`): comparados como instantes, un bautismo del mismo día que
+ * el nacimiento caería dos horas antes.
+ */
+export function comprobarBautismo(
+  fechaNacimiento: Date | null | undefined,
+  fechaBautismo: Date | null | undefined,
+  hoy: string = diaDeHoy(),
+): void {
+  if (!fechaBautismo) return;
+  if (diaDe(fechaBautismo) > hoy) {
+    throw new HttpError('La fecha de bautismo no puede ser posterior a hoy.');
+  }
+  if (fechaNacimiento && diaDe(fechaBautismo) < diaDe(fechaNacimiento)) {
+    throw new HttpError('La fecha de bautismo no puede ser anterior a la de nacimiento.');
+  }
+}
