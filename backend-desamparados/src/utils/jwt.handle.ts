@@ -52,6 +52,10 @@ export interface AuthTokenPayload extends JwtPayload {
   // en cada petición. Así, desactivarlo o un rescate de un ADMIN cuentan al
   // instante, sin esperar a que caduque la sesión (ver checkRole).
   dobleFactor?: boolean;
+  // Tampoco viaja en el token, por lo mismo: confirmar la ficha del primer
+  // acceso tiene que abrir el área en la petición siguiente, con la misma
+  // sesión (ver `authenticateToken`).
+  primerAccesoPendiente?: boolean;
 }
 
 // Roles con acceso al CMS. Su sesion dura mas, pero la cookie muere al cerrar
