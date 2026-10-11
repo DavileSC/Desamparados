@@ -325,7 +325,9 @@ export function bandaInforme(doc: Doc, titulo: string, derecha: string[]) {
   sinMargenes(doc, () => {
     doc.rect(0, 0, A4.ancho, 112.5).fill(NEGRO);
     doc.rect(0, 108.75, A4.ancho, 3.75).fill(BURDEOS);
-    doc.image(IMAGENES.escudoDestacadoEnNegro, MX, 20, { height: 69 });
+    // Una caja que acaba antes del texto (MX + 72): un escudo ancho encoge en
+    // vez de montarse. Pegado a la izquierda, como el texto que lo sigue.
+    doc.image(IMAGENES.escudoDestacadoEnNegro, MX, 20, { fit: [64, 69], valign: 'center' });
     const x = MX + 72;
     rotuloVersalitas(doc, identidad.nombre, x, 36, { tam: 8, color: ORO_CLARO, ancho: ANCHO_UTIL - 72 });
     doc.font(LETRA.texto).fontSize(9);
@@ -352,7 +354,8 @@ export function pies(doc: Doc, izquierda: string, desde = 0, escudo = true) {
       const y = A4.alto - 40;
       let x = MX;
       if (escudo) {
-        doc.image(IMAGENES.escudo, MX, y - 1, { height: 18 });
+        // Cabe en el hueco antes del texto (x + 22) aunque el escudo sea ancho.
+        doc.image(IMAGENES.escudo, MX, y - 1, { fit: [18, 18], valign: 'center' });
         x += 22;
       }
       rotulo(doc, izquierda, x, y + 4, { tam: 9, color: GRIS, ancho: ANCHO_UTIL - 60 });
