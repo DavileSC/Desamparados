@@ -1,6 +1,14 @@
 import '@testing-library/jest-dom/vitest'
+import { INSTALACION } from './instalacion'
 import { afterEach } from 'vitest'
 import { configure } from '@testing-library/react'
+
+/**
+ * Lo que en la web real deja /instalacion.js antes de que arranque nada
+ * (src/config/instalacion.ts lo lee al importarse). Una prueba que quiera otra
+ * corporación hace `vi.mock` de config/instalacion.
+ */
+window.__INSTALACION__ = INSTALACION
 
 /**
  * Cuánto esperan `findBy…` y `waitFor` a que algo aparezca: 1 s de serie. Con

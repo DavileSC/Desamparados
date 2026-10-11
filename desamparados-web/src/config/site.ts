@@ -17,14 +17,14 @@
  * El NIF no está aquí a propósito: el Grupo Parroquial no quiere publicarlo
  * (28-09-2026), y todo lo de este fichero acaba en el código de la web.
  */
-import ENTIDAD from '@instalacion/datos-entidad.json'
+import { instalacion } from './instalacion'
 
 /**
  * Vive en `instalacion/datos-entidad.json`, que lee también la API (correos,
- * PDF). Montar la web para otra corporación empieza por ese fichero, no por el
- * código.
+ * PDF), y llega a la web al cargar la página (`config/instalacion.ts`). Montar
+ * la web para otra corporación empieza por ese fichero, no por el código.
  */
-const { identidad } = ENTIDAD
+const { identidad } = instalacion
 
 export const site = {
   /** Nombre comercial con el que se identifica la web. */

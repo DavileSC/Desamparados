@@ -1,10 +1,10 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
-import { datosDeLaInstalacion } from './scripts/instalacion-vite.mjs'
 
 export default defineConfig({
-  // El mismo módulo que vite.config.ts; en las pruebas, con el ejemplo.
-  plugins: [react(), datosDeLaInstalacion()],
+  // Sin el plugin de la instalación: los datos los pone src/test/setup.ts en
+  // window.__INSTALACION__, como haría /instalacion.js (siempre el ejemplo).
+  plugins: [react()],
   test: {
     environment: 'jsdom',
     globals: true,

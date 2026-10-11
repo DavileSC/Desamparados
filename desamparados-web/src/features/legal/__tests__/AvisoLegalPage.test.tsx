@@ -5,8 +5,9 @@ import { renderWithProviders } from '../../../test/test-utils'
 // Una instalación de mentira con otro artículo: si el aviso legal sigue
 // escribiendo «Grupo» a mano, esta prueba lo nota aunque la de Desamparados
 // (con «el Grupo Parroquial» de siempre) no lo habría hecho.
-vi.mock('@instalacion/datos-entidad.json', () => ({
-  default: {
+vi.mock('../../../config/instalacion', () => ({
+  faltaInstalacion: false,
+  instalacion: {
     identidad: {
       nombre: 'Hermandad Nuestra Señora de los Desamparados',
       tipo: 'Hermandad',
@@ -22,11 +23,6 @@ vi.mock('@instalacion/datos-entidad.json', () => ({
       normas: { titulo: 'las normas diocesanas', url: 'https://normas.ejemplo/normas.pdf' },
     },
     marca: { colorPrincipal: null, colorAcento: null },
-    secretaria: { horario: null, telefono: null, email: 'goretti.desamparados@gmail.com' },
-    sede: { nombre: 'Casa Hermandad', calle: 'C. de Ejemplo, 1', codigoPostal: '29001', localidad: 'Málaga' },
-    redes: { facebook: null, instagram: null, x: null, tiktok: null, youtube: null },
-    privacidad: { emailDerechos: null },
-    modulos: { activos: [] },
   },
 }))
 

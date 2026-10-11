@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import DatosDeIdentificacion from '../DatosDeIdentificacion'
 import { site, faltanDatosIdentificativos, DATO_PENDIENTE } from '../../../config/site'
-import DATOS from '@instalacion/datos-entidad.json'
+import { DATOS } from '../../../test/instalacion'
 
 describe('DatosDeIdentificacion', () => {
   it('muestra el correo de contacto real', () => {
