@@ -1,4 +1,4 @@
-import datos from '@instalacion/datos-entidad.json'
+import { instalacion } from '../config/instalacion'
 import type { Articulo } from '../../../shared/datos-entidad.mjs'
 
 /**
@@ -31,8 +31,8 @@ interface OpcionesCorporacion {
 }
 
 // Se lee directamente de los datos de la instalación, igual que `config/site.ts`,
-// y no de ese módulo: el dominio no depende de la configuración, es al revés.
-const deEstaInstalacion = datos.identidad
+// y no de ese módulo: el dominio no depende de site.ts, es al revés.
+const deEstaInstalacion = instalacion.identidad
 
 const partes = ({ corto = false, identidad = deEstaInstalacion }: OpcionesCorporacion = {}) =>
   [identidad.articulo, corto ? identidad.tipoCorto : identidad.tipo] as const

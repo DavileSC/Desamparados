@@ -23,9 +23,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Aquí no hay instalación: la siembra, la compilación y las pruebas usan la
-# corporación de ejemplo (relativa a la raíz del repositorio; ver
-# shared/datos-entidad.mjs). Así también se ve si algo depende de Desamparados.
+# Aquí no hay instalación: la siembra y las pruebas usan la corporación de
+# ejemplo (relativa a la raíz del repositorio; ver shared/datos-entidad.mjs).
+# Así también se ve si algo depende de Desamparados. La web se compila sin
+# ella: los datos los pone el contenedor al arrancar.
 env:
   DATOS_ENTIDAD: shared/datos-entidad.ejemplo.json
 
@@ -189,6 +190,19 @@ jobs:
 
       - name: Construir
         run: npm run build
+
+      # La web compilada no lleva los datos de ninguna corporación: index.html
+      # sale con sus marcas, y las rellena el contenedor al arrancar con
+      # scripts/instalacion-web.mjs. Aquí se hace lo mismo con el ejemplo:
+      # tiene que quedar sin ninguna marca. Si Vite dejara de conservarlas, o
+      # la plantilla usara una que la orden no conoce, el fallo saldría aquí y
+      # no en el servidor.
+      - name: Comprobar que index.html se rellena al arrancar
+        run: |
+          grep -q '{{nombre}}' dist/index.html || { echo "::error::dist/index.html ya no lleva las marcas: ¿se han compilado los datos dentro?"; exit 1; }
+          node scripts/instalacion-web.mjs --plantilla dist/index.html --destino "$RUNNER_TEMP/web" --datos ../shared/datos-entidad.ejemplo.json --comprimir
+          if grep -n '{{' "$RUNNER_TEMP/web/index.html"; then echo "::error::Quedan marcas sin rellenar en index.html."; exit 1; fi
+          ls -l "$RUNNER_TEMP/web"
 
       # `npm run build` regenera la lista de páginas del sitemap desde el router
       # (shared/rutas-publicas.json, que sirve la API): si quedó desincronizada

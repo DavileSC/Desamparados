@@ -4,7 +4,7 @@ import { site } from '../config/site'
 import { identidadGenerada } from '../test/identidadGenerada'
 import { renderWithProviders } from '../test/test-utils'
 import DatosEstructurados from '../components/DatosEstructurados'
-import DATOS from '@instalacion/datos-entidad.json'
+import { DATOS } from '../test/instalacion'
 
 /**
  * Los datos estructurados van en dos sitios: en `index.html` lo que no cambia,

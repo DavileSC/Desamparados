@@ -1,22 +1,19 @@
-import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { leerDatosEntidad } from '../../../shared/datos-entidad.mjs'
+import { manifest, rellenarIndex, robots } from '../../scripts/instalacion-web.mjs'
 
 /**
- * index.html, el manifest y robots.txt como los genera
- * `scripts/generar-identidad.mjs`, con la instalación de las pruebas (el
- * ejemplo). No se leen los de la carpeta de la web: son de cada instalación,
- * no están en git y en el CI no existen.
+ * index.html, el manifest y robots.txt como los escribe
+ * `scripts/instalacion-web.mjs` al arrancar el contenedor, con la instalación
+ * de las pruebas (el ejemplo). El index.html del repositorio es la plantilla,
+ * con sus marcas sin rellenar.
  */
 export function identidadGenerada() {
-  const destino = mkdtempSync(join(tmpdir(), 'identidad-'))
-  try {
-    const r = spawnSync(process.execPath, ['scripts/generar-identidad.mjs', '--destino', destino], { cwd: process.cwd(), encoding: 'utf8' })
-    if (r.status !== 0) throw new Error(r.stderr)
-    const leer = (ruta: string) => readFileSync(join(destino, ruta), 'utf8')
-    return { html: leer('index.html'), manifiesto: leer('public/manifest.json'), robots: leer('public/robots.txt') }
-  } finally {
-    rmSync(destino, { recursive: true, force: true })
+  const datos = leerDatosEntidad()
+  return {
+    html: rellenarIndex(readFileSync(join(process.cwd(), 'index.html'), 'utf8'), datos),
+    manifiesto: manifest(datos),
+    robots: robots(datos),
   }
 }

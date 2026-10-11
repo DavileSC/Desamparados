@@ -98,8 +98,8 @@ PostgreSQL, se comería la mitad de ese margen.
 
 También está sin comprar. Se escribe en un único sitio, `identidad.dominio` de
 `instalacion/datos-entidad.json` (siempre con `www.`): de ahí lo toman la web (su
-dirección canónica, el sitemap, `robots.txt`), la imagen de nginx al
-construirse (`docker/nginx/generar-sitio.mjs` rellena `sitio.conf`) y
+dirección canónica, el sitemap, `robots.txt`), el contenedor de la web al
+arrancar (`docker/nginx/generar-sitio.mjs` rellena `sitio.conf`) y
 `docker/instalar.sh`, que lo pone en `FRONTEND_URL` y `API_URL`. Al elegirlo,
 recordar que **la API vivirá bajo ese mismo
 dominio en la ruta `/api/`**, así que no hace falta un subdominio aparte para
@@ -169,7 +169,7 @@ Son cuatro ficheros en `docker/nginx/`, y la imagen los coloca en su sitio:
 | `comun.conf` | `conf.d/00-comun.conf` (contexto `http`) | `server_tokens off` y el formato de registro |
 | `seguridad.conf` | `snippets/desamparados-seguridad.conf` | Las cabeceras de seguridad de la web |
 | `seguridad-sin-hsts.conf` | `snippets/…-sin-hsts.conf` | Igual, sin HSTS. **Solo lo usa la prueba en local** |
-| `sitio.conf` | `conf.d/desamparados.conf` | Los tres `server`: el 80 que redirige, el 443 sin `www` y el sitio. Lleva `__DOMINIO__` y `__DOMINIO_SIN_WWW__`, que rellena `generar-sitio.mjs` al construir la imagen |
+| `sitio.conf` | `conf.d/desamparados.conf` | Los tres `server`: el 80 que redirige, el 443 sin `www` y el sitio. Lleva `__DOMINIO__` y `__DOMINIO_SIN_WWW__`, que rellena `generar-sitio.mjs` al arrancar el contenedor (`40-instalacion.sh`), salvo que el compose monte otro encima |
 
 Las decisiones que están escritas ahí y conviene no deshacer por descuido:
 
@@ -750,14 +750,33 @@ Quién los lee:
 - **La API**, al arrancar: `shared/datos-entidad.mjs` los busca, y el compose
   los monta en el contenedor (`./instalacion`, de solo lectura). La imagen de
   la API no los lleva.
-- **La web**, al compilar: el código los importa como
-  `@instalacion/datos-entidad.json` y Vite decide qué fichero es. También
-  salen de ellos `index.html`, `public/manifest.json` y `public/robots.txt`,
-  que se generan antes de `dev` y de `build` y tampoco están en git. Hasta que
-  la web los lea al arrancar (siguiente fila de la Fase 8), **la imagen de la
-  web es de una corporación**: en GitHub se construye con la variable
-  `DATOS_ENTIDAD` (ver `servidor.md`).
-- **nginx**, al construir la imagen de la web: el dominio.
+- **La web**, al arrancar su contenedor, del mismo montaje
+  (`./instalacion:/app/instalacion:ro`). La web compilada no los lleva: hay
+  **una sola imagen para todas las corporaciones**. Al arrancar,
+  `docker/nginx/40-instalacion.sh` escribe con
+  `desamparados-web/scripts/instalacion-web.mjs` el `index.html` relleno (con
+  su `.gz`), el manifest, `robots.txt` y `/instalacion.js`, que deja la
+  identidad y la marca en `window.__INSTALACION__` para la web
+  (`src/config/instalacion.ts`). Si `/instalacion.js` no llega, la web no se
+  monta y enseña un aviso. En `npm run dev`, lo mismo lo sirve el plugin de
+  Vite (`scripts/instalacion-vite.mjs`), sin escribir nada en la carpeta; el
+  build no los necesita.
+- **nginx**, al arrancar el contenedor de la web: el dominio, en el sitio de
+  producción. Si el compose monta otro sitio encima (`sitio-tras-proxy.conf`
+  en el VPS, `sitio-local.conf` en local), no se toca.
+
+**Cambiar los datos ya no pide construir nada**: se cambia el fichero y se
+reinicia lo que los lee:
+
+```bash
+docker compose -f compose.yaml -f compose.servidor.yaml restart api web
+# o, si se ha cambiado también el compose: … up -d --force-recreate api web
+```
+
+**Un fichero mal puesto tumba también la web**: el contenedor sale con el
+error en `docker compose logs web` (y el compose lo reintenta en bucle). Es a
+propósito, como la API: mejor caída que con los datos de otro.
+`desplegar-desamparados` lo comprueba tras la API, pidiendo `/instalacion.js`.
 
 **Sin el fichero no arranca nada**, y es a propósito: la API, Vite y los
 guiones se paran con un mensaje que dice qué hacer. Caer en el ejemplo

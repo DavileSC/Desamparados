@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
-import DATOS from '@instalacion/datos-entidad.json'
+import { DATOS } from '../../../test/instalacion'
 import AccesosRapidos from '../AccesosRapidos'
 import { textosDePrueba, responderPortada } from './ayudas'
 

@@ -24,6 +24,14 @@ desamparados-web/dist
 # Los archivos subidos desde el CMS se montan del disco, no se hornean.
 backend-desamparados/storage
 
+# Los datos de la corporación tampoco: las dos imágenes los leen al arrancar
+# del montaje ./instalacion:/app/instalacion, y una misma imagen sirve a
+# cualquier corporación. Ni el manifest y robots.txt que la web generaba antes
+# en public/, por si quedan en una copia vieja: Vite los copiaría a dist/.
+instalacion
+desamparados-web/public/manifest.json
+desamparados-web/public/robots.txt
+
 # Nada de esto hace falta para ejecutar.
 .git
 .github

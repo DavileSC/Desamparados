@@ -13,15 +13,24 @@ import App from './App.tsx'
 import theme from './theme'
 import { quitarMetaEstaticas } from './lib/metaEstaticas'
 import { recargarAlFallarUnTrozo } from './lib/recargaTrasDespliegue'
+import { avisarSinInstalacion, faltaInstalacion } from './config/instalacion'
 
 quitarMetaEstaticas()
 recargarAlFallarUnTrozo()
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <App />
-    </ThemeProvider>
-  </StrictMode>,
-)
+const raiz = document.getElementById('root')!
+
+// Sin los datos de la corporación (/instalacion.js) no se monta nada: la web
+// saldría con el nombre en blanco en los títulos y en los textos legales.
+if (faltaInstalacion) {
+  avisarSinInstalacion(raiz)
+} else {
+  createRoot(raiz).render(
+    <StrictMode>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <App />
+      </ThemeProvider>
+    </StrictMode>,
+  )
+}

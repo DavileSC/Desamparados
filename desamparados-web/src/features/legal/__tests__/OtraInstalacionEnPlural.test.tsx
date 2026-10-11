@@ -7,8 +7,9 @@ import { renderWithProviders } from '../../../test/test-utils'
 // que la corporación es el sujeto tiene que ir en plural; y lo que antes se
 // escribía de Desamparados («Nuestra Señora de los Desamparados», «Málaga»)
 // tiene que salir de la identidad.
-vi.mock('@instalacion/datos-entidad.json', () => ({
-  default: {
+vi.mock('../../../config/instalacion', () => ({
+  faltaInstalacion: false,
+  instalacion: {
     identidad: {
       nombre: 'Cofradías Fusionadas de Nuestra Señora de la Paz',
       tipo: 'Cofradías Fusionadas',
@@ -24,11 +25,6 @@ vi.mock('@instalacion/datos-entidad.json', () => ({
       normas: { titulo: 'las normas diocesanas', url: 'https://normas.ejemplo/normas.pdf' },
     },
     marca: { colorPrincipal: null, colorAcento: null },
-    secretaria: { horario: null, telefono: null, email: 'secretaria@fusionadas.ejemplo' },
-    sede: { nombre: 'Casa de las Cofradías', calle: 'C. de Ejemplo, 1', codigoPostal: '29200', localidad: 'Antequera' },
-    redes: { facebook: null, instagram: null, x: null, tiktok: null, youtube: null },
-    privacidad: { emailDerechos: null },
-    modulos: { activos: [] },
   },
 }))
 

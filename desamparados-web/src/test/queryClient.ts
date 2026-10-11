@@ -2,7 +2,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { CLAVES_MODULO } from '../domain/modulos'
 import { CLAVE_MODULOS } from '../lib/api/modulos'
 import { CLAVE_CORPORACION } from '../lib/api/corporacion'
-import DATOS from '@instalacion/datos-entidad.json'
+import { DATOS } from './instalacion'
 
 /**
  * Un `QueryClient` de pruebas con los módulos ya en caché, para
@@ -38,8 +38,8 @@ export function crearQueryClientDePruebas(modulos?: readonly string[]): QueryCli
 
 /**
  * Secretaría, sede y redes, como las sembraría la API la primera vez: las del
- * fichero de la instalación (en las pruebas, el ejemplo, o el que simule la
- * prueba con vi.mock). Así ninguna pantalla los pide al `fetch` simulado, que
+ * fichero de la instalación (en las pruebas, el ejemplo; `DATOS` de
+ * test/instalacion.ts). Así ninguna pantalla los pide al `fetch` simulado, que
  * respondería otra cosa (y el pie o los accesos leerían `redes` de ahí). Para
  * las pruebas que montan su propio `QueryClient`, como hace `App.tsx` al
  * arrancar. El `gcTime` por lo mismo que los módulos (arriba).

@@ -1,6 +1,7 @@
 // Rellena el dominio en la configuración de nginx con el de
-// instalacion/datos-entidad.json, al construir la imagen de la web. Así el dominio
-// se escribe en un único sitio para la web, su dirección canónica y nginx.
+// instalacion/datos-entidad.json, al arrancar el contenedor de la web
+// (40-instalacion.sh). Así el dominio se escribe en un único sitio para la web,
+// su dirección canónica y nginx.
 //
 //   node docker/nginx/generar-sitio.mjs <instalacion/datos-entidad.json> <sitio.conf> <salida>
 //

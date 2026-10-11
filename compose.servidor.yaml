@@ -38,3 +38,6 @@ services:
     volumes: !override
       - ./backend-desamparados/storage/public:/srv/storage/public:ro
       - ./docker/nginx/sitio-tras-proxy.conf:/etc/nginx/conf.d/desamparados.conf:ro
+      # !override sustituye la lista entera: sin repetirlo aquí, la web no
+      # tendría los datos de la corporación y no arrancaría.
+      - ./instalacion:/app/instalacion:ro
