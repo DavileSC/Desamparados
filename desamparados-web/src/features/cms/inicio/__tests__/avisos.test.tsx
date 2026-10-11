@@ -25,6 +25,12 @@ const montar = (tareas: Tarea[], role?: string, userId?: number, filas?: number)
 afterEach(() => { vi.unstubAllGlobals() })
 
 describe('un aviso de la junta como asunto', () => {
+  it('el de un hermano («no es de mi familia») se lee entero; los de la junta, en una línea', () => {
+    const deHermano = tareaDeAviso({ ...AVISO, creadorRol: 'USER', texto: 'N.º 305, Bruno Pérez Ruiz: Ana Pérez Ruiz dice que no es de su familia. Ha vuelto al censo importado.' }, HOY)
+    expect(deHermano.entero).toBe(true)
+    expect(tareaDeAviso(AVISO, HOY).entero).toBe(false)
+  })
+
   it('dice para quién es, quién lo puso y hasta cuándo', () => {
     const tarea = tareaDeAviso(AVISO, HOY)
     expect(tarea).toMatchObject({ prioridad: 'pendiente', titulo: AVISO.texto, cargo: 'Secretaría', detalle: 'para Secretaría · de Hermano Mayor · hasta el 20 nov' })

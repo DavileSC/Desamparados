@@ -131,7 +131,7 @@ export default function HojaCenso({ onImportado, onError }: Props) {
               </Typography>
             )}
             {previa.deBaja > 0 && <Typography component="li" variant="body2">{plural(previa.deBaja, 'entra de baja', 'entran de baja')}.</Typography>}
-            {previa.domiciliadas > 0 && <Typography component="li" variant="body2">{plural(previa.domiciliadas, 'trae', 'traen')} cuenta bancaria: quedan domiciliados.</Typography>}
+            {previa.domiciliadas > 0 && <Typography component="li" variant="body2">{plural(previa.domiciliadas, 'trae', 'traen')} cuenta bancaria: {previa.domiciliadas === 1 ? 'queda domiciliado' : 'quedan domiciliados'}.</Typography>}
           </Stack>
         )}
         {ignoradas.length > 0 && (

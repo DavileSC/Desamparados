@@ -7,13 +7,14 @@ import VistaPrimerAcceso from '../VistaPrimerAcceso'
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 const cuenta = (id: number, nombre: string, extra: Record<string, unknown> = {}) => ({
   id, nombre, apellidos: 'Ruiz Montes', email: `${nombre.toLowerCase()}@ejemplo.test`, numeroHermano: 200 + id, aCargo: 0,
-  invitadoEn: null, fichaConfirmadaEn: null, enCola: false, ...extra,
+  invitadoEn: null, invitacionCaducaEn: null, fichaConfirmadaEn: null, enCola: false, ...extra,
 })
 
 function api() {
   const filas = [
     cuenta(1, 'Antonio', { aCargo: 2 }),
-    cuenta(2, 'Carmen', { invitadoEn: '2026-10-05T10:00:00.000Z' }),
+    cuenta(2, 'Carmen', { invitadoEn: '2026-10-05T10:00:00.000Z', invitacionCaducaEn: '2099-10-19T10:00:00.000Z' }),
+    cuenta(4, 'Dolores', { invitadoEn: '2026-09-01T10:00:00.000Z', invitacionCaducaEn: '2026-09-15T10:00:00.000Z' }),
     cuenta(3, 'Pedro', { invitadoEn: '2026-10-05T10:00:00.000Z', fichaConfirmadaEn: '2026-10-06T10:00:00.000Z' }),
   ]
   const simulado = vi.fn().mockImplementation((_url: string, init: RequestInit = {}) => Promise.resolve(init.method === 'POST'
@@ -54,6 +55,30 @@ describe('VistaPrimerAcceso', () => {
     await usuario.click(await screen.findByRole('button', { name: 'Invitar a los que faltan (1)' }))
     await usuario.click(await screen.findByRole('button', { name: 'Mandar invitaciones' }))
     await waitFor(() => expect(posts(simulado)).toEqual([[expect.stringContaining('/primer-acceso/invitar'), {}]]))
-    expect(await screen.findByText(/1 invitación en camino/)).toBeInTheDocument()
+    // En la cola no queda ninguna: ya han salido, y no se dice que tardarán.
+    expect(await screen.findByText('1 invitación enviada.')).toBeInTheDocument()
+  })
+
+  it('una invitación caducada se dice, con el reenvío destacado', async () => {
+    api()
+    renderWithProviders(<VistaPrimerAcceso />)
+
+    const lista = await screen.findByRole('list', { name: 'Cuentas del censo importado' })
+    expect(within(lista).getByText(/Caducó el 15/)).toBeInTheDocument()
+    expect(within(lista).getByText(/Invitado el/)).toBeInTheDocument()
+    expect(within(lista).getByRole('button', { name: 'Reenviar la invitación a Dolores Ruiz Montes' })).toHaveClass('MuiButton-contained')
+    expect(within(lista).getByRole('button', { name: 'Reenviar la invitación a Carmen Ruiz Montes' })).toHaveClass('MuiButton-outlined')
+  })
+
+  it('la búsqueda espera a que se deje de teclear', async () => {
+    const usuario = userEvent.setup()
+    const simulado = api()
+    renderWithProviders(<VistaPrimerAcceso />)
+
+    await screen.findByRole('list', { name: 'Cuentas del censo importado' })
+    await usuario.type(screen.getByRole('textbox', { name: 'Buscar por nombre o correo' }), 'carmen')
+    await waitFor(() => expect(simulado.mock.calls.some(([url]) => String(url).includes('q=carmen'))).toBe(true))
+    // Una petición con lo buscado, no una por letra.
+    expect(simulado.mock.calls.filter(([url]) => /[?&]q=/.test(String(url)))).toHaveLength(1)
   })
 })
