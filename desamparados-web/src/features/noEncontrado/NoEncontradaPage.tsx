@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Box, Typography } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { Link, useLocation } from 'react-router-dom'
@@ -10,10 +10,15 @@ import { enlaceConFlecha } from '../../components/estiloDeBoton'
 import { hayWebGL } from '../../components/mapa/barrio'
 import { CLAVE_RECORRIDO, getContenido, type BloqueItinerario, type Coordenada, type PaginaDeBloques } from '../../lib/api/contenido'
 import { useModulos } from '../../hooks/useModulos'
+import { ahorraDatos } from '../../lib/videoPropio'
 
-// Aparte: el mapa trae MapLibre, y la 404 la usan también páginas que no lo
-// necesitan (una noticia que no existe). Solo se descarga si hay mapa que pintar.
+// Aparte: el mapa trae MapLibre (unos 280 KB y su worker), y la 404 la usan
+// también páginas que no lo necesitan (una noticia que no existe, un módulo
+// apagado). Solo se descarga si hay mapa que pintar.
 const MapaFueraDelRecorrido = lazy(() => import('./MapaFueraDelRecorrido'))
+
+/** El sitio del mapa mientras llega, del mismo tamaño para que nada salte. */
+const huecoDelMapa = <Box sx={{ aspectRatio: { xs: '1.1 / 1', sm: '1.5 / 1', md: '1.05 / 1' }, borderRadius: '8px', bgcolor: '#0b0a0c' }} />
 
 /** La línea del recorrido de la salida, si la página del recorrido tiene una dibujada sobre el mapa. */
 function lineaDelRecorrido(pagina: PaginaDeBloques | undefined): Coordenada[] | null {
@@ -31,15 +36,30 @@ export default function NoEncontradaPage() {
   const location = useLocation()
   const { activo } = useModulos()
   // La misma consulta que la página del recorrido: si se viene de ella, ya está en caché.
+  // Una vez: preguntar por WebGL crea un lienzo, y no hace falta en cada
+  // pintado. Con el ahorro de datos o una conexión lenta, como el vídeo del
+  // hero, el mapa no se descarga: el texto dice lo mismo.
+  const [conMapa] = useState(() => hayWebGL() && !ahorraDatos())
   const recorrido = useQuery({
     queryKey: CLAVE_RECORRIDO,
     queryFn: () => getContenido<PaginaDeBloques>('recorrido'),
     staleTime: 5 * 60_000,
     retry: false,
+    enabled: conMapa,
   })
-  // Una vez: preguntarlo crea un lienzo, y no hace falta en cada pintado.
-  const [conWebGL] = useState(hayWebGL)
-  const linea = conWebGL ? lineaDelRecorrido(recorrido.data) : null
+  const linea = conMapa ? lineaDelRecorrido(recorrido.data) : null
+  // El mapa espera a que el navegador quede libre: lo primero es el texto.
+  const [desocupado, setDesocupado] = useState(false)
+  useEffect(() => {
+    if (!linea || desocupado) return
+    // Safari no tiene requestIdleCallback: ahí, un respiro corto.
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(() => setDesocupado(true), { timeout: 1500 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const id = setTimeout(() => setDesocupado(true), 300)
+    return () => clearTimeout(id)
+  }, [linea, desocupado])
 
   return (
     <>
@@ -85,8 +105,8 @@ export default function NoEncontradaPage() {
             {linea && (
               // En el móvil y la tableta, el mapa va primero: es lo que dice de un vistazo qué ha pasado.
               <Box sx={{ order: { xs: -1, md: 0 }, width: '100%', maxWidth: { xs: 640, md: 'none' }, justifySelf: 'center' }}>
-                <Suspense fallback={<Box sx={{ aspectRatio: { xs: '1.1 / 1', sm: '1.5 / 1', md: '1.05 / 1' }, borderRadius: '8px', bgcolor: '#0b0a0c' }} />}>
-                  <MapaFueraDelRecorrido linea={linea} />
+                <Suspense fallback={huecoDelMapa}>
+                  {desocupado ? <MapaFueraDelRecorrido linea={linea} /> : huecoDelMapa}
                 </Suspense>
               </Box>
             )}

@@ -5,6 +5,7 @@ import { useMemo } from 'react'
 import ContenedorDePagina from '../ContenedorDePagina'
 import { GRANATE, PAPEL } from '../../features/inicio/estilos'
 import { VELO_SOBRE_GRANATE } from '../estiloDeBoton'
+import { propsDeFoto } from '../../lib/fotoSubida'
 
 export type Fondo = 'ninguno' | 'papel' | 'granate' | 'oscuro' | 'foto'
 
@@ -53,14 +54,16 @@ export default function BandaDeFondo({ fondo, foto, children }: { fondo: Fondo; 
         color: fondo === 'papel' ? TINTA : undefined,
         ...(fondo === 'granate' && VELO_SOBRE_GRANATE),
         ...(fondo === 'foto' && foto ? {
-          backgroundImage: `url("${foto}")`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
           // El velo va encima de la foto y debajo del texto: la foto se intuye y el texto se lee.
           '&::before': { content: '""', position: 'absolute', inset: 0, zIndex: -1, backgroundColor: 'rgba(10, 9, 11, 0.78)' },
         } : {}),
       }}
     >
+      {/* Un <img> y no un fondo por CSS: así lleva las copias de 640 y 1280. */}
+      {fondo === 'foto' && foto && (
+        <Box component="img" alt="" aria-hidden="true" {...propsDeFoto(foto, '100vw')}
+          sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: -2 }} />
+      )}
       <ContenedorDePagina>{children}</ContenedorDePagina>
     </Box>
   )

@@ -6,7 +6,7 @@ import SeccionAnimada, { Revela } from '../../components/SeccionAnimada'
 import TarjetaNoticia, { TarjetaNoticiaEsqueleto } from '../../components/TarjetaNoticia'
 import EnCarga, { estadoDeConsulta } from '../../components/esqueleto/EnCarga'
 import CintaDestacada from './CintaDestacada'
-import { noticiasDePortada } from '../../lib/api/noticias'
+import { pedirUltimasNoticias } from '../../lib/api/noticias'
 import { useDatosDePortada } from './useDatosDePortada'
 import { useTextosPortada } from './useContenidoPortada'
 import AvisosDeInicio from './AvisosDeInicio'
@@ -20,7 +20,6 @@ const rejilla = { listStyle: 'none', m: 0, p: 0, display: 'grid', gridTemplateCo
 // En tableta van de dos en dos: la tercera se quedaría sola con medio hueco al
 // lado. Ahí se enseñan dos, y el resto está en «Ver todas».
 const visibleEnTableta = (i: number) => (i === 2 ? { xs: 'flex', sm: 'none', md: 'flex' } : 'flex')
-const pedirNoticias = () => noticiasDePortada(MAX_NOTICIAS)
 
 /**
  * Actualidad: bloque oscuro con tres noticias en tarjetas claras.
@@ -34,8 +33,9 @@ export default function NoticiasDestacadas() {
   // La lista llega en milisegundos y en esta instalación todo está encendido:
   // mejor un esqueleto mientras no se sabe que un hueco que luego crece.
   const apagado = activos !== null && !activo('noticias')
-  const consulta = useDatosDePortada('noticias', pedirNoticias, activos !== null && activo('noticias'))
-  const { data: noticias = [], isPending, isError, refetch } = consulta
+  const consulta = useDatosDePortada('noticias', pedirUltimasNoticias, activos !== null && activo('noticias'))
+  const { data: todas = [], isPending, isError, refetch } = consulta
+  const noticias = todas.slice(0, MAX_NOTICIAS)
   const textos = useTextosPortada()
   if (apagado) return null
 

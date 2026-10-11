@@ -1060,6 +1060,8 @@ model AuditLog {
   @@index([userId])
   @@index([action])
   @@index([createdAt])
+  // El historial de un registro (la supresión RGPD, la ficha) se busca por los dos.
+  @@index([entityType, entityId])
 }
 
 model Pagina {

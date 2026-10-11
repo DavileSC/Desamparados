@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link, useLocation } from 'react-router-dom'
 import { Alert, Box, Button, Grid, Typography } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
@@ -9,7 +10,7 @@ import TarjetaPublicacion, { TarjetaPublicacionEsqueleto } from '../TarjetaPubli
 import EnCarga from '../esqueleto/EnCarga'
 import { Lineas } from '../esqueleto/Hueso'
 import Paginador from '../Paginador'
-import { noticiasDePortada, archivoDeNoticias, CLAVE_ARCHIVO_DE_NOTICIAS } from '../../lib/api/noticias'
+import { pedirUltimasNoticias, archivoDeNoticias, CLAVE_ARCHIVO_DE_NOTICIAS, CLAVE_NOTICIAS_DE_PORTADA } from '../../lib/api/noticias'
 import { traerProximosEventos } from '../../lib/api/agenda'
 import AgendaDeCultos, { SuscribirseALaAgenda } from '../../features/actualidad/agenda/AgendaDeCultos'
 import { type Pagina } from '../../hooks/useListadoPaginado'
@@ -181,39 +182,27 @@ function RejillaDeNoticiasEsqueleto({ cuantas, columnas }: { cuantas: number; co
 }
 
 /**
- * Carga de una sola vez, sin paginar: los listados cortos de Actualidad.
- * `pedir` va fuera de los componentes para que no cambie en cada render.
+ * Carga de una sola vez, sin paginar: los listados cortos de Actualidad. Con
+ * React Query y su clave, volver a una página ya vista no los pide otra vez.
  */
-function useCargaUnica<T>(pedir: () => Promise<T[]>, mensajeError: string) {
-  const [items, setItems] = useState<T[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [intento, setIntento] = useState(0)
-
-  useEffect(() => {
-    let cancelado = false
-    pedir()
-      .then((datos) => { if (!cancelado) setItems(datos) })
-      .catch((err: unknown) => { if (!cancelado) setError(err instanceof Error ? err.message : mensajeError) })
-      .finally(() => { if (!cancelado) setLoading(false) })
-    return () => { cancelado = true }
-  }, [pedir, mensajeError, intento])
-
-  const reintentar = () => {
-    setError(null)
-    setLoading(true)
-    setIntento((n) => n + 1)
+function useCargaUnica<T>(clave: readonly unknown[], pedir: () => Promise<T[]>, mensajeError: string) {
+  const consulta = useQuery({ queryKey: clave, queryFn: pedir, staleTime: 60_000, retry: false })
+  return {
+    items: consulta.data ?? [],
+    loading: consulta.isPending,
+    error: consulta.isError ? (consulta.error instanceof Error ? consulta.error.message : mensajeError) : null,
+    reintentar: () => void consulta.refetch(),
   }
-
-  return { items, loading, error, reintentar }
 }
 
 // De siempre, tres noticias (las tarjetas van de tres en tres, como en la
 // portada y el archivo) y cuatro actos a dos columnas.
 function NoticiasRecientes({ titulo, bloque }: PropsListado) {
   const cuantas = cantidadDe(bloque, 3)
-  const pedir = useCallback(() => noticiasDePortada(cuantas), [cuantas])
-  const { items, loading, error, reintentar } = useCargaUnica<Noticia>(pedir, 'No se han podido cargar las noticias.')
+  // La misma lista y la misma clave que la portada: llega entera (son pocas)
+  // y cada uno se queda con las suyas.
+  const { items: todas, loading, error, reintentar } = useCargaUnica<Noticia>(CLAVE_NOTICIAS_DE_PORTADA, pedirUltimasNoticias, 'No se han podido cargar las noticias.')
+  const items = todas.slice(0, cuantas)
   return (
     <>
       <Encabezado titulo={titulo} enlace={{ texto: 'Ver todas las noticias', ruta: '/noticias' }} />
@@ -245,8 +234,8 @@ function NoticiasRecientes({ titulo, bloque }: PropsListado) {
 
 function AgendaProxima({ titulo, bloque }: PropsListado) {
   const cuantos = cantidadDe(bloque, 4)
-  const pedir = useCallback(() => traerProximosEventos(cuantos), [cuantos])
-  const { items, loading, error, reintentar } = useCargaUnica<Acto>(pedir, 'No se ha podido cargar la agenda.')
+  // Bajo ['home', 'agenda']: al cambiar un acto en el CMS se vuelve a pedir.
+  const { items, loading, error, reintentar } = useCargaUnica<Acto>(['home', 'agenda', 'listado', cuantos], () => traerProximosEventos(cuantos), 'No se ha podido cargar la agenda.')
   const columnas = columnasDe(bloque, 2)
   if (loading || error) {
     return (

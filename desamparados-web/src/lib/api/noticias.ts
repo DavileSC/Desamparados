@@ -35,9 +35,13 @@ function aNoticia(noticia: NoticiaDeListado): Noticia {
   }
 }
 
-export async function noticiasDePortada(count?: number) {
+/**
+ * Las de la portada, enteras: las guarda `CLAVE_NOTICIAS_DE_PORTADA` y de ahí
+ * cogen la portada y el bloque «Noticias recientes» las que enseña cada uno.
+ */
+export async function pedirUltimasNoticias() {
   const noticias = await llamarApi<NoticiaDeListado[]>('/news/latest')
-  return noticias.slice(0, count).map(aNoticia)
+  return noticias.map(aNoticia)
 }
 
 /**

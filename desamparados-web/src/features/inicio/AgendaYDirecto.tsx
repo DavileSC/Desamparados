@@ -15,6 +15,7 @@ import ListaDeAgenda, { ListaDeAgendaEsqueleto } from './ListaDeAgenda'
 import EnCarga from '../../components/esqueleto/EnCarga'
 import { inicioDeMes, inicioDelDia, nombreDelMes, sumarMeses } from './agenda'
 import { GOLD, PAPEL, SERIF, TINTA, ceja, enlaceBloque } from './estilos'
+import { propsDeFoto } from '../../lib/fotoSubida'
 import { useModulos } from '../../hooks/useModulos'
 
 // El tope por página del servidor: sobra para dos meses de actos.
@@ -175,16 +176,23 @@ export default function AgendaYDirecto() {
           desenfocada y velada, sirve de ambiente sin competir con el calendario.
           Se cambia en el CMS; sin foto, el bloque queda sobre el fondo oscuro. */}
       {textos.agenda.imagenUrl && (
+        // Un <img> y no un fondo por CSS: así lleva las copias de 640 y 1280.
+        // Desenfocada y velada, con media ventana de ancho basta.
         <Box
+          component="img"
+          alt=""
           aria-hidden="true"
+          {...propsDeFoto(textos.agenda.imagenUrl, '50vw')}
           sx={{
             position: 'absolute',
-            inset: '-16px',
+            top: '-16px',
+            left: '-16px',
+            width: 'calc(100% + 32px)',
+            height: 'calc(100% + 32px)',
+            maxWidth: 'none',
             zIndex: -2,
-            backgroundImage: `url("${textos.agenda.imagenUrl}")`,
-            backgroundRepeat: 'no-repeat',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center 55%',
+            objectFit: 'cover',
+            objectPosition: 'center 55%',
             filter: 'blur(3px)',
           }}
         />

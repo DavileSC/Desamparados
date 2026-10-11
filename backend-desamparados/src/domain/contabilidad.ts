@@ -182,6 +182,28 @@ export function granularidad(desde: Date, hasta: Date): Granularidad {
 }
 
 /**
+ * Los meses (o años) de Madrid que tocan el periodo, cada uno como intervalo
+ * `[desde, hasta)` para sumar en la base con `gte`/`lt`. Los recorre igual que
+ * `agruparEnSerie`, y el `desde` de cada tramo cae en su propia clave.
+ */
+export function tramosDeSerie(gran: Granularidad, desde: Date, hasta: Date): { clave: string; desde: Date; hasta: Date }[] {
+  if (desde.getTime() > hasta.getTime()) return [];
+  const tramos: { clave: string; desde: Date; hasta: Date }[] = [];
+  let [anio, mes] = claveMadrid(desde, 'mes').split('-').map(Number);
+  if (gran === 'anio') mes = 1;
+  const fin = claveMadrid(hasta, gran);
+  for (;;) {
+    const clave = gran === 'anio' ? String(anio) : `${anio}-${String(mes).padStart(2, '0')}`;
+    const [anioSig, mesSig] = gran === 'anio' ? [anio + 1, 1] : mes === 12 ? [anio + 1, 1] : [anio, mes + 1];
+    const primero = (a: number, m: number) => `${a}-${String(m).padStart(2, '0')}-01`;
+    tramos.push({ clave, desde: inicioDiaMadrid(primero(anio, mes)), hasta: inicioDiaMadrid(primero(anioSig, mesSig)) });
+    if (clave === fin || tramos.length > 1200) break;
+    [anio, mes] = [anioSig, mesSig];
+  }
+  return tramos;
+}
+
+/**
  * Suma ingresos y gastos por mes o por año, con los huecos rellenos a cero
  * entre `desde` y `hasta`: un mes sin apuntes es un dato, no una barra que falta.
  */

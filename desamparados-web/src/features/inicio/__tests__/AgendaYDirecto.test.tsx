@@ -151,14 +151,14 @@ describe('AgendaYDirecto', () => {
   })
 
   it('pone de fondo la foto elegida en el CMS, y ninguna si se quita', async () => {
-    const fondo = (contenedor: HTMLElement) => [...contenedor.querySelectorAll<HTMLElement>('[aria-hidden="true"]')]
-      .map((el) => getComputedStyle(el).backgroundImage)
-      .find((imagen) => imagen.includes('url('))
+    // Un <img> velado, con sus copias de 640 y 1280 (FR11).
+    const fondo = (contenedor: HTMLElement) => contenedor.querySelector<HTMLImageElement>('img[aria-hidden="true"]')?.getAttribute('src') ?? undefined
     const textos = textosDePrueba()
     textos.agenda = { ...textos.agenda, imagenUrl: '/storage/public/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.webp' }
     responderPortada(textos)
     const { container, unmount } = renderWithProviders(<AgendaYDirecto />)
-    await waitFor(() => expect(fondo(container)).toContain('/storage/public/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.webp'))
+    await waitFor(() => expect(fondo(container)).toBe('/storage/public/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.webp'))
+    expect(container.querySelector('img[aria-hidden="true"]')).toHaveAttribute('srcset', expect.stringContaining('a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6-640.webp 640w'))
     unmount()
 
     responderPortada({ ...textos, agenda: { ...textos.agenda, imagenUrl: '' } })

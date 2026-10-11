@@ -384,6 +384,26 @@ describe('consultas de la contabilidad (D12, S10)', () => {
     assert.equal((await pedir('TESORERIA', '/libro-mayor?desde=2026-12-01&hasta=2026-01-31')).status, 400);
   });
 
+  test('la serie del resumen suma cada mes de Madrid en la base (FR12)', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const categoria = await db.categoriaTransaccion.create({ data: { nombre: `ZZTest Serie ${SUFIJO}`, tipo: TipoTransaccion.INGRESO } });
+    categoriasCreadas.push(categoria.id);
+    const apunte = (fecha: string, importe: number) => ({ tipo: TipoTransaccion.INGRESO, categoriaId: categoria.id, concepto: `ZZTest serie ${SUFIJO}`, importe, fecha: new Date(fecha), metodoPago: 'EFECTIVO' as const });
+    await db.transaccion.createMany({
+      data: [
+        // 31-01 a las 23:30 UTC ya es febrero en Madrid; el 31-03 a las 22:30 UTC, abril (horario de verano).
+        apunte('2025-01-31T23:30:00Z', 10), apunte('2025-02-10T10:00:00Z', 5.25), apunte('2025-03-31T22:30:00Z', 7),
+      ],
+    });
+    const conFechas = await TransaccionService.getResumen({ categorias: String(categoria.id), desde: '2025-01-01', hasta: '2025-04-30' });
+    assert.equal(conFechas.serie.granularidad, 'mes');
+    assert.deepEqual(conFechas.serie.puntos.map((p) => [p.clave, p.ingresos]), [['2025-01', 0], ['2025-02', 15.25], ['2025-03', 0], ['2025-04', 7]]);
+    // Sin fechas, del primer apunte al último.
+    const sinFechas = await TransaccionService.getResumen({ categorias: String(categoria.id) });
+    assert.deepEqual(sinFechas.serie.puntos.map((p) => [p.clave, p.ingresos]), [['2025-02', 15.25], ['2025-03', 0], ['2025-04', 7]]);
+    assert.equal(sinFechas.totales.ingresos, 22.25);
+  });
+
   test('un parámetro repetido en las categorías no da 500', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const res = await pedir('TESORERIA', '/categorias?tipo=INGRESO&tipo=GASTO');

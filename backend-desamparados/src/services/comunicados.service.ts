@@ -175,7 +175,8 @@ function procesarPendientes(): Promise<void> {
 
 export class ComunicadosService {
   static async listar() {
-    const lista = await db.comunicado.findMany({ orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 200 });
+    // Sin el cuerpo: la lista no lo enseña, y con fotos dentro pesa megas.
+    const lista = await db.comunicado.findMany({ omit: { cuerpo: true }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 200 });
     const cuentas = await db.comunicadoEnvio.groupBy({ by: ['comunicadoId', 'estado'], where: { comunicadoId: { in: lista.map((c) => c.id) } }, _count: { _all: true } });
     const de = (id: number, estado: EstadoEnvio) => cuentas.find((x) => x.comunicadoId === id && x.estado === estado)?._count._all ?? 0;
     const nombres = await nombresDeSalidas();

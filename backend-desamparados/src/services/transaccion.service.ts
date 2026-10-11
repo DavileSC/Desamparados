@@ -6,6 +6,7 @@ import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { ORDENES_LIBRO, ordenDe } from '../domain/ordenacion.js';
 import {
   agruparEnSerie,
+  tramosDeSerie,
   claveNombreCategoria,
   diaMadrid,
   esCategoriaDeRecibos,
@@ -348,12 +349,11 @@ export class TransaccionService {
     const where = whereContable(filtros);
     const anterior = periodoAnterior(filtros);
 
-    const [porTipo, porCategoria, filas, categorias, porTipoAnterior, pendientes] = await Promise.all([
+    const [porTipo, porCategoria, extremos, categorias, porTipoAnterior, pendientes] = await Promise.all([
       db.transaccion.groupBy({ by: ['tipo'], where, _sum: { importe: true }, _count: { _all: true } }),
       db.transaccion.groupBy({ by: ['categoriaId'], where, _sum: { importe: true }, _count: { _all: true } }),
-      // Solo tres columnas por apunte: la serie se agrupa por mes de Madrid, y
-      // eso MariaDB no lo sabe hacer con groupBy de Prisma.
-      db.transaccion.findMany({ where, select: { fecha: true, tipo: true, importe: true }, orderBy: { fecha: 'asc' } }),
+      // El primer y el último apunte: sin fechas en el filtro, la serie va de uno a otro.
+      db.transaccion.aggregate({ where, _min: { fecha: true }, _max: { fecha: true } }),
       // También las inactivas: el historial sigue nombrando la categoría que ya no se usa.
       db.categoriaTransaccion.findMany({ select: { id: true, nombre: true, tipo: true } }),
       anterior
@@ -387,11 +387,22 @@ export class TransaccionService {
     const gastos = suma(porTipo, 'GASTO');
 
     // Sin fechas en el filtro, la serie va del primer apunte al último.
-    const desde = filtros.desde ? inicioDiaMadrid(filtros.desde) : filas[0]?.fecha;
-    const hasta = filtros.hasta ? inicioDiaMadrid(filtros.hasta) : filas.at(-1)?.fecha;
+    const primero = extremos._min.fecha;
+    const ultimo = extremos._max.fecha;
+    const desde = filtros.desde ? inicioDiaMadrid(filtros.desde) : primero ?? undefined;
+    const hasta = filtros.hasta ? inicioDiaMadrid(filtros.hasta) : ultimo ?? undefined;
     const gran = desde && hasta ? granularidad(desde, hasta) : 'mes';
+    // La suma de cada mes (o año) la hace la base, y no se traen los apuntes uno
+    // a uno: sin fechas eran todos los de todos los años. MariaDB no sabe partir
+    // por meses de Madrid con el groupBy de Prisma, así que se pide un tramo
+    // cada vez, y solo los que tienen apuntes: los demás valen cero.
+    const tramos = desde && hasta && primero && ultimo
+      ? tramosDeSerie(gran, desde, hasta).filter((t) => t.hasta > primero && t.desde <= ultimo)
+      : [];
+    const sumas = await Promise.all(tramos.map((t) =>
+      db.transaccion.groupBy({ by: ['tipo'], where: { AND: [where, { fecha: { gte: t.desde, lt: t.hasta } }] }, _sum: { importe: true } })));
     const puntos = desde && hasta
-      ? agruparEnSerie(filas.map((f) => ({ fecha: f.fecha, tipo: f.tipo, importe: Number(f.importe) })), gran, desde, hasta)
+      ? agruparEnSerie(tramos.flatMap((t, i) => sumas[i].map((g) => ({ fecha: t.desde, tipo: g.tipo, importe: Number(g._sum.importe ?? 0) }))), gran, desde, hasta)
       : [];
 
     const nombres = new Map(categorias.map((c) => [c.id, c]));

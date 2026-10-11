@@ -18,6 +18,7 @@ import {
   inicioDiaMadrid,
   instanteDelApunte,
   leerFiltros,
+  tramosDeSerie,
   limpiarNombreCategoria,
   motivoFechaApunte,
   motivoImporteInvalido,
@@ -131,6 +132,21 @@ describe('agrupar los apuntes en la serie', () => {
     );
     assert.deepEqual(serie.map((p) => p.clave), ['2022', '2023', '2024']);
     assert.equal(serie[2].gastos, 7);
+  });
+
+  test('los tramos para sumar en la base empiezan y acaban a medianoche de Madrid', () => {
+    const tramos = tramosDeSerie('mes', new Date('2026-02-15T10:00:00Z'), new Date('2026-04-02T10:00:00Z'));
+    assert.deepEqual(tramos.map((t) => [t.clave, t.desde.toISOString(), t.hasta.toISOString()]), [
+      ['2026-02', '2026-01-31T23:00:00.000Z', '2026-02-28T23:00:00.000Z'],
+      // El cambio de hora cae en marzo: abril empieza a las 22:00 UTC.
+      ['2026-03', '2026-02-28T23:00:00.000Z', '2026-03-31T22:00:00.000Z'],
+      ['2026-04', '2026-03-31T22:00:00.000Z', '2026-04-30T22:00:00.000Z'],
+    ]);
+    const anios = tramosDeSerie('anio', new Date('2022-05-01T10:00:00Z'), new Date('2023-02-01T10:00:00Z'));
+    assert.deepEqual(anios.map((t) => [t.clave, t.desde.toISOString()]), [['2022', '2021-12-31T23:00:00.000Z'], ['2023', '2022-12-31T23:00:00.000Z']]);
+    // Cada tramo cae en su propia clave al agruparlo.
+    const serie = agruparEnSerie(tramos.map((t) => ({ fecha: t.desde, tipo: 'INGRESO' as const, importe: 1 })), 'mes', tramos[0].desde, tramos[2].desde);
+    assert.deepEqual(serie.map((p) => p.ingresos), [1, 1, 1]);
   });
 });
 
