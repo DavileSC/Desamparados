@@ -114,6 +114,29 @@ test('un principal que no aguanta letra blanca se oscurece, con aviso y la cifra
   assert.ok(avisos[0].includes(`usarán ${paleta.principal}`));
 });
 
+test('el aviso del principal nombra el fondo que de verdad falla', () => {
+  // #6f6f6f aguanta la letra blanca (5,0:1) pero no el lienzo del CMS claro.
+  assert.ok(contraste('#6f6f6f', '#ffffff') >= 4.5);
+  const [aviso] = avisosDeMarca({ colorPrincipal: '#6f6f6f', colorAcento: null });
+  assert.ok(aviso.startsWith('marca.colorPrincipal #6f6f6f: sobre el lienzo del CMS claro (#f4f2ee) da 4,4:1 (AA pide 4,5:1)'), aviso);
+  assert.doesNotMatch(aviso, /letra blanca/);
+});
+
+test('un principal casi gris da una paleta gris, sin tinte', () => {
+  const gris = (hex: string) => hex.slice(1, 3) === hex.slice(3, 5) && hex.slice(3, 5) === hex.slice(5, 7);
+  for (const color of ['#6f6f6f', '#808080', '#706e6e']) {
+    const paleta = paletaDeMarca({ colorPrincipal: color, colorAcento: null });
+    // `principal` no entra: si cumple se usa tal cual, gris o no (#706e6e lo hace).
+    for (const papel of ['principalHover', 'principalMedio', 'principalClaro', 'principalPalido', 'principalGrafica'] as const) {
+      assert.ok(gris(paleta[papel]), `${color} → ${papel} ${paleta[papel]}`);
+    }
+  }
+  // Y el principal corregido de un gris que no cumple, también gris: antes, #6f6e6e.
+  assert.equal(paletaDeMarca({ colorPrincipal: '#6f6f6f', colorAcento: null }).principal, '#6e6e6e');
+  // Un gris cálido elegido a propósito conserva su tono.
+  assert.ok(!gris(paletaDeMarca({ colorPrincipal: '#7a756e', colorAcento: null }).principalMedio));
+});
+
 test('un acento que no se lee sobre el fondo oscuro se aclara, con aviso', () => {
   const avisos = avisosDeMarca({ colorPrincipal: null, colorAcento: '#1f4e79' });
   assert.equal(avisos.length, 1, avisos.join('\n'));

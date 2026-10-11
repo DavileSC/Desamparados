@@ -281,9 +281,24 @@ function coloresDados(marca) {
   return { principal: dado('principal'), acento: dado('acento') }
 }
 
+/**
+ * Por debajo de este croma OKLCH un color es gris a la vista (#6f6e6e ronda
+ * 0,001; un gris cálido elegido a propósito, como #7a756e, pasa de 0,01). El
+ * tono de un gris no significa nada (es el ángulo de un vector casi nulo), y
+ * conservarlo al corregir la luminosidad tintaría de rosa o de verde lo que se
+ * quiso gris: se lleva a croma 0.
+ */
+const CROMA_GRIS = 0.005
+
+/** El color dado en OKLCH, con croma 0 si es casi gris. */
+function fuenteDe(hex) {
+  const oklch = aOklch(hex)
+  return oklch.c < CROMA_GRIS ? { ...oklch, c: 0 } : oklch
+}
+
 function derivar(tabla, marca, base) {
   const dados = coloresDados(marca)
-  const fuente = Object.fromEntries(Object.keys(dados).map((f) => [f, dados[f] && aOklch(dados[f])]))
+  const fuente = Object.fromEntries(Object.keys(dados).map((f) => [f, dados[f] && fuenteDe(dados[f])]))
   const partidaBase = Object.fromEntries(Object.keys(dados).map((f) => [f, aOklch(PARTIDA[CLAVE_DATO[f]])]))
   const salida = {}
   for (const [nombre, papel] of Object.entries(tabla)) {
@@ -330,9 +345,14 @@ export function avisosDeMarca(marca) {
   const dados = coloresDados(marca)
   const paleta = paletaDeMarca(marca)
   if (dados.principal && paleta.principal !== dados.principal) {
+    // El primero de sus suelos que no cumple: un gris medio aguanta la letra
+    // blanca y no el lienzo del CMS claro, y citar el blanco contradiría la cifra.
+    const [fondo, minimo] = PAPELES_WEB.principal.suelos.find(([f, m]) => contraste(dados.principal, f) < m)
+    const donde = fondo === FONDOS.blanco ? 'con letra blanca' : `sobre el lienzo del CMS claro (${fondo})`
+    const quien = fondo === FONDOS.blanco ? 'los botones' : 'los botones y los enlaces del CMS claro'
     avisos.push(
-      `marca.colorPrincipal ${dados.principal}: con letra blanca da ${cifraDeContraste(contraste(dados.principal, FONDOS.blanco))}:1 ` +
-        `(AA pide 4,5:1); los botones usarán ${paleta.principal}.`,
+      `marca.colorPrincipal ${dados.principal}: ${donde} da ${cifraDeContraste(contraste(dados.principal, fondo))}:1 ` +
+        `(AA pide ${cifraDeContraste(minimo)}:1); ${quien} usarán ${paleta.principal}.`,
     )
   }
   if (dados.acento && paleta.acento !== dados.acento) {
