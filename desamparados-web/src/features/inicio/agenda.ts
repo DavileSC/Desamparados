@@ -1,5 +1,6 @@
 import type { ApiEvent, EventoCalendario } from '../../lib/api/agenda'
 import { GRANATE } from './estilos'
+import { MARCA } from '../../theme/marca'
 
 export {  SERIF } from './estilos'
 
@@ -9,7 +10,7 @@ export {  SERIF } from './estilos'
  * `oscuro`, la misma familia aclarada, sobre los fondos oscuros del CMS.
  */
 export const TIPOS: Record<ApiEvent['type'], { nombre: string; color: string; oscuro: string }> = {
-  CULTO: { nombre: 'Culto', color: GRANATE, oscuro: '#ff9fa6' },
+  CULTO: { nombre: 'Culto', color: GRANATE, oscuro: MARCA.principalPuntoOscuro },
   PROCESION: { nombre: 'Procesión', color: '#5b2a86', oscuro: '#c6a3f0' },
   FORMACION: { nombre: 'Formación', color: '#2b5d8c', oscuro: '#8fc0ef' },
   ENSAYO: { nombre: 'Ensayo', color: '#a0501a', oscuro: '#f2a66e' },

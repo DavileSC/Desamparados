@@ -15,6 +15,7 @@ import { GOLD, GRANATE, PAPEL, SERIF, TINTA, ceja } from './estilos'
 import { site } from '../../config/site'
 import { useModulos } from '../../hooks/useModulos'
 import { propsDeFoto } from '../../lib/fotoSubida'
+import { MARCA, componentes } from '../../theme/marca'
 
 const CATEGORIAS: Record<Publicacion['categoria'], { nombre: string; corto: string }> = {
   boletin: { nombre: 'Boletín informativo', corto: 'boletín' },
@@ -26,7 +27,7 @@ const CATEGORIAS: Record<Publicacion['categoria'], { nombre: string; corto: stri
 // Un color fijo por tipo de publicación: la cubierta dice qué es antes de leerla.
 // `velo` es el fondo en «r, g, b», para el degradado que va sobre la foto.
 const CUBIERTAS: Record<Publicacion['categoria'], { fondo: string; velo: string; texto: string; cifra: string }> = {
-  boletin: { fondo: GRANATE, velo: '110, 24, 34', texto: '#fbe9e7', cifra: '#fbe9e7' },
+  boletin: { fondo: GRANATE, velo: componentes(MARCA.principal), texto: MARCA.sobrePrincipal, cifra: MARCA.sobrePrincipal },
   anuario: { fondo: PAPEL, velo: '247, 243, 236', texto: '#242125', cifra: GRANATE },
   dossier: { fondo: '#242125', velo: '36, 33, 37', texto: '#e3d8bf', cifra: GOLD },
   historia: { fondo: PAPEL, velo: '247, 243, 236', texto: '#242125', cifra: GRANATE },

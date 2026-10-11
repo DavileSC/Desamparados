@@ -26,6 +26,7 @@ import { SIN_FILTROS, filtrar, hayFiltros, ordenar, tallasDeLaTienda, type Filtr
 import CestaDeLaTienda, { type Comprador } from './CestaDeLaTienda'
 import CestaFlotante from './CestaFlotante'
 import { MAX_POR_LINEA, claveDe, euros, guardarCesta, leerCesta, lineasDeLaCesta, quedanDe, topeDe, type Cesta } from './cesta'
+import { MARCA } from '../../theme/marca'
 
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
 
@@ -75,7 +76,7 @@ function Garantias({ conBizum }: { conBizum: boolean }) {
     <Box component="ul" sx={{ m: 0, mt: { xs: 5, md: 6 }, p: 0, pt: 3, listStyle: 'none', display: 'flex', flexWrap: 'wrap', columnGap: 6, rowGap: 1.5, borderTop: '1px solid rgba(204, 196, 201, 0.12)' }}>
       {filas.map(({ Icono, texto }) => (
         <Box component="li" key={texto} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, fontSize: 14, color: '#cbc5c8' }}>
-          <Icono aria-hidden sx={{ fontSize: 20, color: '#cdae72' }} />{texto}
+          <Icono aria-hidden sx={{ fontSize: 20, color: MARCA.acentoArena }} />{texto}
         </Box>
       ))}
     </Box>
@@ -175,7 +176,7 @@ export default function TiendaPage() {
       <Box sx={{ pt: { xs: 10, md: 14 }, pb: hayCesta ? 13 : { xs: 6, md: 8 } }}>
         {!id && (
           <Box sx={{ mb: { xs: 1.5, md: 3.5 } }}>
-            <Typography component="p" sx={{ fontSize: 11, letterSpacing: '0.28em', textTransform: 'uppercase', color: '#cdae72', fontWeight: 600 }}>
+            <Typography component="p" sx={{ fontSize: 11, letterSpacing: '0.28em', textTransform: 'uppercase', color: MARCA.acentoArena, fontWeight: 600 }}>
               Recuerdos {deLaCorporacion()}
             </Typography>
             <Typography component="h1" sx={{ mt: 1.25, fontSize: { xs: 38, md: 56 }, fontWeight: 200, lineHeight: 1, letterSpacing: '-0.02em' }}>

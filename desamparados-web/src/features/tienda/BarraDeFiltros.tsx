@@ -7,6 +7,7 @@ import Boton from '../../components/Boton'
 import type { CategoriaDeTienda, Producto } from '../../lib/api/tienda'
 import { GOLD, GRANATE } from '../inicio/estilos'
 import { ORDENES, SIN_FILTROS, TRAMOS, cuantosFiltros, enTramo, type Filtros, type IdTramo, type Orden } from './filtros'
+import { MARCA } from '../../theme/marca'
 
 const CREMA = '#f4efe5'
 const TINTA = '#161214'
@@ -15,7 +16,7 @@ const foco = { '&.Mui-focusVisible': { outline: `2px solid ${GOLD}`, outlineOffs
 
 type QueCapa = 'categoria' | 'precio' | 'talla' | 'orden'
 
-const ceja = { fontSize: 11, letterSpacing: '0.28em', textTransform: 'uppercase', color: '#cdae72', fontWeight: 600 } as const
+const ceja = { fontSize: 11, letterSpacing: '0.28em', textTransform: 'uppercase', color: MARCA.acentoArena, fontWeight: 600 } as const
 
 /** Una fila del panel: casilla (varias a la vez) o redondel (una sola), con su recuento a la derecha. */
 function Opcion({ marcada, unica, onClick, children, n }: { marcada: boolean; unica?: boolean; onClick: () => void; children: ReactNode; n?: number }) {
@@ -162,7 +163,7 @@ export default function BarraDeFiltros({ categorias, productos, tallas, filtros,
         {interruptor}
         {ancho && <>
           <Box sx={{ flexGrow: 1 }} />
-          {desplegable('orden', <>Ordenar por <Box component="span" sx={{ color: '#cdae72' }}>{ordenActual.nombre}</Box></>, false, `Ordenar por: ${ordenActual.nombre}`)}
+          {desplegable('orden', <>Ordenar por <Box component="span" sx={{ color: MARCA.acentoArena }}>{ordenActual.nombre}</Box></>, false, `Ordenar por: ${ordenActual.nombre}`)}
         </>}
       </Box>
 
@@ -212,7 +213,7 @@ export function FiltrosActivos({ categorias, filtros, onFiltros }: {
       ))}
       {(activos.length > 1 || cuantosFiltros(filtros) > 0) && (
         <ButtonBase onClick={() => onFiltros(SIN_FILTROS)}
-          sx={{ minHeight: 36, px: 1, fontFamily: 'inherit', fontSize: 14, fontWeight: 600, color: '#cdae72', '&:hover': { color: '#fff' }, ...foco }}>
+          sx={{ minHeight: 36, px: 1, fontFamily: 'inherit', fontSize: 14, fontWeight: 600, color: MARCA.acentoArena, '&:hover': { color: '#fff' }, ...foco }}>
           Quitar todo
         </ButtonBase>
       )}

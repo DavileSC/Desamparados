@@ -18,6 +18,7 @@ import { useTextosPortada, TEXTOS_POR_DEFECTO } from './useContenidoPortada'
 import type { TextosPortada } from '../../lib/api/portada'
 import { useModulos } from '../../hooks/useModulos'
 import type { Requisito } from '../../domain/modulos'
+import { MARCA } from '../../theme/marca'
 
 // Lo que NO se edita desde el CMS: qué teselas hay, su icono, su destino y su
 // orden. El documento solo pone título y descripción, casados por `clave`.
@@ -70,7 +71,7 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
         textDecoration: 'none',
         transition: 'background-color .3s ease',
         '@media (hover: hover)': {
-          '&:hover': { backgroundColor: '#7a1c27' },
+          '&:hover': { backgroundColor: MARCA.principalRealce },
           '&:hover .placa-boton svg': { transform: 'translateX(4px)' },
           // Toda la placa es el enlace: pasar por ella pone el botón en blanco, como si se pasara por él.
           '&:hover .placa-boton': { backgroundColor: '#ffffff', color: '#1b1c1a', boxShadow: 'inset 0 0 0 1px #ffffff' },
@@ -93,7 +94,7 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
       >
         D
       </Box>
-      <Typography component="span" id={`${id}-ceja`} sx={{ ...ceja, position: 'relative', color: '#f1d9d6' }}>
+      <Typography component="span" id={`${id}-ceja`} sx={{ ...ceja, position: 'relative', color: MARCA.sobrePrincipalSuave }}>
         {placa.ceja}
       </Typography>
       <Typography
@@ -106,7 +107,7 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
       <Typography
         component="span"
         id={`${id}-texto`}
-        sx={{ position: 'relative', display: 'block', maxWidth: 320, mt: { xs: 1.75, md: 2.5 }, mb: { xs: 3, md: 4 }, fontSize: { xs: 14, md: 15 }, lineHeight: 1.7, color: '#f3dedb' }}
+        sx={{ position: 'relative', display: 'block', maxWidth: 320, mt: { xs: 1.75, md: 2.5 }, mb: { xs: 3, md: 4 }, fontSize: { xs: 14, md: 15 }, lineHeight: 1.7, color: MARCA.sobrePrincipalTexto }}
       >
         {placa.texto}
       </Typography>

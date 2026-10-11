@@ -1,10 +1,12 @@
 /* Ajustes de la portada sobre el tema oscuro existente. */
+/* Los colores de marca, de las variables que cuelga en :root el tema público
+   (theme/marca.ts, VARIABLES_MARCA): una hoja .css no puede importar MARCA. */
 .home-refined section { scroll-margin-top: 96px; }
 .home-refined a:focus-visible,
-.home-refined button:focus-visible { outline: 2px solid #dec72b; outline-offset: 5px; }
+.home-refined button:focus-visible { outline: 2px solid var(--marca-acento); outline-offset: 5px; }
 /* Sobre el papel de la tarjeta de la agenda el dorado no se ve: el foco pasa a granate. */
 .home-refined .home-papel a:focus-visible,
-.home-refined .home-papel button:focus-visible { outline-color: #6e1822; outline-offset: 2px; }
+.home-refined .home-papel button:focus-visible { outline-color: var(--marca-principal); outline-offset: 2px; }
 .home-refined h2 { text-wrap: balance; font-size: clamp(30px, 3vw, 40px); }
 .home-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 
@@ -37,9 +39,9 @@
 .procession-scene-content .procession-scene-parrafo { max-width: 26ch; font-size: clamp(22px, 2.4vw, 30px); font-weight: 300; line-height: 1.5; margin: 32px 0 30px; text-shadow: 0 1px 2px rgba(7,6,8,.7), 0 2px 18px rgba(7,6,8,.65); }
 /* Enlace esmalte (components/esmalte.ts): en minúsculas, sin subrayado, con la flecha dorada. */
 .procession-scene-link { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; color: #fff; font-size: 16px; font-weight: 600; transition: color .25s ease; }
-.procession-scene-link svg { color: #dec72b; transition: transform .25s ease; }
+.procession-scene-link svg { color: var(--marca-acento); transition: transform .25s ease; }
 .procession-scene-link:hover svg { transform: translateX(4px); }
-.procession-scene-link:hover { color: #dec72b; }
+.procession-scene-link:hover { color: var(--marca-acento); }
 @media (prefers-reduced-motion: reduce) { .procession-scene-link:hover svg { transform: none; } }
 @media (max-width: 600px) {
   .procession-scene { min-height: 580px; }
