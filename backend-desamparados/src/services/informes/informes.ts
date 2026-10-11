@@ -327,7 +327,10 @@ function portada(doc: Doc, periodo: Periodo, textos: TextosInforme, identidadIns
   sinMargenes(doc, () => {
     const cx = A4.ancho / 2;
     doc.rect(0, 0, A4.ancho, A4.alto).fill(NEGRO);
-    doc.image(IMAGENES.escudoOro, cx - 46, 72, { height: 112 });
+    // En una caja de 112 centrada, para que un escudo ancho no salga
+    // descentrado. El de Desamparados (245×300) queda del mismo tamaño y
+    // 0,27 pt más a la derecha: antes iba a cx - 46 y no del todo centrado.
+    doc.image(IMAGENES.escudoDestacadoEnNegro, cx - 56, 72, { fit: [112, 112], align: 'center', valign: 'center' });
     const centro = (texto: string, y: number, o: Parameters<typeof rotulo>[4]) => rotulo(doc, texto, 0, y, { ancho: A4.ancho, alinear: 'center', ...o });
     centro('INFORME ANUAL', 222, { letra: LETRA.textoFuerte, tam: 9, color: ORO_CLARO, espaciado: 4 });
     centro(t.tipo, 250, { letra: LETRA.cursiva, tam: 15, color: ORO_CLARO });

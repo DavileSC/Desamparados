@@ -1,5 +1,6 @@
 import { Box } from '@mui/material'
 import { keyframes } from '@mui/material/styles'
+import { MARCA } from '../../theme/marca'
 
 const rayo = keyframes`
   0% { opacity: 1; transform: translateY(12px) scaleY(1.2); }
@@ -25,7 +26,7 @@ export default function Chispa() {
           position: 'absolute', left: 0, top: 0, transform: `rotate(${grados}deg)`,
           '&::after': {
             content: '""', position: 'absolute', left: '-1px', top: '-34px', width: 2, height: 10, borderRadius: '1px',
-            bgcolor: '#dec72b', opacity: 0, animation: `${rayo} .55s ease-out both`,
+            bgcolor: MARCA.acento, opacity: 0, animation: `${rayo} .55s ease-out both`,
           },
         }} />
       ))}

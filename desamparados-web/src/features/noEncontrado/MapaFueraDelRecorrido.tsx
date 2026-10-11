@@ -11,9 +11,10 @@ import { calleFueraDelRecorrido } from '../../components/mapa/desvio'
 import { acumulados, tramoHasta } from '../../components/bloques/recorrido'
 import { GOLD } from '../inicio/estilos'
 import type { Coordenada } from '../../lib/api/contenido'
+import { MARCA, alfa } from '../../theme/marca'
 
-const ROSA = '#fc858a'
-const GRANATE_VIVO = '#a3303f'
+const ROSA = MARCA.principalClaro
+const GRANATE_VIVO = MARCA.principalVivo
 const CREMA = '#f3efe6'
 /** Lo que tarda el trono en andar el recorrido, y la calle de fuera en marcarse. */
 const RUTA_MS = 5200
@@ -93,7 +94,7 @@ export default function MapaFueraDelRecorrido({ linea }: { linea: Coordenada[] }
       const trono = document.createElement('div')
       Object.assign(trono.style, {
         width: '16px', height: '16px', borderRadius: '50%', background: GRANATE_VIVO, border: `2.5px solid ${CREMA}`,
-        boxShadow: '0 0 0 6px rgba(163,48,63,.25)',
+        boxShadow: `0 0 0 6px ${alfa(MARCA.principalVivo, .25)}`,
       })
       const marcaTrono = new maplibregl.Marker({ element: trono }).setLngLat(linea[0]).addTo(m)
 

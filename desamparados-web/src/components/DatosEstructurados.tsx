@@ -45,7 +45,9 @@ function datosDe({ secretaria, sede, redes }: DatosDeContacto) {
     url: `${site.url}/`,
     ...(secretaria.email && { email: secretaria.email }),
     ...(secretaria.telefono && { telephone: `+34 ${secretaria.telefono}` }),
-    image: `${site.url}/images/hero-1920.webp`,
+    // La de compartir de la marca (o su icono grande), la misma que el
+    // og:image y el JSON-LD de index.html.
+    image: `${site.url}${site.imagenes.compartir}`,
     ...(perfiles.length > 0 && { sameAs: perfiles }),
     // Dónde está la sede: el dato que busca quien quiere venir.
     ...(sede.nombre && {

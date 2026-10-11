@@ -8,6 +8,7 @@ import {
   momentoEnMadrid, proximaMisa, type EstadoDespacho, type MisaProxima,
 } from './horario'
 import type { BloqueHorario as Datos } from '../../lib/api/contenido'
+import { MARCA, alfa } from '../../theme/marca'
 
 /** En el móvil, el teléfono y el correo con 40 px de alto para el dedo; el relleno no mueve la línea. */
 const AL_DEDO = { display: 'inline-block', py: { xs: '10px', md: 0 }, my: { xs: '-10px', md: 0 } } as const
@@ -16,9 +17,9 @@ const AL_DEDO = { display: 'inline-block', py: { xs: '10px', md: 0 }, my: { xs: 
 const CADA = 20_000
 
 const latido = keyframes`
-  0% { box-shadow: 0 0 0 0 rgba(222, 199, 43, .55); }
-  70% { box-shadow: 0 0 0 10px rgba(222, 199, 43, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(222, 199, 43, 0); }
+  0% { box-shadow: 0 0 0 0 ${alfa(MARCA.acento, .55)}; }
+  70% { box-shadow: 0 0 0 10px ${alfa(MARCA.acento, 0)}; }
+  100% { box-shadow: 0 0 0 0 ${alfa(MARCA.acento, 0)}; }
 `
 
 /** Versalitas pequeñas: la etiqueta de cada dato. Toma el color del texto, para leerse también sobre papel. */
@@ -54,7 +55,7 @@ export default function BloqueHorario({ bloque }: { bloque: Datos }) {
         sx={{
           display: 'grid', gridTemplateColumns: { xs: '1fr', md: despacho ? 'minmax(0, 1.4fr) minmax(0, 1fr)' : '1fr' },
           borderRadius: '4px', overflow: 'hidden',
-          background: 'linear-gradient(135deg, rgba(222, 199, 43, .07), rgba(222, 199, 43, 0) 55%)',
+          background: `linear-gradient(135deg, ${alfa(MARCA.acento, .07)}, ${alfa(MARCA.acento, 0)} 55%)`,
         }}
       >
         <PanelMisa misa={misa} />

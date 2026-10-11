@@ -21,6 +21,7 @@ import { estiloDelMapa, ORO } from '../../../../components/mapa/estilo'
 import { construirGrafo, lineaDelRecorrido, type Grafo } from '../../../../components/mapa/grafo'
 import { fraccionMasCercana, posicionesEnRuta, puntoEn } from '../../../../components/bloques/recorrido'
 import type { Coordenada, ParadaRecorrido, RecorridoEnMapa } from '../../../../lib/api/contenido'
+import { MARCA } from '../../../../theme/marca'
 
 const VACIO: RecorridoEnMapa = { esquinas: [], linea: [], pegado: true }
 const redondea = (c: Coordenada): Coordenada => [Math.round(c[0] * 1e6) / 1e6, Math.round(c[1] * 1e6) / 1e6]
@@ -133,7 +134,7 @@ export default function EditorDeRecorrido({ recorrido, paradas, onRecorrido, onP
         const ultima = i === actual.esquinas.length - 1
         Object.assign(el.style, {
           width: ultima ? '14px' : '11px', height: ultima ? '14px' : '11px', borderRadius: '50%', cursor: 'grab',
-          background: i === 0 ? '#fc858a' : ORO, border: '2px solid #070608',
+          background: i === 0 ? MARCA.principalClaro : ORO, border: '2px solid #070608',
         })
         el.title = i === 0 ? 'Salida' : `Esquina ${i + 1}`
         const marca = new maplibregl.Marker({ element: el, draggable: true }).setLngLat(esquina).addTo(m)
@@ -150,7 +151,7 @@ export default function EditorDeRecorrido({ recorrido, paradas, onRecorrido, onP
         Object.assign(el.style, {
           minWidth: '20px', height: '20px', padding: '0 4px', borderRadius: '10px', display: 'grid', placeItems: 'center',
           font: '700 11px/1 sans-serif', color: '#070608', pointerEvents: 'none',
-          background: i === parada ? '#fc858a' : fija ? ORO : 'rgba(255,255,255,.8)',
+          background: i === parada ? MARCA.principalClaro : fija ? ORO : 'rgba(255,255,255,.8)',
           outline: i === parada ? '2px solid #fff' : 'none',
         })
         el.textContent = String(i + 1)

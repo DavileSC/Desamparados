@@ -4,6 +4,7 @@ import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded'
 import type { MedioGaleria } from '../../lib/api/contenido'
 import { imagenDe } from './formato'
 import { propsDeFoto } from '../../lib/fotoSubida'
+import { MARCA } from '../../theme/marca'
 
 /**
  * Las fotos en tiras, una al lado de otra: la abierta ocupa casi todo y las
@@ -47,7 +48,7 @@ export default function Tiras({ medios, onAbrir }: {
               sx={{
                 position: 'absolute', inset: 0, overflow: 'hidden', display: 'block', backgroundColor: '#0c0b0d',
                 cursor: esta ? 'zoom-in' : 'pointer',
-                '&.Mui-focusVisible': { outline: '2px solid #dec72b', outlineOffset: 2 },
+                '&.Mui-focusVisible': { outline: `2px solid ${MARCA.acento}`, outlineOffset: 2 },
               }}
             >
               <Box component="img" {...propsDeFoto(imagenDe(medio), '(min-width: 900px) 50vw, 100vw')} alt="" loading="lazy" decoding="async" sx={{

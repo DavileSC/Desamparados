@@ -6,6 +6,7 @@ import type { EventoDelCalendario } from '../../../lib/api/agenda'
 import { segunModo } from '../../../theme/cms'
 import { claveDia, colores, type Tramo } from './calendario'
 import { hora, loQueFalta } from './fechas'
+import { MARCA, alfa } from '../../../theme/marca'
 
 const DIAS_SEMANA = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom']
 
@@ -84,7 +85,7 @@ export default function VistaMes({ primero, dias, porDia, elegido, portada, hoy 
                 display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start', gap: '3px',
                 minWidth: 0, minHeight: alto ? 0 : { xs: 52, md: 118 }, overflow: 'hidden', p: { xs: '4px', md: '6px' }, textAlign: 'left', fontFamily: 'inherit',
                 borderTop: 1, borderLeft: i % 7 === 0 ? 0 : 1, borderColor: 'divider',
-                backgroundColor: abierto ? segunModo('rgba(110,24,34,0.06)', 'rgba(255,179,180,0.08)') : 'transparent',
+                backgroundColor: abierto ? segunModo(alfa(MARCA.principal, 0.06), alfa(MARCA.principalPalido, 0.08)) : 'transparent',
                 boxShadow: abierto ? `inset 0 0 0 1.5px ${superficies.enlace}` : 'none',
                 '&:hover': { backgroundColor: abierto ? undefined : segunModo('rgba(0,0,0,0.025)', 'rgba(255,255,255,0.035)') },
                 '&.Mui-focusVisible': { outline: `2px solid ${superficies.enlace}`, outlineOffset: -2 },

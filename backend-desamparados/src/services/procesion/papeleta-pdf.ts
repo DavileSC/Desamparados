@@ -16,7 +16,7 @@ import { articuloDe, deLaCorporacion } from '../../domain/articulos.js';
 import { leerDatosEvento } from '../recibos/comunes.js';
 import type { SalidaImpresa } from '../../dtos/email.dto.js';
 import {
-  A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, MARFIL, NEGRO, ORO,
+  A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, MARFIL, NEGRO, ORO, ORO_TEXTO,
   aBuffer, nuevoDocumento, rombo, rotulo, sinMargenes, versalitas, type Doc,
 } from '../informes/pdf.js';
 import { euros } from '../../utils/euros.js';
@@ -85,7 +85,6 @@ export async function datosDeLaPapeleta(id: number): Promise<DatosDeLaPapeleta |
 
 const MARGEN = 54;
 const ANCHO = A4.ancho - 2 * MARGEN;
-const ORO_TEXTO = '#8a6a30'; // el oro de los filetes no llega a 4,5:1 sobre blanco; para leer, este
 const fecha = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'long', year: 'numeric' });
 
 /**
@@ -175,7 +174,7 @@ function dibujar(doc: Doc, d: DatosDeLaPapeleta) {
     doc.rect(0, 0, A4.ancho, 4.5).fill(BURDEOS);
 
     // Cabecera: escudo, nombre del Grupo y la referencia.
-    doc.image(IMAGENES.escudoOro, MARGEN, 33, { fit: [61.5, 75], align: 'center', valign: 'center' });
+    doc.image(IMAGENES.escudoDestacadoEnPapel, MARGEN, 33, { fit: [61.5, 75], align: 'center', valign: 'center' });
     const xTexto = MARGEN + 82.5;
     rotulo(doc, t.tipo, xTexto, 45, { letra: LETRA.textoFuerte, tam: 8.25, color: ORO_TEXTO, espaciado: 2.6 });
     ajustado(doc, t.titular, xTexto, 58, { letra: LETRA.titulo, tam: 19, minimo: 14, ancho: 290, color: NEGRO });

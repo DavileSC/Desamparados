@@ -1,6 +1,7 @@
 import type { Feature, Polygon } from 'geojson'
 import type { ExpressionSpecification, StyleSpecification } from 'maplibre-gl'
 import type { Barrio } from './barrio'
+import { MARCA } from '../../theme/marca'
 
 /**
  * El estilo del mapa: oscuro, con los colores de la web. Calles en gris
@@ -11,7 +12,7 @@ import type { Barrio } from './barrio'
  * `public/mapas/fuentes/` (Open Sans Semibold, de las de MapLibre), así que
  * tampoco se piden letras a nadie.
  */
-export const ORO = '#dec72b'
+export const ORO = MARCA.acento
 const FONDO_MAPA = '#0b0a0c'
 const FUENTE = ['OpenSansSemibold']
 
@@ -77,7 +78,7 @@ export function estiloDelMapa(barrio: Barrio, templo: Feature<Polygon> | null = 
       },
       {
         id: 'templo', type: 'fill-extrusion', source: 'templo',
-        paint: { 'fill-extrusion-color': '#8a7630', 'fill-extrusion-height': ['get', 'alto'], 'fill-extrusion-opacity': 0.95, 'fill-extrusion-vertical-gradient': true },
+        paint: { 'fill-extrusion-color': MARCA.acentoRelieve, 'fill-extrusion-height': ['get', 'alto'], 'fill-extrusion-opacity': 0.95, 'fill-extrusion-vertical-gradient': true },
       },
       {
         id: 'ruta-entera', type: 'line', source: 'rutaEntera',

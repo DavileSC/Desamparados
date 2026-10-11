@@ -8,13 +8,14 @@ import { esDestinoValido } from '../../lib/destinos'
 import { BOTON } from '../estiloDeBoton'
 import { anchoMaximo } from './presentacion'
 import type { BloquePuertas as Datos, DatoDePuerta, Puerta } from '../../lib/api/contenido'
+import { MARCA } from '../../theme/marca'
 
 /**
  * El acento y el botón de cada puerta, en orden: la primera en oro con el
  * botón de velo crema (la de quien busca ayuda) y la segunda en rosa con el granate
  * (la de quien quiere darla), el mismo rosa de la caridad en Nuestros fines.
  */
-const ACENTOS = ['#dec72b', '#fc858a'] as const
+const ACENTOS = [MARCA.acento, MARCA.principalClaro] as const
 const BOTONES = [BOTON.claro, BOTON.principal] as const
 
 /** El recuadro de las puertas: el de la paleta Noche, para que se lea igual sobre cualquier fondo. */

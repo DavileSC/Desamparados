@@ -1,5 +1,6 @@
 import { segunModo } from '../../../theme/cms'
 import { CORMORANT } from '../../actualidad/agenda/letraAlmanaque'
+import { MARCA } from '../../../theme/marca'
 
 /**
  * La letra y los colores del Inicio «Retablo»: títulos y cifras en Cormorant,
@@ -7,11 +8,11 @@ import { CORMORANT } from '../../actualidad/agenda/letraAlmanaque'
  */
 
 /** El oro de la columna de la Virgen, que siempre es oscura. */
-export const ORO_CLARO = '#d9bf7a'
+export const ORO_CLARO = MARCA.acentoViejo
 /** El oro de acento del resto, según el tema. */
-export const ORO = segunModo('#8a6a1c', '#d9bf7a')
+export const ORO = segunModo(MARCA.acentoViejoSobreClaro, MARCA.acentoViejo)
 /** El oro de las gráficas: algo más apagado que el del texto. */
-export const ORO_GRAFICA = segunModo('#b08f3e', '#c8a95a')
+export const ORO_GRAFICA = segunModo(MARCA.acentoGraficaClaro, MARCA.acentoGraficaOscuro)
 export const ROJO_GRAFICA = segunModo('#b0414a', '#d4586a')
 export const AZUL_GRAFICA = segunModo('#5b7fae', '#8fa7c9')
 export const VERDE = segunModo('#2f7d45', '#8fc59a')

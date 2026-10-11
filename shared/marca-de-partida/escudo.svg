@@ -1,0 +1,14 @@
+<!--
+  El escudo de partida: el de una instalación que todavía no ha puesto el suyo
+  en instalacion/marca/. Genérico a propósito, un contorno de escudo ibérico
+  (cuadrilongo con la base en medio punto) con un filete interior y sin ningún
+  símbolo: no puede parecer el de ninguna corporación. currentColor lo cambia
+  desamparados-web/scripts/preparar-marca.mjs por el blanco o el casi negro.
+  Los PNG de esta carpeta salen de aquí con «npm run marca -- --partida».
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 244" width="200" height="244">
+  <g fill="none" stroke="currentColor" stroke-linejoin="round">
+    <path data-trazo="contorno" stroke-width="6" d="M8 8 H192 V146 A92 92 0 0 1 8 146 Z"/>
+    <path data-trazo="filete" stroke-width="2" d="M20 20 H180 V146 A80 80 0 0 1 20 146 Z"/>
+  </g>
+</svg>

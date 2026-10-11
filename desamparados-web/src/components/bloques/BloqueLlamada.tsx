@@ -5,6 +5,7 @@ import TarjetaCristal from '../TarjetaCristal'
 import { anchoMaximo, valorDe } from './presentacion'
 import type { BloqueLlamada as Datos } from '../../lib/api/contenido'
 import { esDestinoValido } from '../../lib/destinos'
+import { MARCA, alfa } from '../../theme/marca'
 
 /** El botón de cada color. `granate` es el de siempre. */
 const VARIANTE_BOTON = { granate: 'primary', dorado: 'secondary', contorno: 'outline' } as const
@@ -46,7 +47,7 @@ export default function BloqueLlamada({ bloque }: { bloque: Datos }) {
 
   if (estilo === 'franja') {
     return (
-      <Box sx={{ ...comun, py: { xs: 4, md: 5 }, borderTop: '1px solid rgba(222, 199, 43, 0.4)', borderBottom: '1px solid rgba(222, 199, 43, 0.4)' }}>
+      <Box sx={{ ...comun, py: { xs: 4, md: 5 }, borderTop: `1px solid ${alfa(MARCA.acento, 0.4)}`, borderBottom: `1px solid ${alfa(MARCA.acento, 0.4)}` }}>
         {contenido}
       </Box>
     )

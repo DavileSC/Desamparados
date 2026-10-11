@@ -4,6 +4,7 @@ import { GOLD } from '../../features/inicio/estilos'
 import { anchoMaximo, siDe, valorDe } from './presentacion'
 import type { BloqueFoto as Datos } from '../../lib/api/contenido'
 import { propsDeFoto } from '../../lib/fotoSubida'
+import { MARCA, alfa } from '../../theme/marca'
 
 /** Ancho de la foto según su tamaño. `grande` es el de siempre. */
 const TAMANOS = { pequena: '480px', mediana: '720px', grande: '1000px', completa: 'none' } as const
@@ -12,7 +13,7 @@ const TAMANOS = { pequena: '480px', mediana: '720px', grande: '1000px', completa
 const MARCOS = {
   ninguno: {},
   fino: { p: 1, border: '1px solid rgba(204, 196, 201, 0.25)', borderRadius: '10px' },
-  dorado: { p: { xs: 1.25, md: 2 }, border: `1px solid ${GOLD}`, borderRadius: '4px', backgroundColor: 'rgba(222, 199, 43, 0.05)' },
+  dorado: { p: { xs: 1.25, md: 2 }, border: `1px solid ${GOLD}`, borderRadius: '4px', backgroundColor: alfa(MARCA.acento, 0.05) },
 } as const
 
 /**

@@ -4,13 +4,15 @@ import type { Color, Cuerpo, Formato, Grafica } from '../../domain/datos-areas.j
 import { numero } from '../../domain/datos-areas.js';
 import type { Trozo } from '../../domain/entradillas.js';
 import { identidad } from '../../domain/datos-entidad.js';
+import { IMAGENES_MARCA, IMPRENTA } from '../../domain/marca.js';
 
 /**
  * Las piezas con que se componen los PDF de «Datos e informes»: la hoja, la
  * letra, los colores de imprenta, las bandas de cada página y las gráficas
  * dibujadas a mano con pdfkit.
  *
- * Es la maqueta elegida el 30-09-2026: negro, burdeos y oro. Negro en las
+ * Es la maqueta elegida el 30-09-2026: negro, burdeos y oro (el burdeos y el
+ * oro, los de la marca: domain/marca.ts). Negro en las
  * bandas y en las barras, burdeos para lo que resta (bajas, gastos, lo que hay
  * que reparar) y oro solo en filetes y detalles. Títulos en Newsreader, texto
  * en Instrument Sans, y nada por debajo de 9 pt en lo que se lee.
@@ -21,27 +23,38 @@ import { identidad } from '../../domain/datos-entidad.js';
 
 const ruta = (relativa: string) => fileURLToPath(new URL(relativa, import.meta.url));
 
+/**
+ * Los escudos de la marca (instalacion/marca/ o la de partida), por el fondo
+ * en que se pintan: `escudo` en el pie, sobre blanco; el destacado (el de oro
+ * de Desamparados) en las cabeceras, en papel o sobre la banda negra.
+ */
 export const IMAGENES = {
-  escudo: ruta('./imagenes/escudo.png'),
-  escudoOro: ruta('./imagenes/escudo-oro.png'),
+  escudo: IMAGENES_MARCA.escudoSobreClaro,
+  escudoDestacadoEnPapel: IMAGENES_MARCA.escudoDestacadoEnPapel,
+  escudoDestacadoEnNegro: IMAGENES_MARCA.escudoDestacadoEnNegro,
 };
 
 export const NEGRO = '#161214';
-export const BURDEOS = '#5c1622';
+// Burdeos y oro salen de la marca (shared/colores-de-marca.mjs, `paletaDeImprenta`);
+// con la marca a null son los de la maqueta: #5c1622, #a3303f, #b08d52, #cdae72,
+// #ddd0b3, #cbb48a y #8a6a30. Negro, cremas y grises son neutros y no cambian.
+export const BURDEOS = IMPRENTA.burdeos;
 /**
  * El burdeos de las gráficas. El de las bandas, junto al negro, se confundía:
  * los dos son casi igual de oscuros. Este se distingue a simple vista y en una
  * fotocopia en blanco y negro sale gris medio, no negro.
  */
-export const BURDEOS_VIVO = '#a3303f';
-export const ORO = '#b08d52';
-export const ORO_CLARO = '#cdae72';
-export const ORO_PALIDO = '#ddd0b3';
+export const BURDEOS_VIVO = IMPRENTA.burdeosVivo;
+export const ORO = IMPRENTA.oro;
+export const ORO_CLARO = IMPRENTA.oroClaro;
+export const ORO_PALIDO = IMPRENTA.oroPalido;
+/** El oro de los filetes no llega a 4,5:1 sobre blanco: para escribir en oro, este. */
+export const ORO_TEXTO = IMPRENTA.oroTexto;
 export const MARFIL = '#f4efe5';
 export const CREMA = '#f3ebdc';
 export const GRIS = '#5f5759';
 export const FILETE = '#e2dcdd';
-const ORO_MEDIO = '#cbb48a';
+export const ORO_MEDIO = IMPRENTA.oroMedio;
 const GRIS_CLARO = '#b9b1a8';
 
 /**
@@ -312,7 +325,9 @@ export function bandaInforme(doc: Doc, titulo: string, derecha: string[]) {
   sinMargenes(doc, () => {
     doc.rect(0, 0, A4.ancho, 112.5).fill(NEGRO);
     doc.rect(0, 108.75, A4.ancho, 3.75).fill(BURDEOS);
-    doc.image(IMAGENES.escudoOro, MX, 20, { height: 69 });
+    // Una caja que acaba antes del texto (MX + 72): un escudo ancho encoge en
+    // vez de montarse. Pegado a la izquierda, como el texto que lo sigue.
+    doc.image(IMAGENES.escudoDestacadoEnNegro, MX, 20, { fit: [64, 69], valign: 'center' });
     const x = MX + 72;
     rotuloVersalitas(doc, identidad.nombre, x, 36, { tam: 8, color: ORO_CLARO, ancho: ANCHO_UTIL - 72 });
     doc.font(LETRA.texto).fontSize(9);
@@ -339,7 +354,8 @@ export function pies(doc: Doc, izquierda: string, desde = 0, escudo = true) {
       const y = A4.alto - 40;
       let x = MX;
       if (escudo) {
-        doc.image(IMAGENES.escudo, MX, y - 1, { height: 18 });
+        // Cabe en el hueco antes del texto (x + 22) aunque el escudo sea ancho.
+        doc.image(IMAGENES.escudo, MX, y - 1, { fit: [18, 18], valign: 'center' });
         x += 22;
       }
       rotulo(doc, izquierda, x, y + 4, { tam: 9, color: GRIS, ancho: ANCHO_UTIL - 60 });
@@ -490,7 +506,7 @@ function apiladas(doc: Doc, c: Extract<Cuerpo, { tipo: 'apiladas' }>, x: number,
     const xh = x + paso * (c.hoy + 1);
     doc.save().moveTo(xh, tope - 6).lineTo(xh, base).dash(2.25, { space: 2.25 }).lineWidth(0.75).strokeColor(ORO).stroke().undash().restore();
     // El oro de los filetes se queda en 3:1 sobre blanco; para leer, uno más oscuro (5:1).
-    rotulo(doc, 'hoy', xh + 4, tope - 8, { tam: 8.5, color: '#8a6a30' });
+    rotulo(doc, 'hoy', xh + 4, tope - 8, { tam: 8.5, color: ORO_TEXTO });
   }
   doc.rect(x, base, ancho, 0.75).fill(NEGRO);
   c.etiquetas.forEach((et, i) => {

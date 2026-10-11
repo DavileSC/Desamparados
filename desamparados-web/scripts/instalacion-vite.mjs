@@ -1,8 +1,8 @@
 // Los datos de la corporación en `npm run dev`, como los deja el contenedor de
 // la web al arrancar (scripts/instalacion-web.mjs, con las mismas funciones):
-// index.html con sus marcas rellenas y /instalacion.js, /manifest.json y
-// /robots.txt servidos al vuelo. No se escribe nada en la carpeta de la web,
-// que así no lleva datos de nadie.
+// index.html con sus marcas rellenas y /instalacion.js, /manifest.json,
+// /robots.txt y las imágenes de /marca/ servidos al vuelo. No se escribe nada
+// en la carpeta de la web, que así no lleva datos de nadie.
 //
 // Solo al servir (apply: 'serve', que incluye `vite preview`): `vite build`
 // deja las marcas sin rellenar, para que una misma web compilada sirva a
@@ -12,9 +12,10 @@
 // Lo usa vite.config.ts; las pruebas no (src/test/setup.ts pone los datos).
 
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { resolve, sep } from 'node:path'
 import { leerDatosEntidad, rutaDeDatosEntidad } from '../../shared/datos-entidad.mjs'
-import { instalacionJs, manifest, rellenarIndex, robots } from './instalacion-web.mjs'
+import { rutaDeMarca } from '../../shared/marca.mjs'
+import { instalacionJs, leerMarcaDe, manifest, rellenarIndex, robots } from './instalacion-web.mjs'
 
 const FICHEROS = {
   '/instalacion.js': ['text/javascript; charset=utf-8', instalacionJs],
@@ -24,14 +25,22 @@ const FICHEROS = {
 
 export function datosDeLaInstalacion() {
   // Validados una vez y vueltos a leer cuando cambia el fichero: leerlos en
-  // cada petición repetiría los avisos del validador en cada recarga.
+  // cada petición repetiría los avisos del validador en cada recarga. Igual
+  // la marca, que además lee y resume cada imagen.
   let datos = null
-  const alDia = () => (datos ??= leerDatosEntidad())
+  let marca = null
+  const carpetaMarca = rutaDeMarca()
+  const alDia = () => {
+    datos ??= leerDatosEntidad()
+    marca ??= leerMarcaDe(carpetaMarca)
+    return [datos, marca]
+  }
 
+  /** `escribir` da el contenido, o null para un 404. */
   const responder = (logger, res, tipo, escribir) => {
     let contenido
     try {
-      contenido = escribir(alDia())
+      contenido = escribir(...alDia())
     } catch (error) {
       // Un dato mal puesto con el servidor ya en marcha: la web enseña el
       // aviso de que faltan los datos y aquí se dice por qué.
@@ -41,15 +50,29 @@ export function datosDeLaInstalacion() {
       res.end(error instanceof Error ? error.message : String(error))
       return
     }
+    if (contenido === null) {
+      res.statusCode = 404
+      res.end()
+      return
+    }
     res.setHeader('Content-Type', tipo)
     res.setHeader('Cache-Control', 'no-cache')
     res.end(contenido)
   }
 
   const servir = (logger) => (req, res, next) => {
-    const fichero = FICHEROS[req.url?.split('?')[0] ?? '']
-    if (!fichero) return next()
-    responder(logger, res, ...fichero)
+    const ruta = req.url?.split('?')[0] ?? ''
+    const fichero = FICHEROS[ruta]
+    if (fichero) return responder(logger, res, ...fichero)
+    if (!ruta.startsWith('/marca/')) return next()
+    // Por el nombre del catálogo, no por la ruta pedida: así no se puede salir
+    // de la carpeta con «..», y un nombre que no es de la marca da 404.
+    const nombre = ruta.slice('/marca/'.length)
+    const tipo = nombre.endsWith('.png') ? 'image/png' : 'image/jpeg'
+    responder(logger, res, tipo, (_, ficheros) => {
+      const imagen = Object.values(ficheros).find((f) => f?.fichero === nombre)
+      return imagen ? readFileSync(imagen.ruta) : null
+    })
   }
 
   // El index.html de dist/ conserva las marcas: sin esto, `vite preview`
@@ -59,31 +82,37 @@ export function datosDeLaInstalacion() {
     return (req, res, next) => {
       const ruta = req.url?.split('?')[0]
       if (!['GET', 'HEAD'].includes(req.method ?? '') || (ruta !== '/' && ruta !== '/index.html')) return next()
-      responder(server.config.logger, res, 'text/html; charset=utf-8', (datos) => rellenarIndex(readFileSync(index, 'utf8'), datos))
+      responder(server.config.logger, res, 'text/html; charset=utf-8', (d, m) => rellenarIndex(readFileSync(index, 'utf8'), d, m))
     }
   }
 
   return {
     name: 'datos-de-la-instalacion',
     apply: 'serve',
-    // Al arrancar y no en la primera petición: con un dato mal puesto, Vite no
-    // arranca y dice cuál.
+    // Al arrancar y no en la primera petición: con un dato mal puesto, o una
+    // imagen de la marca que no sirve, Vite no arranca y dice cuál.
     configResolved() {
       alDia()
     },
     configureServer(server) {
       const ruta = rutaDeDatosEntidad()
       // Fuera de la carpeta de la web: Vite no lo vigila si no se le pide.
+      // La carpeta de la marca, aunque aún no exista: al crearla, se ve.
       server.watcher.add(ruta)
+      if (carpetaMarca) server.watcher.add(carpetaMarca)
+      const enMarca = (cambiado) => carpetaMarca !== null && (resolve(cambiado) === carpetaMarca || resolve(cambiado).startsWith(carpetaMarca + sep))
       // También al borrarlo o al volver a crearlo: un editor que guarda
-      // escribiendo uno nuevo y renombrándolo no siempre da «change».
+      // escribiendo uno nuevo y renombrándolo no siempre da «change». Con la
+      // marca, recarga entera: las URL llevan la versión nueva en `?v=`.
       server.watcher.on('all', (evento, cambiado) => {
-        if (!['add', 'change', 'unlink'].includes(evento) || resolve(cambiado) !== ruta) return
-        datos = null
+        if (!['add', 'change', 'unlink', 'addDir', 'unlinkDir'].includes(evento)) return
+        if (resolve(cambiado) === ruta) datos = null
+        else if (enMarca(cambiado)) marca = null
+        else return
         server.ws.send({ type: 'full-reload' })
       })
       // Sin devolver función: va antes que los de Vite, que si no darían la
-      // página de inicio para /manifest.json y /robots.txt.
+      // página de inicio para /manifest.json, /robots.txt o /marca/….
       server.middlewares.use(servir(server.config.logger))
     },
     configurePreviewServer(server) {
@@ -99,7 +128,7 @@ export function datosDeLaInstalacion() {
     transformIndexHtml: {
       // Antes que Vite: si no, intentaría resolver el og:image con la marca.
       order: 'pre',
-      handler: (html) => rellenarIndex(html, alDia()),
+      handler: (html) => rellenarIndex(html, ...alDia()),
     },
   }
 }

@@ -27,7 +27,9 @@ const INSTALACION_VACIA: Instalacion = {
     domicilio: null,
     normas: null,
   },
-  marca: { colorPrincipal: null, colorAcento: null },
+  // Sin imágenes: con la instalación vacía la web no se monta (main.tsx), y
+  // un módulo que lea aquí la URL del escudo al importarse no debe lanzar.
+  marca: { colorPrincipal: null, colorAcento: null, imagenes: { escudo: '', escudoDestacado: '', compartir: '' } },
 }
 
 const recibida = typeof window === 'undefined' ? undefined : window.__INSTALACION__

@@ -3,8 +3,9 @@ import type { ApiEvent } from '../../../lib/api/agenda'
 import { GOLD, SERIF } from '../../inicio/estilos'
 import { claseDelCartel, cuandoEnCartel, fotoDelCartel, hora, notaDelActo } from './cultos'
 import EnlacesDelActo from './EnlacesDelActo'
+import { MARCA } from '../../../theme/marca'
 
-const ORO_SUAVE = '#c9b25a'
+const ORO_SUAVE = MARCA.acentoCartel
 
 /**
  * Un culto solemne, como un cartel: la foto a un lado y, al otro, qué es,

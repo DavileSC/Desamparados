@@ -14,6 +14,7 @@ export const TIPOS_EVENTO = (['CULTO', 'PROCESION', 'FORMACION', 'ENSAYO', 'REUN
  * pasan de 3:1 con la tarjeta y con el lienzo.
  */
 const EN_CLARO: Record<ApiEvent['type'], string> = {
+  // Fijo, como los demás: es de significado, no de marca (ver TIPOS en inicio/agenda.ts).
   CULTO: '#b8283d',
   PROCESION: '#8a4fd0',
   FORMACION: '#2f7cc9',

@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { USOS, leerCuerpo, problemasDePlantilla, resumenDe, usoDe } from '../src/domain/plantillas-correo.js';
 import { componer } from '../src/services/correos/componer.js';
+import { maquetar, medidaDelEscudo } from '../src/services/correos/plantilla.js';
 import { PlantillasCorreoService } from '../src/services/plantillas-correo.service.js';
 import { direccionDeLaSede, identidad, secretaria, type Identidad } from '../src/domain/datos-entidad.js';
 import { aLaCorporacion, deLaCorporacion, nuestraCorporacion } from '../src/domain/articulos.js';
@@ -107,4 +108,18 @@ test('la dirección de Secretaría es la de la sede, en una línea', () => {
   assert.equal(direccionDeLaSede({ nombre: null, calle: 'C. Mayor, 3', codigoPostal: null, localidad: 'Málaga' }), 'C. Mayor, 3, Málaga');
   assert.equal(direccionDeLaSede({ nombre: 'Iglesia', calle: null, codigoPostal: '29006', localidad: 'Málaga' }), null, 'sin calle no hay dirección');
   assert.match(String(secretaria.direccion), /\b\d{5}\b/, 'el código postal sigue ahí: de él sale la provincia del Modelo 182');
+});
+
+test('el escudo del membrete: 56 de alto y el ancho que pida su proporción', () => {
+  // Cerrojo: el de partida (246×300) y el de Desamparados (245×300) salen a
+  // 46×56, como cuando la medida estaba escrita a mano.
+  assert.deepEqual(medidaDelEscudo({ ancho: 246, alto: 300 }), { ancho: 46, alto: 56 });
+  assert.deepEqual(medidaDelEscudo({ ancho: 245, alto: 300 }), { ancho: 46, alto: 56 });
+  // Uno cuadrado o apaisado no se deforma: el alto se queda y el ancho crece.
+  assert.deepEqual(medidaDelEscudo({ ancho: 512, alto: 512 }), { ancho: 56, alto: 56 });
+  assert.deepEqual(medidaDelEscudo({ ancho: 400, alto: 200 }), { ancho: 112, alto: 56 });
+  assert.deepEqual(medidaDelEscudo({ ancho: 200, alto: 240 }), { ancho: 47, alto: 56 });
+
+  const html = maquetar({ titulo: 'Prueba', antetitulo: 'Secretaría', resumen: 'Prueba', contenido: '<p>Hola.</p>' });
+  assert.match(html, /src="cid:escudo@marca"[^>]* width="46" height="56" style="[^"]*width: 46px; height: 56px;/);
 });

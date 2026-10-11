@@ -26,6 +26,7 @@ import { site } from '../../config/site'
 import { GOLD, GRANATE, TINTA } from '../../features/inicio/estilos'
 // La serif de la agenda: importarla de ahí trae también sus ficheros de letra.
 import { CORMORANT } from '../../features/actualidad/agenda/letraAlmanaque'
+import { MARCA } from '../../theme/marca'
 
 /** La curva de las capas: arranca y frena con suavidad, como una cortina. */
 const CURVA_CAPA = [0.76, 0, 0.24, 1] as const
@@ -39,7 +40,7 @@ const PASO_SECCION = 0.06
 const SALIDA_SECCIONES = 0.25
 
 // Granate, una tinta tostada de transición y el panel. `custom` es su orden.
-const CAPAS = [GRANATE, '#2a1216', TINTA]
+const CAPAS = [GRANATE, MARCA.principalTostado, TINTA]
 
 // En `transform` y no en `x`/`y`: así las mueve la tarjeta gráfica. Nunca hasta
 // `none`, que framer-motion convierte en las funciones a cero (ver SeccionAnimada).

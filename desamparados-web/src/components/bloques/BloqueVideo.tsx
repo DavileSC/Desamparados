@@ -4,6 +4,7 @@ import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded'
 import { valorDe } from './presentacion'
 import type { BloqueVideo as Datos } from '../../lib/api/contenido'
 import { esVideoPropio } from '../../lib/videoPropio'
+import { MARCA, alfa } from '../../theme/marca'
 
 const ANCHOS = { mediana: '720px', grande: '1000px', completa: 'none' } as const
 
@@ -37,12 +38,12 @@ export default function BloqueVideo({ bloque }: { bloque: Datos }) {
             sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }} />
         ) : (
           <ButtonBase onClick={() => setReproduciendo(true)} aria-label={`Ver el vídeo: ${bloque.alt}`}
-            sx={{ position: 'absolute', inset: 0, '&.Mui-focusVisible': { outline: '3px solid #dec72b', outlineOffset: -3 } }}>
+            sx={{ position: 'absolute', inset: 0, '&.Mui-focusVisible': { outline: `3px solid ${MARCA.acento}`, outlineOffset: -3 } }}>
             <Box component="img" src={bloque.portada} alt="" loading="lazy" decoding="async"
               sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
             <Box aria-hidden sx={{
               position: 'relative', display: 'grid', placeItems: 'center', width: { xs: 64, md: 84 }, height: { xs: 64, md: 84 },
-              borderRadius: '50%', backgroundColor: 'rgba(110, 24, 34, 0.88)', color: '#fff', boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
+              borderRadius: '50%', backgroundColor: alfa(MARCA.principal, 0.88), color: '#fff', boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
             }}>
               <PlayArrowRoundedIcon sx={{ fontSize: { xs: 38, md: 50 } }} />
             </Box>

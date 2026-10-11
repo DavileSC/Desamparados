@@ -15,6 +15,10 @@ set -eu
 #    manifest.json, robots.txt e instalacion.js. La plantilla es el index.html
 #    de `vite build`, guardado fuera de la carpeta servida: este paso se repite
 #    en cada arranque y tiene que partir siempre de las marcas sin rellenar.
+#    Y la marca: el escudo y los iconos de /app/instalacion/marca (los que
+#    falten, los genéricos de shared/marca-de-partida) copiados a marca/. Un
+#    fichero de la marca que no sirve (otro formato, roto, ilegible) también
+#    para aquí; uno que falta solo se avisa en el registro.
 node /app/desamparados-web/scripts/instalacion-web.mjs \
   --plantilla /app/desamparados-web/index.plantilla.html \
   --destino /var/www/desamparados/dist \

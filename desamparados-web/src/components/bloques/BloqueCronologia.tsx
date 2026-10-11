@@ -7,12 +7,13 @@ import { parrafosDe, type BloqueCronologia as Datos, type HitoHistoria } from '.
 import { idDeHito } from './cronologia'
 import { valorDe } from './presentacion'
 import { caerALaOriginal, propsDeFoto, srcsetDeSubida } from '../../lib/fotoSubida'
+import { MARCA, alfa } from '../../theme/marca'
 
 /** El fondo de la página: el hueco del punto del raíl se rellena con él. */
 const FONDO = '#121113'
 const FILETE = 'rgba(204, 196, 201, 0.22)'
 /** Rosa claro del tema (`primary.light`): el granate puro no se lee sobre tinta. */
-const GRANATE_CLARO = '#fc858a'
+const GRANATE_CLARO = MARCA.principalClaro
 
 /** Lo que separa un hito del siguiente; la línea del raíl lo cruza. */
 const HUECO = { xs: 7, md: 11 } as const
@@ -25,15 +26,15 @@ const LINEA_DE_LECTURA = 0.6
 /** Safari aún no avisa de cuándo para el scroll: allí se da por parado tras un respiro. */
 const HAY_SCROLLEND = typeof window !== 'undefined' && 'onscrollend' in window
 /** El oro apagado con el que arranca el relleno del raíl. */
-const GOLD_SUAVE = '#c4af79'
+const GOLD_SUAVE = MARCA.acentoApagado
 /** El punto encendido de un hito sin tono, y su halo. */
 const PUNTO_ENCENDIDO = { backgroundColor: GOLD, borderColor: GOLD }
-const HALO_ORO = 'rgba(222, 199, 43, .14)'
+const HALO_ORO = alfa(MARCA.acento, .14)
 
 /** Color del periodo y del punto de cada hito según su tono. */
 const TONOS = {
   ninguno: null,
-  granate: { texto: GRANATE_CLARO, punto: { backgroundColor: GRANATE, borderColor: GRANATE_CLARO }, halo: 'rgba(252, 133, 138, .14)' },
+  granate: { texto: GRANATE_CLARO, punto: { backgroundColor: GRANATE, borderColor: GRANATE_CLARO }, halo: alfa(MARCA.principalClaro, .14) },
   oro: { texto: GOLD, punto: { backgroundColor: GOLD, borderColor: GOLD }, halo: HALO_ORO },
 } as const
 
@@ -371,7 +372,7 @@ function CronologiaHorizontal({ bloque, conAnclas }: { bloque: Datos; conAnclas:
       sx={{
         listStyle: 'none', m: 0, p: 0, pb: 2,
         display: 'grid', gridAutoFlow: 'column', gridAutoColumns: { xs: '78%', sm: '46%', md: 'minmax(260px, 1fr)' }, gap: { xs: 3, md: 4 },
-        overflowX: 'auto', scrollSnapType: 'x mandatory', scrollbarWidth: 'thin', scrollbarColor: 'rgba(222, 199, 43, .45) transparent',
+        overflowX: 'auto', scrollSnapType: 'x mandatory', scrollbarWidth: 'thin', scrollbarColor: `${alfa(MARCA.acento, .45)} transparent`,
       }}
     >
       {bloque.hitos.map((hito, indice) => {

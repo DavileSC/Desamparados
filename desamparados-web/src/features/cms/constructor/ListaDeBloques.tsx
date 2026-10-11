@@ -27,6 +27,7 @@ import { FORMULARIOS, NOMBRE_BLOQUE, SIN_TITULO } from '../bloques/formularios'
 import { fechaCorta, libreDe, visibilidadDe } from '../../../components/bloques/presentacion'
 import type { Fila } from '../bloques/filas'
 import type { Bloque, Presentacion } from '../../../lib/api/contenido'
+import { MARCA, alfa } from '../../../theme/marca'
 
 /** Lo que se puede hacer con un bloque desde su menú (⋮). */
 export type AccionDeBloque = 'duplicar' | 'ocultar' | 'copiar' | 'seccion' | 'quitar'
@@ -181,7 +182,7 @@ function FilaDeBloque({ fila, indice, total, abierta, invalida, onAlternar, onCa
         position: 'relative', zIndex: isDragging ? 2 : 'auto',
         border: 1, borderRadius: 2, backgroundColor: 'background.paper',
         borderColor: invalida ? 'error.main' : abierta ? 'primary.main' : 'divider',
-        boxShadow: isDragging ? 8 : abierta ? '0 0 0 3px rgba(110, 24, 34, 0.12)' : 'none',
+        boxShadow: isDragging ? 8 : abierta ? `0 0 0 3px ${alfa(MARCA.principal, 0.12)}` : 'none',
       }}
     >
       {/* El patrón de divulgación: el encabezado lleva SOLO el botón que

@@ -1,6 +1,7 @@
 /**
  * Genera los correos del expediente de alta en storage/correos para poder
- * revisarlos con el navegador, sin base de datos y sin credenciales de Gmail.
+ * revisarlos con el navegador, sin credenciales de Gmail. Necesita la base de
+ * datos: EmailService lee de ella las plantillas que Secretaría tenga en uso.
  *
  *   npm run correos:muestra
  *
@@ -38,3 +39,6 @@ await EmailService.enviarBajaORechazo(SOLICITANTE.email, SOLICITANTE.nombre, 'ba
 
 console.log(`\nListo. Los correos están en:\n  ${carpetaCorreos()}\n`);
 console.log('Ábrelos con doble clic. Los datos de Secretaría salen de instalacion/datos-entidad.json.');
+
+// El pool de Prisma, abierto al leer las plantillas, dejaría el proceso vivo.
+await (await import('../src/config/db.js')).default.$disconnect();

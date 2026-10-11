@@ -1,22 +1,24 @@
 import { createTheme, type ThemeOptions } from '@mui/material/styles'
 import { esES } from '@mui/material/locale'
+import { MARCA, VARIABLES_MARCA } from './marca'
 
+// Los tokens que son de marca (los del burdeos y el oro) se leen de MARCA, que
+// los deriva de los dos colores de la instalación (theme/marca.ts); el resto
+// son neutros y no cambian de una corporación a otra.
 export const designTokens = {
   colors: {
     primary: '#070608',
     surface: '#fbf9f6',
     surfaceVariant: '#e4e2df',
     primaryFixed: '#e8e0e4',
-    onSecondaryContainer: '#741d26',
     outlineVariant: 'rgba(204, 196, 201, 0.2)',
-    onTertiaryFixed: '#201c00',
     onPrimaryFixed: '#0c0b0d',
     onPrimaryFixedVariant: '#494649',
     surfaceContainerLowest: '#ffffff',
     onSecondary: '#ffffff',
     surfaceContainer: '#efeeeb',
-    tertiaryFixedDim: '#dec72b',
-    secondaryFixedDim: '#ffb3b4',
+    tertiaryFixedDim: MARCA.acento,
+    secondaryFixedDim: MARCA.principalPalido,
     outline: '#7b757a',
     surfaceContainerLow: '#f5f3f0',
     onSurfaceVariant: '#4a454a',
@@ -24,25 +26,21 @@ export const designTokens = {
     primaryContainer: '#121113',
     onSurface: '#1b1c1a',
     background: '#fbf9f6',
-    onTertiaryContainer: '#494000',
-    tertiaryContainer: '#c1ac00',
+    tertiaryContainer: MARCA.acentoMedio,
     onPrimary: '#ffffff',
     onTertiary: '#ffffff',
     onError: '#ffffff',
-    onSecondaryFixed: '#40000a',
     onErrorContainer: '#93000a',
     onBackground: '#1b1c1a',
     surfaceBright: '#fbf9f6',
-    tertiaryFixed: '#fce348',
+    tertiaryFixed: MARCA.acentoClaro,
     inverseOnSurface: '#f2f0ed',
     inverseSurface: '#30312f',
-    secondaryContainer: '#fc858a',
-    tertiary: '#6b5f00',
-    secondaryFixed: '#ffdad9',
+    secondaryContainer: MARCA.principalClaro,
+    tertiary: MARCA.acentoOscuro,
     surfaceContainerHigh: '#eae8e5',
     primaryFixedDim: '#cbc5c8',
-    onTertiaryFixedVariant: '#514700',
-    onSecondaryFixedVariant: '#81262e',
+    onSecondaryFixedVariant: MARCA.principalOscuro,
     surfaceDim: '#dbdad7',
     errorContainer: '#ffdad6',
     surfaceTint: '#615d60',
@@ -50,8 +48,8 @@ export const designTokens = {
     error: '#ba1a1a',
     inversePrimary: '#cbc5c8',
     surfaceContainerHighest: '#e4e2df',
-    secondary: '#a03d44',
-    burgundy: '#6e1822',
+    secondary: MARCA.principalMedio,
+    burgundy: MARCA.principal,
     /** Pie de página: un escalón más claro que el fondo, para que no se confunda con él ni con el bloque de encima. */
     footer: '#1a181b',
     glass: 'rgba(18, 17, 19, 0.6)',
@@ -119,8 +117,8 @@ export const themeOptions: ThemeOptions = {
     primary: {
       main: designTokens.colors.secondary,
       contrastText: designTokens.colors.onSecondary,
-      dark: '#81262e',
-      light: '#fc858a',
+      dark: MARCA.principalOscuro,
+      light: MARCA.principalClaro,
     },
     secondary: {
       main: designTokens.colors.tertiaryContainer,
@@ -221,6 +219,8 @@ export const themeOptions: ThemeOptions = {
   components: {
     MuiCssBaseline: {
       styleOverrides: {
+        // Para las hojas .css (home.css), que no pueden importar MARCA.
+        ':root': VARIABLES_MARCA,
         body: {
           backgroundColor: designTokens.colors.primaryContainer,
           color: designTokens.colors.surfaceContainerLowest,
@@ -248,7 +248,7 @@ export const themeOptions: ThemeOptions = {
           backgroundColor: designTokens.colors.burgundy,
           color: designTokens.colors.onSecondary,
           '&:hover': {
-            backgroundColor: '#5a131c',
+            backgroundColor: MARCA.principalHover,
             opacity: 0.9,
           },
         },

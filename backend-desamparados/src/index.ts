@@ -21,6 +21,10 @@ try {
   // mal formada impida arrancar, en vez de romper el login de un cargo horas
   // después. (El formato ya lo mira comprobarEntorno; esto usa la regla real.)
   if (process.env.NODE_ENV === 'production') resolverClaveTotp();
+  // La marca (instalacion/marca/), aquí y no al imprimir la primera papeleta:
+  // un escudo que no es PNG o no se puede leer impide arrancar, con el motivo.
+  const { resumenDeLaMarca } = await import('./domain/marca.js');
+  console.log(`[Marca] ${resumenDeLaMarca()}`);
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exit(1);

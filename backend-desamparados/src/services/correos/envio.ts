@@ -177,7 +177,7 @@ export async function enviarCorreo(
       subject,
       html,
       text: aTexto(html),
-      // El escudo y la Virgen van dentro del correo, no enlazados a la web.
+      // El escudo y la cabecera de la marca van dentro del correo, no enlazados a la web.
       attachments: [...imagenesDe(html), ...adjuntos],
       // Sin Reply-To propio, las respuestas van al buzón de Secretaría si es
       // otro distinto de la cuenta que envía.

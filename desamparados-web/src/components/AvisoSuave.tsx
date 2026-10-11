@@ -1,4 +1,5 @@
 import { Alert, type AlertProps } from '@mui/material'
+import { MARCA, alfa } from '../theme/marca'
 
 /**
  * Un aviso informativo con los colores de la web: velo oro sobre el fondo
@@ -13,9 +14,9 @@ export default function AvisoSuave({ sx, ...props }: Omit<AlertProps, 'severity'
       sx={[
         {
           color: '#e8e1d4',
-          backgroundColor: 'rgba(222, 199, 43, 0.06)',
-          border: '1px solid rgba(222, 199, 43, 0.18)',
-          '& .MuiAlert-icon': { color: '#c9ab3c' },
+          backgroundColor: alfa(MARCA.acento, 0.06),
+          border: `1px solid ${alfa(MARCA.acento, 0.18)}`,
+          '& .MuiAlert-icon': { color: MARCA.acentoAviso },
         },
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}

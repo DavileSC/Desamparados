@@ -3,6 +3,7 @@ import AddIcon from '@mui/icons-material/Add'
 import RemoveIcon from '@mui/icons-material/Remove'
 import type { Producto, TallaDeProducto } from '../../lib/api/tienda'
 import { PAPEL } from '../inicio/estilos'
+import { MARCA } from '../../theme/marca'
 
 /**
  * Las tallas de un producto, como botones que se marcan. Las agotadas salen
@@ -33,7 +34,7 @@ export function ElegirTalla({ producto, elegida, onElegir, grande = false }: {
               border: '1px solid', borderColor: sel ? PAPEL : 'rgba(204, 196, 201, 0.35)',
               bgcolor: sel ? PAPEL : 'transparent', color: sel ? '#161214' : 'text.primary',
               '&.Mui-disabled': { opacity: 0.4, textDecoration: 'line-through', color: 'text.primary' },
-              '&.Mui-focusVisible': { outline: '2px solid #dec72b', outlineOffset: 2 },
+              '&.Mui-focusVisible': { outline: `2px solid ${MARCA.acento}`, outlineOffset: 2 },
             }}
           >
             {t.nombre}

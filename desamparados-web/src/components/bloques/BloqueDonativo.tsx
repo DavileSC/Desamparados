@@ -15,10 +15,11 @@ import { anchoMaximo } from './presentacion'
 import { irAlBanco, type EstadoDelPago, type MetodoEnLinea } from '../../lib/api/procesion'
 import { donar, estadoDelDonativo, metodosDePago } from '../../lib/api/pagos'
 import type { BloqueDonativo as Datos } from '../../lib/api/contenido'
+import { MARCA, alfa } from '../../theme/marca'
 
 /** El recuadro y el acento: los de la puerta de «Quiero ayudar» en Caridad. */
 const RECUADRO = '#1a181b'
-const ACENTO = '#fc858a'
+const ACENTO = MARCA.principalClaro
 const FILETE = 'rgba(255, 255, 255, 0.14)'
 
 
@@ -102,7 +103,7 @@ export default function BloqueDonativo({ bloque }: { bloque: Datos }) {
   const opcion = (activa: boolean) => ({
     px: 2.25, py: 1.25, minHeight: 44, borderRadius: '2px', fontSize: 16, fontWeight: 600,
     border: `1px solid ${activa ? ACENTO : FILETE}`,
-    backgroundColor: activa ? 'rgba(252, 133, 138, 0.14)' : 'transparent',
+    backgroundColor: activa ? alfa(MARCA.principalClaro, 0.14) : 'transparent',
     color: activa ? '#ffffff' : 'rgba(255, 255, 255, 0.85)',
     '&:focus-visible': { outline: `2px solid ${ACENTO}`, outlineOffset: 2 },
   })

@@ -9,6 +9,7 @@ import { claveDelDia, cuandoEnCartel, hora, primerDiaEnElMes, repartoDeLaSemana,
 import VentanaDelActo from './VentanaDelActo'
 import Hueso from '../../../components/esqueleto/Hueso'
 import { CORMORANT } from './letraAlmanaque'
+import { MARCA } from '../../../theme/marca'
 
 const PAPEL = '#f3eee5'
 /** Los días de otro mes, un poco más apagados que la hoja. */
@@ -20,7 +21,7 @@ export const TINTA = '#231d20'
 const TINTA_SUAVE = '#5b4f53'
 const GRIS = '#7a6c70'
 /** El granate oscuro de los títulos solemnes, sobre el rosa. */
-const GRANATE_TINTA = '#3a1016'
+const GRANATE_TINTA = MARCA.principalTinta
 const SEMANA = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom']
 const SEMANA_LARGA = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
 /** El aire que se deja entre el pie de la hoja y el borde de la pantalla. */

@@ -61,6 +61,27 @@ test('escudoUrl y un módulo que ya no existe avisan sin impedir arrancar', () =
   viejo.modulos.activos = [...viejo.modulos.activos, 'modulo-retirado'];
   const { errores, avisos } = validarDatosEntidad(viejo);
   assert.deepEqual(errores, []);
-  assert.ok(avisos.some((a) => a.startsWith('escudoUrl')));
+  assert.ok(avisos.some((a) => a.startsWith('escudoUrl') && a.includes('instalacion/marca/escudo-sobre-oscuro.png') && a.includes('«La marca»')));
   assert.ok(avisos.some((a) => a.includes('modulo-retirado')));
+});
+
+test('los colores de la marca se guardan en minúsculas, y uno sin contraste avisa con la cifra sin impedir arrancar', () => {
+  const datos = copia();
+  datos.marca.colorPrincipal = '#E8A0A0';
+  datos.marca.colorAcento = '#1F4E79';
+  const { datos: leidos, errores, avisos } = validarDatosEntidad(datos);
+  assert.deepEqual(errores, []);
+  assert.deepEqual(leidos?.marca, { colorPrincipal: '#e8a0a0', colorAcento: '#1f4e79' });
+  assert.ok(avisos.some((a) => a.startsWith('marca.colorPrincipal #e8a0a0: con letra blanca da 2,1:1 (AA pide 4,5:1); los botones usarán #')), avisos.join('\n'));
+  assert.ok(avisos.some((a) => a.startsWith('marca.colorAcento #1f4e79:')), avisos.join('\n'));
+});
+
+test('con los colores de partida o null, la marca no avisa de nada', () => {
+  for (const marca of [{ colorPrincipal: null, colorAcento: null }, { colorPrincipal: '#6e1822', colorAcento: '#dec72b' }]) {
+    const datos = copia();
+    datos.marca = { ...marca };
+    const { errores, avisos } = validarDatosEntidad(datos);
+    assert.deepEqual(errores, []);
+    assert.deepEqual(avisos.filter((a) => a.startsWith('marca')), []);
+  }
 });

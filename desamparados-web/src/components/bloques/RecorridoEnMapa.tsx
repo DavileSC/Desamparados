@@ -19,6 +19,7 @@ import { ALTO_LISTA, ALTO_MAPA, ALTO_MINIMO, ALTO_MINIMO_LISTA } from './Esquele
 import { DISTANCIA_MAXIMA_M, acumulados, metros, paradaAlcanzada, posicionesEnRuta, sobreElRecorrido, tramoHasta } from './recorrido'
 import { cortejoEnDirecto } from '../../lib/api/cortejoDirecto'
 import type { BloqueItinerario, Coordenada, RecorridoEnMapa as Recorrido } from '../../lib/api/contenido'
+import { MARCA, alfa } from '../../theme/marca'
 
 /** Lo que tarda el play en andar el recorrido entero: despacio, para verlo. */
 const DURACION_PLAY_MS = 60_000
@@ -27,9 +28,9 @@ const SONDEO_MS = 20_000
 const horaCorta = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
 /** La cámara que sigue al trono: cerca e inclinada, con los edificios en relieve. */
 const CAMARA_CERCA = { zoom: 16.6, pitch: 52, bearing: -12 }
-const GRANATE_CLARO = '#fc858a'
+const GRANATE_CLARO = MARCA.principalClaro
 /** El granate de la marca, aclarado para leerse sobre el fondo oscuro (5,4:1). */
-const BURDEOS_LEGIBLE = '#e06a78'
+const BURDEOS_LEGIBLE = MARCA.principalLegible
 /** El recorrido entero, con aire abajo: ahí van el play y los botones de la cámara. */
 const MARGEN_ENTERO = { top: 48, right: 48, left: 48, bottom: 88 }
 
@@ -190,7 +191,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
 
       const salida = document.createElement('div')
       salida.setAttribute('aria-hidden', 'true')
-      salida.innerHTML = `<svg viewBox="0 0 20 20" width="20" height="20" style="display:block;margin:0 auto 3px;fill:${GOLD};filter:drop-shadow(0 0 6px rgba(222,199,43,.8))"><path d="M8.5 1h3v5h5v3h-5v10h-3V9h-5V6h5z"/></svg><span style="display:block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:${GOLD};background:rgba(7,6,8,.85);padding:3px 8px;border:1px solid rgba(222,199,43,.5);white-space:nowrap;transition:opacity .4s">${circular ? 'Salida y entrada' : 'Salida'}</span>`
+      salida.innerHTML = `<svg viewBox="0 0 20 20" width="20" height="20" style="display:block;margin:0 auto 3px;fill:${GOLD};filter:drop-shadow(0 0 6px ${alfa(MARCA.acento, .8)})"><path d="M8.5 1h3v5h5v3h-5v10h-3V9h-5V6h5z"/></svg><span style="display:block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:${GOLD};background:rgba(7,6,8,.85);padding:3px 8px;border:1px solid ${alfa(MARCA.acento, .5)};white-space:nowrap;transition:opacity .4s">${circular ? 'Salida y entrada' : 'Salida'}</span>`
       // Un poco por encima del punto: al salir y al volver, el trono está
       // justo ahí con el nombre de su calle al lado, y no deben pisarse.
       new maplibregl.Marker({ element: salida, anchor: 'bottom', offset: [0, -16] }).setLngLat(templo ? centroDe(templo) : linea[0]).addTo(m)
@@ -200,7 +201,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
       punto.setAttribute('aria-hidden', 'true')
       Object.assign(punto.style, {
         width: '18px', height: '18px', borderRadius: '50%', background: GRANATE, border: `2px solid ${GRANATE_CLARO}`,
-        boxShadow: '0 0 0 7px rgba(252,133,138,.22), 0 0 18px rgba(252,133,138,.5)',
+        boxShadow: `0 0 0 7px ${alfa(MARCA.principalClaro, .22)}, 0 0 18px ${alfa(MARCA.principalClaro, .5)}`,
       })
       // La calle por la que va, pequeña y al lado del trono: no tapa el mapa.
       const nombre = document.createElement('span')
@@ -384,7 +385,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
           <Box sx={{ position: 'absolute', left: 12, bottom: { xs: 30, sm: 12 }, display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', maxWidth: 'calc(100% - 24px)' }}>
             <Tooltip title={reproduciendo ? 'Pausa' : 'Ver el recorrido andando solo'}>
               <IconButton size="small" onClick={alternaPlay} aria-label={reproduciendo ? 'Pausar el recorrido' : 'Ver el recorrido andando solo'}
-                sx={{ ...botonMapa, backgroundColor: GRANATE, borderColor: GRANATE_CLARO, '&:hover': { backgroundColor: '#81262e' } }}>
+                sx={{ ...botonMapa, backgroundColor: GRANATE, borderColor: GRANATE_CLARO, '&:hover': { backgroundColor: MARCA.principalOscuro } }}>
                 {reproduciendo ? <PauseIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
               </IconButton>
             </Tooltip>

@@ -41,6 +41,15 @@ description: Convenciones de la web (React 19 + TypeScript + Vite + MUI 9 + Reac
 - Identificadores, textos y comentarios en español.
 - Colores y tipografías del tema, no a mano. Antes de meter un color nuevo,
   calcular el contraste WCAG AA (`docs/notas-del-proyecto.md` §11).
+- **Colores de marca** (el burdeos y el oro de partida, que cada corporación
+  cambia): de `theme/marca.ts`, `MARCA.<papel>` y `alfa(MARCA.…, a)`; en una
+  hoja `.css`, `var(--marca-principal)`/`var(--marca-acento)`. Nunca un hex ni
+  un `rgba()` a mano: la guardiana `sin-colores-de-marca.test.ts` lo para. Un
+  papel nuevo se declara en `shared/colores-de-marca.mjs`, con su suelo.
+- **Imágenes de marca**: el escudo con `EscudoDelGrupo` o
+  `instalacion.marca.imagenes` (`site.imagenes`), nunca una ruta
+  `/images/escudo…` ni de `public/`: viven en `instalacion/marca/` y se sirven
+  en `/marca/…?v=`. Solo PNG o JPEG (`docs/despliegue.md`, «La marca»).
 - Botones con `Boton` (`appVariant`: `primary`, `claro`, `outline`), sin
   iconos. Tarjetas sin bordes.
 - Todo adaptable: móvil, tableta y portátil (1280×552 útil es una pantalla

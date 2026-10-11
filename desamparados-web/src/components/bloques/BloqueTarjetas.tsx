@@ -7,6 +7,7 @@ import { anchoMaximo, valorDe } from './presentacion'
 import type { BloqueTarjetas as Datos, TarjetaEnlace } from '../../lib/api/contenido'
 import { esDestinoValido } from '../../lib/destinos'
 import { propsDeFoto } from '../../lib/fotoSubida'
+import { MARCA, alfa } from '../../theme/marca'
 
 type Estilo = 'cristal' | 'papel' | 'contorno' | 'granate' | 'numeradas'
 
@@ -84,7 +85,7 @@ function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEn
       <Box aria-hidden sx={{
         display: 'inline-grid', placeItems: 'center', width: 52, height: 52, borderRadius: '50%', flexShrink: 0,
         mb: horizontal ? 0 : 2, mx: centrada && !horizontal ? 'auto' : 0,
-        color: oscura ? GOLD : 'secondary.main', backgroundColor: oscura ? 'rgba(255,255,255,0.08)' : 'rgba(222, 199, 43, 0.1)',
+        color: oscura ? GOLD : 'secondary.main', backgroundColor: oscura ? 'rgba(255,255,255,0.08)' : alfa(MARCA.acento, 0.1),
       }}>
         <icono.Icono />
       </Box>
@@ -135,7 +136,7 @@ function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEn
 }
 
 /** El rosa de la caridad en Nuestros fines: los números de las tarjetas numeradas. */
-const ROSA = '#fc858a'
+const ROSA = MARCA.principalClaro
 
 /**
  * Tarjetas numeradas: sin recuadro, en columnas separadas por un filete fino,

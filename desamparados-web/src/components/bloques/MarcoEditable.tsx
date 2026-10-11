@@ -3,6 +3,7 @@ import { Box } from '@mui/material'
 import { useModoEdicion } from './modoEdicion'
 import { fechaCorta, libreDe, visibilidadDe } from './presentacion'
 import type { Bloque } from '../../lib/api/contenido'
+import { MARCA, alfa } from '../../theme/marca'
 
 /** Lo que dice la etiqueta de un bloque que hoy no se ve. */
 function avisoDe(bloque: Bloque): string | null {
@@ -47,13 +48,13 @@ export default function MarcoEditable({ bloque, indice, children }: { bloque: Bl
           inset: -8,
           borderRadius: '10px',
           border: '2px solid',
-          borderColor: seleccionado ? '#dec72b' : 'transparent',
-          boxShadow: seleccionado ? '0 0 0 4px rgba(222, 199, 43, 0.18)' : 'none',
+          borderColor: seleccionado ? MARCA.acento : 'transparent',
+          boxShadow: seleccionado ? `0 0 0 4px ${alfa(MARCA.acento, 0.18)}` : 'none',
           pointerEvents: 'none',
           transition: 'border-color .15s ease',
           zIndex: 5,
         },
-        '&:hover::after': { borderColor: seleccionado ? '#dec72b' : 'rgba(222, 199, 43, 0.45)' },
+        '&:hover::after': { borderColor: seleccionado ? MARCA.acento : alfa(MARCA.acento, 0.45) },
       }}
     >
       <Box sx={{ opacity: aviso ? 0.45 : 1 }}>{children}</Box>
@@ -63,7 +64,7 @@ export default function MarcoEditable({ bloque, indice, children }: { bloque: Bl
           sx={{
             position: 'absolute', top: -4, left: -4, zIndex: 6,
             px: 1.25, py: 0.5, borderRadius: '6px',
-            backgroundColor: '#0c0b0d', color: '#e3d8bf', border: '1px solid rgba(222, 199, 43, 0.5)',
+            backgroundColor: '#0c0b0d', color: '#e3d8bf', border: `1px solid ${alfa(MARCA.acento, 0.5)}`,
             fontSize: 12, fontWeight: 600, letterSpacing: '0.02em',
           }}
         >
