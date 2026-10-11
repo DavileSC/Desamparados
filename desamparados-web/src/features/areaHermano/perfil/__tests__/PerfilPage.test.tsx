@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
 import PerfilPage from '../PerfilPage'
 import { FICHAS_POR_FAMILIA } from '../../../../lib/api/perfil'
+import { useAuthStore } from '../../../altas/auth/store'
 
 function ficha(id: number, nombre: string, extra: Record<string, unknown> = {}) {
   return {
@@ -203,6 +204,121 @@ describe('PerfilPage', () => {
     await user.click(screen.getByRole('button', { name: 'Guardar' }))
 
     expect(await screen.findByText(mensaje)).toBeInTheDocument()
+  })
+})
+
+describe('PerfilPage: lo que se arregló en la revisión de octubre', () => {
+  const putsDe = (simulado: ReturnType<typeof responder>) => simulado.mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method === 'PUT')
+
+  it('el correo de la ficha es el de contacto, y el de entrar se ve aparte y no se cambia aquí', async () => {
+    const user = userEvent.setup()
+    useAuthStore.setState({ status: 'listo', cms: null, hermano: { id: 9, email: 'cuenta@ejemplo.test', role: 'USER', perfiles: [] } })
+    responder([ficha(1, 'Ana')])
+    renderWithProviders(<PerfilPage />, { ruta: '/area-hermano/perfil?apartado=contacto' })
+
+    expect(await screen.findByText('cuenta@ejemplo.test')).toBeInTheDocument()
+    expect(screen.getByText('Correo con el que entras')).toBeInTheDocument()
+    expect(screen.getByText('Correo de contacto')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /editar contacto y domicilio/i }))
+    expect(screen.getByRole('textbox', { name: /Correo de contacto/ })).toHaveValue('ana@ejemplo.test')
+    expect(screen.getByText(/Para cambiarlo, habla con Secretaría/)).toBeInTheDocument()
+    useAuthStore.setState({ hermano: null })
+  })
+
+  it('un DNI guardado con la letra mal no impide guardar lo demás, ni se reenvía, y se marca en rojo', async () => {
+    const user = userEvent.setup()
+    const simulado = responder([ficha(1, 'Ana', { dni: '12345678A' })])
+    renderWithProviders(<PerfilPage />)
+
+    await screen.findByText('Ana Pérez Ruiz')
+    await user.click(screen.getByRole('button', { name: /editar datos personales/i }))
+    expect(screen.getByRole('textbox', { name: /DNI o NIE/ })).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByText(/La letra no corresponde con el número/)).toBeInTheDocument()
+    await user.type(screen.getByRole('textbox', { name: 'Profesión' }), 'Maestra')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    await waitFor(() => expect(cuerpoDelPut(simulado)).not.toBeNull())
+    expect(cuerpoDelPut(simulado)).toMatchObject({ profesion: 'Maestra' })
+    expect(cuerpoDelPut(simulado)).not.toHaveProperty('dni')
+  })
+
+  it('el error va en el campo que falla, con su motivo, y el foco a él', async () => {
+    const user = userEvent.setup()
+    const simulado = responder([ficha(1, 'Ana')])
+    renderWithProviders(<PerfilPage />, { ruta: '/area-hermano/perfil?apartado=contacto' })
+
+    await screen.findByText('Ana Pérez Ruiz')
+    await user.click(screen.getByRole('button', { name: /editar contacto y domicilio/i }))
+    const direccion = screen.getByRole('textbox', { name: /Dirección/ })
+    await user.type(direccion, ' <b>')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(await screen.findByText('La dirección no puede llevar «<» ni «>».')).toBeInTheDocument()
+    expect(direccion).toHaveAttribute('aria-invalid', 'true')
+    expect(direccion).toHaveFocus()
+    expect(putsDe(simulado)).toHaveLength(0)
+  })
+
+  it('Editar lleva el foco al primer campo, y Cancelar lo devuelve al lápiz', async () => {
+    const user = userEvent.setup()
+    responder([ficha(1, 'Ana')])
+    renderWithProviders(<PerfilPage />)
+
+    await screen.findByText('Ana Pérez Ruiz')
+    await user.click(screen.getByRole('button', { name: /editar datos personales/i }))
+    expect(screen.getByRole('textbox', { name: /^Nombre/ })).toHaveFocus()
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(screen.getByRole('button', { name: /editar datos personales/i })).toHaveFocus()
+  })
+
+  it('guardar sin cambiar nada no manda nada ni dice «Guardado»', async () => {
+    const user = userEvent.setup()
+    const simulado = responder([ficha(1, 'Ana')])
+    renderWithProviders(<PerfilPage />)
+
+    await screen.findByText('Ana Pérez Ruiz')
+    await user.click(screen.getByRole('button', { name: /editar datos personales/i }))
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(await screen.findByRole('button', { name: /editar datos personales/i })).toBeInTheDocument()
+    expect(putsDe(simulado)).toHaveLength(0)
+    expect(screen.queryByText('Guardado.')).not.toBeInTheDocument()
+  })
+
+  it('pagando en efectivo no enseña la cuenta vacía, y si queda una se puede quitar', async () => {
+    const user = userEvent.setup()
+    const simulado = responder([ficha(1, 'Ana', { formaPagoPref: 'EFECTIVO', ibanEnmascarado: null })])
+    const { unmount } = renderWithProviders(<PerfilPage />, { ruta: '/area-hermano/perfil?apartado=cuota' })
+    await screen.findByText('Ana Pérez Ruiz')
+    expect(screen.queryByText('IBAN')).not.toBeInTheDocument()
+    expect(screen.queryByText('Titular de la cuenta')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /editar cuota y pago/i }))
+    expect(screen.queryByRole('textbox', { name: /IBAN/ })).not.toBeInTheDocument()
+    unmount()
+    expect(putsDe(simulado)).toHaveLength(0)
+
+    const otro = responder([ficha(1, 'Ana', { formaPagoPref: 'EFECTIVO' })])
+    renderWithProviders(<PerfilPage />, { ruta: '/area-hermano/perfil?apartado=cuota' })
+    await screen.findByText('Ana Pérez Ruiz')
+    await user.click(screen.getByRole('button', { name: /editar cuota y pago/i }))
+    await user.click(screen.getByRole('checkbox', { name: /Quitar la cuenta/ }))
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(cuerpoDelPut(otro)).toEqual({ formaPagoPref: 'EFECTIVO', iban: null, titularidadCuenta: null, titularCuenta: null }))
+  })
+
+  it('a un menor no se le pide estado civil ni profesión, y sus fotos son «sus fotos»', async () => {
+    const user = userEvent.setup()
+    responder([ficha(1, 'Ana'), ficha(2, 'Bruno', { esTitular: false, parentesco: 'HIJO', fechaNacimiento: '2015-01-01T00:00:00.000Z' })])
+    renderWithProviders(<PerfilPage />, { ruta: '/area-hermano/perfil?ficha=2' })
+
+    await screen.findByText('Bruno Pérez Ruiz')
+    expect(screen.queryByText('Estado civil')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /editar datos personales/i }))
+    expect(screen.queryByRole('combobox', { name: /Estado civil/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'Profesión' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    await user.click(screen.getByRole('tab', { name: 'Contacto y domicilio' }))
+    expect(screen.getByText('Publicar sus fotos')).toBeInTheDocument()
   })
 })
 
