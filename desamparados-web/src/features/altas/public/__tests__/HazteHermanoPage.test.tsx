@@ -124,6 +124,14 @@ const respuesta = (cuerpo: unknown, status: number) =>
 describe('HazteHermanoPage', () => {
   afterEach(() => { vi.unstubAllGlobals() })
 
+  it('la entrada nombra las salidas en genérico, y sin Procesión no las nombra', async () => {
+    const { unmount } = renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true, modulos: ['procesion'] })
+    expect(await screen.findByText(/en los cultos, en sus salidas procesionales y en la labor/)).toBeInTheDocument()
+    unmount()
+    renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true, modulos: [] })
+    expect(await screen.findByText(/en los cultos y en la labor/)).toBeInTheDocument()
+  })
+
   it('no pasa del primer paso con un DNI de letra equivocada', async () => {
     // El servidor lo rechazaba con un «Error de validación» sin más: el
     // navegador daba por bueno cualquier letra.

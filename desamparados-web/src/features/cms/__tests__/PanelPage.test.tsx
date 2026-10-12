@@ -147,11 +147,12 @@ describe('Inicio del CMS', () => {
   })
 
   it('lleva el retablo con la cuenta atrás y el año', async () => {
-    responder(panel)
+    // La cuenta la resuelve el servidor desde la tabla de salidas: el Inicio no calcula ninguna.
+    responder({ ...panel, retablo: { foto: null, x: 50, y: 30, cuenta: { nombre: 'Traslado de la Imagen', articulo: 'el', fecha: '2027-03-20' } } })
     entrarComo('ADMIN')
     montar()
     expect(await screen.findByRole('img', { name: site.titular })).toBeInTheDocument()
-    expect(screen.getByText('para la estación de penitencia')).toBeInTheDocument()
+    expect(screen.getByText('para el Traslado de la Imagen')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /^El año \d{4}$/ })).toBeInTheDocument()
   })
 

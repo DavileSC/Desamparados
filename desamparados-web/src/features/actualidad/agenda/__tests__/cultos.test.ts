@@ -65,9 +65,17 @@ describe('la agenda de cultos', () => {
     expect(fotoDelCartel(acto({ fotoCartel: '/storage/public/x.jpg' })).src).toBe('/storage/public/x.jpg')
   })
 
-  it('el mapa busca en Málaga, y sin lugar no hay mapa', () => {
-    expect(urlDelMapa('Salón parroquial')).toContain(encodeURIComponent('Salón parroquial, Málaga'))
-    expect(urlDelMapa('Catedral de Málaga')).not.toContain(encodeURIComponent(', Málaga'))
-    expect(urlDelMapa('  ')).toBeNull()
+  it('el mapa busca en la localidad de la sede, y sin lugar no hay mapa', () => {
+    expect(urlDelMapa('Salón parroquial', 'Málaga')).toContain(encodeURIComponent('Salón parroquial, Málaga'))
+    expect(urlDelMapa('Catedral de Málaga', 'Málaga')).not.toContain(encodeURIComponent(', Málaga'))
+    expect(urlDelMapa('Catedral de málaga', 'Málaga')).not.toContain(encodeURIComponent(', Málaga'))
+    expect(urlDelMapa('  ', 'Málaga')).toBeNull()
+  })
+
+  it('otra instalación busca en su localidad; sin localidad, el lugar tal cual', () => {
+    expect(urlDelMapa('Salón parroquial', 'Sevilla')).toContain(encodeURIComponent('Salón parroquial, Sevilla'))
+    expect(urlDelMapa('Salón parroquial', null)).toContain(`query=${encodeURIComponent('Salón parroquial')}`)
+    expect(urlDelMapa('Salón parroquial', null)).not.toContain(encodeURIComponent(','))
+    expect(urlDelMapa('Salón parroquial', '  ')).not.toContain(encodeURIComponent(','))
   })
 })

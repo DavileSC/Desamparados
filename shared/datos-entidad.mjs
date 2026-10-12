@@ -214,7 +214,10 @@ export function validarDatosEntidad(crudo) {
     activos = mo.activos
     // Un aviso y no un error: un módulo que se quitó del catálogo no debe
     // impedir arrancar a una instalación vieja; la siembra lo ignora.
-    const catalogo = new Set(JSON.parse(readFileSync(join(raiz, 'shared/modulos.json'), 'utf8')).modulos.map((m) => m.clave))
+    // Las de instalación (`deInstalacion`, como «paginas-propias») también valen:
+    // no se cambian desde el CMS, pero se encienden justo aquí.
+    const { modulos, deInstalacion = [] } = JSON.parse(readFileSync(join(raiz, 'shared/modulos.json'), 'utf8'))
+    const catalogo = new Set([...modulos, ...deInstalacion].map((m) => m.clave))
     const desconocidos = activos.filter((c) => !catalogo.has(c))
     if (desconocidos.length) avisos.push(`modulos.activos: ${desconocidos.join(', ')} no ${desconocidos.length === 1 ? 'es un módulo' : 'son módulos'} del catálogo (shared/modulos.json); se ignora.`)
   }

@@ -300,7 +300,7 @@ export function bandaCapitulo(doc: Doc, o: { cabecera: string; antetitulo: strin
     const numeral = o.numeral ? 60 : 0;
     rotuloVersalitas(doc, o.antetitulo, MX, 62, { tam: 8.25, color: ORO_CLARO, ancho: ANCHO_UTIL - numeral });
     doc.font(LETRA.tituloMedio).fontSize(32);
-    // Un título largo («Sábado de Pasión y Rosario vespertino») baja un punto de cuerpo hasta caber.
+    // Un título largo (dos salidas con nombre largo) baja un punto de cuerpo hasta caber.
     let tam = 32;
     while (tam > 22 && doc.widthOfString(o.titulo) > ANCHO_UTIL - numeral - 10) doc.fontSize(--tam);
     doc.fillColor(CREMA).text(o.titulo, MX, 78 + (32 - tam) * 0.6, { lineBreak: false });

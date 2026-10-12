@@ -10,7 +10,7 @@ import { moduloDeBloque } from './modulos'
 import { libreDe, siDe, valorDe, visibilidadDe } from './presentacion'
 import { GOLD } from '../../features/inicio/estilos'
 import { useModulos } from '../../hooks/useModulos'
-import { fichaDeModulo, type Modulo } from '../../domain/modulos'
+import { nombreDeModulo, type Modulo } from '../../domain/modulos'
 import type { Bloque } from '../../lib/api/contenido'
 import { MARCA, alfa } from '../../theme/marca'
 
@@ -129,7 +129,7 @@ function AvisoDeModuloApagado({ modulo, bloque, indice }: { modulo: Exclude<Modu
   return (
     <MarcoEditable bloque={bloque} indice={indice}>
       <Box sx={{ p: 2, border: '1px dashed', borderColor: 'warning.main', borderRadius: 1, color: 'text.secondary', fontSize: 14 }}>
-        Este bloque es del módulo «{fichaDeModulo(modulo).nombre}», que no está activado: no se enseña en la web.
+        Este bloque es del módulo «{nombreDeModulo(modulo)}», que no está activado: no se enseña en la web.
       </Box>
     </MarcoEditable>
   )

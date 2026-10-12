@@ -15,7 +15,7 @@ import type { BloqueCronologia, HitoHistoria, TonoHito } from '../../../../lib/a
 
 const TONOS: { valor: TonoHito; nombre: string }[] = [
   { valor: 'ninguno', nombre: 'Ninguno' },
-  { valor: 'granate', nombre: 'Granate: el color del Sábado de Pasión' },
+  { valor: 'granate', nombre: 'Granate: un momento señalado' },
   { valor: 'oro', nombre: 'Dorado: el momento actual' },
 ]
 

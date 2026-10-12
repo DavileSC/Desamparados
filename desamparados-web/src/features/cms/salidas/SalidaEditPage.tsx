@@ -105,7 +105,7 @@ function SeccionDatos({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProp
         value={articulo}
         onChange={(e) => setArticulo(e.target.value as Articulo)}
         disabled={!puedeGuardar}
-        helperText='Para escribir "del Sábado de Pasión" o "de la Procesión Magna".'
+        helperText='Para escribir "del Vía Crucis" o "de la Procesión Magna".'
         sx={{ maxWidth: 160 }}
       >
         {ARTICULOS.map((a) => <MenuItem key={a} value={a}>{a}</MenuItem>)}
@@ -225,7 +225,7 @@ function SeccionFecha({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProp
             type="number"
             value={diasDesdePascua}
             onChange={(e) => setDiasDesdePascua(e.target.value)}
-            helperText="−8 es el Sábado de Pasión."
+            helperText="−7 es el Domingo de Ramos; −2, el Viernes Santo."
             disabled={!puedeGuardar}
             sx={{ maxWidth: 320 }}
           />

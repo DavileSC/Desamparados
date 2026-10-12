@@ -9,7 +9,12 @@
     "y su pantalla propia en el grupo «Contenido» del menú.",
     "",
     "El «grupo» es el del índice del CMS, y es el del menú de la web pública:",
-    "quien edita busca la página donde la ve el visitante."
+    "quien edita busca la página donde la ve el visitante.",
+    "",
+    "«modulo» (opcional) es la clave del módulo del que depende la página; sin él, es del",
+    "núcleo. Con el módulo apagado, la página no sale en el índice del CMS ni en el selector",
+    "de enlaces, y la API no la sirve ni deja guardarla (404 MODULO_NO_ACTIVADO). Lo usan",
+    "las páginas propias de una corporación («paginas-propias», de shared/modulos.json)."
   ],
   "paginas": [
     {
@@ -66,42 +71,48 @@
       "nombre": "Sábado de Pasión",
       "ruta": "/sabado-de-pasion",
       "grupo": "Sábado de Pasión",
-      "descripcion": "La salida procesional y los accesos a sus tres páginas."
+      "descripcion": "La salida procesional y los accesos a sus tres páginas.",
+      "modulo": "paginas-propias"
     },
     {
       "slug": "recorrido",
       "nombre": "Recorrido",
       "ruta": "/sabado-de-pasion/recorrido",
       "grupo": "Sábado de Pasión",
-      "descripcion": "El itinerario de la estación de penitencia, con sus horas."
+      "descripcion": "El itinerario de la estación de penitencia, con sus horas.",
+      "modulo": "paginas-propias"
     },
     {
       "slug": "trono",
       "nombre": "Trono",
       "ruta": "/sabado-de-pasion/trono",
       "grupo": "Sábado de Pasión",
-      "descripcion": "El trono de la Sagrada Titular."
+      "descripcion": "El trono de la Sagrada Titular.",
+      "modulo": "paginas-propias"
     },
     {
       "slug": "enseres",
       "nombre": "Enseres",
       "ruta": "/sabado-de-pasion/enseres",
       "grupo": "Sábado de Pasión",
-      "descripcion": "El acompañamiento musical y las insignias."
+      "descripcion": "El acompañamiento musical y las insignias.",
+      "modulo": "paginas-propias"
     },
     {
       "slug": "rosario",
       "nombre": "Rosario",
       "ruta": "/rosario",
       "grupo": "Rosario",
-      "descripcion": "El Rosario vespertino de octubre: qué es, su itinerario por el barrio y la galería de fotos."
+      "descripcion": "El Rosario vespertino de octubre: qué es, su itinerario por el barrio y la galería de fotos.",
+      "modulo": "paginas-propias"
     },
     {
       "slug": "desamparados",
       "nombre": "Desamparados",
       "ruta": "/desamparados",
       "grupo": "Sagrada titular",
-      "descripcion": "La historia y la devoción a la Amantísima Titular."
+      "descripcion": "La historia y la devoción a la Amantísima Titular.",
+      "modulo": "paginas-propias"
     },
     {
       "slug": "ajuar",

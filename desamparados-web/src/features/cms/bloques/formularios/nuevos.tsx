@@ -13,6 +13,7 @@ import CampoPdf from '../../CampoPdf'
 import CampoTexto from '../../contenido/CampoTexto'
 import CampoEnlace from '../../contenido/CampoEnlace'
 import CamposDeMedio from '../../contenido/CamposDeMedio'
+import { site } from '../../../../config/site'
 import { deLaCorporacion } from '../../../../domain/articulos'
 import ListaEditable from './ListaEditable'
 import type { Props } from './comunes'
@@ -140,7 +141,7 @@ export function FormularioMapa({ bloque, onCambio }: Props<BloqueMapa>) {
 
 /** Los dibujos que sabe trazar la web, con el nombre que lee quien edita. */
 const DIBUJOS: { valor: NombreDeDibujo; nombre: string }[] = [
-  { valor: 'templo', nombre: 'El templo de Santa María Goretti' },
+  { valor: 'templo', nombre: 'Un templo: estructura triangular en forma de concha' },
   { valor: 'signoPasionista', nombre: 'El signo pasionista' },
 ]
 
@@ -198,7 +199,7 @@ export function FormularioAnillos({ bloque, onCambio }: Props<BloqueAnillos>) {
       ))}
       {!foco && (
         <CampoTexto etiqueta="En el cruce de los tres" valor={bloque.centro} onCambio={(centro) => onCambio({ centro })}
-          ayuda="Una palabra pequeña bajo la cruz, como «Desamparados». Opcional." maxLength={topes.etiqueta} />
+          ayuda={`Una palabra pequeña bajo la cruz, como «${site.nombreCorto}». Opcional.`} maxLength={topes.etiqueta} />
       )}
       <CampoTexto etiqueta={foco ? 'Texto al lado' : 'Texto debajo'} valor={bloque.texto} onCambio={(texto) => onCambio({ texto })} multilinea
         ayuda={foco ? 'Opcional. Va a la izquierda, junto al texto del fin enfocado.' : 'Opcional. Un párrafo bajo los anillos.'} maxLength={topes.parrafo} />
@@ -287,7 +288,7 @@ export function FormularioPrograma({ bloque, onCambio }: Props<BloquePrograma>) 
               helperText="Opcional. Una o dos líneas."
               slotProps={{ htmlInput: { maxLength: topes.parrafo } }} />
             <TextField label="Texto del enlace" value={fila.boton} onChange={(e) => cambiar({ boton: e.target.value })} size="small" fullWidth
-              helperText="Opcional, como «El Sábado de Pasión». Con texto, necesita a dónde llevar."
+              helperText="Opcional, como «La estación de penitencia». Con texto, necesita a dónde llevar."
               slotProps={{ htmlInput: { maxLength: topes.etiqueta } }} />
             <CampoEnlace etiqueta={`Destino del enlace ${i + 1}`} valor={fila.enlace} opcional
               onCambio={(enlace) => cambiar({ enlace })} ayuda="La página a la que lleva. Vacío si no hay enlace." />
@@ -329,10 +330,10 @@ export function FormularioCuentaAtras({ bloque, onCambio }: Props<BloqueCuentaAt
   return (
     <Stack spacing={2}>
       <TextField label="Fecha y hora" type="datetime-local" value={bloque.fecha} onChange={(e) => onCambio({ fecha: e.target.value })}
-        size="small" fullWidth helperText="Hora de Málaga, para quien mire desde donde mire."
+        size="small" fullWidth helperText="Hora peninsular española (la de Madrid), para quien mire desde donde mire."
         slotProps={{ inputLabel: { shrink: true } }} />
       <CampoTexto etiqueta="Qué llega" valor={bloque.texto} onCambio={(texto) => onCambio({ texto })}
-        ayuda="Encima de la cuenta, en pequeño: «Sábado de Pasión 2027»." maxLength={topes.etiqueta} />
+        ayuda="Encima de la cuenta, en pequeño: «Estación de penitencia 2027»." maxLength={topes.etiqueta} />
       <CampoTexto etiqueta="Texto al llegar" valor={bloque.textoFinal} onCambio={(textoFinal) => onCambio({ textoFinal })}
         ayuda="Lo que se lee cuando la cuenta llega a cero, en vez de los ceros." maxLength={topes.descripcion} />
     </Stack>

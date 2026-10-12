@@ -128,7 +128,7 @@ const putsA = (peticiones: () => Peticion[]) =>
 /**
  * Los textos alternativos de las fotos de la cabecera, en su orden. Las tres
  * imágenes editables del CMS comparten rótulo desde que se unificaron, así que
- * la consulta devuelve también el del bloque «Sábado de Pasión»: va el último,
+ * la consulta devuelve también el del bloque «Procesión»: va el último,
  * porque su sección viene después en el DOM (plegada, pero montada).
  */
 const descripcionesDeFoto = () => screen.getAllByLabelText(/qué se ve en la imagen/i)
@@ -136,8 +136,8 @@ const descripcionesDeFoto = () => screen.getAllByLabelText(/qué se ve en la ima
 /**
  * Las fotos de la cabecera en el orden en que se ven. De una sola consulta: en
  * esta pantalla cada búsqueda por rol recorre las seis secciones enteras, y
- * repetirlas por cada foto acerca el test al tope de 5 s. La del bloque del
- * Sábado de Pasión no sale aquí porque su sección está plegada.
+ * repetirlas por cada foto acerca el test al tope de 5 s. La del bloque de la
+ * Procesión no sale aquí porque su sección está plegada.
  */
 const fotosEnPantalla = () =>
   screen.getAllByRole('img', { name: /foto actual/i }).map((img) => img.getAttribute('src'))
@@ -232,7 +232,7 @@ describe('PortadaAdminPage', () => {
     await screen.findByDisplayValue('Desamparados Málaga')
     expect(screen.getAllByTestId('vista-previa-portada')).toHaveLength(1)
 
-    await usuario.click(screen.getByRole('button', { name: /sábado de pasión/i }))
+    await usuario.click(screen.getByRole('button', { name: /^procesión$/i }))
     expect(screen.getAllByTestId('vista-previa-portada')).toHaveLength(2)
   })
 
@@ -283,7 +283,7 @@ describe('PortadaAdminPage', () => {
     expect(screen.getByRole('button', { name: /actualidad/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /agenda y cultos/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /accesos directos/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /sábado de pasión/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^procesión$/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /publicaciones/i })).toBeInTheDocument()
     expect(screen.getByDisplayValue('Desamparados Málaga')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Últimas noticias')).toBeInTheDocument()
@@ -404,23 +404,23 @@ describe('PortadaAdminPage', () => {
     expect(screen.getByRole('group', { name: 'Caridad!' })).toBeInTheDocument()
   })
 
-  it('el título del Sábado de Pasión se escribe en varias líneas, porque el salto es parte del bloque', async () => {
+  it('el título de la Procesión se escribe en varias líneas, porque el salto es parte del bloque', async () => {
     const { usuario } = montar()
     await screen.findByDisplayValue('Desamparados Málaga')
-    await usuario.click(screen.getByRole('button', { name: /sábado de pasión/i }))
+    await usuario.click(screen.getByRole('button', { name: /^procesión$/i }))
 
     // El texto llega con un salto de línea real; las consultas de Testing Library
     // normalizan los espacios, así que aquí se busca ya normalizado.
     expect(campoMultilinea('Una devoción que camina con nosotros.').tagName).toBe('TEXTAREA')
   })
 
-  it('la foto del Sábado de Pasión se puede cambiar pero no quitar', async () => {
+  it('la foto de la Procesión se puede cambiar pero no quitar', async () => {
     // El backend valida ese campo con `rutaImagenPublica` (contenido.schema.ts) y
     // no admite cadena vacía: un botón de quitar dejaría el documento entero
     // inguardable, también los textos de los otros cinco bloques.
     const { usuario } = montar()
     await screen.findByDisplayValue('Desamparados Málaga')
-    await usuario.click(screen.getByRole('button', { name: /sábado de pasión/i }))
+    await usuario.click(screen.getByRole('button', { name: /^procesión$/i }))
 
     const campo = within(screen.getByRole('group', { name: 'Foto del bloque' }))
     expect(campo.getByRole('button', { name: /cambiar foto/i })).toBeInTheDocument()

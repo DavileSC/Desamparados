@@ -31,7 +31,7 @@ import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined'
 import ContactMailOutlinedIcon from '@mui/icons-material/ContactMailOutlined'
 import CATALOGO from '../../../shared/paginas-publicas.json'
 import type { PanelResponse } from '../lib/api/panel'
-import { cumple, type ClaveModulo, type Requisito } from '../domain/modulos'
+import { cumple, type ClaveModulo, type Modulo, type Requisito } from '../domain/modulos'
 
 /**
  * Menú del CMS, agrupado por áreas, y roles que pasan la guarda de cada una
@@ -190,9 +190,19 @@ export interface PaginaPublica {
   ruta: string
   grupo: string
   descripcion: string
+  /** De qué módulo es (las páginas propias de una corporación); sin él, del núcleo. */
+  modulo?: Modulo
 }
 
-export const PAGINAS_PUBLICAS: PaginaPublica[] = CATALOGO.paginas
+export const PAGINAS_PUBLICAS: PaginaPublica[] = CATALOGO.paginas as PaginaPublica[]
+
+/**
+ * Las páginas que existen con estos módulos encendidos: las de un módulo
+ * apagado ni se sirven ni se guardan (la API responde 404), así que no se
+ * ofrecen para editar ni para copiar bloques en ellas.
+ */
+export const paginasPublicasActivas = (activos: ReadonlySet<string>): PaginaPublica[] =>
+  PAGINAS_PUBLICAS.filter((pagina) => cumple(pagina.modulo ?? 'nucleo', activos))
 
 /** La ficha de una página del catálogo, o `undefined` si el slug no es de ahí. */
 export const paginaPublica = (slug: string): PaginaPublica | undefined =>

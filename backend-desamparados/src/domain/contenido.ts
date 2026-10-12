@@ -1,4 +1,6 @@
 import defectos from '../../../shared/contenido-por-defecto.json' with { type: 'json' };
+import catalogo from '../../../shared/paginas-publicas.json' with { type: 'json' };
+import { esClaveEncendible, type ClaveEncendible } from './modulos.js';
 
 /**
  * Las páginas con documento editable: primero la portada, que tiene
@@ -15,6 +17,23 @@ export type SlugContenido = (typeof SLUGS_CONTENIDO)[number];
 
 export const esSlugContenido = (valor: unknown): valor is SlugContenido =>
   typeof valor === 'string' && (SLUGS_CONTENIDO as readonly string[]).includes(valor);
+
+/**
+ * El módulo del que depende cada página que lo dice (`modulo` en
+ * `shared/paginas-publicas.json`); las que no, son del núcleo. Una clave que
+ * no sea de ningún módulo para el arranque: si no, la página quedaría siempre
+ * apagada sin que nadie supiera por qué.
+ */
+const MODULO_DE_PAGINA: ReadonlyMap<string, ClaveEncendible> = new Map(
+  (catalogo.paginas as { slug: string; modulo?: string }[]).flatMap(({ slug, modulo }) => {
+    if (modulo === undefined) return [];
+    if (!esClaveEncendible(modulo)) throw new Error(`shared/paginas-publicas.json: «${slug}» depende de «${modulo}», que no es ningún módulo`);
+    return [[slug, modulo] as const];
+  }),
+);
+
+/** De qué módulo es la página, o `undefined` si es del núcleo. */
+export const moduloDePagina = (slug: SlugContenido): ClaveEncendible | undefined => MODULO_DE_PAGINA.get(slug);
 
 /** Copia nueva de los textos de siempre. Nunca se devuelve el objeto original. */
 export const porDefecto = (slug: SlugContenido): unknown =>

@@ -39,7 +39,8 @@ const CAPITULOS: Capitulo[] = [
   { numero: 'II', titulo: 'El año de un vistazo', clave: 'datos', modulo: 'nucleo' },
   { numero: 'III', titulo: 'Cultos y actos', clave: 'datos', modulo: 'agenda' },
   { numero: 'IV', titulo: 'Hermanos', clave: 'datos', modulo: 'nucleo' },
-  { numero: 'V', titulo: 'Sábado de Pasión y Rosario', clave: 'datos', modulo: 'procesion' },
+  // El PDF lo titula con los nombres de las salidas del año; aquí, que solo guía, basta el genérico.
+  { numero: 'V', titulo: 'Salidas procesionales', clave: 'datos', modulo: 'procesion' },
   { numero: 'VI', titulo: 'Cuentas', clave: 'datos', modulo: 'nucleo' },
   { numero: 'VII', titulo: 'Patrimonio', clave: 'patrimonio', modulo: 'inventario' },
   { numero: 'VIII', titulo: 'Comunicación', clave: 'datos', modulo: 'nucleo' },

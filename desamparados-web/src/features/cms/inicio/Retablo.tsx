@@ -1,10 +1,8 @@
 import { Box, Typography } from '@mui/material'
-import { cuentaAtrasEstacion } from '../../../domain/sabadoDePasion'
 import { CORMORANT } from '../../actualidad/agenda/letraAlmanaque'
 import { acercar, sinMovimiento, useCuenta } from './animaciones'
 import { ORO_CLARO } from './estiloRetablo'
 import { site } from '../../../config/site'
-import { useModulos } from '../../../hooks/useModulos'
 import { conArticulo } from '../../../domain/articulos'
 import type { CuentaDeHoy } from '../../../lib/api/panel'
 
@@ -12,7 +10,7 @@ const FECHA_LARGA = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'l
 const FECHA_CORTA = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
 
 /**
- * La columna del retablo: la imagen de Nuestra Señora de los Desamparados,
+ * La columna del retablo: la imagen de la titular,
  * con los días que faltan al pie: para la próxima salida, una salida o un
  * acto de la Agenda, según «Ajustes del Inicio».
  * Siempre oscura, en los dos temas: la foto lo es.
@@ -23,8 +21,7 @@ const FECHA_CORTA = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 's
 interface Rotulo {
   titulo: string
   fecha: Date
-  /** Null: se dice la fecha, pero no los días (Procesión apagada en la cuenta de antes). */
-  dias: number | null
+  dias: number
   /** La línea bajo los días; null en un acto, que ya se nombra arriba. */
   para: string | null
 }
@@ -44,12 +41,6 @@ function rotuloDe(c: CuentaDeHoy, hoy: Date): Rotulo {
   }
 }
 
-/** La de antes de poder elegirla: hasta el Sábado de Pasión, calculado aquí. */
-function rotuloDeLaEstacion(hoy: Date, conProcesion: boolean): Rotulo {
-  const { fecha, dias } = cuentaAtrasEstacion(hoy)
-  return { titulo: 'Sábado de Pasión', fecha, dias: conProcesion ? dias : null, para: 'para la estación de penitencia' }
-}
-
 /** La foto de siempre (la del hero de la web) y su encuadre: el rostro de la Virgen. */
 export const FOTO_POR_DEFECTO = '/images/hero-960.webp'
 
@@ -61,14 +52,13 @@ export default function Retablo({ hoy = new Date(), foto = FOTO_POR_DEFECTO, x =
   x?: number
   y?: number
   /**
-   * Hasta qué cuenta, ya resuelto por el servidor; null, sin cuenta atrás.
-   * Sin ella (un backend anterior), la de siempre: el Sábado de Pasión.
+   * Hasta qué cuenta, ya resuelto por el servidor; null (o un backend que no
+   * la manda), sin cuenta atrás. No hay una de reserva calculada aquí: el día
+   * de una salida depende de cada corporación y solo lo sabe su tabla.
    */
   cuenta?: CuentaDeHoy | null
 }) {
-  // La cuenta atrás de antes es un dato de la procesión, aunque salga de la Pascua: sin su módulo no se enseña.
-  const conProcesion = useModulos().activo('procesion')
-  const rotulo = cuenta === undefined ? rotuloDeLaEstacion(hoy, conProcesion) : cuenta && rotuloDe(cuenta, hoy)
+  const rotulo = cuenta ? rotuloDe(cuenta, hoy) : null
   const diasContados = Math.round(useCuenta(rotulo?.dias ?? 0, 1600))
 
   return (
@@ -109,7 +99,7 @@ export default function Retablo({ hoy = new Date(), foto = FOTO_POR_DEFECTO, x =
         <Typography className="fecha-larga" sx={{ fontFamily: CORMORANT, fontStyle: 'italic', fontSize: 22, color: '#d8cfc6' }}>
           {FECHA_LARGA.format(rotulo.fecha)}
         </Typography>
-        {rotulo.dias !== null && <Box className="cuenta" sx={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', columnGap: 1.5, mt: 1.5 }}>
+        <Box className="cuenta" sx={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', columnGap: 1.5, mt: 1.5 }}>
           <Typography component="span" className="dias" sx={{ fontFamily: CORMORANT, fontWeight: 500, fontSize: 'min(136px, 16cqh, 36cqw)', lineHeight: 0.85, fontVariantNumeric: 'lining-nums' }}>
             {diasContados}
           </Typography>
@@ -117,7 +107,7 @@ export default function Retablo({ hoy = new Date(), foto = FOTO_POR_DEFECTO, x =
             {rotulo.dias === 1 ? 'día' : 'días'}
           </Typography>
           {rotulo.para && <Typography component="span" className="para" sx={{ fontSize: 14, color: '#c9bfb6', flexBasis: '100%' }}>{rotulo.para}</Typography>}
-        </Box>}
+        </Box>
       </Box>}
     </Box>
   )

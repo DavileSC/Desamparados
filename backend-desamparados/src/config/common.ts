@@ -1,5 +1,6 @@
 import { type } from 'arktype';
-import { motivoContrasenaDebil } from '../domain/password-debil.js';
+import { motivoContrasenaDebil, palabrasPropias } from '../domain/password-debil.js';
+import { identidad } from '../domain/datos-entidad.js';
 import { laCorporacion } from '../domain/articulos.js';
 import { nifValido, normalizarNif } from '../domain/nif.js';
 import { provinciaDelCodigoPostal } from '../domain/modelo-182.js';
@@ -34,9 +35,10 @@ export const email = type("string <= 254")
 // 2. Contraseña: longitud mínima real, tope máximo (previene DoS en bcrypt)
 // y rechazo de las que se adivinan a la primera. Las reglas viven en
 // src/domain/password-debil.ts para poder probarlas sin base de datos.
+const PALABRAS_PROPIAS = palabrasPropias(identidad);
 export const password = type("string")
     .narrow((valor, ctx) => {
-        const motivo = motivoContrasenaDebil(valor, laCorporacion());
+        const motivo = motivoContrasenaDebil(valor, laCorporacion(), PALABRAS_PROPIAS);
         return motivo === null || ctx.reject({ problem: `la contraseña ${motivo}` });
     });
 

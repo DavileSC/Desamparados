@@ -11,39 +11,29 @@ const montar = (hoy: Date, modulos?: string[], cuenta?: CuentaDeHoy | null) =>
   renderWithProviders(<TemaCmsProvider><Retablo hoy={hoy} cuenta={cuenta} /></TemaCmsProvider>, { modulos })
 
 describe('Retablo', () => {
-  it('dice cuántos días faltan y para qué fecha', () => {
-    montar(new Date(2026, 8, 11))
-    expect(screen.getByText('190')).toBeInTheDocument()
-    expect(screen.getByText('20 de marzo de 2027')).toBeInTheDocument()
-  })
-
-  it('con Procesión apagada no cuenta los días para la estación', () => {
-    montar(new Date(2026, 8, 11), [])
-    expect(screen.queryByText('para la estación de penitencia')).not.toBeInTheDocument()
-    expect(screen.queryByText('190')).not.toBeInTheDocument()
-  })
-
-  it('con Procesión encendida, sí', () => {
+  it('sin cuenta del servidor (un backend anterior) no se inventa ninguna', () => {
     montar(new Date(2026, 8, 11), ['procesion'])
-    expect(screen.getByText('para la estación de penitencia')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: site.titular })).toBeInTheDocument()
+    expect(screen.queryByText(/^días?$/)).not.toBeInTheDocument()
   })
 
-  it('el mismo día de la estación no cuenta días de más', () => {
-    montar(new Date(2026, 2, 28))
+  it('el mismo día de la salida no cuenta días de más', () => {
+    montar(new Date(2026, 2, 28), undefined, { nombre: 'Salida extraordinaria', articulo: 'la', fecha: '2026-03-28' })
     expect(screen.getByText('0')).toBeInTheDocument()
+    expect(screen.getByText('para la Salida extraordinaria')).toBeInTheDocument()
   })
 
   it('lleva la imagen de la titular', () => {
-    montar(new Date(2026, 8, 11))
+    montar(new Date(2026, 8, 11), undefined, null)
     expect(screen.getByRole('img', { name: site.titular })).toBeInTheDocument()
   })
 
   it('con la cuenta del servidor: el nombre arriba, los días y «para» con su artículo', () => {
-    montar(new Date(2026, 9, 5), undefined, { nombre: 'Rosario vespertino', articulo: 'el', fecha: '2026-10-11' })
-    expect(screen.getByText('Rosario vespertino')).toBeInTheDocument()
+    montar(new Date(2026, 9, 5), undefined, { nombre: 'Traslado de la Imagen', articulo: 'el', fecha: '2026-10-11' })
+    expect(screen.getByText('Traslado de la Imagen')).toBeInTheDocument()
     expect(screen.getByText('11 de octubre de 2026')).toBeInTheDocument()
     expect(screen.getByText('6')).toBeInTheDocument()
-    expect(screen.getByText('para el Rosario vespertino')).toBeInTheDocument()
+    expect(screen.getByText('para el Traslado de la Imagen')).toBeInTheDocument()
   })
 
   it('un acto de la Agenda se nombra arriba y no lleva línea de «para»', () => {
@@ -56,7 +46,6 @@ describe('Retablo', () => {
   it('sin cuenta atrás, solo la foto', () => {
     montar(new Date(2026, 9, 5), undefined, null)
     expect(screen.getByRole('region', { name: site.titular })).toBeInTheDocument()
-    expect(screen.queryByText('Sábado de Pasión')).not.toBeInTheDocument()
     expect(screen.queryByText(/^días?$/)).not.toBeInTheDocument()
   })
 })

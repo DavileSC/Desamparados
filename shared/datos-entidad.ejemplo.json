@@ -94,7 +94,10 @@
       "Los módulos con los que arranca esta instalación (claves de shared/modulos.json). La",
       "siembra crea las filas que falten con este valor y NO toca las que ya existen: lo que",
       "Administración haya cambiado desde Sistema → «Módulos» manda. Un módulo del catálogo",
-      "que no esté aquí arranca apagado. El ejemplo arranca con todos."
+      "que no esté aquí arranca apagado. El ejemplo arranca con todos del catálogo.",
+      "Las claves de «deInstalacion» (paginas-propias: las páginas hechas a medida para una",
+      "corporación) no se siembran ni se cambian desde el CMS: se leen de aquí en cada",
+      "arranque. El ejemplo no lleva ninguna."
     ],
     "activos": [
       "noticias",

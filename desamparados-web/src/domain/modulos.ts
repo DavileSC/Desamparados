@@ -16,8 +16,18 @@ export const CLAVES_MODULO = [
 ] as const
 export type ClaveModulo = (typeof CLAVES_MODULO)[number]
 
+/**
+ * Los módulos «de instalación» (`deInstalacion` de `shared/modulos.json`), como
+ * las páginas propias de una corporación: no salen en la pantalla de Módulos
+ * ni se cambian desde el CMS, los enciende el fichero de la instalación. La
+ * API los manda en la misma lista de activos, así que rutas, menús y páginas
+ * preguntan por ellos igual que por los demás.
+ */
+export const CLAVES_DE_INSTALACION = ['paginas-propias'] as const
+export type ClaveDeInstalacion = (typeof CLAVES_DE_INSTALACION)[number]
+
 /** La marca de lo que no se apaga: cada pieza del núcleo lo dice, y la guardiana lo exige. */
-export type Modulo = ClaveModulo | 'nucleo'
+export type Modulo = ClaveModulo | ClaveDeInstalacion | 'nucleo'
 /** Lo que necesita una pieza: un módulo, o una lista que vale con cualquiera de ellos (el Inventario, con enseres o con ropero). */
 export type Requisito = Modulo | Modulo[]
 
@@ -33,6 +43,10 @@ export interface FichaDeModulo {
 const CATALOGO_MODULOS = CATALOGO.modulos as FichaDeModulo[]
 
 export const fichaDeModulo = (clave: ClaveModulo): FichaDeModulo => CATALOGO_MODULOS.find((m) => m.clave === clave)!
+
+/** El nombre que se enseña de cualquier módulo, también de los de instalación. */
+export const nombreDeModulo = (clave: Exclude<Modulo, 'nucleo'>): string =>
+  [...CATALOGO_MODULOS, ...CATALOGO.deInstalacion].find((m) => m.clave === clave)?.nombre ?? clave
 
 /** Si una pieza con este requisito se enseña con estos módulos encendidos. */
 export function cumple(requisito: Requisito, activos: ReadonlySet<string>): boolean {

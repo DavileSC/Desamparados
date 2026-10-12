@@ -61,11 +61,17 @@ export function fotoDelCartel(evento: ApiEvent): { src: string; alt: string } {
     : { src: '/images/triduo.jpg', alt: site.titular }
 }
 
-/** «Cómo llegar»: el lugar en el mapa. Con «Málaga» detrás, para que no busque en todo el mundo. */
-export function urlDelMapa(lugar: string | null | undefined): string | null {
+/**
+ * «Cómo llegar»: el lugar en el mapa. Con la localidad de la sede detrás, para
+ * que «Salón parroquial» no busque en todo el mundo; es la de los datos de
+ * contacto (`useContacto`) y no una escrita aquí, porque cada instalación es
+ * de un sitio. Sin localidad, o si el lugar ya la nombra, se busca tal cual.
+ */
+export function urlDelMapa(lugar: string | null | undefined, localidad: string | null | undefined): string | null {
   const limpio = lugar?.trim()
   if (!limpio) return null
-  const consulta = /málaga/i.test(limpio) ? limpio : `${limpio}, Málaga`
+  const sitio = localidad?.trim()
+  const consulta = !sitio || limpio.toLocaleLowerCase('es').includes(sitio.toLocaleLowerCase('es')) ? limpio : `${limpio}, ${sitio}`
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(consulta)}`
 }
 

@@ -7,7 +7,7 @@
  * Fechas en `AAAA-MM-DD`, como en el servidor: se comparan como texto.
  */
 import type { TiempoDelRetablo } from '../lib/api/panel'
-import { pascua } from './sabadoDePasion'
+import { pascua } from './pascua'
 
 const aTexto = (f: Date) => `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}-${String(f.getDate()).padStart(2, '0')}`
 const sumarDias = (f: Date, n: number) => new Date(f.getFullYear(), f.getMonth(), f.getDate() + n)

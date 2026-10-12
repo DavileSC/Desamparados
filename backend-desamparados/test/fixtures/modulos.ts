@@ -1,6 +1,6 @@
 import db from '../../src/config/db.js';
 import { ModulosService } from '../../src/services/modulos.service.js';
-import type { ClaveModulo } from '../../src/domain/modulos.js';
+import type { ClaveDeInstalacion, ClaveModulo } from '../../src/domain/modulos.js';
 
 /**
  * Enciende estos módulos en la base y devuelve cómo dejarlos como estaban.
@@ -23,4 +23,13 @@ export async function encenderModulos(claves: ClaveModulo[]): Promise<() => Prom
     for (const fila of antes) await db.modulo.update({ where: { clave: fila.clave }, data: { activo: fila.activo } });
     ModulosService.olvidar();
   };
+}
+
+/**
+ * Enciende estos módulos de instalación (las páginas propias) en lugar de los
+ * del fichero, que en las pruebas es el ejemplo y no lleva ninguno. No pasan
+ * por la base: se cambian en la memoria del servicio. Devuelve cómo dejarlos.
+ */
+export function encenderDeInstalacion(claves: ClaveDeInstalacion[]): () => void {
+  return ModulosService.fijarDeInstalacion(claves);
 }

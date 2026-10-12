@@ -1,5 +1,5 @@
 import type { PanelResponse, TipoEvento } from '../../../lib/api/panel'
-import { pascua } from '../../../domain/sabadoDePasion'
+import { pascua } from '../../../domain/pascua'
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 const MESES_LARGOS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']

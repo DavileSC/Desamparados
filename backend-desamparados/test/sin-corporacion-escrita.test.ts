@@ -49,15 +49,10 @@ const SALIDA_EN_CODIGO = /\b(?:del|al|el|El)\s+(?:\$\{|\{)\s*[\w$]+(?:\??\.[\w$]
 const SALIDA_EN_PLANTILLA = /\b(?:del|al|el|El)\s+\{\{\s*salida\s*\}\}/;
 
 /** Lo que sí puede llevarlo escrito, con su porqué. Fichero relativo a la raíz y un trozo de la línea. */
+// La denominación jurídica de `config/site.ts` ya no está aquí: desde la etapa
+// 1 de la Fase 8 sale de instalacion/datos-entidad.json, y la excepción no
+// protegía nada.
 const EXCEPCIONES: { fichero: string; contiene: string; motivo: string }[] = [
-  {
-    fichero: 'desamparados-web/src/config/site.ts',
-    contiene: 'Grupo Parroquial Nuestra Señora de los Desamparados',
-    motivo:
-      'Denominación jurídica exacta inscrita (art. 10 LSSI-CE y art. 13 RGPD): un hecho legal de ' +
-      'esta instalación, no una frase calculable con artículo. Pendiente de pasar a ' +
-      'instalacion/datos-entidad.json (hoja de ruta).',
-  },
   // El catálogo "comunes" de usos-de-correo.json documenta, para quien edite una
   // plantilla desde el CMS, lo que hoy escriben los campos {{la_corporacion}}…
   // (domain/articulos.ts) con la identidad de esta instalación: un "ejemplo" de
@@ -71,10 +66,17 @@ const EXCEPCIONES: { fichero: string; contiene: string; motivo: string }[] = [
     })),
 ];
 
+// `desamparados-web/src/test/` son las ayudas de las pruebas (setup, datos de
+// prueba): como `__tests__`, no llegan a ninguna pantalla.
+const AYUDAS_DE_PRUEBAS = join('desamparados-web', 'src', 'test');
+
 function ficheros(dir: string): string[] {
   return readdirSync(dir).flatMap((n) => {
     const ruta = join(dir, n);
-    if (statSync(ruta).isDirectory()) return n === '__tests__' || n === 'node_modules' ? [] : ficheros(ruta);
+    if (statSync(ruta).isDirectory()) {
+      if (n === '__tests__' || n === 'node_modules' || ruta.endsWith(AYUDAS_DE_PRUEBAS)) return [];
+      return ficheros(ruta);
+    }
     return /\.(ts|tsx)$/.test(n) && !/\.test\.tsx?$/.test(n) ? [ruta] : [];
   });
 }
@@ -128,6 +130,57 @@ test('ni el código ni las plantillas escriben la corporación ni la salida a ma
   const plantillas = join(RAIZ, 'shared/usos-de-correo.json');
   mirar(plantillas, sinBloqueDeComentario(lineasDe(readFileSync(plantillas, 'utf8'))), [CORPORACION, SALIDA_EN_PLANTILLA]);
   assert.deepEqual(hallazgos, [], `Escritas a mano (usa domain/articulos.ts o los campos {{la_corporacion}}…):\n${hallazgos.join('\n')}`);
+});
+
+// La misma aplicación se instala para otras corporaciones (Fase 8): el código
+// de núcleo no puede nombrar a esta. Su nombre, su templo, su ciudad y su
+// salida salen de instalacion/datos-entidad.json, de los datos de contacto
+// (sede), de la tabla `Salida` o del contenido que cada una escribe en el CMS.
+//
+// Con mayúscula y como palabra suelta a propósito: el proyecto se llama así y
+// aparece en rutas e imports (`desamparados-web`) y en identificadores
+// (`DesamparadosPage`, `sabadoDePasion`), que no son texto visible.
+const NOMBRES_PROPIOS = /\b(?:Desamparados|Goretti|Málaga|Sábado de Pasión)\b/;
+
+// Las páginas propias de esta corporación (su Titular, su salida, su rosario)
+// sí la nombran: son su contenido, y van en un módulo que otra instalación no
+// enciende. El contenido de partida (shared/contenido-por-defecto.json) no se
+// recorre: no es código, y su versión neutra es la etapa 6.
+const PAGINAS_PROPIAS = [
+  'desamparados-web/src/features/titular/',
+  'desamparados-web/src/features/corporacion/sabado-pasion/',
+  'desamparados-web/src/features/corporacion/rosario/',
+];
+
+/** Lo que sí puede nombrarla, con su porqué. Fichero relativo a la raíz y un trozo de la línea. */
+const EXCEPCIONES_NOMBRES: { fichero: string; contiene: string; motivo: string }[] = [
+  {
+    fichero: 'desamparados-web/src/lib/provincias.ts',
+    contiene: "'29': ['Málaga', 'Andalucía']",
+    motivo: 'La provincia de Málaga en la lista de provincias por código postal: un dato geográfico, no esta corporación.',
+  },
+  ...(['Sábado de Pasión', 'Desamparados'] as const).map((rotulo) => ({
+    fichero: 'desamparados-web/src/config/navegacion.ts',
+    contiene: `label: '${rotulo}'`,
+    motivo: 'Menú del módulo paginas-propias: el rótulo de una página propia, que solo se ve con el módulo encendido.',
+  })),
+];
+
+test('el código de núcleo no nombra a esta corporación, su templo, su ciudad ni su salida', () => {
+  const hallazgos: string[] = [];
+  for (const dir of ['backend-desamparados/src', 'desamparados-web/src']) {
+    for (const f of ficheros(join(RAIZ, dir))) {
+      const rel = relative(RAIZ, f).replace(/\\/g, '/');
+      if (PAGINAS_PROPIAS.some((carpeta) => rel.startsWith(carpeta))) continue;
+      lineasDe(readFileSync(f, 'utf8')).forEach((l, i) => {
+        const texto = sinComentarios(l);
+        if (!NOMBRES_PROPIOS.test(texto)) return;
+        if (EXCEPCIONES_NOMBRES.some((e) => e.fichero === rel && texto.includes(e.contiene))) return;
+        hallazgos.push(`${rel}:${i + 1}: ${texto.trim()}`);
+      });
+    }
+  }
+  assert.deepEqual(hallazgos, [], `Nombres propios de esta corporación en el código de núcleo (léelos de la instalación, del contacto o de la tabla Salida):\n${hallazgos.join('\n')}`);
 });
 
 // «Cofrade» es el miembro de una cofradía: aquí son «hermanos» en todas las

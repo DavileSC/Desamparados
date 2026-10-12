@@ -14,7 +14,17 @@
     "",
     "Las claves van también escritas en src/domain/modulos.ts de cada paquete, para que una",
     "clave mal escrita no compile; una prueba a cada lado comprueba que las listas coinciden.",
-    "El lote inicial de cada instalación va en instalacion/datos-entidad.json (modulos.activos)."
+    "El lote inicial de cada instalación va en instalacion/datos-entidad.json (modulos.activos).",
+    "",
+    "deInstalacion: módulos que no son una opción de la corporación sino parte de lo que se le",
+    "instala (sus páginas hechas a medida, con su diseño propio y no por bloques). Van aparte",
+    "porque no tiene sentido que Administración los apague o encienda: encender una página que",
+    "esta instalación no tiene la dejaría vacía. No salen en Sistema → «Módulos», no tienen fila",
+    "en la tabla Modulo ni se cambian por la API: están encendidos si y solo si su clave está en",
+    "modulos.activos del fichero, que para estos se lee en CADA arranque (no solo en la primera",
+    "siembra). Fuera de eso se comportan como los demás: rutas, menús, sitemap y páginas del CMS",
+    "preguntan por su clave igual. Sus claves van también en CLAVES_DE_INSTALACION de los dos",
+    "src/domain/modulos.ts."
   ],
   "modulos": [
     { "clave": "noticias", "nombre": "Noticias", "grupo": "Web", "descripcion": "Las noticias de la web pública y su mesa en el CMS.", "requiere": [] },
@@ -41,5 +51,8 @@
     { "clave": "contabilidad", "nombre": "Contabilidad", "grupo": "Cuentas", "descripcion": "Las pantallas del libro de apuntes y la partida doble; los apuntes se registran siempre, esté o no encendida.", "requiere": [] },
     { "clave": "cabildos", "nombre": "Cabildos y actas", "grupo": "Junta", "descripcion": "Convocatorias, asistencia, votaciones y el libro de actas.", "requiere": [] },
     { "clave": "informe-anual", "nombre": "Informe anual", "grupo": "Junta", "descripcion": "La memoria del curso en PDF, con sus textos a mano.", "requiere": [] }
+  ],
+  "deInstalacion": [
+    { "clave": "paginas-propias", "nombre": "Páginas propias", "descripcion": "Las páginas hechas a medida para una corporación concreta, con su diseño propio en vez de bloques. Solo las tiene la instalación para la que se hicieron." }
   ]
 }

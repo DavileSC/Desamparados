@@ -4,6 +4,7 @@ import { Route, Routes } from 'react-router-dom'
 import { renderWithProviders } from '../../test/test-utils'
 import ExigeModulo from '../ExigeModulo'
 import { useAuthStore } from '../../features/altas/auth/store'
+import { TODOS_CON_PAGINAS_PROPIAS } from '../../test/queryClient'
 
 const Dentro = () => <p>La tienda</p>
 
@@ -40,6 +41,20 @@ describe('ExigeModulo', () => {
     montar('/cms/tienda', ['noticias'])
     expect(await screen.findByRole('heading', { name: /no está activado/i })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /módulos/i })).not.toBeInTheDocument()
+  })
+
+  it('una página propia: con los módulos del ejemplo no existe; con su módulo encendido, sí', async () => {
+    const Rosario = () => <p>El rosario</p>
+    const propia = (modulos?: readonly string[]) => renderWithProviders(
+      <Routes><Route path="/rosario" element={<ExigeModulo modulo="paginas-propias"><Rosario /></ExigeModulo>} /></Routes>,
+      { ruta: '/rosario', modulos },
+    )
+    const { unmount } = propia()
+    expect(await screen.findByRole('heading', { name: 'Esta calle no está en el recorrido' })).toBeInTheDocument()
+    expect(screen.queryByText('El rosario')).not.toBeInTheDocument()
+    unmount()
+    propia(TODOS_CON_PAGINAS_PROPIAS)
+    expect(screen.getByText('El rosario')).toBeInTheDocument()
   })
 
   it('nucleo pasa sin esperar a la lista', () => {

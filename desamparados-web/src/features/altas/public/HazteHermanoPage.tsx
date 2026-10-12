@@ -36,6 +36,7 @@ import FondoDeSolicitud from './FondoDeSolicitud'
 import { CAMPOS_API, VALORES_INICIALES, pasosDe, type Campo } from './pasos'
 import { deLaCorporacion, laCorporacion } from '../../../domain/articulos'
 import { site } from '../../../config/site'
+import { useModulos } from '../../../hooks/useModulos'
 
 // Mismo umbral que el navbar (`DESKTOP_NAV_MIN`): por debajo la barra va en
 // flujo y mide 56 px en móvil y 64 en tableta; desde ahí es fija de 72 px y se
@@ -63,6 +64,9 @@ const TITULARIDAD = {
 
 export default function HazteHermanoPage() {
   const [paso, setPaso] = useState(0)
+  // Las salidas son de cada corporación (y sin Procesión no hay ninguna): la
+  // frase de entrada las nombra en genérico, o no las nombra.
+  const conSalidas = useModulos().activo('procesion')
   const [camino, setCamino] = useState<Camino | null>(null)
   const [enviada, setEnviada] = useState<{ nombre: string; email: string; fichas: number; soloMenores: boolean } | null>(null)
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null)
@@ -290,7 +294,7 @@ export default function HazteHermanoPage() {
               </Typography>
               <Typography sx={{ display: { xs: 'none', md: 'block' }, fontSize: 17, lineHeight: 1.7, color: 'text.secondary', maxWidth: '44ch' }}>
                 Ser hermano es acompañar a {site.titular} todo el año: en los
-                cultos, en la estación de penitencia del Sábado de Pasión y en la labor de caridad y
+                cultos{conSalidas ? ', en sus salidas procesionales' : ''} y en la labor de caridad y
                 formación {deLaCorporacion()}. La solicitud se rellena aquí y se formaliza después en
                 Secretaría.
               </Typography>

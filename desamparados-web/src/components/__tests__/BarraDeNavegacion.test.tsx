@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../test/test-utils'
 import BarraDeNavegacion from '../BarraDeNavegacion'
 import { DATOS } from '../../test/instalacion'
+import { TODOS_CON_PAGINAS_PROPIAS } from '../../test/queryClient'
 
 // El ejemplo no tiene redes (son null): una, para ver que el menú la enlaza.
 // Las redes llegan de la API (no de la instalación), y las pruebas las siembran
@@ -76,7 +77,7 @@ describe('BarraDeNavegacion en escritorio', () => {
 
   it('al pasar el ratón por Corporación despliega sus subpáginas con sus enlaces', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<BarraDeNavegacion />)
+    renderWithProviders(<BarraDeNavegacion />, { modulos: TODOS_CON_PAGINAS_PROPIAS })
     await user.hover(within(navEscritorio()).getByRole('button', { name: 'Corporación', hidden: true }))
 
     expect(screen.getByRole('link', { name: 'Historia', hidden: true })).toHaveAttribute('href', '/historia')
@@ -85,6 +86,17 @@ describe('BarraDeNavegacion en escritorio', () => {
       '/historia/organos-de-gobierno',
     )
     expect(screen.getByRole('link', { name: 'Enseres', hidden: true })).toHaveAttribute('href', '/sabado-de-pasion/enseres')
+  })
+
+  it('sin las páginas propias, Corporación despliega sin ellas', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<BarraDeNavegacion />)
+    await user.hover(within(navEscritorio()).getByRole('button', { name: 'Corporación', hidden: true }))
+
+    expect(screen.getByRole('link', { name: 'Historia', hidden: true })).toHaveAttribute('href', '/historia')
+    expect(screen.queryByRole('link', { name: 'Enseres', hidden: true })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Rosario', hidden: true })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Sábado de Pasión', hidden: true })).not.toBeInTheDocument()
   })
 
   it('cierra el desplegable al retirar el ratón', async () => {

@@ -85,7 +85,10 @@ export default function HistoriaPage() {
   const meta = !borrador && (
     <MetaDePagina
       titulo={cabecera.titulo}
-      descripcion={`Historia ${deLaCorporacion()} de ${site.titular}: de la devoción en la Parroquia de los Padres Pasionistas a la salida procesional del Sábado de Pasión por Málaga.`}
+      // La entradilla de la cabecera, como en las demás páginas de bloques
+      // (PaginaDeBloquesPublica): el resumen que había aquí contaba la historia
+      // de una corporación concreta, y la de cada instalación la escribe ella.
+      descripcion={cabecera.subtitulo || `Historia ${deLaCorporacion()} de ${site.titular}.`}
     />
   )
 

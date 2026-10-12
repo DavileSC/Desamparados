@@ -10,11 +10,12 @@ import { describe, test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import catalogo from '../../shared/tipos-de-bloque.json' with { type: 'json' };
-import { CLAVES_MODULO, esClaveDeModulo } from '../src/domain/modulos.js';
+import { CLAVES_DE_INSTALACION, CLAVES_MODULO, esClaveEncendible } from '../src/domain/modulos.js';
 
 const RAIZ = new URL('../../', import.meta.url);
 const leer = (ruta: string) => readFileSync(fileURLToPath(new URL(ruta, RAIZ)), 'utf8').split(/\r?\n/);
-const esModulo = (valor: string) => valor === 'nucleo' || esClaveDeModulo(valor);
+// Los de instalación («paginas-propias») también valen: se etiquetan igual.
+const esModulo = (valor: string) => valor === 'nucleo' || esClaveEncendible(valor);
 
 /** `'tienda'` → ['tienda']; `['inventario', 'procesion']` → las dos. */
 function clavesDe(literal: string): string[] {
@@ -50,7 +51,7 @@ describe('la guardiana de los módulos', () => {
       if (!/^\s*app\.use\('\/api\//.test(linea)) return;
       const guarda = /app\.use\('[^']+',\s*(conModulo\('([a-z0-9-]+)'\)|nucleo),/.exec(linea);
       if (!guarda) { fallos.push(`app.ts:${i + 1}: sin conModulo(…) ni nucleo → ${linea.trim()}`); return; }
-      if (guarda[2] && !esClaveDeModulo(guarda[2])) fallos.push(`app.ts:${i + 1}: «${guarda[2]}» no es del catálogo`);
+      if (guarda[2] && !esClaveEncendible(guarda[2])) fallos.push(`app.ts:${i + 1}: «${guarda[2]}» no es del catálogo`);
     });
     assert.deepEqual(fallos, [], fallos.join('\n'));
   });
@@ -108,5 +109,8 @@ describe('la guardiana de los módulos', () => {
     const lista = /CLAVES_MODULO = \[([\s\S]*?)\] as const/.exec(web);
     assert.ok(lista, 'la web no declara CLAVES_MODULO');
     assert.deepEqual(clavesDe(lista[1]), [...CLAVES_MODULO]);
+    const deInstalacion = /CLAVES_DE_INSTALACION = \[([\s\S]*?)\] as const/.exec(web);
+    assert.ok(deInstalacion, 'la web no declara CLAVES_DE_INSTALACION');
+    assert.deepEqual(clavesDe(deInstalacion[1]), [...CLAVES_DE_INSTALACION]);
   });
 });

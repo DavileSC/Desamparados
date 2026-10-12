@@ -324,7 +324,7 @@ export default function PortadaAdminPage() {
           </Box>
         </SeccionPlegable>
 
-        <SeccionPlegable titulo="Sábado de Pasión" vistaPrevia={vista(<EscenaProcesion />)}>
+        <SeccionPlegable titulo="Procesión" vistaPrevia={vista(<EscenaProcesion />)}>
           <CampoTexto
             etiqueta="Antetítulo"
             valor={textos.sabadoDePasion.ceja}
@@ -353,7 +353,7 @@ export default function PortadaAdminPage() {
             valor={textos.sabadoDePasion.enlace}
             onCambio={(enlace) => cambiarSabado({ enlace })}
             maxLength={60}
-            ayuda="El enlace del final del bloque. Sigue llevando a la página del Sábado de Pasión."
+            ayuda="El enlace del final del bloque. Sigue llevando a la página de la salida procesional."
           />
           {/*
             Sin botón de quitar: el bloque es una banda de foto a sangre y no

@@ -14,7 +14,8 @@ import paginas from '../../../../shared/paginas-publicas.json' with { type: 'jso
 import topes from '../../../../shared/topes-contenido.json' with { type: 'json' };
 import db from '../../config/db.js';
 import { HttpError, NotFoundError } from '../../utils/error.handle.js';
-import { esSlugContenido } from '../../domain/contenido.js';
+import { esSlugContenido, moduloDePagina } from '../../domain/contenido.js';
+import { ModulosService } from '../modulos.service.js';
 import { configuracionRedsys, formularioDePago, modoDePago, numeroDePedido } from '../../domain/redsys.js';
 import { ContenidoService } from '../contenido.service.js';
 import { idCategoriaIngresos } from '../recibos/comunes.js';
@@ -85,6 +86,9 @@ export class DonativoService {
   /** Comprueba el donativo contra el bloque de su página y lo deja listo para guardar. */
   static async comprobar(p: PeticionDeDonativo): Promise<{ centimos: number; datos: DatosDelDonativo }> {
     if (!esSlugContenido(p.pagina)) throw new NotFoundError('Esa página no existe.');
+    // Una página de un módulo apagado no se sirve: tampoco recoge donativos.
+    const modulo = moduloDePagina(p.pagina);
+    if (modulo && !(await ModulosService.activo(modulo))) throw new NotFoundError('Esa página no existe.');
     const bloque = bloqueDeDonativo(await ContenidoService.leer(p.pagina));
     if (!bloque) throw new HttpError('Esta página ya no recoge donativos. Recárgala.', 409);
 

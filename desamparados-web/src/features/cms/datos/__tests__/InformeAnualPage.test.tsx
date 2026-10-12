@@ -78,7 +78,7 @@ describe('el Informe anual', () => {
 
     const nav = await screen.findByRole('navigation', { name: 'Capítulos del Informe anual' })
     expect(within(nav).queryByText('Cultos y actos')).not.toBeInTheDocument()
-    expect(within(nav).queryByText('Sábado de Pasión y Rosario')).not.toBeInTheDocument()
+    expect(within(nav).queryByText('Salidas procesionales')).not.toBeInTheDocument()
     expect(within(nav).queryByText('Patrimonio')).not.toBeInTheDocument()
 
     const numeroDe = (titulo: string) => within(nav).getByText(titulo).previousElementSibling?.textContent

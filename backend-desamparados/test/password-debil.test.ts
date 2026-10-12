@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { motivoContrasenaDebil, esContrasenaAceptable, LONGITUD_MINIMA } from '../src/domain/password-debil.js';
+import { motivoContrasenaDebil, esContrasenaAceptable, palabrasPropias, LONGITUD_MINIMA } from '../src/domain/password-debil.js';
+
+// Las pruebas leen el ejemplo («Esperanza», «Villanueva»): las de Desamparados se dan a mano.
+const DE_DESAMPARADOS = palabrasPropias({ nombreCorto: 'Desamparados', titular: 'Nuestra Señora de los Desamparados', localidad: 'Málaga' });
 import { password } from '../src/config/common.js';
 
 describe('rechazo de contraseñas débiles', () => {
@@ -36,11 +39,19 @@ describe('rechazo de contraseñas débiles', () => {
     }
   });
 
-  test('rechaza las palabras propias del proyecto', () => {
+  test('rechaza las palabras propias de la corporación', () => {
     // Las primeras que probaría alguien que conozca el Grupo Parroquial.
-    for (const debil of ['desamparados1', 'Desamparados2026', 'semanasanta26', 'MalagaMalaga']) {
-      assert.equal(esContrasenaAceptable(debil), false, `debería rechazar "${debil}"`);
+    for (const debil of ['desamparados1', 'Desamparados2026', 'MalagaMalaga', 'Senora2026']) {
+      assert.equal(esContrasenaAceptable(debil, DE_DESAMPARADOS), false, `debería rechazar "${debil}"`);
     }
+    assert.equal(esContrasenaAceptable('semanasanta26'), false);
+  });
+
+  test('las propias salen de la identidad: otra corporación no carga con las de Desamparados', () => {
+    assert.deepEqual(palabrasPropias({ nombreCorto: 'Esperanza', titular: 'Nuestra Señora de la Esperanza', localidad: 'Villanueva' }),
+      ['esperanza', 'nuestrasenoradelaesperanza', 'nuestra', 'senora', 'villanueva']);
+    assert.equal(esContrasenaAceptable('Desamparados2026'), true);
+    assert.equal(esContrasenaAceptable('Esperanza2026', palabrasPropias({ nombreCorto: 'Esperanza', titular: 'Esperanza', localidad: 'Villanueva' })), false);
   });
 
   test('rechaza las palabras cofrades obvias, también con una secuencia detrás', () => {
@@ -48,7 +59,7 @@ describe('rechazo de contraseñas débiles', () => {
     // lo estuviera, los cinco caracteres que sobran bastaban. Una secuencia
     // pegada a la palabra no es una frase: sigue siendo la palabra.
     for (const debil of ['nazareno12345', 'Nazareno2026', 'cofrade123456', 'hermano-12345', 'procesion1234', 'Procesión2026', 'costalero2026', 'penitente2026', 'desamparados-abcde']) {
-      assert.equal(esContrasenaAceptable(debil), false, `debería rechazar "${debil}"`);
+      assert.equal(esContrasenaAceptable(debil, DE_DESAMPARADOS), false, `debería rechazar "${debil}"`);
     }
   });
 
@@ -61,14 +72,14 @@ describe('rechazo de contraseñas débiles', () => {
   test('los disfraces habituales no burlan la lista', () => {
     // P4ssw0rd es password con las sustituciones de toda la vida.
     assert.equal(esContrasenaAceptable('P4ssw0rdP4ss'), false);
-    assert.equal(esContrasenaAceptable('D3s4mp4r4d0s'), false);
+    assert.equal(esContrasenaAceptable('D3s4mp4r4d0s', DE_DESAMPARADOS), false);
     assert.equal(esContrasenaAceptable('Contraseña123'), false);
   });
 
   test('una palabra prohibida con suficiente texto alrededor sí vale', () => {
     // El objetivo es descartar la palabra *como* contraseña, no prohibir que
     // aparezca dentro de una frase larga de verdad.
-    assert.equal(esContrasenaAceptable('malaga huele a azahar en marzo'), true);
+    assert.equal(esContrasenaAceptable('malaga huele a azahar en marzo', DE_DESAMPARADOS), true);
   });
 
   test('el motivo explica qué corregir, no dice solo "no válida"', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DESTINOS_FIJOS, PREFIJO_NOTICIA, esDestinoValido } from '../destinos'
+import { DESTINOS_FIJOS, PREFIJO_NOTICIA, destinosActivos, esDestinoValido } from '../destinos'
 // El fuente del router como texto, como en config/__tests__/navegacion.test.ts.
 import fuente from '../../routes/index.tsx?raw'
 
@@ -27,5 +27,17 @@ describe('destinos de los enlaces del CMS', () => {
     expect(esDestinoValido('//otro.test')).toBe(false)
     expect(esDestinoValido('/historia')).toBe(true)
     expect(esDestinoValido(`${PREFIJO_NOTICIA}apertura-del-curso`)).toBe(true)
+  })
+
+  it('el selector no ofrece las páginas propias si su módulo está apagado, pero un enlace ya guardado a ellas sigue valiendo', () => {
+    const rutas = (activos: string[]) => destinosActivos(new Set(activos)).map((d) => d.ruta)
+    for (const propia of ['/desamparados', '/rosario', '/sabado-de-pasion', '/sabado-de-pasion/trono']) {
+      expect(rutas([]), propia).not.toContain(propia)
+      expect(rutas(['paginas-propias']), propia).toContain(propia)
+      // Si no, una página que enlazara a ella ya no se podría volver a guardar.
+      expect(esDestinoValido(propia)).toBe(true)
+    }
+    expect(rutas([])).toContain('/ajuar')
+    expect(rutas([])).toContain('/historia')
   })
 })

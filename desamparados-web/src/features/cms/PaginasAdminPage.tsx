@@ -5,7 +5,8 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
 import CabeceraSeccion from './CabeceraSeccion'
-import { PAGINAS_PUBLICAS, type PaginaPublica } from '../../app/cmsNavegacion'
+import { paginasPublicasActivas, type PaginaPublica } from '../../app/cmsNavegacion'
+import { useModulos } from '../../hooks/useModulos'
 import { site } from '../../config/site'
 
 /**
@@ -22,7 +23,10 @@ import { site } from '../../config/site'
  * sus páginas dentro y las subpáginas un paso más adentro, con una línea guía.
  */
 export default function PaginasAdminPage() {
-  const grupos = agruparPorGrupo(PAGINAS_PUBLICAS)
+  const { activos } = useModulos()
+  // Mientras no llega la lista, solo las del núcleo: mejor eso que enseñar
+  // un momento las de un módulo apagado y quitarlas.
+  const grupos = agruparPorGrupo(paginasPublicasActivas(activos ?? new Set()))
 
   return (
     <>

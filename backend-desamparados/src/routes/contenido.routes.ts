@@ -7,7 +7,8 @@ import { checkRole } from '../middleware/checkRole.js';
 import { validate } from '../config/validate.js';
 import { cachePublica } from '../middleware/cache-publica.js';
 import { idParam } from '../config/common.js';
-import { esSlugContenido } from '../domain/contenido.js';
+import { esSlugContenido, moduloDePagina } from '../domain/contenido.js';
+import { conModulo } from '../middleware/modulos.js';
 import { guardarContenidoSchema } from '../schemas/contenido.schema.js';
 import { sanearBloques } from '../utils/sanear-html.js';
 
@@ -15,6 +16,16 @@ const contenidoRoutes = Router();
 
 // Gestión de contenido, como la portada y las noticias.
 const rolesCMS = [Role.ADMIN, Role.REDES, Role.HERMANO_MAYOR];
+
+// Una página de un módulo apagado (las páginas propias de otra corporación)
+// no existe para nadie: ni se lee en la web ni se guarda ni se ve su historial.
+// Va en `param` para que ninguna ruta de `:slug` se la salte; el router entero
+// es del núcleo y la guarda depende de qué página se pide.
+contenidoRoutes.param('slug', (req, res, next, slug) => {
+  const modulo = esSlugContenido(slug) ? moduloDePagina(slug) : undefined;
+  if (!modulo) return next();
+  return conModulo(modulo)(req, res, next);
+});
 
 // La web la lee sin sesión.
 contenidoRoutes.get('/:slug', cachePublica, ContenidoController.leer);

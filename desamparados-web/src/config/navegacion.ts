@@ -32,7 +32,8 @@ export interface EntradaMenu {
 // La guardiana del backend (`test/modulos-cobertura.test.ts`) lee este fichero
 // línea a línea y exige `modulo:` en toda línea que lleve `label:`, también en
 // las secciones de varias líneas (va pegado a `label` y `href`, `hijos`, etc.
-// siguen debajo tal cual).
+// siguen debajo tal cual). Las páginas propias de una corporación llevan
+// 'paginas-propias', que solo enciende el fichero de su instalación.
 export const menuPublico: EntradaMenu[] = [
   { label: 'Inicio', href: '/', modulo: 'nucleo' },
   {
@@ -55,22 +56,22 @@ export const menuPublico: EntradaMenu[] = [
       },
       { label: 'Cultos', href: '/cultos', modulo: 'nucleo' },
       {
-        label: 'Sábado de Pasión', modulo: 'nucleo',
+        label: 'Sábado de Pasión', modulo: 'paginas-propias',
         href: '/sabado-de-pasion',
         hijos: [
-          { label: 'Recorrido', href: '/sabado-de-pasion/recorrido', modulo: 'nucleo' },
-          { label: 'Trono', href: '/sabado-de-pasion/trono', modulo: 'nucleo' },
-          { label: 'Enseres', href: '/sabado-de-pasion/enseres', modulo: 'nucleo' },
+          { label: 'Recorrido', href: '/sabado-de-pasion/recorrido', modulo: 'paginas-propias' },
+          { label: 'Trono', href: '/sabado-de-pasion/trono', modulo: 'paginas-propias' },
+          { label: 'Enseres', href: '/sabado-de-pasion/enseres', modulo: 'paginas-propias' },
         ],
       },
-      { label: 'Rosario', href: '/rosario', modulo: 'nucleo' },
+      { label: 'Rosario', href: '/rosario', modulo: 'paginas-propias' },
     ],
   },
   {
     label: 'Sagrada titular', modulo: 'nucleo',
     href: '/sagrada-titular',
     hijos: [
-      { label: 'Desamparados', href: '/desamparados', modulo: 'nucleo' },
+      { label: 'Desamparados', href: '/desamparados', modulo: 'paginas-propias' },
       { label: 'Ajuar', href: '/ajuar', modulo: 'nucleo' },
       { label: 'Apadrina', href: '/apadrina', modulo: 'apadrinamientos' },
     ],

@@ -5,6 +5,7 @@ import { useContacto } from '../../../hooks/useContacto'
 import { GOLD, SERIF } from '../../inicio/estilos'
 import { enlaceConFlecha } from '../../../components/estiloDeBoton'
 import PedirReactivacion from './PedirReactivacion'
+import { secretariaEnLaSede } from './secretariaEnLaSede'
 
 /** Enlaces del lateral: el enlace con flecha, en blanco con la flecha dorada. */
 const enlaceLateral = { ...enlaceConFlecha, color: '#fff', fontSize: 14, '& svg': { ...enlaceConFlecha['& svg'], fontSize: 16, color: GOLD }, '&:hover': { color: GOLD } } as const
@@ -16,7 +17,8 @@ const enlaceLateral = { ...enlaceConFlecha, color: '#fff', fontSize: 14, '& svg'
  * Sin numerar a propósito: los números son de los pasos del formulario.
  */
 export default function ProcesoAlta() {
-  const secretaria = useContacto()?.secretaria
+  const contacto = useContacto()
+  const secretaria = contacto?.secretaria
   return (
     <Box component="aside" aria-labelledby="despues-titulo">
       <Typography
@@ -31,7 +33,7 @@ export default function ProcesoAlta() {
           Te llega el acuse de recibo por correo y la solicitud queda en Secretaría.
         </Typography>
         <Typography sx={{ fontSize: 15, lineHeight: 1.65, color: 'text.secondary' }}>
-          Para formalizar el alta, pásate por la casa parroquial con tu DNI y el certificado de
+          Para formalizar el alta, pásate por {secretariaEnLaSede(contacto?.sede)} con tu DNI y el certificado de
           bautismo{secretaria?.horario ? ` (${secretaria.horario.toLowerCase()})` : ''}. Entonces se activa tu acceso al área
           de hermanos.
         </Typography>

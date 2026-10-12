@@ -3,6 +3,7 @@ import { Box, Button, Typography } from '@mui/material'
 import MapOutlinedIcon from '@mui/icons-material/MapOutlined'
 import DirectionsOutlinedIcon from '@mui/icons-material/DirectionsOutlined'
 import { useConsentimientoDeCookies } from '../../hooks/useConsentimientoDeCookies'
+import { useContacto } from '../../hooks/useContacto'
 import { urlDelMapa } from '../../features/actualidad/agenda/cultos'
 import { SERIF } from '../../features/inicio/estilos'
 import { parrafosDe } from '../../lib/api/contenido'
@@ -27,10 +28,11 @@ const ALTOS = { bajo: 260, medio: 380, alto: 520 } as const
 export default function BloqueMapa({ bloque }: { bloque: Datos }) {
   const { aceptadas } = useConsentimientoDeCookies()
   const [pedido, setPedido] = useState(false)
+  const localidad = useContacto()?.sede.localidad
   const alto = ALTOS[valorDe(bloque, 'alto') as keyof typeof ALTOS] ?? ALTOS.medio
   const direccion = bloque.direccion.trim()
   if (!direccion) return null
-  const llegar = urlDelMapa(direccion)
+  const llegar = urlDelMapa(direccion, localidad)
   const titulo = bloque.lugar || direccion
 
   const marco = (

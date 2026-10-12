@@ -3,8 +3,8 @@ import db from '../config/db.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from './auditoria.service.js';
 import { NotFoundError } from '../utils/error.handle.js';
 import {
-  CATALOGO_MODULOS, CLAVES_MODULO, LOTE_INICIAL, dependientesActivos, esClaveDeModulo, fichaDe, requisitosQueFaltan,
-  type ClaveModulo, type FichaDeModulo,
+  CATALOGO_MODULOS, CLAVES_MODULO, DE_INSTALACION_ENCENDIDOS, LOTE_INICIAL, dependientesActivos, esClaveDeModulo, fichaDe,
+  requisitosQueFaltan, type ClaveDeInstalacion, type ClaveEncendible, type ClaveModulo, type FichaDeModulo,
 } from '../domain/modulos.js';
 
 /** `uno`, para cuando hay uno solo: «1 producto», no «1 productos». */
@@ -76,8 +76,15 @@ const nombres = (claves: ClaveModulo[]) => claves.map((c) => `«${fichaDe(c).nom
  * tests, que importan `app` sin pasar por index.ts, no tienen que acordarse)
  * y se recargan al cambiar.
  */
-let activos: Set<ClaveModulo> | null = null;
-let cargando: Promise<ReadonlySet<ClaveModulo>> | null = null;
+let activos: Set<ClaveEncendible> | null = null;
+let cargando: Promise<ReadonlySet<ClaveEncendible>> | null = null;
+
+/**
+ * Los de instalación encendidos: los del fichero, leídos al arrancar. No pasan
+ * por la base; se suman a lo que diga ella en cada `cargar`. Solo las pruebas
+ * los cambian (`fijarDeInstalacion`).
+ */
+let deInstalacion: ReadonlySet<ClaveDeInstalacion> = new Set(DE_INSTALACION_ENCENDIDOS);
 
 /**
  * Los cambios van de uno en uno: dos a la vez leerían el mismo «antes» y
@@ -96,28 +103,40 @@ export class ModulosService {
   }
 
   /** Relee la base (sembrando lo que falte) y lo deja en memoria. */
-  static async cargar(): Promise<ReadonlySet<ClaveModulo>> {
+  static async cargar(): Promise<ReadonlySet<ClaveEncendible>> {
     await ModulosService.sembrar();
     const filas = await db.modulo.findMany({ where: { activo: true }, select: { clave: true } });
     // Una fila con una clave que ya no está en el catálogo se ignora.
-    activos = new Set(filas.map((f) => f.clave).filter(esClaveDeModulo));
+    activos = new Set<ClaveEncendible>([...filas.map((f) => f.clave).filter(esClaveDeModulo), ...deInstalacion]);
     return activos;
   }
 
-  static async activos(): Promise<ReadonlySet<ClaveModulo>> {
+  /** Todo lo encendido: los del catálogo (la base) y los de instalación (el fichero). */
+  static async activos(): Promise<ReadonlySet<ClaveEncendible>> {
     if (activos) return activos;
     // Varias peticiones a la vez comparten una sola carga.
     cargando ??= ModulosService.cargar().finally(() => { cargando = null; });
     return cargando;
   }
 
-  static async activo(clave: ClaveModulo): Promise<boolean> {
+  static async activo(clave: ClaveEncendible): Promise<boolean> {
     return (await ModulosService.activos()).has(clave);
   }
 
   /** Para las pruebas: como recién arrancado. */
   static olvidar(): void {
     activos = null;
+  }
+
+  /**
+   * Para las pruebas: qué módulos de instalación están encendidos, en lugar de
+   * los del fichero (el ejemplo no lleva ninguno). Devuelve cómo dejarlos.
+   */
+  static fijarDeInstalacion(claves: readonly ClaveDeInstalacion[]): () => void {
+    const antes = deInstalacion;
+    deInstalacion = new Set(claves);
+    activos = null;
+    return () => { deInstalacion = antes; activos = null; };
   }
 
   /**
@@ -212,6 +231,6 @@ export class ModulosService {
  * encendido (Procesión crea una noticia al abrir el plazo si Noticias está).
  * Lo fijo nunca lo usa: el núcleo no pregunta por nadie.
  */
-export async function siModulo<T>(clave: ClaveModulo, accion: () => Promise<T>): Promise<T | undefined> {
+export async function siModulo<T>(clave: ClaveEncendible, accion: () => Promise<T>): Promise<T | undefined> {
   return (await ModulosService.activo(clave)) ? accion() : undefined;
 }

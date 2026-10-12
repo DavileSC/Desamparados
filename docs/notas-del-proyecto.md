@@ -560,6 +560,24 @@ el `Record<ClaveModulo, …>`. Dos pruebas (`modulos-catalogo.test.ts` y
 `domain/__tests__/modulos.test.ts`) y la propia guardiana avisan si falta
 alguno de los tres.
 
+**Los módulos «de instalación» van aparte y no se parecen a los demás en
+nada salvo en preguntar por ellos.** `deInstalacion` de `shared/modulos.json`
+(hoy solo `paginas-propias`: las páginas hechas a medida de Desamparados,
+/desamparados, /rosario y el Sábado de Pasión con recorrido, trono y enseres)
+no está en `CLAVES_MODULO` sino en `CLAVES_DE_INSTALACION`: no sale en
+Sistema → «Módulos», no tiene fila en `Modulo` y `cambiar` responde 404. Está
+encendido si y solo si su clave está en `modulos.activos` del fichero de la
+instalación, **leído en cada arranque** (el lote del catálogo solo siembra la
+primera vez). `ModulosService.activos()` y `GET /api/modulos` lo suman a la
+lista, así que rutas, menús, sitemap e índice de páginas preguntan igual. Las
+pruebas usan el ejemplo, que no lo lleva: en la API se enciende con
+`encenderDeInstalacion` de `test/fixtures/modulos.ts` (en memoria, sin base) y
+en la web pasando `TODOS_CON_PAGINAS_PROPIAS` de `src/test/queryClient.ts`.
+Una página de `paginas-publicas.json` con `modulo` apagado responde 404
+`MODULO_NO_ACTIVADO` en `/api/contenido/:slug` (lectura, guardado e
+historial) y no recoge donativos; un enlace ya guardado a ella se sigue
+aceptando al guardar (lleva a «no encontrado», como una noticia borrada).
+
 **El estado vive en memoria en el backend, un proceso por servidor.** Se
 carga la primera vez que algo pregunta y se recarga solo al cambiarlo desde
 el CMS. En las pruebas, apagar un módulo escribiendo en la tabla `Modulo` no

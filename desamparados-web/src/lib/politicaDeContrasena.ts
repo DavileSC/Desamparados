@@ -10,9 +10,11 @@ import { z } from 'zod'
 // escribe, en lugar de dejar que el servidor rechace el envío con un error seco.
 import {
   motivoContrasenaDebil,
+  palabrasPropias,
   LONGITUD_MINIMA,
 } from '../../../backend-desamparados/src/domain/password-debil'
 import { laCorporacion } from '../domain/articulos'
+import { site } from '../config/site'
 
 export { LONGITUD_MINIMA }
 
@@ -21,8 +23,10 @@ export { LONGITUD_MINIMA }
  * devuelve el motivo concreto, porque un «contraseña no válida» a secas solo
  * consigue que la persona lo intente otras cinco veces.
  */
+const PALABRAS_PROPIAS = palabrasPropias({ ...site, localidad: site.entidad.localidad })
+
 export const contrasenaNueva = z.string().superRefine((valor, ctx) => {
-  const motivo = motivoContrasenaDebil(valor, laCorporacion())
+  const motivo = motivoContrasenaDebil(valor, laCorporacion(), PALABRAS_PROPIAS)
   if (motivo) {
     ctx.addIssue({ code: 'custom', message: `La contraseña ${motivo}` })
   }

@@ -1,5 +1,6 @@
 import DESTINOS from '../../../shared/destinos-de-enlace.json'
 import CATALOGO from '../../../shared/paginas-publicas.json'
+import { cumple, type Modulo } from '../domain/modulos'
 
 /** Una página a la que puede llevar un enlace escrito en el CMS. */
 export interface Destino {
@@ -7,6 +8,8 @@ export interface Destino {
   nombre: string
   /** Para agrupar el selector como el menú de la web. */
   grupo: string
+  /** El módulo de la página, si es de uno (las páginas propias); sin él, del núcleo. */
+  modulo?: Modulo
 }
 
 /**
@@ -16,9 +19,18 @@ export interface Destino {
  */
 export const DESTINOS_FIJOS: Destino[] = [
   ...DESTINOS.otros.filter((d) => d.grupo === 'General'),
-  ...CATALOGO.paginas.map((p) => ({ ruta: p.ruta, nombre: p.nombre, grupo: p.grupo })),
+  ...(CATALOGO.paginas as Destino[]).map(({ ruta, nombre, grupo, modulo }) => ({ ruta, nombre, grupo, modulo })),
   ...DESTINOS.otros.filter((d) => d.grupo !== 'General'),
 ]
+
+/**
+ * Los destinos que se ofrecen con estos módulos encendidos: una página de un
+ * módulo apagado no existe en esta instalación. `esDestinoValido` sigue
+ * aceptándola, como el servidor: un enlace ya guardado a ella no impide volver
+ * a guardar su página (lleva a «página no encontrada», como una noticia borrada).
+ */
+export const destinosActivos = (activos: ReadonlySet<string>): Destino[] =>
+  DESTINOS_FIJOS.filter((d) => cumple(d.modulo ?? 'nucleo', activos))
 
 const RUTAS = new Set(DESTINOS_FIJOS.map((d) => d.ruta))
 

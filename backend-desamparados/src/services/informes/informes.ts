@@ -97,10 +97,41 @@ function dinero(ctx: Contexto) {
 }
 
 function procesion(ctx: Contexto) {
-  const [cortejo, anioAnio, rosario, porCobrar] = ctx.area.cifras;
+  // La tercera cifra es la otra salida o las demás juntas (datos-areas.ts): con
+  // una sola salida no hay nada que enseñar ahí, y su «no hay más salidas» en
+  // grande solo ocuparía media página.
+  const [cortejo, anioAnio, otras, porCobrar] = ctx.area.cifras;
+  const hayOtras = ctx.crudos.procesion.porSalida.length > 1;
   comienzo(ctx);
-  fila(ctx.p, [[anioAnio.grafica], [cortejo.grafica, rosario.grafica]], { altoColumnas: 150 });
+  fila(ctx.p, [[anioAnio.grafica], hayOtras ? [cortejo.grafica, otras.grafica] : [cortejo.grafica]], { altoColumnas: 150 });
   grafica(ctx.p, porCobrar.grafica);
+}
+
+const CUANTAS = ['', 'una', 'dos', 'tres', 'cuatro', 'cinco', 'seis'];
+/** Por encima, el nombre de las salidas ya no cabe en la banda del capítulo ni a 22 puntos. */
+const TITULO_MAXIMO = 40;
+
+/** Las salidas que ese año tuvieron papeletas; si aún no hay ninguna (enero), las activas. */
+function salidasDelAnio(crudos: DatosCrudos) {
+  const conPapeletas = crudos.procesion.porSalida.filter((s) => s.papeletas > 0);
+  return conPapeletas.length ? conPapeletas : crudos.procesion.porSalida;
+}
+
+/**
+ * El capítulo de la procesión se nombra por las salidas de la corporación
+ * (una, dos o las que tenga), no con nombres fijos: cada una tiene las suyas.
+ * Con tres o más, o nombres largos, el título genérico.
+ */
+export function capituloDeSalidas(nombres: string[], anio: number): { titulo: string; descripcion: string } {
+  const unidos = nombres.length === 2 ? `${nombres[0]} y ${nombres[1]}` : nombres[0] ?? '';
+  const titulo = nombres.length >= 1 && nombres.length <= 2 && unidos.length <= TITULO_MAXIMO ? unidos : 'Salidas procesionales';
+  const cuantas = CUANTAS[nombres.length] ?? String(nombres.length);
+  const descripcion = nombres.length === 1
+    ? `La salida de ${anio}: papeletas de sitio y el cortejo por puestos.`
+    : nombres.length > 1
+      ? `Las ${cuantas} salidas de ${anio}: papeletas de sitio y el cortejo por puestos.`
+      : `Papeletas de sitio de ${anio} y el cortejo por puestos.`;
+  return { titulo, descripcion };
 }
 
 /** Los enseres pieza a pieza: barra por estados y las cuentas en columnas. Se parte si no cabe. */
@@ -423,7 +454,7 @@ export async function informeAnual(
     { titulo: 'El año de un vistazo', descripcion: 'Las cifras clave, frente al año anterior.', escribir: () => paginaVistazo(p, periodo, porClave, crudos, hoy) },
     { titulo: 'Cultos y actos', descripcion: 'Cultos, formación, convivencias y cabildos, mes a mes.', area: 'agenda', escribir: () => CUERPOS.agenda(ctx('agenda')) },
     { titulo: 'Hermanos', descripcion: 'Censo al cierre, altas y bajas con sus motivos, edades.', area: 'hermanos', escribir: () => CUERPOS.hermanos(ctx('hermanos')) },
-    { titulo: 'Sábado de Pasión y Rosario vespertino', descripcion: `Las dos salidas de ${periodo.anio}: papeletas de sitio y el cortejo por puestos.`, area: 'procesion', escribir: () => CUERPOS.procesion(ctx('procesion')) },
+    { ...capituloDeSalidas(salidasDelAnio(crudos).map((s) => s.nombre), periodo.anio), area: 'procesion', escribir: () => CUERPOS.procesion(ctx('procesion')) },
     { titulo: 'Cuentas', descripcion: 'Ingresos y gastos por partida, y lo que queda por cobrar.', area: 'dinero', escribir: () => CUERPOS.dinero(ctx('dinero')) },
     { titulo: 'Patrimonio', descripcion: 'Enseres, túnicas y capirotes; estrenos, restauraciones y donaciones.', area: 'inventario', escribir: () => CUERPOS.inventario(ctx('inventario')) },
     { titulo: 'Comunicación', descripcion: 'Noticias, publicaciones y páginas de la web.', area: 'web', escribir: () => CUERPOS.web(ctx('web')) },

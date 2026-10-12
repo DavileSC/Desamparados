@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { MemoryRouter } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { TODOS_CON_PAGINAS_PROPIAS, crearQueryClientDePruebas } from '../../../test/queryClient'
 import { crearTemaCms } from '../../../theme/cms'
 import PaginasAdminPage from '../PaginasAdminPage'
 import { PAGINAS_PUBLICAS, itemsMenu, rolesPorRutaCms } from '../../../app/cmsNavegacion'
@@ -13,13 +15,16 @@ import CATALOGO from '../../../../../shared/paginas-publicas.json'
 const seccionesPlegables = () => [...new Set(PAGINAS_PUBLICAS.map((p) => p.grupo))]
   .filter((grupo) => { const suyas = PAGINAS_PUBLICAS.filter((p) => p.grupo === grupo); return !(suyas.length === 1 && suyas[0].nombre === grupo) })
 
-function montar() {
+/** Con todas las páginas encendidas, salvo que se pidan otros módulos. */
+function montar(modulos: readonly string[] = TODOS_CON_PAGINAS_PROPIAS) {
   render(
-    <HelmetProvider>
-      <ThemeProvider theme={crearTemaCms('claro')}>
-        <MemoryRouter><PaginasAdminPage /></MemoryRouter>
-      </ThemeProvider>
-    </HelmetProvider>,
+    <QueryClientProvider client={crearQueryClientDePruebas(modulos)}>
+      <HelmetProvider>
+        <ThemeProvider theme={crearTemaCms('claro')}>
+          <MemoryRouter><PaginasAdminPage /></MemoryRouter>
+        </ThemeProvider>
+      </HelmetProvider>
+    </QueryClientProvider>,
   )
 }
 
@@ -127,6 +132,16 @@ describe('PaginasAdminPage', () => {
     montar()
     expect(screen.queryByRole('button', { name: /Rosario/ })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Rosario' })).toHaveAttribute('href', '/cms/paginas/rosario')
+  })
+
+  it('sin las páginas propias, ni su sección ni sus páginas; el Ajuar sigue', async () => {
+    const user = userEvent.setup()
+    montar([])
+    expect(screen.queryByRole('button', { name: /Sábado de Pasión/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Rosario' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Sagrada titular/ }))
+    expect(screen.getByRole('link', { name: 'Ajuar' })).toHaveAttribute('href', '/cms/paginas/ajuar')
+    expect(screen.queryByRole('link', { name: 'Desamparados' })).not.toBeInTheDocument()
   })
 
   it('el menú lleva al índice, y el índice y las páginas dejan pasar a los mismos cargos', () => {

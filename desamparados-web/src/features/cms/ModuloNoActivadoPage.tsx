@@ -2,7 +2,7 @@ import { Box, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { useAuthStore } from '../altas/auth/store'
-import { fichaDeModulo, type Requisito } from '../../domain/modulos'
+import { nombreDeModulo, type Requisito } from '../../domain/modulos'
 import { site } from '../../config/site'
 
 /**
@@ -14,7 +14,7 @@ import { site } from '../../config/site'
 export default function ModuloNoActivadoPage({ modulo }: { modulo: Requisito }) {
   const role = useAuthStore((state) => state.cms?.role)
   const claves = (Array.isArray(modulo) ? modulo : [modulo]).filter((m) => m !== 'nucleo')
-  const nombres = claves.map((c) => fichaDeModulo(c).nombre)
+  const nombres = claves.map((c) => nombreDeModulo(c))
   return (
     <Box sx={{ maxWidth: 560, mx: 'auto', py: 8, textAlign: 'center' }}>
       <Helmet><title>{`Módulo no activado | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>

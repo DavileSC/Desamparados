@@ -19,8 +19,9 @@ const RAICES_PROHIBIDAS = [
   'qwerty', 'qwertyui', 'asdfgh', 'zxcvbn', '123456', 'abcdef',
   'iloveyou', 'teamo', 'welcome', 'bienvenido', 'letmein', 'secret',
   'usuario', 'invitado', 'default', 'cambiame', 'changeme',
-  // Propias del proyecto: las primeras que probaría alguien que lo conozca.
-  'desamparados', 'hermandad', 'grupoparroquial', 'cofradia', 'malaga',
+  // Del mundo cofrade en general; las de cada corporación (su nombre, su
+  // titular, su localidad) llegan aparte, de su identidad: ver palabrasPropias.
+  'hermandad', 'grupoparroquial', 'cofradia',
   'semanasanta', 'parroquia', 'pasionistas',
   // Y las cofrades que cualquiera probaría después: «nazareno12345» pasaba.
   'nazareno', 'cofrade', 'hermano', 'procesion', 'costalero', 'penitente',
@@ -75,6 +76,23 @@ function esSecuencia(valor: string): boolean {
   return ascendente || descendente;
 }
 
+/** Una palabra de menos de cinco letras («de», «los», «San») no es una contraseña. */
+const LETRAS_MINIMAS_PROPIA = 5;
+
+/**
+ * Las palabras de esta corporación que probaría primero quien la conozca: su
+ * nombre corto, las de su titular y su localidad («desamparados», «malaga»).
+ * Salen de la identidad de la instalación, no de una lista escrita aquí, para
+ * que otra corporación proteja las suyas y no las de Desamparados.
+ */
+export function palabrasPropias(identidad: { nombreCorto: string; titular: string; localidad: string }): string[] {
+  const palabras = [identidad.nombreCorto, identidad.titular, identidad.localidad]
+    .flatMap((texto) => [texto, ...texto.split(/\s+/)])
+    .map(limpiar)
+    .filter((p) => p.length >= LETRAS_MINIMAS_PROPIA);
+  return [...new Set(palabras)];
+}
+
 /**
  * Motivo por el que la contraseña no vale, o `null` si es aceptable.
  * El motivo se devuelve para poder decírselo a la persona: un «contraseña no
@@ -82,9 +100,10 @@ function esSecuencia(valor: string): boolean {
  *
  * `laCorporacion` («el Grupo Parroquial») llega de fuera y no se importa: la
  * web incluye este módulo en su bundle, y la identidad de la API se lee del
- * disco, que en el navegador no hay. Cada lado pasa la suya.
+ * disco, que en el navegador no hay. Cada lado pasa la suya, y por lo mismo
+ * sus `propias` (de `palabrasPropias`).
  */
-export function motivoContrasenaDebil(valor: string, laCorporacion: string): string | null {
+export function motivoContrasenaDebil(valor: string, laCorporacion: string, propias: readonly string[] = []): string | null {
   if (valor.length < LONGITUD_MINIMA) {
     return `debe tener al menos ${LONGITUD_MINIMA} caracteres`;
   }
@@ -100,7 +119,7 @@ export function motivoContrasenaDebil(valor: string, laCorporacion: string): str
 
   const normalizada = normalizar(valor);
   const limpia = limpiar(valor);
-  for (const raiz of RAICES_PROHIBIDAS) {
+  for (const raiz of [...RAICES_PROHIBIDAS, ...propias]) {
     const raizNormalizada = normalizar(raiz);
     if (!normalizada.includes(raizNormalizada)) continue;
 
@@ -124,7 +143,7 @@ export function motivoContrasenaDebil(valor: string, laCorporacion: string): str
 }
 
 /** `true` si la contraseña supera todas las comprobaciones. */
-export function esContrasenaAceptable(valor: string): boolean {
+export function esContrasenaAceptable(valor: string, propias: readonly string[] = []): boolean {
   // El motivo no se enseña: la frase de la corporación da igual.
-  return motivoContrasenaDebil(valor, '') === null;
+  return motivoContrasenaDebil(valor, '', propias) === null;
 }

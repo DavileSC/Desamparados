@@ -2,7 +2,8 @@ import { useMemo } from 'react'
 import { Autocomplete, TextField } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { archivoDeNoticias } from '../../../lib/api/noticias'
-import { DESTINOS_FIJOS, PREFIJO_NOTICIA, esDestinoValido, type Destino } from '../../../lib/destinos'
+import { DESTINOS_FIJOS, PREFIJO_NOTICIA, destinosActivos, esDestinoValido, type Destino } from '../../../lib/destinos'
+import { useModulos } from '../../../hooks/useModulos'
 
 interface Props {
   etiqueta: string
@@ -36,10 +37,11 @@ export default function CampoEnlace({ etiqueta, valor, onCambio, opcional = fals
     retry: false,
   })
 
+  const { activos } = useModulos()
   const opciones = useMemo<Destino[]>(() => [
-    ...DESTINOS_FIJOS,
+    ...destinosActivos(activos ?? new Set()),
     ...(data?.noticias ?? []).map((n) => ({ ruta: `${PREFIJO_NOTICIA}${n.slug}`, nombre: n.titulo, grupo: 'Noticias' })),
-  ], [data])
+  ], [activos, data])
 
   const roto = valor !== '' && !esDestinoValido(valor)
   // Lo guardado, aunque no esté entre las opciones (una noticia más antigua de
@@ -47,7 +49,9 @@ export default function CampoEnlace({ etiqueta, valor, onCambio, opcional = fals
   // vacío y parecería que la tarjeta no tiene enlace.
   const elegido = valor === ''
     ? null
-    : opciones.find((o) => o.ruta === valor) ?? { ruta: valor, nombre: roto ? 'Página que no existe' : valor, grupo: '' }
+    // Una página de un módulo apagado no está entre las opciones, pero se nombra.
+    : opciones.find((o) => o.ruta === valor) ?? DESTINOS_FIJOS.find((d) => d.ruta === valor)
+      ?? { ruta: valor, nombre: roto ? 'Página que no existe' : valor, grupo: '' }
 
   const conElegido = elegido && !opciones.some((o) => o.ruta === elegido.ruta) ? [elegido, ...opciones] : opciones
 

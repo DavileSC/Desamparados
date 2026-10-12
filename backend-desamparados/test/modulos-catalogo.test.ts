@@ -9,8 +9,10 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { leerDatosEntidad } from '../../shared/datos-entidad.mjs';
 import {
-  CATALOGO_MODULOS, CLAVES_MODULO, LOTE_INICIAL, dependientesActivos, esClaveDeModulo, fichaDe, requisitosQueFaltan,
+  CATALOGO_DE_INSTALACION, CATALOGO_MODULOS, CLAVES_DE_INSTALACION, CLAVES_MODULO, DE_INSTALACION_ENCENDIDOS, LOTE_INICIAL,
+  dependientesActivos, esClaveDeInstalacion, esClaveDeModulo, fichaDe, nombreDeModulo, requisitosQueFaltan,
 } from '../src/domain/modulos.js';
+import { moduloDePagina, type SlugContenido } from '../src/domain/contenido.js';
 
 const RAIZ = new URL('../../', import.meta.url);
 const json = (ruta: string) => JSON.parse(readFileSync(fileURLToPath(new URL(ruta, RAIZ)), 'utf8'));
@@ -47,6 +49,31 @@ describe('el catálogo', () => {
     const activos = leerDatosEntidad().modulos.activos;
     for (const c of activos) assert.ok(esClaveDeModulo(c), `datos-entidad.ejemplo.json enciende «${c}», que no existe`);
     assert.deepEqual([...LOTE_INICIAL], activos);
+  });
+
+  test('las claves de instalación escritas en domain/modulos.ts son las del JSON, aparte y sin chocar con el catálogo', () => {
+    const delJson = (json('shared/modulos.json').deInstalacion as { clave: string }[]).map((m) => m.clave);
+    assert.deepEqual([...CLAVES_DE_INSTALACION], delJson);
+    for (const m of CATALOGO_DE_INSTALACION) {
+      assert.match(m.clave, /^[a-z0-9]+(-[a-z0-9]+)*$/, m.clave);
+      assert.ok(m.nombre.trim() && m.descripcion.trim(), `${m.clave} sin nombre o descripción`);
+      // Si una clave estuviera en las dos listas, la pantalla de Módulos dejaría apagar lo que el fichero enciende.
+      assert.ok(!esClaveDeModulo(m.clave), `«${m.clave}» está también en el catálogo`);
+    }
+    assert.equal(nombreDeModulo('paginas-propias'), 'Páginas propias');
+    assert.equal(nombreDeModulo('tienda'), 'Tienda');
+  });
+
+  test('el ejemplo no enciende las páginas propias: son de una corporación concreta', () => {
+    assert.ok(!leerDatosEntidad().modulos.activos.some(esClaveDeInstalacion));
+    assert.deepEqual([...DE_INSTALACION_ENCENDIDOS], []);
+  });
+
+  test('las páginas propias del catálogo de páginas dependen de su módulo; las demás son del núcleo', () => {
+    for (const slug of ['desamparados', 'rosario', 'sabado-de-pasion', 'recorrido', 'trono', 'enseres'] as SlugContenido[]) {
+      assert.equal(moduloDePagina(slug), 'paginas-propias', slug);
+    }
+    for (const slug of ['ajuar', 'historia', 'caridad', 'portada'] as SlugContenido[]) assert.equal(moduloDePagina(slug), undefined, slug);
   });
 
   test('el lote inicial respeta los requisitos', () => {

@@ -1,7 +1,7 @@
 import rutasPublicas from '../../../shared/rutas-publicas.json' with { type: 'json' };
 import db from '../config/db.js';
 import { identidad } from '../domain/datos-entidad.js';
-import { esClaveDeModulo, NUCLEO, type ClaveModulo } from '../domain/modulos.js';
+import { esClaveEncendible, NUCLEO, type ClaveEncendible } from '../domain/modulos.js';
 import { ModulosService } from './modulos.service.js';
 
 /**
@@ -26,8 +26,8 @@ const escaparXml = (texto: string) =>
   texto.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 
 /** Como en la web: una ruta con varios módulos se enseña si alguno está encendido. */
-const cumple = (requisito: readonly string[], activos: ReadonlySet<ClaveModulo>) =>
-  requisito.some((m) => m === NUCLEO || (esClaveDeModulo(m) && activos.has(m)));
+const cumple = (requisito: readonly string[], activos: ReadonlySet<ClaveEncendible>) =>
+  requisito.some((m) => m === NUCLEO || (esClaveEncendible(m) && activos.has(m)));
 
 interface EntradaSitemap { ruta: string; lastmod?: Date }
 

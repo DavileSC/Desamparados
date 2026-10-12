@@ -15,7 +15,7 @@ import { anioDeHoy, leerPeriodo, periodoAnterior, periodoDe, periodosDisponibles
 import { areasDe, etiquetasDeMeses, valorEscrito, vistazo, type DatosCrudos } from '../src/domain/datos-areas.js';
 import { laCorporacion, type Articulo } from '../src/domain/articulos.js';
 import { puedeEscribir } from '../src/services/informe-anual.service.js';
-import { informeAnual, informeDeArea } from '../src/services/informes/informes.js';
+import { capituloDeSalidas, informeAnual, informeDeArea } from '../src/services/informes/informes.js';
 import { entradilla, enTexto } from '../src/domain/entradillas.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 import { HOY, crudos } from './fixtures/crudos-informes.js';
@@ -220,6 +220,23 @@ describe('los PDF', () => {
     assert.equal(pdf.subarray(0, 5).toString(), '%PDF-');
     const paginas = pdf.toString('latin1').match(/\/Type \/Page\b/g)?.length ?? 0;
     assert.ok(paginas >= 11, `portada, índice y nueve capítulos: ${paginas} páginas`);
+  });
+
+  test('el informe de la procesión con una sola salida también es un PDF', async () => {
+    const una = crudos();
+    una.procesion.porSalida = una.procesion.porSalida.slice(0, 1);
+    const pdf = await informeDeArea(areasDe(una, p, HOY)[2], p, una, HOY);
+    assert.equal(pdf.subarray(0, 5).toString(), '%PDF-');
+  });
+
+  test('el capítulo de la procesión se nombra por las salidas que haya', () => {
+    assert.deepEqual(capituloDeSalidas(['Traslado'], 2026), { titulo: 'Traslado', descripcion: 'La salida de 2026: papeletas de sitio y el cortejo por puestos.' });
+    assert.deepEqual(capituloDeSalidas(['Vía Crucis', 'Traslado'], 2026), { titulo: 'Vía Crucis y Traslado', descripcion: 'Las dos salidas de 2026: papeletas de sitio y el cortejo por puestos.' });
+    assert.equal(capituloDeSalidas(['A', 'B', 'C'], 2026).titulo, 'Salidas procesionales');
+    assert.match(capituloDeSalidas(['A', 'B', 'C'], 2026).descripcion, /^Las tres salidas de 2026/);
+    // Dos nombres largos no caben en la banda: el genérico.
+    assert.equal(capituloDeSalidas(['Procesión del Santo Entierro', 'Rosario de la Aurora'], 2026).titulo, 'Salidas procesionales');
+    assert.equal(capituloDeSalidas([], 2026).titulo, 'Salidas procesionales');
   });
 
   test('una carta larga sigue en otra página en vez de cortarse', async () => {

@@ -163,7 +163,7 @@ function Lienzo({ viewBox, etiqueta, children }: { viewBox: string; etiqueta: st
  */
 function Templo(dibujo: PropsDibujo) {
   return (
-    <Lienzo viewBox="0 0 400 320" etiqueta="Dibujo del templo de Santa María Goretti: una estructura triangular en forma de concha, con lucernas circulares y una cruz en lo alto">
+    <Lienzo viewBox="0 0 400 320" etiqueta="Dibujo de un templo: una estructura triangular en forma de concha, con lucernas circulares y una cruz en lo alto">
       <Trazos {...dibujo} trazos={[
         'M20 292 H380',
         ['M52 292 C112 252 172 152 200 38 C228 152 288 252 348 292', 2],

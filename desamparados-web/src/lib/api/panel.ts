@@ -73,7 +73,7 @@ export interface CuentaDeHoy {
 
 /** Lo que pinta el Inicio: la foto que toca hoy y la cuenta atrás (null: ninguna). */
 export interface RetabloDeHoy extends Retablo {
-  /** Opcional: un backend anterior no la manda, y entonces se cuenta hasta el Sábado de Pasión. */
+  /** Opcional: un backend anterior no la manda, y entonces no hay cuenta atrás. */
   cuenta?: CuentaDeHoy | null
 }
 

@@ -6,7 +6,8 @@ import {
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import HistoryIcon from '@mui/icons-material/History'
-import CATALOGO from '../../../../../shared/paginas-publicas.json'
+import { paginasPublicasActivas } from '../../../app/cmsNavegacion'
+import { useModulos } from '../../../hooks/useModulos'
 import { NOMBRE_BLOQUE } from '../bloques/formularios'
 import {
   getContenido, guardarContenido, guardarSeccion, versionDePagina, versionesDePagina,
@@ -34,7 +35,9 @@ export function DialogoCopiarBloque({ bloque, slugActual, onCerrar }: { bloque: 
   const [destino, setDestino] = useState('')
   const [estado, setEstado] = useState<'eligiendo' | 'copiando' | 'hecho'>('eligiendo')
   const [error, setError] = useState<string | null>(null)
-  const paginas = CATALOGO.paginas.filter((p) => p.slug !== slugActual)
+  const { activos } = useModulos()
+  // Solo a páginas que existen: la de un módulo apagado no se deja guardar.
+  const paginas = paginasPublicasActivas(activos ?? new Set()).filter((p) => p.slug !== slugActual)
   const elegida = paginas.find((p) => p.slug === destino)
 
   const cerrar = () => { setDestino(''); setEstado('eligiendo'); setError(null); onCerrar() }

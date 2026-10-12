@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { loginSchema, resetPasswordSchema } from '../../features/altas/auth/schema'
 import { membershipSchema } from '../../features/altas/public/schema'
 import { LONGITUD_MINIMA } from '../politicaDeContrasena'
+import { site } from '../../config/site'
 
 /** Extrae el mensaje del campo password de un parseo fallido */
 function motivo(resultado: { success: boolean; error?: { issues: { path: PropertyKey[]; message: string }[] } }) {
@@ -18,7 +19,8 @@ describe('política de contraseñas en los formularios', () => {
       ['12345678', 'corta y una secuencia'],
       ['aaaaaaaaaaaa', 'un solo carácter repetido'],
       ['password1234', 'palabra de diccionario'],
-      ['Desamparados22', 'palabra del propio proyecto'],
+      // El nombre corto de la instalación (en pruebas, el del ejemplo): sale de su identidad.
+      [`${site.nombreCorto}22`, 'palabra propia de la corporación'],
       ['P4ssw0rd1234', 'la misma palabra disfrazada'],
     ]
 

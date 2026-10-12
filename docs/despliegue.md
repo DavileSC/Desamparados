@@ -657,6 +657,16 @@ hay que ajustarlo **antes del primer arranque**, porque después todas las
 filas ya existen y ni el arranque ni la siembra las tocan (se cambian desde
 la pantalla de Módulos del CMS).
 
+**Los módulos de instalación son la excepción** (`deInstalacion` de
+`shared/modulos.json`; hoy solo `paginas-propias`, las páginas hechas a medida
+de Desamparados: `/desamparados`, `/rosario` y `/sabado-de-pasion` con su
+recorrido, trono y enseres). No están en la tabla ni en la pantalla de
+Módulos: cuentan si su clave está en `modulos.activos` **en cada arranque**.
+Quitarla y reiniciar la API los apaga; ponerla los enciende. El fichero de
+Desamparados (también el de la web de pruebas) tiene que llevar
+`"paginas-propias"`, o esas seis páginas desaparecen del menú, la web, la API,
+el CMS y el sitemap.
+
 **Si hay fotos subidas antes del 27 de septiembre de 2026, conviene pasarlas a
 WebP una vez** (desde entonces la subida lo hace sola):
 

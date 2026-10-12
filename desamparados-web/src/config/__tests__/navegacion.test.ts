@@ -90,7 +90,7 @@ describe('menuPublico', () => {
 
   it('menuVisible quita las entradas de módulos apagados y una sección que se queda sin hijos', () => {
     const dibujo = (activos: string[]) => dibujar(menuVisible(menuPublico, new Set(activos))).join('\n')
-    expect(dibujo(['agenda', 'noticias', 'publicaciones', 'area-hermanos', 'alta-web', 'apadrinamientos', 'tienda-web'])).toBe(dibujar(menuPublico).join('\n'))
+    expect(dibujo(['agenda', 'noticias', 'publicaciones', 'area-hermanos', 'alta-web', 'apadrinamientos', 'tienda-web', 'paginas-propias'])).toBe(dibujar(menuPublico).join('\n'))
     const sinTienda = dibujo(['agenda', 'noticias', 'publicaciones', 'area-hermanos', 'alta-web', 'apadrinamientos'])
     expect(sinTienda).not.toContain('Tienda /tienda')
     expect(sinTienda).toContain('Noticias /noticias')
@@ -99,6 +99,20 @@ describe('menuPublico', () => {
     expect(sinActualidad).toContain('Corporación /corporacion')
     expect(sinActualidad).not.toContain('Hazte hermano')
     expect(sinActualidad).toContain('Acceso hermanos /acceso')
+  })
+
+  it('sin las páginas propias se va el grupo Sábado de Pasión entero, Rosario y Desamparados; Ajuar se queda', () => {
+    const sinPropias = dibujar(menuVisible(menuPublico, new Set(['apadrinamientos']))).join('\n')
+    for (const fuera of ['Sábado de Pasión', 'Recorrido', 'Trono', 'Enseres', 'Rosario', 'Desamparados /desamparados']) {
+      expect(sinPropias).not.toContain(fuera)
+    }
+    expect(sinPropias).toContain('Cultos /cultos')
+    expect(sinPropias).toContain('Sagrada titular /sagrada-titular\n  Ajuar /ajuar\n  Apadrina /apadrina')
+    // Sin Apadrina tampoco, a «Sagrada titular» le queda el Ajuar: no desaparece.
+    expect(dibujar(menuVisible(menuPublico, new Set())).join('\n')).toContain('Sagrada titular /sagrada-titular\n  Ajuar /ajuar')
+    const conPropias = dibujar(menuVisible(menuPublico, new Set(['paginas-propias']))).join('\n')
+    expect(conPropias).toContain('Sábado de Pasión /sabado-de-pasion\n    Recorrido')
+    expect(conPropias).toContain('Desamparados /desamparados')
   })
 
   it('todas las entradas llevan su módulo', () => {

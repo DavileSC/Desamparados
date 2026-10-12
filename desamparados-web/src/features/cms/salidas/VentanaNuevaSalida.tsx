@@ -110,7 +110,7 @@ export default function VentanaNuevaSalida({ abierta, salidas, onCreada, onCerra
         label="Artículo"
         value={form.articulo}
         onChange={(e) => setForm((f) => ({ ...f, articulo: e.target.value as Articulo }))}
-        helperText='Para escribir "del Sábado de Pasión" o "de la Procesión Magna".'
+        helperText='Para escribir "del Vía Crucis" o "de la Procesión Magna".'
         sx={{ maxWidth: 160 }}
       >
         {ARTICULOS.map((a) => <MenuItem key={a} value={a}>{a}</MenuItem>)}
@@ -127,7 +127,7 @@ export default function VentanaNuevaSalida({ abierta, salidas, onCreada, onCerra
             type="number"
             value={form.diasDesdePascua}
             onChange={(e) => setForm((f) => ({ ...f, diasDesdePascua: e.target.value }))}
-            helperText="−8 es el Sábado de Pasión."
+            helperText="−7 es el Domingo de Ramos; −2, el Viernes Santo."
             slotProps={{ htmlInput: { step: 1 } }}
             fullWidth
           />
