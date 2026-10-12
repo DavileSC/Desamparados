@@ -30,12 +30,10 @@ interface CampoImagenProps {
   /**
    * No pinta el botón de quitar: la foto se puede cambiar, pero no dejar vacía.
    *
-   * Para los campos que el backend exige rellenos. El `imagenUrl` del bloque del
-   * Sábado de Pasión es uno: `contenido.schema.ts` lo valida con
-   * `rutaImagenPublica`, que NO admite cadena vacía —al revés que el `plano.url`
-   * del recorrido, que la contempla a propósito—. Ofrecer ahí un «Quitar foto»
-   * deja el documento entero inguardable, también los textos de los otros cinco
-   * bloques, con un error de validación por toda explicación.
+   * Para los campos que el backend exige rellenos (validados con
+   * `rutaImagenPublica` a secas, que NO admite cadena vacía). Ofrecer ahí un
+   * «Quitar foto» deja el documento entero inguardable, con un error de
+   * validación por toda explicación.
    */
   sinQuitar?: boolean
   /** Foto a todo el ancho y botones debajo: para una columna estrecha, como la lateral de la ficha de noticia. */

@@ -17,11 +17,14 @@ const TRIDUO = noticia(2, 'solemne-triduo', 'Solemne triduo', '2026-08-29T10:00:
 const CAMPANA = noticia(3, 'campana-alimentos', 'Campaña de recogida de alimentos', '2026-08-16T10:00:00.000Z')
 const CABILDO = noticia(4, 'cabildo', 'Cabildo general', '2026-07-01T10:00:00.000Z')
 
+// Una `Response` nueva por llamada: el bloque pide también la portada (sus
+// textos), y una sola instancia compartida se la quedaría consumida quien
+// llegara primero.
 function servir(noticias: unknown[]) {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(
+  vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(new Response(
     JSON.stringify(noticias),
     { status: 200, headers: { 'Content-Type': 'application/json' } },
-  )))
+  ))))
 }
 
 describe('NoticiasDestacadas', () => {

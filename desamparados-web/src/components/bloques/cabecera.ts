@@ -1,6 +1,7 @@
 import CATALOGO from '../../../../shared/paginas-publicas.json'
 import { menuPublico, type EntradaMenu } from '../../config/navegacion'
 import type { SlugContenido } from '../../lib/api/contenido'
+import { CABECERA_CON_COPIA } from '../../config/fotosDeLaInstalacion'
 
 /**
  * Qué cabecera lleva cada página de bloques. Lo leen la web, para pintarla, y
@@ -57,11 +58,12 @@ export function cejaDePagina(slug: string, titulo: string): string[] {
 }
 
 /**
- * Las fotos de cabecera del repositorio (`/images/cabeceras/`) tienen una copia
- * de 1000 px al lado, con `-1000` en el nombre: el móvil se baja esa. Una foto
- * subida desde el CMS es un solo fichero.
+ * Las fotos de cabecera de la instalación (`instalacion/imagenes/cabeceras/`)
+ * tienen una copia de 1000 px al lado, con `-1000` en el nombre: el móvil se
+ * baja esa (el convenio, en `config/fotosDeLaInstalacion.ts`). Una foto subida
+ * desde el CMS es un solo fichero.
  */
 export function srcSetDeCabecera(url: string): string | undefined {
-  const m = /^(\/images\/cabeceras\/[\w-]+)\.webp$/.exec(url)
+  const m = CABECERA_CON_COPIA.exec(url)
   return m ? `${m[1]}-1000.webp 1000w, ${url} 2000w` : undefined
 }

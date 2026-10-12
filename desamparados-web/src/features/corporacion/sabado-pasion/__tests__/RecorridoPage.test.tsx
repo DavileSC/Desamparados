@@ -22,6 +22,9 @@ const DE_PARTIDA = POR_DEFECTO.recorrido as unknown as {
   bloques: unknown[]
 }
 
+/** La primera parada del itinerario de partida: la que se busca para saber si se enseña. */
+const PRIMERA_PARADA = (DE_PARTIDA.bloques.find((b) => (b as { tipo: string }).tipo === 'itinerario') as { paradas: { lugar: string }[] }).paradas[0].lugar
+
 const pagina = (bloques: unknown[]) => ({ cabecera: DE_PARTIDA.cabecera, bloques })
 
 /** Las fotos de los bloques: la de la cabecera va aparte y está siempre. */
@@ -98,10 +101,10 @@ describe('RecorridoPage', () => {
     renderWithProviders(<RecorridoPage />)
 
     expect(await screen.findByText(/No se ha podido cargar esta página/)).toBeInTheDocument()
-    expect(screen.queryByText('Salida desde el Templo')).not.toBeInTheDocument()
+    expect(screen.queryByText(PRIMERA_PARADA)).not.toBeInTheDocument()
 
     fetch.mockResolvedValue(new Response(JSON.stringify(DE_PARTIDA), { status: 200, headers: { 'Content-Type': 'application/json' } }))
     await usuario.click(screen.getByRole('button', { name: /volver a intentar/i }))
-    expect(await screen.findByText('Salida desde el Templo')).toBeInTheDocument()
+    expect(await screen.findByText(PRIMERA_PARADA)).toBeInTheDocument()
   })
 })

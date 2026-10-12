@@ -6,7 +6,8 @@ import SeccionAnimada, { Revela } from '../../components/SeccionAnimada'
 import { publicacionesDePortada } from '../../lib/api/publicaciones'
 import type { Publicacion } from '../../types'
 import { useDatosDePortada } from './useDatosDePortada'
-import { useTextosPortada } from './useContenidoPortada'
+import { usePortadaEnCarga, useTextosPortada } from './useContenidoPortada'
+import TextoDePortada from './TextoDePortada'
 import AvisosDeInicio from './AvisosDeInicio'
 import CintaDestacada from './CintaDestacada'
 import EnCarga, { estadoDeConsulta } from '../../components/esqueleto/EnCarga'
@@ -254,6 +255,7 @@ export default function PublicacionesDestacadas() {
   const consulta = useDatosDePortada('publicaciones', publicacionesDePortada, activos !== null && activo('publicaciones'))
   const { data: publicaciones = [], isPending, isError, refetch } = consulta
   const textos = useTextosPortada()
+  const enCarga = usePortadaEnCarga()
   const [destacada, ...resto] = publicaciones
   const otras = resto.slice(0, 2)
   if (apagado) return null
@@ -289,7 +291,8 @@ export default function PublicacionesDestacadas() {
           userSelect: 'none',
         }}
       >
-        {textos.publicaciones.marcaDeAgua}
+        {/* Decorativa y en vertical: mientras cargan los textos, nada (un hueso tumbado no dice nada). */}
+        {!enCarga && textos.publicaciones.marcaDeAgua}
       </Box>
       {/* El texto empieza donde acaba la marca de agua: con la página a 1440 px o menos,
           los 64 px de margen la dejarían debajo del título. */}
@@ -340,7 +343,7 @@ export default function PublicacionesDestacadas() {
                     to="/publicaciones"
                     sx={BOTON.oscuro}
                   >
-                    {textos.publicaciones.boton}
+                    <TextoDePortada anchos={['10em']}>{textos.publicaciones.boton}</TextoDePortada>
                   </Box>
                 </Box>
               </Revela>

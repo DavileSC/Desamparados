@@ -11,7 +11,15 @@ vi.mock('framer-motion', async (original) => ({ ...(await original<typeof import
 
 afterEach(() => { vi.useRealTimers() })
 
-const [FINES, CITA, LLAMADA] = POR_DEFECTO['nuestros-fines'].bloques as unknown as Bloque[]
+// Los anillos y la llamada, del contenido de partida de Nuestros fines; la
+// cita que se enfoca, escrita aquí, porque el de partida (neutro) no la trae.
+const bloquesDeFines = POR_DEFECTO['nuestros-fines'].bloques as unknown as Bloque[]
+const FINES = bloquesDeFines.find((b) => b.tipo === 'anillos')!
+const LLAMADA = bloquesDeFines.find((b) => b.tipo === 'llamada')!
+const CITA = {
+  tipo: 'cita', titulo: '', presentacion: { estilo: 'enfoque', alineacion: 'izquierda' },
+  texto: 'Venid a mí todos los que estáis cansados y agobiados, y yo os aliviaré.', autor: 'Jesús', fuente: 'Evangelio según san Mateo, 11, 28',
+} as Bloque
 const palabra = (nombre: string) => screen.getByRole('button', { name: nombre })
 
 describe('los fines en foco', () => {
@@ -21,7 +29,7 @@ describe('los fines en foco', () => {
     expect(palabra('Culto')).toHaveAttribute('aria-pressed', 'true')
     expect(palabra('Caridad')).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByText('I · Culto')).toBeInTheDocument()
-    expect(screen.getByText(/La eucaristía, el triduo/)).toBeInTheDocument()
+    expect(screen.getByText(/La eucaristía y los cultos del año/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /ver los cultos/i })).toHaveAttribute('href', '/cultos')
     // El texto común va al lado.
     expect(screen.getByText(/La salida procesional es lo que más se ve/)).toBeInTheDocument()
@@ -70,7 +78,7 @@ describe('la cita que se enfoca y la llamada en fila', () => {
 
   it('la llamada en fila lleva su texto y su botón', () => {
     renderWithProviders(<BloquesDePagina bloques={[LLAMADA]} />)
-    expect(screen.getByText(/hazte hermano del Grupo Parroquial/)).toBeInTheDocument()
+    expect(screen.getByText(/desde dentro, hazte hermano/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /hazte hermano/i })).toHaveAttribute('href', '/hazte-hermano')
   })
 })

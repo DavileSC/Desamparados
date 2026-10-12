@@ -13,6 +13,7 @@ import { Revela } from '../../components/SeccionAnimada'
 import { CURVA_ENTRADA } from '../../components/entrada'
 import { FUNDIDO_S, IMAGENES_POR_DEFECTO, INTERVALO_ROTACION_MS, OPACIDAD_FOTO } from './heroImagenes'
 import { BorradorPortadaContext, usePortada, useTextosPortada } from './useContenidoPortada'
+import TextoDePortada from './TextoDePortada'
 import { useModulos } from '../../hooks/useModulos'
 import { ENCUADRE_MOVIL_POR_DEFECTO } from '../../lib/api/portada'
 import { propsDeFoto } from '../../lib/fotoSubida'
@@ -297,7 +298,7 @@ export default function Hero() {
         <Box sx={GRUPO}>
           <Revela alMontar retraso={RETRASO_TEXTOS_S}>
             <Typography variant="overline" sx={{ color: '#ded3bd', letterSpacing: '0.2em', fontSize: { xs: 11, md: 12 }, mb: 2 }}>
-              {textos.hero.ceja}
+              <TextoDePortada anchos={['14em']}>{textos.hero.ceja}</TextoDePortada>
             </Typography>
           </Revela>
           <Revela alMontar efecto="cortina" retraso={RETRASO_TEXTOS_S} orden={1}>
@@ -314,7 +315,7 @@ export default function Hero() {
                 textShadow: '0 2px 24px rgba(0,0,0,.2)',
               }}
             >
-              {textos.hero.titulo}
+              <TextoDePortada anchos={['9em']}>{textos.hero.titulo}</TextoDePortada>
             </Typography>
           </Revela>
         </Box>
@@ -332,20 +333,20 @@ export default function Hero() {
                 fontSize: { xs: '16px', md: '18px' },
               }}
             >
-              {textos.hero.parrafo}
+              <TextoDePortada anchos={['26em', '18em']}>{textos.hero.parrafo}</TextoDePortada>
             </Typography>
           </Revela>
           <Revela alMontar retraso={RETRASO_TEXTOS_S} orden={3}>
             {/* Con vídeo o fotos que rotan, el rincón de la derecha es de su botón de pausa. */}
             <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: { xs: 'flex-start', md: 'flex-end' }, alignItems: 'center', gap: { xs: 1.5, md: 3 }, pr: { xs: conVideo || rotan ? 7 : 0, md: 0 } }}>
               <Boton component={Link} to="/historia" sx={{ px: { xs: 2.5, md: 3.5 }, fontSize: { xs: 14, md: 15 } }}>
-                {textos.hero.botonPrincipal}
+                <TextoDePortada anchos={['8em']}>{textos.hero.botonPrincipal}</TextoDePortada>
               </Boton>
               {/* Las noticias ya vienen justo debajo del hero; la segunda acción lleva a lo que más se consulta.
                   Sin la Agenda no hay otro destino que no repita el botón principal: no se pinta. */}
               {conAgenda && (
                 <Box component={Link} to="/agenda" sx={{ ...enlaceConFlecha, color: '#e4e2df' }}>
-                  {textos.hero.enlaceSecundario} <ArrowForwardIcon sx={{ fontSize: 16 }} />
+                  <TextoDePortada anchos={['8em']}>{textos.hero.enlaceSecundario}</TextoDePortada> <ArrowForwardIcon sx={{ fontSize: 16 }} />
                 </Box>
               )}
             </Box>

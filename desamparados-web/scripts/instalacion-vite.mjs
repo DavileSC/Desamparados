@@ -1,8 +1,10 @@
 // Los datos de la corporación en `npm run dev`, como los deja el contenedor de
 // la web al arrancar (scripts/instalacion-web.mjs, con las mismas funciones):
 // index.html con sus marcas rellenas y /instalacion.js, /manifest.json,
-// /robots.txt y las imágenes de /marca/ servidos al vuelo. No se escribe nada
-// en la carpeta de la web, que así no lleva datos de nadie.
+// /robots.txt y las imágenes de /marca/ servidos al vuelo. Y las fotos de
+// /images/ (instalacion/imagenes/) y el mapa del barrio, /mapas/barrio.json
+// (instalacion/mapas/), como los `alias` de nginx. No se escribe nada en la
+// carpeta de la web, que así no lleva datos de nadie.
 //
 // Solo al servir (apply: 'serve', que incluye `vite preview`): `vite build`
 // deja las marcas sin rellenar, para que una misma web compilada sirva a
@@ -11,8 +13,9 @@
 //
 // Lo usa vite.config.ts; las pruebas no (src/test/setup.ts pone los datos).
 
-import { readFileSync } from 'node:fs'
-import { resolve, sep } from 'node:path'
+import { readFileSync, statSync } from 'node:fs'
+import { dirname, extname, join, resolve, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { leerDatosEntidad, rutaDeDatosEntidad } from '../../shared/datos-entidad.mjs'
 import { rutaDeMarca } from '../../shared/marca.mjs'
 import { instalacionJs, leerMarcaDe, manifest, rellenarIndex, robots } from './instalacion-web.mjs'
@@ -21,6 +24,67 @@ const FICHEROS = {
   '/instalacion.js': ['text/javascript; charset=utf-8', instalacionJs],
   '/manifest.json': ['application/manifest+json; charset=utf-8', manifest],
   '/robots.txt': ['text/plain; charset=utf-8', robots],
+}
+
+/**
+ * Las fotos de la instalación (fuera de git y de la imagen de Docker), que la
+ * web pide en /images/. En producción las sirve nginx con un `alias` al
+ * montaje (docker/nginx/ubicaciones.conf).
+ */
+// Sin `new URL(…, import.meta.url)`: en las pruebas (jsdom) URL es la del
+// navegador y no da una URL file: que fileURLToPath acepte.
+export const CARPETA_IMAGENES = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'instalacion', 'imagenes')
+
+/** Las que se sirven, con su tipo: otra cosa en la carpeta es un 404, como un fichero que no está. */
+const TIPOS_DE_IMAGEN = {
+  '.webp': 'image/webp',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.avif': 'image/avif',
+  '.gif': 'image/gif',
+}
+
+/**
+ * El fichero de `carpeta` que pide la ruta (lo de después de /images/), o null.
+ * Sin salir de la carpeta: «..» o una barra invertida no casan, y se comprueba
+ * además el camino ya resuelto. Leído en cada petición: una foto que se añade
+ * se ve al recargar, sin reiniciar Vite. Sin la carpeta, null (404), y la web
+ * pinta su fondo donde iba la foto.
+ */
+export function imagenDeLaInstalacion(ruta, carpeta = CARPETA_IMAGENES) {
+  let relativa
+  try {
+    relativa = decodeURIComponent(ruta)
+  } catch {
+    return null
+  }
+  if (!/^(?:[\w-]+\/)*[\w.-]+$/.test(relativa) || relativa.split('/').some((t) => t.startsWith('.'))) return null
+  const tipo = TIPOS_DE_IMAGEN[extname(relativa).toLowerCase()]
+  const fichero = resolve(carpeta, relativa)
+  if (!tipo || !fichero.startsWith(resolve(carpeta) + sep)) return null
+  try {
+    if (!statSync(fichero).isFile()) return null
+    return { tipo, contenido: readFileSync(fichero) }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * El mapa del barrio de la instalación (components/mapa/barrio.ts). Solo ese
+ * fichero: las fuentes del mapa (/mapas/fuentes/) son genéricas y siguen en
+ * public/.
+ */
+export const MAPA_DEL_BARRIO = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'instalacion', 'mapas', 'barrio.json')
+
+/** El mapa del barrio, o null (404) si esta instalación no lo tiene. */
+export function mapaDelBarrio(fichero = MAPA_DEL_BARRIO) {
+  try {
+    return statSync(fichero).isFile() ? readFileSync(fichero) : null
+  } catch {
+    return null
+  }
 }
 
 export function datosDeLaInstalacion() {
@@ -64,6 +128,30 @@ export function datosDeLaInstalacion() {
     const ruta = req.url?.split('?')[0] ?? ''
     const fichero = FICHEROS[ruta]
     if (fichero) return responder(logger, res, ...fichero)
+    if (ruta === '/mapas/barrio.json') {
+      const mapa = mapaDelBarrio()
+      res.statusCode = mapa ? 200 : 404
+      if (mapa) {
+        res.setHeader('Content-Type', 'application/json; charset=utf-8')
+        res.setHeader('Cache-Control', 'no-cache')
+      }
+      res.end(mapa ?? undefined)
+      return
+    }
+    if (ruta.startsWith('/images/')) {
+      // Antes que el estático de Vite: public/images ya no existe, y sin esto
+      // el reenvío de la SPA daría la portada con un 200 en vez de un 404.
+      const imagen = imagenDeLaInstalacion(ruta.slice('/images/'.length))
+      if (!imagen) {
+        res.statusCode = 404
+        res.end()
+        return
+      }
+      res.setHeader('Content-Type', imagen.tipo)
+      res.setHeader('Cache-Control', 'no-cache')
+      res.end(imagen.contenido)
+      return
+    }
     if (!ruta.startsWith('/marca/')) return next()
     // Por el nombre del catálogo, no por la ruta pedida: así no se puede salir
     // de la carpeta con «..», y un nombre que no es de la marca da 404.

@@ -26,8 +26,8 @@
     },
     {
       "slug": "parroquia",
-      "nombre": "Parroquia · Pasionistas",
-      "ruta": "/parroquia-pasionistas",
+      "nombre": "Parroquia",
+      "ruta": "/parroquia",
       "grupo": "Corporación",
       "descripcion": "La sede canónica y la comunidad pasionista que acompaña al Grupo Parroquial."
     },

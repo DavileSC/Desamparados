@@ -35,6 +35,10 @@ interface Props {
 
 type Modo = 'dibujar' | 'situar'
 
+/** Lo que se lee en el sitio del mapa cuando la instalación no tiene barrio. */
+const SIN_BARRIO = 'Esta instalación no tiene mapa del barrio, así que el recorrido no se puede dibujar. '
+  + 'Las paradas y sus horas se editan igual, y la web las enseña en lista.'
+
 export default function EditorDeRecorrido({ recorrido, paradas, onRecorrido, onParadas }: Props) {
   const actual = recorrido ?? VACIO
   const [modo, setModo] = useState<Modo>(actual.linea.length >= 2 ? 'situar' : 'dibujar')
@@ -62,6 +66,12 @@ export default function EditorDeRecorrido({ recorrido, paradas, onRecorrido, onP
     let medidor: ResizeObserver | null = null
     cargarBarrio().then((barrio) => {
       if (!vivo || !contenedor.current) return
+      if (!barrio) {
+        // Una instalación sin instalacion/mapas/barrio.json: no hay calles
+        // sobre las que dibujar. Lo demás del bloque sigue funcionando.
+        setError(SIN_BARRIO)
+        return
+      }
       setGrafo(construirGrafo(barrio))
       const inicio = ultimo.current.actual.linea[0]
       const m = new maplibregl.Map({

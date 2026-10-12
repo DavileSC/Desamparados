@@ -33,8 +33,18 @@ describe('la web no lleva dentro los datos de ninguna corporación', () => {
     for (const { fichero } of CATALOGO_MARCA) expect(enPublic(fichero), `public/${fichero}`).toBe(false)
     expect(enPublic('marca'), 'public/marca').toBe(false)
     expect(enPublic('favicon.ico'), 'public/favicon.ico').toBe(false)
-    const escudos = readdirSync(join(raiz, 'public/images')).filter((n) => /escudo/i.test(n))
-    expect(escudos).toEqual([])
+  })
+
+  it('public/ no trae las fotos de nadie: van en instalacion/imagenes, servidas en /images/', () => {
+    // Vite copiaría public/images a dist/ y de ahí a la imagen de Docker de
+    // todas las corporaciones; además taparía el `alias` de nginx al montaje.
+    expect(existsSync(join(raiz, 'public/images'))).toBe(false)
+  })
+
+  it('public/mapas solo trae las fuentes genéricas: el barrio va en instalacion/mapas', () => {
+    // El mapa del barrio es de una corporación (sus calles); las fuentes de
+    // MapLibre sirven a todas.
+    expect(readdirSync(join(raiz, 'public/mapas'))).toEqual(['fuentes'])
   })
 
   it('index.html carga /instalacion.js antes que el código de la web y solo trae marcas, no datos', () => {

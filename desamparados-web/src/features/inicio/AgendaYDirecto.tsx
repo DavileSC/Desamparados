@@ -9,6 +9,7 @@ import SeccionAnimada, { Revela } from '../../components/SeccionAnimada'
 import { eventosDelCalendario, type EventoCalendario } from '../../lib/api/agenda'
 import { site } from '../../config/site'
 import { useTextosPortada } from './useContenidoPortada'
+import TextoDePortada from './TextoDePortada'
 import AvisosDeInicio from './AvisosDeInicio'
 import MiniCalendario from './MiniCalendario'
 import ListaDeAgenda, { ListaDeAgendaEsqueleto } from './ListaDeAgenda'
@@ -216,19 +217,19 @@ export default function AgendaYDirecto() {
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '300px 1fr' }, gap: { xs: 4, lg: 7 }, alignItems: 'start' }}>
           <Box>
             <Revela>
-              <Typography component="span" sx={ceja}>{textos.agenda.ceja}</Typography>
+              <Typography component="span" sx={ceja}><TextoDePortada anchos={['5em']}>{textos.agenda.ceja}</TextoDePortada></Typography>
             </Revela>
             <Revela efecto="cortina" orden={1}>
               <Typography id="agenda-title" variant="h2" component="h2" sx={{ fontFamily: SERIF, color: '#fff', m: 0 }}>
-                {textos.agenda.titulo}
+                <TextoDePortada anchos={['7em']}>{textos.agenda.titulo}</TextoDePortada>
               </Typography>
             </Revela>
             <Revela orden={2}>
               <Typography sx={{ mt: 2.75, mb: 3.5, maxWidth: 420, fontSize: 15, lineHeight: 1.7, color: '#e4e2df' }}>
-                {textos.agenda.parrafo}
+                <TextoDePortada anchos={['26em', '22em', '12em']}>{textos.agenda.parrafo}</TextoDePortada>
               </Typography>
               <Box component={Link} to="/agenda" sx={enlaceBloque}>
-                {textos.agenda.enlace} <ArrowForwardIcon />
+                <TextoDePortada anchos={['9em']}>{textos.agenda.enlace}</TextoDePortada> <ArrowForwardIcon />
               </Box>
               {stream && (
                 <Box sx={{ mt: 4 }}>

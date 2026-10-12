@@ -45,6 +45,9 @@ const estadoRevalidando = (url: string, etag: string) =>
     }).on('error', reject);
   });
 
+/** El título del hero del contenido de partida, que es neutro (no nombra a ninguna corporación). */
+const TITULO_NEUTRO = (porDefecto('portada') as { hero: { titulo: string } }).hero.titulo;
+
 const cookieCms = (id: number, role: Role) => `${COOKIE_CMS}=${generateToken(id, role, false, 'cms')}`;
 
 test('la siembra deja una fila por página editable, con los textos de siempre', async (t) => {
@@ -67,20 +70,20 @@ test('la siembra deja una fila por página editable, con los textos de siempre',
   // Los tres fines, cada uno con su página (desde el 26-09-2026, en los tres anillos).
   const fines = documento('nuestros-fines').bloques.find((b: any) => b.tipo === 'anillos');
   assert.deepEqual(fines.fines.map((f: any) => f.enlace), ['/cultos', '/nuestros-fines/caridad', '/nuestros-fines/formacion']);
-  // Los cinco hitos de siempre viven ahora en el bloque de cronología.
+  // La cronología se siembra con sus hitos (los neutros: cada corporación escribe los suyos).
   const cronologia = documento('historia').bloques.find((b: any) => b.tipo === 'cronologia');
-  assert.equal(cronologia.hitos.length, 5);
+  assert.ok(cronologia.hitos.length >= 1);
   // Las páginas de datos vivos se siembran con su listado, y Contacto con su formulario.
   assert.equal(documento('noticias').bloques[0].fuente, 'noticias');
   assert.equal(documento('contacto').bloques[0].tipo, 'contacto');
-  assert.equal(documento('portada').hero.titulo, 'Desamparados Málaga');
-  // El recorrido guarda sus paradas dentro del bloque de itinerario: las
-  // diecinueve calles de 2025, y el recorrido sobre el mapa.
+  assert.ok(TITULO_NEUTRO.trim() !== '', 'la portada de partida trae su título');
+  // El recorrido guarda sus paradas dentro del bloque de itinerario; el
+  // neutro no trae calles de nadie ni trazado sobre el mapa.
   const itinerario = documento('recorrido').bloques.find((b: any) => b.tipo === 'itinerario');
-  assert.equal(itinerario.paradas.length, 19);
-  assert.ok(itinerario.recorrido.linea.length >= 2, 'el recorrido se siembra con su línea sobre el mapa');
-  // Y las páginas convertidas en esta tanda traen ya su contenido de siempre.
-  assert.ok(documento('cultos').bloques.length >= 2, 'Cultos se siembra con su texto y sus tarjetas');
+  assert.ok(itinerario.paradas.length >= 1);
+  assert.equal(itinerario.recorrido, undefined);
+  // Y las páginas convertidas en esta tanda traen ya su contenido de partida.
+  assert.ok(documento('cultos').bloques.length >= 2, 'Cultos se siembra con su texto y su programa');
   assert.ok(documento('ajuar').bloques.length >= 1, 'Ajuar se siembra con su texto');
 });
 
@@ -119,7 +122,7 @@ test('GET /api/contenido/portada devuelve el documento mezclado, sin sesión', a
     assert.equal(respuesta.status, 200);
 
     const datos = await respuesta.json() as any;
-    assert.equal(datos.hero.titulo, 'Desamparados Málaga');
+    assert.equal(datos.hero.titulo, TITULO_NEUTRO);
     assert.equal(datos.accesos.teselas.length, 6);
   } finally {
     await db.contenidoPagina.update({ where: { slug: 'portada' }, data: { datos: antes!.datos as object } });
@@ -175,7 +178,7 @@ test('sin fila en la base, la portada responde 200 con los textos de siempre', a
     assert.equal(respuesta.status, 200, 'sin fila la portada no puede quedarse en blanco (404) ni romperse (500)');
 
     const datos = await respuesta.json() as any;
-    assert.equal(datos.hero.titulo, 'Desamparados Málaga', 'sin fila debe salir el texto por defecto, no un cuerpo vacío');
+    assert.equal(datos.hero.titulo, TITULO_NEUTRO, 'sin fila debe salir el texto por defecto, no un cuerpo vacío');
   } finally {
     // Se recrea con lo capturado ANTES de borrar, no resembrando: sembrar es
     // un upsert con `update: {}` (no pisa lo editado), así que si la fila
@@ -284,7 +287,7 @@ test('REDES guarda y lo guardado se lee', async (t) => {
   const antes = await db.contenidoPagina.findUnique({ where: { slug: 'portada' } });
   try {
     const nuevo = porDefecto('portada') as any;
-    nuevo.hero.titulo = 'Desamparados de Málaga';
+    nuevo.hero.titulo = 'Título editado';
 
     const respuesta = await fetch(`${baseUrl}/api/contenido/portada`, {
       method: 'PUT',
@@ -294,7 +297,7 @@ test('REDES guarda y lo guardado se lee', async (t) => {
     assert.equal(respuesta.status, 200);
 
     const leido = await (await fetch(`${baseUrl}/api/contenido/portada`)).json() as any;
-    assert.equal(leido.hero.titulo, 'Desamparados de Málaga');
+    assert.equal(leido.hero.titulo, 'Título editado');
   } finally {
     await db.contenidoPagina.update({ where: { slug: 'portada' }, data: { datos: antes!.datos as object } });
     await borrarUsuarioPrueba(redes.id);

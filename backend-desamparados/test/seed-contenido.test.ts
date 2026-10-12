@@ -5,7 +5,8 @@
 
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { CATEGORIAS_DE_RECIBOS } from '../src/domain/contabilidad.js';
 import path from 'node:path';
 import {
@@ -19,11 +20,12 @@ import {
   ARCHIVO_PUBLICACION_PENDIENTE,
   ORIGEN_ARCHIVO_PENDIENTE,
   instalarArchivoPendiente,
-  IMAGENES_PORTADA,
-  ORIGEN_IMAGENES_PORTADA,
+  imagenesPortada,
   instalarImagenesPortada,
   urlImagenPortada,
 } from '../prisma/seed-contenido.js';
+import { SALIDAS_DE_SIEMPRE } from '../prisma/seed-salidas.js';
+import { deLaCorporacion, laCorporacion, mayuscula } from '../src/domain/articulos.js';
 import { publicStorageDir } from '../src/middleware/upload.middleware.js';
 import { rutaImagenPublica } from '../src/schemas/portada.schema.js';
 import { ArkErrors } from 'arktype';
@@ -104,9 +106,18 @@ describe('contenido del seed', () => {
     for (const c of CATEGORIAS_DE_RECIBOS) assert.ok(nombres.includes(c.nombre), c.nombre);
   });
 
-  test('el contenido ya no habla de "Hermandad"', () => {
-    const todo = JSON.stringify([NOTICIAS, EVENTOS, PUBLICACIONES, PAGINAS, ENSERES]);
-    assert.ok(!/hermandad/i.test(todo), 'queda alguna referencia a "Hermandad" en el contenido');
+  // En producción se siembra en la instalación de cada cliente: nada puede ser
+  // de una corporación concreta. Las pruebas usan la corporación del ejemplo
+  // (una Hermandad), así que se quitan primero las frases que salen de
+  // domain/articulos.ts: lo que quede con su clase escrita está a mano.
+  test('el contenido de ejemplo no es de ninguna corporación concreta', () => {
+    // Las salidas sin su slug: es el de la migración salidas_configurables (ver seed-salidas.ts).
+    const todo = JSON.stringify([NOTICIAS, EVENTOS, PUBLICACIONES, PAGINAS, ENSERES, SALIDAS_DE_SIEMPRE.map(({ slug: _slug, ...salida }) => salida)]);
+    const sinFrases = [mayuscula(laCorporacion()), deLaCorporacion(), laCorporacion()]
+      .reduce((texto, frase) => texto.split(frase).join(''), todo);
+    assert.ok(!/hermandad|cofrad[ií]a|grupo parroquial/i.test(sinFrases), 'la corporación escrita a mano en el contenido de ejemplo');
+    const propios = /Desamparados|Goretti|Málaga|Pasionistas|Sábado de Pasión|Corregidor|Carretería/i;
+    assert.ok(!propios.test(todo), `queda un nombre propio en el contenido de ejemplo: ${todo.match(propios)?.[0]}`);
   });
 
   // Las publicaciones de ejemplo se siembran todas con el mismo PDF de relleno.
@@ -133,24 +144,43 @@ describe('contenido del seed', () => {
     assert.ok(existsSync(queSirveExpress), `el seed no dejó el PDF en ${queSirveExpress}`);
   });
 
-  // Las fotos de la cabecera se siembran como filas que apuntan a ficheros: si el
-  // fichero no está donde Express lo sirve, la portada rota entre imágenes rotas.
-  test('las fotos de la portada existen versionadas, pasan la validación del CMS y se instalan donde las sirve Express', () => {
-    assert.ok(IMAGENES_PORTADA.length >= 2, 'con menos de dos fotos no hay rotación que probar');
-    assert.deepEqual(duplicados(IMAGENES_PORTADA.map((i) => i.archivo)), []);
+  // Las fotos de la cabecera son de cada corporación y viven fuera de git
+  // (instalacion/imagenes/portada): aquí, una carpeta de prueba con lo que puede
+  // traer una instalación. Si el fichero no acaba donde Express lo sirve, la
+  // portada rota entre imágenes rotas.
+  test('las fotos de la portada salen de la instalación, pasan la validación del CMS y se instalan donde las sirve Express', () => {
+    const carpeta = mkdtempSync(path.join(tmpdir(), 'portada-'));
+    try {
+      for (const nombre of ['02-prueba-de-la-siembra.webp', '01-prueba-de-la-siembra.webp', '01-prueba-de-la-siembra-640.webp', 'suelta.webp', '03-noche.jpg']) {
+        writeFileSync(path.join(carpeta, nombre), 'x');
+      }
+      writeFileSync(path.join(carpeta, 'descripciones.json'), JSON.stringify({ '01-prueba-de-la-siembra.webp': 'El rostro de la imagen titular', '02-prueba-de-la-siembra.webp': '<b>no</b>' }));
 
-    for (const imagen of IMAGENES_PORTADA) {
-      assert.ok(existsSync(path.join(ORIGEN_IMAGENES_PORTADA, imagen.archivo)), `falta ${imagen.archivo} en prisma/activos/portada`);
-      assert.ok(imagen.descripcion.trim().length > 0 && !/[<>]/.test(imagen.descripcion), `descripción inválida en ${imagen.archivo}`);
-      // Lo que guarda el seed tiene que poder guardarse también desde el CMS.
-      assert.ok(!(rutaImagenPublica(urlImagenPortada(imagen.archivo)) instanceof ArkErrors), `la ruta de ${imagen.archivo} no pasa portada.schema`);
+      const imagenes = imagenesPortada(carpeta);
+      // Solo las que tienen la forma de las que copia completarVariantes, en su orden;
+      // el texto, del fichero si es válido y, si no, del nombre.
+      assert.deepEqual(imagenes, [
+        { archivo: '01-prueba-de-la-siembra.webp', descripcion: 'El rostro de la imagen titular' },
+        { archivo: '02-prueba-de-la-siembra.webp', descripcion: 'Prueba de la siembra' },
+      ]);
+      for (const imagen of imagenes) {
+        // Lo que guarda el seed tiene que poder guardarse también desde el CMS.
+        assert.ok(!(rutaImagenPublica(urlImagenPortada(imagen.archivo)) instanceof ArkErrors), `la ruta de ${imagen.archivo} no pasa portada.schema`);
+      }
+
+      const instaladas = instalarImagenesPortada(imagenes, carpeta);
+      imagenes.forEach((imagen, i) => {
+        const queSirveExpress = path.join(publicStorageDir, 'portada', imagen.archivo);
+        assert.equal(instaladas[i], queSirveExpress, 'el seed instala la foto fuera de donde Express la sirve');
+        assert.ok(existsSync(queSirveExpress), `el seed no dejó ${imagen.archivo} en ${queSirveExpress}`);
+      });
+      for (const destino of instaladas) rmSync(destino);
+    } finally {
+      rmSync(carpeta, { recursive: true, force: true });
     }
+  });
 
-    const instaladas = instalarImagenesPortada();
-    IMAGENES_PORTADA.forEach((imagen, i) => {
-      const queSirveExpress = path.join(publicStorageDir, 'portada', imagen.archivo);
-      assert.equal(instaladas[i], queSirveExpress, 'el seed instala la foto fuera de donde Express la sirve');
-      assert.ok(existsSync(queSirveExpress), `el seed no dejó ${imagen.archivo} en ${queSirveExpress}`);
-    });
+  test('sin carpeta de la instalación, la portada se siembra sin fotos', () => {
+    assert.deepEqual(imagenesPortada(path.join(tmpdir(), 'no-existe-esta-carpeta-de-portada')), []);
   });
 });

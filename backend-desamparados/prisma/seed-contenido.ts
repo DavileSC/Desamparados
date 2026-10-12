@@ -1,8 +1,14 @@
 // prisma/seed-contenido.ts
 //
-// Contenido de ejemplo para poder ver la web y el CMS llenos mientras el Grupo
-// Parroquial prepara los textos definitivos. TODO es inventado y está pensado
+// Contenido de ejemplo para poder ver la web y el CMS llenos mientras la
+// corporación prepara los textos definitivos. TODO es inventado y está pensado
 // para editarse desde el CMS: nada de esto pretende ser información real.
+//
+// Es de cualquier corporación, no de una: en producción se siembra en la
+// instalación de cada cliente (tablas vacías), así que no nombra templo,
+// ciudad, calles ni salida. La corporación y su Titular salen de
+// instalacion/datos-entidad.json (domain/articulos.ts), como en el código; lo
+// propio de cada una lo escribe ella después desde el CMS.
 //
 // Es idempotente: se puede ejecutar tantas veces como haga falta sin duplicar
 // nada. Los modelos con clave única usan `upsert`; los que no la tienen se
@@ -15,12 +21,21 @@ import {
   EstadoPrenda,
   TipoTransaccion,
 } from '@prisma/client';
-import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { completarVariantes } from '../src/utils/variantes-publicas';
+import { completarVariantes, FOTO_DE_PORTADA } from '../src/utils/variantes-publicas';
+import { MAX_IMAGENES_PORTADA } from '../src/schemas/portada.schema';
 import db from '../src/config/db';
-import { porDefecto, SLUGS_CONTENIDO } from '../src/domain/contenido';
+import { SLUGS_CONTENIDO } from '../src/domain/contenido';
+import { sembrarPaginasQueFalten } from '../src/domain/contenido-inicial';
+import { identidad } from '../src/domain/datos-entidad';
+import { deLaCorporacion, laCorporacion, mayuscula, segunLaCorporacion } from '../src/domain/articulos';
+
+// La corporación como sujeto al empezar frase («El Grupo Parroquial», «La
+// Hermandad»), con el verbo que concuerda con su número.
+const LaCorporacion = mayuscula(laCorporacion());
+const verbo = (singular: string, plural: string) => segunLaCorporacion(singular, plural);
 
 /** Fecha relativa a hoy, en días, a las 20:00 salvo que se indique otra hora. */
 function enDias(dias: number, hora = 20, minutos = 0): Date {
@@ -37,21 +52,21 @@ function enDias(dias: number, hora = 20, minutos = 0): Date {
 export const NOTICIAS = [
   {
     slug: 'apertura-curso-cofrade',
-    titulo: 'Apertura del curso cofrade 2026-2027',
+    titulo: 'Eucaristía de inicio de las actividades',
     extracto:
-      'El Grupo Parroquial abre el nuevo curso con una eucaristía de acción de gracias y la presentación del calendario de cultos.',
-    contenido: `<p>El próximo sábado tendrá lugar la eucaristía de apertura del curso cofrade, presidida por nuestro director espiritual en la Parroquia de los Padres Pasionistas.</p>
-<p>Durante la celebración se presentará el calendario de cultos y actividades que nos acompañará hasta el Sábado de Pasión, y se dará la bienvenida a los hermanos incorporados durante el verano.</p>
+      `${LaCorporacion} ${verbo('retoma', 'retoman')} su actividad con una eucaristía de acción de gracias y la presentación del calendario de cultos.`,
+    contenido: `<p>El próximo sábado tendrá lugar la eucaristía de inicio de las actividades, presidida por nuestro director espiritual en la sede canónica.</p>
+<p>Durante la celebración se presentará el calendario de cultos y actividades que nos acompañará hasta la próxima salida procesional, y se dará la bienvenida a los hermanos incorporados durante el verano.</p>
 <p>Al término de la misa habrá una convivencia en el salón parroquial. Se invita a todos los hermanos y a sus familias a participar.</p>`,
     diasDesdeHoy: -3,
   },
   {
-    slug: 'triduo-nuestra-senora-desamparados',
-    titulo: 'Solemne triduo en honor a Nuestra Señora de los Desamparados',
+    slug: 'solemne-triduo',
+    titulo: `Solemne triduo en honor de ${identidad.titular}`,
     extracto:
-      'Tres jornadas de oración ante la Sagrada Titular, con predicación a cargo del equipo de formación.',
-    contenido: `<p>Como cada año, el Grupo Parroquial celebra solemne triduo en honor a Nuestra Señora de los Desamparados.</p>
-<p>Los cultos darán comienzo a las 19:30 con el rezo del santo rosario, seguido de la eucaristía y el ejercicio del triduo. La última jornada concluirá con la salutación a la Santísima Virgen.</p>
+      'Tres jornadas de oración ante la imagen titular, con predicación a cargo del equipo de formación.',
+    contenido: `<p>Como cada año, ${laCorporacion()} ${verbo('celebra', 'celebran')} solemne triduo en honor de ${identidad.titular}.</p>
+<p>Los cultos darán comienzo a las 19:30 con el rezo del santo rosario, seguido de la eucaristía y el ejercicio del triduo. La última jornada concluirá con un acto de veneración a la imagen titular.</p>
 <p>Se ruega a los hermanos que acudan con la medalla de la corporación.</p>`,
     diasDesdeHoy: -12,
   },
@@ -61,8 +76,8 @@ export const NOTICIAS = [
     extracto:
       'La vocalía de caridad organiza la recogida anual de alimentos no perecederos en beneficio de las familias atendidas por la parroquia.',
     contenido: `<p>La vocalía de caridad pone en marcha un año más la campaña de recogida de alimentos no perecederos.</p>
-<p>Los donativos pueden entregarse en la casa parroquial durante el horario de secretaría. Se necesitan especialmente leche, conservas, legumbre cocida, aceite y alimentación infantil.</p>
-<p>Lo recogido se repartirá a través de Cáritas parroquial entre las familias de la barriada.</p>`,
+<p>Los donativos pueden entregarse en la sede durante el horario de secretaría. Se necesitan especialmente leche, conservas, legumbre cocida, aceite y alimentación infantil.</p>
+<p>Lo recogido se repartirá a través de Cáritas parroquial entre las familias del barrio.</p>`,
     diasDesdeHoy: -25,
   },
   {
@@ -70,9 +85,9 @@ export const NOTICIAS = [
     titulo: 'Concluye la restauración del manto procesional',
     extracto:
       'El taller de bordado ha devuelto el manto a su estado original tras seis meses de trabajo sobre el terciopelo y la malla de sujeción.',
-    contenido: `<p>Ha concluido la restauración del manto procesional de la Sagrada Titular, que se encontraba en el taller desde el pasado mes de febrero.</p>
+    contenido: `<p>Ha concluido la restauración del manto procesional, que se encontraba en el taller desde el pasado mes de febrero.</p>
 <p>La intervención ha consistido en el paso del bordado a un terciopelo nuevo, la consolidación de las piezas más deterioradas y la reposición de las hojillas perdidas.</p>
-<p>El manto podrá contemplarse en el besamanos del próximo mes de diciembre.</p>`,
+<p>El manto podrá contemplarse en el próximo acto de veneración a la imagen titular.</p>`,
     diasDesdeHoy: -40,
   },
   {
@@ -89,17 +104,17 @@ export const NOTICIAS = [
     slug: 'nuevo-grupo-joven',
     titulo: 'Se constituye el grupo joven',
     extracto:
-      'Una veintena de hermanos de entre 14 y 25 años forman el nuevo grupo joven del Grupo Parroquial.',
+      `Una veintena de hermanos de entre 14 y 25 años forman el nuevo grupo joven ${deLaCorporacion()}.`,
     contenido: `<p>Queda constituido oficialmente el grupo joven, formado por una veintena de hermanos de entre 14 y 25 años.</p>
 <p>Su labor se centrará en la formación, la participación en los cultos y la colaboración en las actividades caritativas, con reuniones quincenales los viernes por la tarde.</p>
-<p>Los interesados en incorporarse pueden escribir a la secretaría del Grupo Parroquial.</p>`,
+<p>Los interesados en incorporarse pueden escribir a la secretaría ${deLaCorporacion()}.</p>`,
     diasDesdeHoy: -70,
   },
   {
     slug: 'reparto-papeletas-sitio',
     titulo: 'Calendario de reparto de papeletas de sitio',
     extracto:
-      'Se publica el calendario de reparto de papeletas para la estación de penitencia del Sábado de Pasión.',
+      'Se publica el calendario de reparto de papeletas para la próxima estación de penitencia.',
     contenido: `<p>La secretaría informa del calendario de reparto de papeletas de sitio para la próxima estación de penitencia.</p>
 <p>El reparto se realizará por orden de antigüedad y podrá tramitarse también desde el área de hermanos de esta web, donde cada hermano puede consultar su histórico y descargar la papeleta en PDF.</p>
 <p>Se recuerda que es imprescindible estar al corriente de las cuotas para retirar la papeleta.</p>`,
@@ -110,7 +125,7 @@ export const NOTICIAS = [
     titulo: 'Una familia hermana dona seis hachetas a la albacería',
     extracto:
       'La donación permite completar el tramo de acompañamiento del paso para la próxima salida procesional.',
-    contenido: `<p>Una familia de hermanos ha donado seis hachetas de alpaca plateada que pasan a formar parte del patrimonio del Grupo Parroquial.</p>
+    contenido: `<p>Una familia de hermanos ha donado seis hachetas de alpaca plateada que pasan a formar parte del patrimonio ${deLaCorporacion()}.</p>
 <p>Con esta donación se completa el tramo de acompañamiento del paso, que hasta ahora se cubría con enseres prestados por otras corporaciones de la ciudad.</p>
 <p>La albacería agradece públicamente el gesto y recuerda que el inventario completo puede consultarse en la sección de enseres.</p>`,
     diasDesdeHoy: -110,
@@ -140,9 +155,9 @@ async function sembrarNoticias() {
 
 export const EVENTOS = [
   {
-    title: 'Eucaristía de apertura de curso',
+    title: 'Eucaristía de inicio de las actividades',
     description: 'Celebración de acción de gracias con presentación del calendario de cultos.',
-    location: 'Parroquia de los Padres Pasionistas',
+    location: 'Sede canónica',
     diasDesdeHoy: 5,
     hora: 19,
     type: TipoEvento.CULTO,
@@ -150,7 +165,7 @@ export const EVENTOS = [
   {
     title: 'Reunión de la junta de gobierno',
     description: 'Sesión ordinaria mensual de la junta de gobierno.',
-    location: 'Casa parroquial, sala de juntas',
+    location: 'Sede, sala de juntas',
     diasDesdeHoy: 9,
     hora: 20,
     type: TipoEvento.REUNION,
@@ -172,18 +187,18 @@ export const EVENTOS = [
     type: TipoEvento.SOCIAL,
   },
   {
-    title: 'Solemne triduo a Nuestra Señora de los Desamparados',
-    description: 'Rosario, eucaristía y ejercicio del triduo cada una de las tres jornadas.',
-    location: 'Parroquia de los Padres Pasionistas',
+    title: 'Solemne triduo',
+    description: `Rosario, eucaristía y ejercicio del triduo en honor de ${identidad.titular}, cada una de las tres jornadas.`,
+    location: 'Sede canónica',
     diasDesdeHoy: 40,
     diasFin: 42,
     hora: 19,
     type: TipoEvento.CULTO,
   },
   {
-    title: 'Besamanos a la Sagrada Titular',
-    description: 'Jornada de veneración ante la imagen de Nuestra Señora de los Desamparados.',
-    location: 'Parroquia de los Padres Pasionistas',
+    title: 'Veneración a la imagen titular',
+    description: `Jornada de veneración ante la imagen de ${identidad.titular}.`,
+    location: 'Sede canónica',
     diasDesdeHoy: 43,
     hora: 11,
     type: TipoEvento.CULTO,
@@ -199,14 +214,14 @@ export const EVENTOS = [
   {
     title: 'Reparto de papeletas de sitio',
     description: 'Atención presencial en secretaría por orden de antigüedad.',
-    location: 'Casa parroquial, secretaría',
+    location: 'Sede, secretaría',
     diasDesdeHoy: 150,
     diasFin: 160,
     hora: 18,
     type: TipoEvento.OTRO,
   },
   {
-    title: 'Ensayo general de costaleros',
+    title: 'Ensayo general de portadores',
     description: 'Último ensayo antes de la estación de penitencia. Obligatoria la asistencia.',
     location: 'Explanada de la parroquia',
     diasDesdeHoy: 195,
@@ -214,9 +229,9 @@ export const EVENTOS = [
     type: TipoEvento.ENSAYO,
   },
   {
-    title: 'Estación de penitencia del Sábado de Pasión',
-    description: 'Salida procesional de Nuestra Señora de los Desamparados por el barrio de los Corazones.',
-    location: 'Desde la Parroquia de los Padres Pasionistas',
+    title: 'Estación de penitencia',
+    description: `Salida procesional de ${identidad.titular} por las calles de su feligresía.`,
+    location: 'Desde la sede canónica',
     diasDesdeHoy: 204,
     hora: 18,
     type: TipoEvento.PROCESION,
@@ -246,7 +261,7 @@ async function sembrarEventos() {
 export const PUBLICACIONES = [
   {
     titulo: 'Boletín informativo n.º 12',
-    descripcion: 'Crónica del curso, calendario de cultos y memoria de la vocalía de caridad.',
+    descripcion: 'Crónica del año, calendario de cultos y memoria de la vocalía de caridad.',
     categoria: TipoPublicacion.boletin,
     diasDesdeHoy: -20,
   },
@@ -269,15 +284,15 @@ export const PUBLICACIONES = [
     diasDesdeHoy: -150,
   },
   {
-    titulo: 'Anuario 2025-2026',
+    titulo: 'Anuario 2025',
     descripcion: 'Memoria gráfica y económica del ejercicio, con el balance aprobado en cabildo.',
     categoria: TipoPublicacion.anuario,
     diasDesdeHoy: -90,
   },
   {
-    titulo: 'Apuntes para una historia del Grupo Parroquial',
+    titulo: 'Apuntes para una historia de la corporación',
     descripcion:
-      'Recopilación documental sobre los orígenes de la devoción a los Desamparados en la parroquia.',
+      `Recopilación documental sobre los orígenes de la devoción a ${identidad.titular} en la parroquia.`,
     categoria: TipoPublicacion.historia,
     diasDesdeHoy: -300,
   },
@@ -341,13 +356,13 @@ export const PAGINAS = [
   {
     slug: 'quienes-somos',
     titulo: 'Quiénes somos',
-    contenido: `<p>El Grupo Parroquial de Nuestra Señora de los Desamparados es una asociación de fieles nacida en el seno de la Parroquia de los Padres Pasionistas de Málaga.</p>
-<p>Su fin es dar culto público a la Santísima Virgen bajo la advocación de los Desamparados, promover la formación cristiana de sus hermanos y ejercer la caridad con los más necesitados de la barriada.</p>`,
+    contenido: `<p>${LaCorporacion} ${verbo('es una asociación', 'son asociaciones')} de fieles ${verbo('nacida', 'nacidas')} en el seno de su parroquia.</p>
+<p>Su fin es dar culto público a ${identidad.titular}, promover la formación cristiana de sus hermanos y ejercer la caridad con los más necesitados del barrio.</p>`,
   },
   {
     slug: 'hazte-hermano',
     titulo: 'Hazte hermano',
-    contenido: `<p>Puede solicitar el ingreso cualquier persona bautizada que desee compartir la vida del Grupo Parroquial.</p>
+    contenido: `<p>Puede solicitar el ingreso cualquier persona bautizada que desee compartir la vida ${deLaCorporacion()}.</p>
 <p>La solicitud se tramita desde esta web o presencialmente en la secretaría. Una vez admitida por la junta de gobierno, se comunica al interesado la fecha de imposición de la medalla.</p>`,
   },
   {
@@ -360,7 +375,7 @@ export const PAGINAS = [
   {
     slug: 'horario-secretaria',
     titulo: 'Horario de secretaría',
-    contenido: `<p>La secretaría atiende el primer viernes de cada mes, de 19:30 a 21:00, en la casa parroquial (C. Corregidor Paz Guzmán, 13).</p>
+    contenido: `<p>La secretaría atiende el primer viernes de cada mes, de 19:30 a 21:00, en la sede.</p>
 <p>Durante la cuaresma el horario se amplía para el reparto de papeletas de sitio, según el calendario que se publica en el tablón y en esta web.</p>`,
   },
 ];
@@ -382,7 +397,7 @@ async function sembrarPaginas() {
 
 export const ENSERES = [
   { nombre: 'Hachetas de alpaca', referencia: 'HAC-01', categoria: 'Iluminación', ubicacion: 'Almacén A, estante 1', cantidadOptimo: 18, cantidadBueno: 4, cantidadReparar: 2 },
-  { nombre: 'Varales del palio', referencia: 'VAR-01', categoria: 'Paso', ubicacion: 'Almacén A, percha mural', cantidadOptimo: 10, cantidadBueno: 2, cantidadReparar: 0 },
+  { nombre: 'Varales',referencia: 'VAR-01', categoria: 'Paso', ubicacion: 'Almacén A, percha mural', cantidadOptimo: 10, cantidadBueno: 2, cantidadReparar: 0 },
   { nombre: 'Candelería del paso', referencia: 'CAN-01', categoria: 'Iluminación', ubicacion: 'Almacén A, estante 2', cantidadOptimo: 24, cantidadBueno: 6, cantidadReparar: 4 },
   { nombre: 'Faroles de cola', referencia: 'FAR-01', categoria: 'Iluminación', ubicacion: 'Almacén B', cantidadOptimo: 2, cantidadBueno: 0, cantidadReparar: 0 },
   { nombre: 'Insignias de tramo', referencia: 'INS-01', categoria: 'Cortejo', ubicacion: 'Almacén B, arcón', cantidadOptimo: 6, cantidadBueno: 3, cantidadReparar: 1 },
@@ -463,36 +478,70 @@ async function sembrarContabilidad() {
 
 /**
  * Las fotos con que arranca la cabecera del inicio, para que rote desde el
- * primer día; se cambian desde el CMS (Portada). Son del Grupo, como las de
- * public/images: antes eran de otras hermandades, de Wikimedia Commons, y
- * habrían salido sin el crédito que su licencia exige (docs/venta/licencias.md).
- * Una foto ajena no entra aquí. El seed no las repone si ya hay alguna guardada.
+ * primer día; se cambian desde el CMS (Portada). Son de cada corporación, así
+ * que no están en git: la siembra las toma de `instalacion/imagenes/portada/`
+ * (fuera de git, como datos-entidad.json; en el contenedor, el mismo montaje).
+ * Sin esa carpeta, la portada se siembra sin fotos y la Junta las sube desde
+ * el CMS: unas fotos de otra corporación no pueden llegarle a un cliente
+ * nuevo. Una foto ajena (de Commons, de otra corporación) tampoco entra ahí:
+ * saldría sin el crédito que su licencia exige (docs/venta/licencias.md).
+ *
+ * Valen las que tengan la forma de `FOTO_DE_PORTADA` (`01-rostro.webp`): son
+ * las únicas a las que `completarVariantes` hace copias, y el número fija el
+ * orden. El texto alternativo sale de `descripciones.json` en la misma carpeta
+ * ({ "01-rostro.webp": "…" }) o, si falta, del nombre del fichero.
  */
-export const IMAGENES_PORTADA = [
-  { archivo: '01-virgen-rostro.webp', descripcion: 'El rostro de Nuestra Señora de los Desamparados, con su corona de plata' },
-  { archivo: '02-trono-en-la-calle.webp', descripcion: 'El trono de la Virgen por la calle, entre los varales de la presidencia' },
-  { archivo: '03-nazarenos.webp', descripcion: 'Nazarenos del Grupo, de capirote negro, con sus cirios y la bandera blanca en la salida procesional' },
-  { archivo: '04-virgen-entre-candeleros.webp', descripcion: 'La Virgen en su altar, entre candeleros encendidos y el dosel rojo' },
-  { archivo: '05-hombres-de-trono.webp', descripcion: 'Los hombres de trono, en fila junto al trono antes de la salida' },
-  { archivo: '06-trono-de-noche.webp', descripcion: 'El trono de noche entre los edificios, con la candelería encendida, en blanco y negro' },
-];
+export const ORIGEN_IMAGENES_PORTADA = fileURLToPath(new URL('../../instalacion/imagenes/portada/', import.meta.url));
+
+export interface ImagenPortadaSembrada {
+  archivo: string;
+  descripcion: string;
+}
+
+// Lo que admite portada.schema.ts para la descripción, que es el texto alternativo.
+const descripcionValida = (texto: unknown): texto is string =>
+  typeof texto === 'string' && texto.trim().length > 0 && texto.length <= 200 && !/[<>]/.test(texto);
+
+/** «02-trono-en-la-calle.webp» → «Trono en la calle»: mejor que una foto sin texto alternativo. */
+const descripcionDelNombre = (archivo: string) =>
+  mayuscula(archivo.replace(/\.webp$/i, '').replace(/^\d{2}-/, '').replace(/-/g, ' '));
+
+/** Las fotos de partida de esta instalación, en orden; ninguna si no tiene carpeta. */
+export function imagenesPortada(carpeta = ORIGEN_IMAGENES_PORTADA): ImagenPortadaSembrada[] {
+  if (!existsSync(carpeta)) return [];
+  let descripciones: Record<string, unknown> = {};
+  const fichero = path.join(carpeta, 'descripciones.json');
+  if (existsSync(fichero)) {
+    // Un JSON roto no debe tumbar la siembra entera: se avisa y se tira del nombre.
+    try {
+      descripciones = JSON.parse(readFileSync(fichero, 'utf8').replace(/^\uFEFF/, ''));
+    } catch {
+      console.warn(`   (aviso: ${fichero} no es un JSON válido; las fotos llevan de texto su nombre)`);
+    }
+  }
+  return readdirSync(carpeta)
+    .filter((archivo) => FOTO_DE_PORTADA.test(archivo))
+    .sort()
+    .slice(0, MAX_IMAGENES_PORTADA)
+    .map((archivo) => ({
+      archivo,
+      descripcion: descripcionValida(descripciones[archivo]) ? descripciones[archivo] : descripcionDelNombre(archivo),
+    }));
+}
 
 /** La ruta que se guarda en la base de datos y que valida portada.schema.ts. */
 export const urlImagenPortada = (archivo: string) => `/storage/public/portada/${archivo}`;
-
-/** Los originales versionados, de los que salen las copias que sirve Express. */
-export const ORIGEN_IMAGENES_PORTADA = fileURLToPath(new URL('./activos/portada/', import.meta.url));
 
 /**
  * Copia las fotos donde `express.static` sirve `/storage/public`, con el mismo
  * cálculo de ruta que `instalarArchivoPendiente` (y la misma costura probada).
  */
-export function instalarImagenesPortada() {
+export function instalarImagenesPortada(imagenes = imagenesPortada(), origen = ORIGEN_IMAGENES_PORTADA) {
   const carpeta = path.join(process.cwd(), 'storage', 'public', 'portada');
   mkdirSync(carpeta, { recursive: true });
-  return IMAGENES_PORTADA.map((imagen) => {
+  return imagenes.map((imagen) => {
     const destino = path.join(carpeta, imagen.archivo);
-    if (!existsSync(destino)) copyFileSync(path.join(ORIGEN_IMAGENES_PORTADA, imagen.archivo), destino);
+    if (!existsSync(destino)) copyFileSync(path.join(origen, imagen.archivo), destino);
     return destino;
   });
 }
@@ -500,32 +549,37 @@ export function instalarImagenesPortada() {
 export async function sembrarImagenesPortada() {
   // Solo con la tabla vacía: la lista la manda el CMS y el seed no debe pisarla.
   if ((await db.imagenPortada.count()) > 0) return;
-  instalarImagenesPortada();
+  const imagenes = imagenesPortada();
+  if (imagenes.length === 0) {
+    console.log(`   (portada: sin fotos de partida en ${ORIGEN_IMAGENES_PORTADA}; se suben desde el CMS)`);
+    return;
+  }
+  instalarImagenesPortada(imagenes);
   // Con sus copias de 640 y 1280: van a pantalla completa en la primera visita.
   await completarVariantes({ directorio: path.join(process.cwd(), 'storage', 'public') });
   await db.imagenPortada.createMany({
-    data: IMAGENES_PORTADA.map((imagen, orden) => ({
+    data: imagenes.map((imagen, orden) => ({
       url: urlImagenPortada(imagen.archivo),
       descripcion: imagen.descripcion,
       orden,
     })),
   });
-  console.log(`   ${IMAGENES_PORTADA.length} fotos de la portada`);
+  console.log(`   ${imagenes.length} fotos de la portada`);
 }
 
 /**
- * Deja las dos páginas con los textos de siempre. Idempotente y **sin `update`**:
- * volver a sembrar no puede deshacer lo que alguien haya editado desde el CMS.
+ * Crea las páginas editables que falten: con la semilla de la instalación
+ * (instalacion/contenido-inicial.json) si la trae y, si no, con el contenido
+ * neutro de partida. Lo mismo que hace el arranque de la API, y por el mismo
+ * camino (`sembrarPaginasQueFalten`). Idempotente y **sin `update`**: volver a
+ * sembrar no puede deshacer lo que alguien haya editado desde el CMS.
  */
 export async function sembrarContenidoPaginas() {
-  for (const slug of SLUGS_CONTENIDO) {
-    await db.contenidoPagina.upsert({
-      where: { slug },
-      update: {},
-      create: { slug, datos: porDefecto(slug) as object },
-    });
-  }
-  console.log(`   ${SLUGS_CONTENIDO.length} páginas de contenido editable`);
+  const { conSemilla, neutras } = await sembrarPaginasQueFalten();
+  console.log(
+    `   ${SLUGS_CONTENIDO.length} páginas de contenido editable` +
+    (conSemilla.length || neutras.length ? ` (nuevas: ${conSemilla.length} con la semilla, ${neutras.length} con el contenido de partida)` : ''),
+  );
 }
 
 /**

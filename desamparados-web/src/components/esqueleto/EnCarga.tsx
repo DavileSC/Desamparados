@@ -6,8 +6,8 @@ import { GOLD, GRANATE } from '../../features/inicio/estilos'
 /** Lo que se espera antes de enseñar el esqueleto: si el servidor contesta antes, no hay parpadeo. */
 export const ESPERA_ANTES_DEL_ESQUELETO = 300
 
-/** `activo` lleva ya `ms` seguidos en verdadero. */
-function useTrasUnMomento(activo: boolean, ms = ESPERA_ANTES_DEL_ESQUELETO) {
+/** `activo` lleva ya `ms` seguidos en verdadero. Lo usan también los textos de la portada (`TextoDePortada`). */
+export function useTrasUnMomento(activo: boolean, ms = ESPERA_ANTES_DEL_ESQUELETO) {
   const [cumplido, setCumplido] = useState(false)
   useEffect(() => {
     if (!activo || cumplido) return

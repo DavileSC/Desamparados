@@ -29,11 +29,14 @@ describe('cejaDePagina', () => {
 })
 
 describe('fotos de partida', () => {
-  it('toda página con cabecera a sangre trae foto del repositorio, descripción y encuadre', () => {
+  it('toda página con cabecera a sangre nace sin foto (es de cada instalación), pero con su encuadre', () => {
+    // El contenido de partida es neutro: la foto la sube cada corporación, o
+    // llega con la semilla de su instalación. El encuadre sí tiene que estar:
+    // al mezclar, el servidor descarta las claves que el de partida no trae,
+    // y sin él no se podría guardar el de la foto que se suba.
     for (const { slug } of CATALOGO.paginas.filter((p) => tipoDeCabecera(p.slug) === 'a-sangre')) {
       const { cabecera } = (POR_DEFECTO as unknown as Record<string, PaginaDeBloques>)[slug]
-      expect(cabecera.foto, slug).toMatch(/^\/images\/cabeceras\/[\w-]+\.webp$/)
-      expect(cabecera.fotoAlt.trim(), slug).not.toBe('')
+      expect(cabecera.foto, slug).toBe('')
       expect(cabecera.encuadre, slug).toBeGreaterThanOrEqual(0)
     }
   })

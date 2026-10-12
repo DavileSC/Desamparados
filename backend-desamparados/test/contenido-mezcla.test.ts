@@ -4,13 +4,21 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import defectos from '../../shared/contenido-por-defecto.json' with { type: 'json' };
 import { mezclarConDefectos, porDefecto } from '../src/domain/contenido.js';
+
+// Los textos de partida, leídos del JSON y no escritos aquí: son neutros y
+// cambian con él; lo que estas pruebas fijan es la mezcla, no un texto.
+const HERO = defectos.portada.hero;
+// Copiado al cargar: si una mezcla escribiera encima del objeto de partida,
+// `HERO.titulo` cambiaría con él y la prueba de abajo no vería nada.
+const TITULO_DE_PARTIDA = `${HERO.titulo}`;
 
 test('un campo que no está guardado sale del valor por defecto', () => {
   const mezclado = mezclarConDefectos('portada', { hero: { titulo: 'Otro título' } }) as any;
 
   assert.equal(mezclado.hero.titulo, 'Otro título');
-  assert.equal(mezclado.hero.ceja, 'Grupo Parroquial · Málaga', 'lo no tocado conserva el texto de siempre');
+  assert.equal(mezclado.hero.ceja, HERO.ceja, 'lo no tocado conserva el texto de siempre');
   assert.equal(mezclado.publicaciones.boton, 'Archivo de publicaciones', 'un bloque entero que falta, también');
 });
 
@@ -59,14 +67,14 @@ test('lo guardado no puede alterar el objeto de por defecto', () => {
   // mezcla que escriba encima lo dejaría contaminado para la siguiente petición.
   mezclarConDefectos('portada', { hero: { titulo: 'Contaminado' } });
 
-  assert.equal((porDefecto('portada') as any).hero.titulo, 'Desamparados Málaga');
+  assert.equal((porDefecto('portada') as any).hero.titulo, TITULO_DE_PARTIDA);
 });
 
 test('un documento que no es un objeto se ignora entero', () => {
   // Una fila corrupta o un null no pueden tumbar la portada.
   for (const basura of [null, 'texto', 42, []]) {
     const mezclado = mezclarConDefectos('portada', basura) as any;
-    assert.equal(mezclado.hero.titulo, 'Desamparados Málaga');
+    assert.equal(mezclado.hero.titulo, TITULO_DE_PARTIDA);
   }
 });
 

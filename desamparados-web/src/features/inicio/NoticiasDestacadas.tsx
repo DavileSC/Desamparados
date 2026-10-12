@@ -9,6 +9,7 @@ import CintaDestacada from './CintaDestacada'
 import { pedirUltimasNoticias } from '../../lib/api/noticias'
 import { useDatosDePortada } from './useDatosDePortada'
 import { useTextosPortada } from './useContenidoPortada'
+import TextoDePortada from './TextoDePortada'
 import AvisosDeInicio from './AvisosDeInicio'
 import { SERIF, ceja, enlaceBloque } from './estilos'
 import { useModulos } from '../../hooks/useModulos'
@@ -45,17 +46,17 @@ export default function NoticiasDestacadas() {
         <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: 2, mb: { xs: 4, md: 5.5 } }}>
           <Box>
             <Revela>
-              <Typography component="span" sx={ceja}>{textos.actualidad.ceja}</Typography>
+              <Typography component="span" sx={ceja}><TextoDePortada anchos={['7em']}>{textos.actualidad.ceja}</TextoDePortada></Typography>
             </Revela>
             <Revela efecto="cortina" orden={1}>
               <Typography id="actualidad-titulo" variant="h2" component="h2" sx={{ fontFamily: SERIF, color: '#fff', m: 0 }}>
-                {textos.actualidad.titulo}
+                <TextoDePortada anchos={['8em']}>{textos.actualidad.titulo}</TextoDePortada>
               </Typography>
             </Revela>
           </Box>
           <Revela orden={2}>
             <Box component={Link} to="/noticias" sx={enlaceBloque}>
-              {textos.actualidad.enlace} <span className="home-visually-hidden">las noticias</span> <ArrowForwardIcon />
+              <TextoDePortada anchos={['5em']}>{textos.actualidad.enlace}</TextoDePortada> <span className="home-visually-hidden">las noticias</span> <ArrowForwardIcon />
             </Box>
           </Revela>
         </Box>

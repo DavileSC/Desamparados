@@ -3,6 +3,7 @@ import { screen, within } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import { DATOS } from '../../../test/instalacion'
 import AccesosRapidos from '../AccesosRapidos'
+import { site } from '../../../config/site'
 import { textosDePrueba, responderPortada } from './ayudas'
 
 // Las redes que siembran las pruebas en la caché (test/queryClient.ts) salen de
@@ -34,7 +35,7 @@ describe('AccesosRapidos', () => {
 
     expect(destinos).toEqual([
       '/hazte-hermano',
-      '/parroquia-pasionistas',
+      '/parroquia',
       '/nuestros-fines/caridad',
       '/historia',
       '/publicaciones/boletines',
@@ -42,21 +43,24 @@ describe('AccesosRapidos', () => {
     ])
   })
 
-  it('anuncia en cada enlace qué hay detrás, no solo su título', () => {
+  it('anuncia en cada enlace qué hay detrás, no solo su título', async () => {
     // Se rompe si la descripción se saca del enlace: un lector de pantalla
     // volvería a oír solo «Boletines», sin contexto.
+    responderPortada(textosDePrueba())
     renderWithProviders(<AccesosRapidos />)
 
     expect(
-      screen.getByRole('link', { name: /boletines.*boletín informativo y anuarios/i }),
+      await screen.findByRole('link', { name: /boletines.*boletín informativo y anuarios/i }),
     ).toHaveAttribute('href', '/publicaciones/boletines')
   })
 
-  it('destaca «Hazte hermano» como primer acceso, con titular y llamada a la acción', () => {
+  it('destaca «Hazte hermano» como primer acceso, con titular y llamada a la acción', async () => {
     // Se rompe si la captación de hermanos vuelve a ser un acceso más, sin
     // titular ni botón, o si su texto deja de llegar al lector de pantalla.
+    responderPortada(textosDePrueba())
     renderWithProviders(<AccesosRapidos />)
 
+    await screen.findByText(textosDePrueba().accesos.placa.titulo)
     const lista = screen.getByRole('list', { name: /accesos directos/i })
     const [primero] = within(lista).getAllByRole('link')
 
@@ -65,20 +69,22 @@ describe('AccesosRapidos', () => {
     expect(primero).toHaveAccessibleDescription(/comunidad de fe/i)
   })
 
-  it('con un número impar de accesos pequeños, Contacto ocupa la fila entera con «Escríbenos»', () => {
+  it('con un número impar de accesos pequeños, Contacto ocupa la fila entera con «Escríbenos»', async () => {
     // Hoy son cinco (sin YouTube): si el último no se estira, queda un hueco en el mosaico.
+    responderPortada(textosDePrueba())
     renderWithProviders(<AccesosRapidos />)
 
-    const contacto = screen.getByRole('link', { name: /contacto/i })
+    const contacto = await screen.findByRole('link', { name: /contacto/i })
     expect(within(contacto).getByText('Escríbenos')).toBeInTheDocument()
   })
 
-  it('con YouTube configurado, Contacto vuelve a ser un acceso normal', () => {
+  it('con YouTube configurado, Contacto vuelve a ser un acceso normal', async () => {
     // Con seis accesos pequeños el mosaico cuadra solo: estirar Contacto lo descuadraría.
-    redes.youtube = 'https://www.youtube.com/@desamparadosmalaga'
+    redes.youtube = 'https://www.youtube.com/@canal-de-prueba'
+    responderPortada(textosDePrueba())
     renderWithProviders(<AccesosRapidos />)
 
-    expect(screen.getByRole('link', { name: /canal de youtube/i })).toHaveAttribute('href', redes.youtube)
+    expect(await screen.findByRole('link', { name: /canal de youtube/i })).toHaveAttribute('href', redes.youtube)
     const contacto = screen.getByRole('link', { name: /contacto/i })
     expect(within(contacto).queryByText('Escríbenos')).not.toBeInTheDocument()
   })
@@ -110,19 +116,49 @@ describe('AccesosRapidos', () => {
   it('una tesela que el documento no trae conserva su texto de siempre', async () => {
     const textos = textosDePrueba()
     textos.accesos.teselas = textos.accesos.teselas.filter((t) => t.clave !== 'sede')
-    // Ancla para forzar la espera al pintado posterior al fetch: «Nuestra sede» y
-    // «Parroquia de los Pasionistas» son iguales al valor por defecto, así que por sí
-    // solos ya estarían en el primer pintado (el de respaldo, antes de resolver el
-    // fetch simulado) y no probarían nada. Cambiar «caridad» a un valor distinto del
-    // por defecto obliga a `findByText` a esperar al pintado real, el que sí lee el
-    // documento sin `sede`.
+    // Ancla para forzar la espera al pintado posterior al fetch. Mientras carga
+    // van huesos, pero si la API fallara saldrían los textos de partida, que son
+    // justo los que se buscan: cambiar «caridad» a un valor distinto obliga a
+    // `findByText` a esperar al pintado real, el que sí lee el documento sin `sede`.
     textos.accesos.teselas.find((t) => t.clave === 'caridad')!.titulo = 'Nuestra caridad'
     responderPortada(textos)
 
     renderWithProviders(<AccesosRapidos />)
 
     await screen.findByText('Nuestra caridad')
-    expect(screen.getByText('Nuestra sede')).toBeInTheDocument()
-    expect(screen.getByText('Parroquia de los Pasionistas')).toBeInTheDocument()
+    const sede = textosDePrueba().accesos.teselas.find((t) => t.clave === 'sede')!
+    expect(screen.getByText(sede.titulo)).toBeInTheDocument()
+    expect(screen.getByText(sede.descripcion)).toBeInTheDocument()
+  })
+
+  it('mientras llegan los textos, cada uno es un hueso con su forma, no los de partida', async () => {
+    // Se rompe si vuelven a pintarse los textos de partida mientras carga: en
+    // una instalación con su contenido, cada visita empezaría con unos textos
+    // que no son los suyos y que cambiarían de golpe al llegar.
+    let responder!: () => void
+    const textos = textosDePrueba()
+    textos.accesos.placa.titulo = 'Únete a nosotros'
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => new Promise<Response>((resolve) => {
+      responder = () => resolve(new Response(JSON.stringify({ imagenes: [], textos }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    })))
+    const { container } = renderWithProviders(<AccesosRapidos />)
+
+    const partida = textosDePrueba()
+    expect(screen.queryByText(partida.accesos.placa.titulo)).not.toBeInTheDocument()
+    expect(screen.queryByText(partida.accesos.teselas[0].titulo)).not.toBeInTheDocument()
+    expect(container.querySelectorAll('[data-esqueleto-portada]').length).toBeGreaterThan(4)
+    // Los destinos no esperan: no dependen del documento.
+    expect(within(screen.getByRole('list', { name: /accesos directos/i })).getAllByRole('link')[0]).toHaveAttribute('href', '/hazte-hermano')
+
+    responder()
+    expect(await screen.findByText('Únete a nosotros')).toBeInTheDocument()
+    expect(container.querySelector('[data-esqueleto-portada]')).toBeNull()
+  })
+
+  it('la letra velada de la placa es la inicial de la corporación, no una escrita', () => {
+    // Era una «D» fija (la de Desamparados): en otra instalación no decía nada.
+    renderWithProviders(<AccesosRapidos />)
+    const [placa] = within(screen.getByRole('list', { name: /accesos directos/i })).getAllByRole('link')
+    expect(within(placa).getByText(site.nombreCorto.charAt(0).toUpperCase(), { exact: true })).toHaveAttribute('aria-hidden', 'true')
   })
 })

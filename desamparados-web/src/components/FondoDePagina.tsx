@@ -1,15 +1,12 @@
 import { Box } from '@mui/material'
-import { caerALaOriginal, srcsetDeSubida } from '../lib/fotoSubida'
+import { propsDeFoto } from '../lib/fotoSubida'
+import { FOTO_DE_SIEMPRE } from '../config/fotosDeLaInstalacion'
+import { useFotoQueFalla } from '../hooks/useFotoQueFalla'
 
 /** Fondo de página: la foto se funde a él por arriba y por abajo de la ventana. */
 const FONDO = '#121113'
 /** La foto apenas se intuye: es un velo, no una foto que competir con el texto. */
 const OPACIDAD = 0.16
-
-// El srcset solo vale para la foto que viene en el repositorio, que existe en
-// dos tamaños. Una foto subida desde el CMS es un solo fichero.
-const FONDO_DEL_REPOSITORIO = '/images/hero-1920.webp'
-const SRCSET_DEL_REPOSITORIO = '/images/hero-960.webp 960w, /images/hero-1920.webp 1920w'
 
 /**
  * La foto velada detrás de toda una página. La caja de la foto es pegajosa
@@ -26,18 +23,20 @@ const SRCSET_DEL_REPOSITORIO = '/images/hero-960.webp 960w, /images/hero-1920.we
  * Quien lo use tiene que envolver la página en una caja `position: relative`
  * con `isolation: 'isolate'`, para que el `zIndex: -1` se quede dentro de ella
  * y no se vaya por detrás del fondo del documento.
+ *
+ * Si la foto no está (una fija que esta instalación no tiene, o una borrada),
+ * se quita y queda el fondo liso: es decorado, y un hueco no se nota.
  */
 export default function FondoDePagina({ url, altura = '100svh' }: { url: string; altura?: string }) {
-  const esLaDelRepositorio = url === FONDO_DEL_REPOSITORIO
+  const esLaDeSiempre = url === FOTO_DE_SIEMPRE
+  const { visible, alFallar } = useFotoQueFalla(url)
+  if (!visible) return null
   return (
     <Box aria-hidden="true" sx={{ position: 'absolute', inset: 0, zIndex: -1, overflow: 'clip', pointerEvents: 'none' }}>
       <Box sx={{ position: 'sticky', top: 0, height: altura }}>
         <Box
           component="img"
-          src={url}
-          srcSet={esLaDelRepositorio ? SRCSET_DEL_REPOSITORIO : srcsetDeSubida(url)}
-          sizes="100vw"
-          onError={(e) => { caerALaOriginal(e.currentTarget) }}
+          {...propsDeFoto(url, '100vw', alFallar)}
           alt=""
           decoding="async"
           fetchPriority="low"
@@ -47,10 +46,10 @@ export default function FondoDePagina({ url, altura = '100svh' }: { url: string;
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            // Corona y rostro a la vista en cualquier ventana con la foto del
-            // repositorio (el rostro está al 40 % de su ancho); con otra foto,
-            // un encuadre alto-centrado es lo que mejor aguanta.
-            objectPosition: esLaDelRepositorio ? '40% 28%' : '50% 30%',
+            // Corona y rostro a la vista en cualquier ventana con la foto de
+            // siempre (el rostro está al 40 % de su ancho); con otra foto, un
+            // encuadre alto-centrado es lo que mejor aguanta.
+            objectPosition: esLaDeSiempre ? '40% 28%' : '50% 30%',
             opacity: OPACIDAD,
             filter: 'saturate(0.85)',
           }}

@@ -145,7 +145,7 @@ const NOMBRES_PROPIOS = /\b(?:Desamparados|Goretti|Málaga|Sábado de Pasión)\b
 // Las páginas propias de esta corporación (su Titular, su salida, su rosario)
 // sí la nombran: son su contenido, y van en un módulo que otra instalación no
 // enciende. El contenido de partida (shared/contenido-por-defecto.json) no se
-// recorre: no es código, y su versión neutra es la etapa 6.
+// recorre aquí: no es código, y tiene su propia prueba más abajo.
 const PAGINAS_PROPIAS = [
   'desamparados-web/src/features/titular/',
   'desamparados-web/src/features/corporacion/sabado-pasion/',
@@ -181,6 +181,22 @@ test('el código de núcleo no nombra a esta corporación, su templo, su ciudad 
     }
   }
   assert.deepEqual(hallazgos, [], `Nombres propios de esta corporación en el código de núcleo (léelos de la instalación, del contacto o de la tabla Salida):\n${hallazgos.join('\n')}`);
+});
+
+// El contenido de partida es neutro (etapa 6 de la Fase 8): con él nace la web
+// de cualquier corporación que no traiga su semilla
+// (instalacion/contenido-inicial.json). Lo de Desamparados vive en la suya, y
+// ninguna foto del repositorio se cita: las fotos son de cada instalación, y
+// una ruta a /images/ que no existe sería un hueco roto en la web de otra.
+const NO_NEUTRO = /Desamparados|Goretti|Málaga|Pasionistas|Sábado de Pasión|\/images\/|Grupo Parroquial|Hermandad|Cofradía/;
+
+test('el contenido de partida no nombra a ninguna corporación ni cita fotos del repositorio', () => {
+  const fichero = join(RAIZ, 'shared/contenido-por-defecto.json');
+  const hallazgos = lineasDe(readFileSync(fichero, 'utf8'))
+    .map((l, i) => [i + 1, l] as const)
+    .filter(([, l]) => NO_NEUTRO.test(l))
+    .map(([n, l]) => `shared/contenido-por-defecto.json:${n}: ${l.trim()}`);
+  assert.deepEqual(hallazgos, [], `El contenido de partida tiene que ser neutro (lo de una corporación va en su instalacion/contenido-inicial.json):\n${hallazgos.join('\n')}`);
 });
 
 // «Cofrade» es el miembro de una cofradía: aquí son «hermanos» en todas las

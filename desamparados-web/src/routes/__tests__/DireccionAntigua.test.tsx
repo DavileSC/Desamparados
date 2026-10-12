@@ -15,6 +15,7 @@ function Destino() {
 function entrarEn(direccion: string) {
   const router = createMemoryRouter(
     [
+      { path: '/parroquia-pasionistas', element: <DireccionAntigua a="/parroquia" /> },
       { path: '/corporacion/*', element: <DireccionAntigua /> },
       { path: '/actualidad/*', element: <DireccionAntigua /> },
       { path: '/hermanos/*', element: <DireccionAntigua /> },
@@ -51,5 +52,13 @@ describe('las direcciones de antes de quitar las secciones', () => {
     const router = entrarEn('/corporacion')
     expect(await screen.findByRole('heading', { name: 'Esta calle no está en el recorrido' })).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/corporacion')
+  })
+})
+
+describe('una página que cambió de dirección entera', () => {
+  it('/parroquia-pasionistas lleva a /parroquia, con su consulta y su ancla', () => {
+    // Los enlaces guardados en el CMS llevan anclas (#como-llegar).
+    entrarEn('/parroquia-pasionistas?a=1#como-llegar')
+    expect(screen.getByText('en /parroquia?a=1#como-llegar')).toBeInTheDocument()
   })
 })

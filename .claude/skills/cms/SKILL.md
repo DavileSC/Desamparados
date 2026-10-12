@@ -30,7 +30,7 @@ Los leen el servidor y la web. Un cambio en uno exige tocar los dos lados.
 | `tipos-de-bloque.json` | los tipos de bloque y su orden en «Añadir bloque» |
 | `presentacion-de-bloques.json` | opciones de presentación; **el primer valor es el de siempre** |
 | `paginas-publicas.json` | páginas editables: slug, ruta, grupo del índice |
-| `contenido-por-defecto.json` | el contenido de partida de cada página |
+| `contenido-por-defecto.json` | el contenido de partida de cada página: **neutro** (ni nombres, ni ciudad, ni fotos; lo vigila `sin-corporacion-escrita.test.ts`). Lo de una corporación va en su `instalacion/contenido-inicial.json` (`despliegue.md`, «El contenido de partida») |
 | `destinos-de-enlace.json`, `topes-*.json` | destinos de enlaces y límites de texto y vídeo |
 
 ## Añadir un tipo de bloque
@@ -56,6 +56,11 @@ pública (que pinta `PaginaDeBloquesPublica slug="…"`) y el sitemap.
   claves que no reconoce, así que sin migración lo editado se pierde. Hace
   falta migración (SQL en `prisma/migrations/`, o script como
   `migrar:bloques`) y avisarlo al desplegar. Ver `docs/notas-del-proyecto.md` §9.
+- **Quitar o renombrar una clave del contenido de partida rompe las semillas**
+  (`instalacion/contenido-inicial.json`): el arranque rechaza una clave que el
+  de partida no tiene. Añadir claves no rompe nada. Y en la cabecera de una
+  página, mantener `encuadre` aunque la foto de partida esté vacía: sin la
+  clave, la mezcla tiraría el encuadre de la foto que se suba.
 - Opciones de presentación nuevas: añadir al final, sin cambiar el primer valor.
 - El HTML de los textos se sanea en el servidor; en la web, `limpiarHtml`.
 - El contenido de ejemplo (textos inventados) se marca como tal y se avisa

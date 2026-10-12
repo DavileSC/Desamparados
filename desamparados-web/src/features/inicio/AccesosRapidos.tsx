@@ -15,10 +15,19 @@ import NorthEastIcon from '@mui/icons-material/NorthEast'
 import { useContacto } from '../../hooks/useContacto'
 import { GOLD, GRANATE, SERIF, TINTA, ceja } from './estilos'
 import { useTextosPortada, TEXTOS_POR_DEFECTO } from './useContenidoPortada'
+import TextoDePortada from './TextoDePortada'
 import type { TextosPortada } from '../../lib/api/portada'
 import { useModulos } from '../../hooks/useModulos'
 import type { Requisito } from '../../domain/modulos'
 import { MARCA } from '../../theme/marca'
+import { site } from '../../config/site'
+
+/**
+ * La letra grande y velada del fondo de la placa: la inicial del nombre corto
+ * de la corporación (era una «D» escrita, la de Desamparados). Sin letra si el
+ * nombre no empieza por una (comillas, cifras): mejor nada que un signo suelto.
+ */
+const INICIAL = /^\p{L}/u.test(site.nombreCorto.trim()) ? site.nombreCorto.trim().charAt(0).toLocaleUpperCase('es') : ''
 
 // Lo que NO se edita desde el CMS: qué teselas hay, su icono, su destino y su
 // orden. El documento solo pone título y descripción, casados por `clave`.
@@ -37,7 +46,7 @@ const HAZTE_HERMANO = { href: '/hazte-hermano' }
 // Tampoco la agenda ni el recorrido: tienen bloque propio en la portada, y los
 // accesos son para lo que no se ve en ella.
 const ACCESOS: Acceso[] = [
-  { clave: 'sede', icon: <ChurchOutlinedIcon fontSize="inherit" />, href: '/parroquia-pasionistas' },
+  { clave: 'sede', icon: <ChurchOutlinedIcon fontSize="inherit" />, href: '/parroquia' },
   { clave: 'caridad', icon: <VolunteerActivismOutlinedIcon fontSize="inherit" />, href: '/nuestros-fines/caridad' },
   { clave: 'historia', icon: <HistoryEduOutlinedIcon fontSize="inherit" />, href: '/historia' },
   { clave: 'boletines', icon: <ArticleOutlinedIcon fontSize="inherit" />, href: '/publicaciones/boletines' },
@@ -92,24 +101,24 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
           userSelect: 'none',
         }}
       >
-        D
+        {INICIAL}
       </Box>
       <Typography component="span" id={`${id}-ceja`} sx={{ ...ceja, position: 'relative', color: MARCA.sobrePrincipalSuave }}>
-        {placa.ceja}
+        <TextoDePortada anchos={['7em']}>{placa.ceja}</TextoDePortada>
       </Typography>
       <Typography
         component="span"
         id={`${id}-titulo`}
         sx={{ position: 'relative', display: 'block', maxWidth: 320, fontFamily: SERIF, fontSize: { xs: 30, md: 40 }, lineHeight: 1.1, letterSpacing: '-0.015em' }}
       >
-        {placa.titulo}
+        <TextoDePortada anchos={['8em', '6em']}>{placa.titulo}</TextoDePortada>
       </Typography>
       <Typography
         component="span"
         id={`${id}-texto`}
         sx={{ position: 'relative', display: 'block', maxWidth: 320, mt: { xs: 1.75, md: 2.5 }, mb: { xs: 3, md: 4 }, fontSize: { xs: 14, md: 15 }, lineHeight: 1.7, color: MARCA.sobrePrincipalTexto }}
       >
-        {placa.texto}
+        <TextoDePortada anchos={['20em', '18em', '9em']}>{placa.texto}</TextoDePortada>
       </Typography>
       <Box
         component="span"
@@ -125,7 +134,7 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
           '& svg': { fontSize: 18, color: 'currentColor', transition: 'transform .25s ease' },
         }}
       >
-        {placa.boton}
+        <TextoDePortada anchos={['9em']}>{placa.boton}</TextoDePortada>
       </Box>
     </Box>
   )
@@ -133,8 +142,8 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
 
 interface TeselaProps {
   icon: ReactNode
-  title: string
-  description: string
+  title: ReactNode
+  description: ReactNode
   href: string
   ancha: boolean
 }
@@ -288,7 +297,7 @@ export default function AccesosRapidos() {
                 orden={i + 1}
                 sx={{ display: 'flex', ...(ancha ? { gridColumn: { xs: '1 / -1', md: conPlaca ? '2 / -1' : '1 / -1' } } : {}) }}
               >
-                <Tesela icon={acceso.icon} href={acceso.href} title={titulo} description={descripcion} ancha={ancha} />
+                <Tesela icon={acceso.icon} href={acceso.href} title={<TextoDePortada anchos={['6em']}>{titulo}</TextoDePortada>} description={<TextoDePortada anchos={['11em']}>{descripcion}</TextoDePortada>} ancha={ancha} />
               </Revela>
             )
           })}

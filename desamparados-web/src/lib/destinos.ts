@@ -32,7 +32,10 @@ export const DESTINOS_FIJOS: Destino[] = [
 export const destinosActivos = (activos: ReadonlySet<string>): Destino[] =>
   DESTINOS_FIJOS.filter((d) => cumple(d.modulo ?? 'nucleo', activos))
 
-const RUTAS = new Set(DESTINOS_FIJOS.map((d) => d.ruta))
+// Con las que cambiaron de dirección (`antiguas`): se aceptan, como en el
+// servidor, para que un enlace ya guardado no impida guardar su página, pero
+// no se ofrecen (no están en DESTINOS_FIJOS).
+const RUTAS = new Set([...DESTINOS_FIJOS.map((d) => d.ruta), ...DESTINOS.antiguas.map((d) => d.ruta)])
 
 export const PREFIJO_NOTICIA = DESTINOS.prefijoNoticia
 const NOTICIA = new RegExp(`^${PREFIJO_NOTICIA.replace(/\//g, '\\/')}[a-z0-9]+(?:-[a-z0-9]+)*$`)

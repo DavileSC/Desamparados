@@ -34,7 +34,8 @@ la licencia.
 
 - **Las calles del recorrido** son datos de **OpenStreetMap**, con licencia
   **ODbL**. Se descargaron de Overpass el 25-09-2026 y se sirven desde un fichero
-  propio (`public/mapas/barrio-desamparados.json`), sin pedir nada a ningún
+  propio de cada instalación (`instalacion/mapas/barrio.json`, fuera de git
+  desde la etapa 6 de la Fase 8), sin pedir nada a ningún
   servidor de mapas. La licencia obliga a dos cosas, y las dos están hechas:
   - el mapa dice «© colaboradores de OpenStreetMap» con su enlace, en la web
     pública y en el editor del CMS (`ATRIBUCION`, en `components/mapa/barrio.ts`);
@@ -52,7 +53,7 @@ este Grupo solo cubre unos 400 m alrededor del suyo.
 
 | Fotos | De quién | Qué permite |
 |---|---|---|
-| Todas las de `public/images` (cabeceras, trono, Virgen, hero, nazarenos, triduo, ajuar y enseres) y las fotos de partida de la portada (`prisma/activos/portada`) | **Del Grupo**, según el historial del proyecto. Conviene tener por escrito el permiso de quien las hizo | Las usa el Grupo en su web. **No se entregan a otro cliente**: son contenido suyo |
+| Todas las de `instalacion/imagenes` (antes `public/images`; fuera de git y de la imagen desde la etapa 6 de la Fase 8: cabeceras, trono, Virgen, hero, nazarenos, triduo, ajuar y enseres) y las fotos de partida de la portada (`prisma/activos/portada`) | **Del Grupo**, según el historial del proyecto. Conviene tener por escrito el permiso de quien las hizo | Las usa el Grupo en su web. **No se entregan a otro cliente**: son contenido suyo |
 | `templo-goretti.webp`, la ilustración de la parroquia | **Generada con IA** para el proyecto, tomando una foto del templo como referencia (confirmado el 01-10-2026) | Se puede usar. Es un dibujo nuevo del edificio, que se ve desde la calle, y no una copia de la foto. Si se rehace, que siga así: la foto como referencia, nunca calcada |
 | El escudo y el escudo en oro | **Del Grupo** | Su marca. Cada cliente trae la suya |
 

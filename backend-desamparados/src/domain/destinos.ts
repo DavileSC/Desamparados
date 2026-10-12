@@ -10,6 +10,13 @@ export const RUTAS_DESTINO: ReadonlySet<string> = new Set([
   ...destinos.otros.map((d) => d.ruta),
 ]);
 
+/**
+ * Las que cambiaron de dirección (`antiguas`): la web las redirige a la
+ * nueva, y los enlaces guardados con ellas (en la base del VPS) tienen que
+ * seguir pasando al volver a guardar su página. No son destinos que ofrecer.
+ */
+const RUTAS_ANTIGUAS: ReadonlySet<string> = new Set(destinos.antiguas.map((d) => d.ruta));
+
 /** Una noticia concreta: el prefijo y un slug como los que genera el servidor. */
 const NOTICIA = new RegExp(`^${destinos.prefijoNoticia.replace(/\//g, '\\/')}[a-z0-9]+(?:-[a-z0-9]+)*$`);
 
@@ -36,5 +43,5 @@ export function esDestinoValido(enlace: string): boolean {
   const almohadilla = enlace.indexOf('#');
   const ruta = almohadilla === -1 ? enlace : enlace.slice(0, almohadilla);
   if (almohadilla !== -1 && !ANCLA.test(enlace.slice(almohadilla + 1))) return false;
-  return RUTAS_DESTINO.has(ruta) || NOTICIA.test(ruta);
+  return RUTAS_DESTINO.has(ruta) || RUTAS_ANTIGUAS.has(ruta) || NOTICIA.test(ruta);
 }

@@ -33,7 +33,7 @@ describe('menuPublico', () => {
         'Corporación /corporacion',
         '  Historia /historia',
         '    Órganos de Gobierno /historia/organos-de-gobierno',
-        '  Parroquia · Pasionistas /parroquia-pasionistas',
+        '  Parroquia /parroquia',
         '  Nuestros fines /nuestros-fines',
         '    Caridad /nuestros-fines/caridad',
         '    Formación /nuestros-fines/formacion',

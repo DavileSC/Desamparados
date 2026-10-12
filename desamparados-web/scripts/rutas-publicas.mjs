@@ -31,6 +31,9 @@ export function rutasDelBloquePublico() {
   return fuente.slice(inicio, fin).split('\n').flatMap((linea) => {
     const ruta = /path:\s*'([^']+)'/.exec(linea)
     if (!ruta) return []
+    // Una dirección vieja que lleva a otra concreta (`<DireccionAntigua a=…>`,
+    // `<Navigate>`) no es una página: anunciarla sería anunciar una redirección.
+    if (/<DireccionAntigua\s+a=|<Navigate\b/.test(linea)) return []
     const modulo = /pagina\(\w+,\s*(?:'([^']+)'|\[([^\]]*)\])\)/.exec(linea)
     const requisito = !modulo ? ['nucleo'] : modulo[1] ? [modulo[1]] : [...modulo[2].matchAll(/'([^']+)'/g)].map((m) => m[1])
     return [{ ruta: ruta[1], requisito }]

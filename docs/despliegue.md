@@ -745,7 +745,10 @@ La web se vende con **una instalación por cliente**: su servidor, su base y su
 dominio. Todo lo que distingue a una corporación de otra está en
 `instalacion/datos-entidad.json` (nombre, nombre corto, advocación, localidad,
 dominio, datos de Secretaría) y en el `.env` (secretos y claves del banco). El
-código es el mismo para todas.
+código es el mismo para todas. Junto al primero, también fuera de git y
+opcionales: la marca (`instalacion/marca/`), las fotos fijas
+(`instalacion/imagenes/`) y el contenido con el que nace la web
+(`instalacion/contenido-inicial.json`, ver «El contenido de partida»).
 
 ### Los datos de la corporación
 
@@ -995,6 +998,207 @@ ls -l /srv/desamparados/instalacion/marca
 `*.*` deja fuera `originales/`, que no hace falta en el servidor. Tras el
 despliegue, el `grep -i marca` de arriba tiene que decir «de la instalación»
 en los nueve ficheros y ningún «Falta …».
+
+### Las fotos de la corporación
+
+Las fotos fijas que trae la web de una corporación (el hero, las cabeceras de
+las páginas, el ajuar, los enseres, el trono, los nazarenos, el templo…) viven
+en **`instalacion/imagenes/`**, fuera de git y fuera de la imagen de Docker,
+como la marca. La web las pide en **`/images/…`**, la misma dirección de
+siempre: la base de datos guarda esas URL en las páginas y en la portada, y no
+hay que tocarlas.
+
+- **Qué va**: lo que antes era `desamparados-web/public/images/`, **con la
+  misma estructura** (`hero-1920.webp`, `cabeceras/rostro.webp`,
+  `ajuar/manto.webp`…): `/images/cabeceras/rostro.webp` es
+  `instalacion/imagenes/cabeceras/rostro.webp`. Solo se sirven fotos (`.webp`,
+  `.jpg`, `.jpeg`, `.png`, `.avif`, `.gif`); otro fichero, uno oculto o uno que
+  no está dan **404**.
+- **Las cabeceras llevan su copia de 1000 px** al lado
+  (`cabeceras/rostro-1000.webp`), que es la que se baja el móvil; y algunas
+  fijas, sus copias reducidas (`hero-960.webp`, `nazarenos-1200.webp`…). La
+  lista, en `desamparados-web/src/config/fotosDeLaInstalacion.ts`.
+- **Cómo se sirven**: nginx las lee **directamente del montaje**
+  (`location /images/` con `alias /app/instalacion/imagenes/`, en
+  `docker/nginx/ubicaciones.conf` y `sitio-local.conf`), sin copiarlas en cada
+  arranque como la marca: son megas y el VPS es justo. En `npm run dev` y
+  `vite preview` las sirve el plugin de `scripts/instalacion-vite.mjs` desde la
+  misma carpeta. Una foto nueva se ve al momento, sin reiniciar nada (nginx la
+  cachea una semana en el navegador: a una sustituida con el mismo nombre le
+  cuesta eso).
+- **Sin la carpeta no se rompe nada**: cada foto es un 404 y la web pinta su
+  fondo donde iba (la cabecera de la portada sin foto, los carteles de la
+  agenda sin la columna de la foto…). Una instalación nueva no tiene por qué
+  tenerla: sus fotos las sube desde el CMS (`/storage/public/`).
+
+**Permisos.** Como nginx las lee del montaje con su propio usuario (no root),
+**tienen que poder leerlas otros**: ficheros en `644` y **todas las carpetas en
+`755`, `instalacion/` incluida** (la crea así `instalar.sh`). Con un fichero en
+`640` esa foto da **403**; con una carpeta en `750`, todas las de dentro.
+
+#### Antes del primer despliegue con las fotos fuera de git (Desamparados)
+
+Desde la etapa 6 de la Fase 8 (octubre de 2026), la imagen ya no lleva las
+fotos de Desamparados. **El VPS NECESITA `instalacion/imagenes/` antes de
+desplegar**: sin ella, todas las fotos de las páginas, de la portada y de la
+agenda que apuntan a `/images/` dan 404 (no se rompe la web, pero se queda sin
+fotos). En el PC, desde PowerShell en la carpeta del proyecto (con
+`instalacion/imagenes/` completa; si no la tiene, ver `notas-del-proyecto.md`
+§13):
+
+```powershell
+scp -r instalacion\imagenes ubuntu@51.255.45.220:/tmp/imagenes
+```
+
+(`/tmp/imagenes` no debe existir antes: si existe, `scp -r` la mete dentro.)
+
+En el servidor (`cp -r` con `--no-preserve=mode` y después los permisos, que
+`install` no copia carpetas enteras):
+
+```bash
+sudo rm -rf /srv/desamparados/instalacion/imagenes
+sudo cp -r --no-preserve=mode,ownership /tmp/imagenes /srv/desamparados/instalacion/imagenes
+sudo chown -R desamparados:desamparados /srv/desamparados/instalacion/imagenes
+sudo find /srv/desamparados/instalacion/imagenes -type d -exec chmod 755 {} +
+sudo find /srv/desamparados/instalacion/imagenes -type f -exec chmod 644 {} +
+sudo chmod 755 /srv/desamparados/instalacion
+rm -r /tmp/imagenes
+```
+
+No hace falta reiniciar nada para que se vean (nginx las lee en cada
+petición), pero el `location /images/` nuevo llega con la imagen nueva: hasta
+el despliegue, la web vieja las sigue sirviendo de dentro. Comprobarlo después:
+
+```bash
+curl -sI https://pruebas.desamparadosmalaga.com/images/hero-1920.webp | head -3   # 200, image/webp
+curl -sI https://pruebas.desamparadosmalaga.com/images/no-esta.webp | head -1     # 404
+```
+
+Un 403 es de permisos (ver arriba).
+
+### El mapa del barrio
+
+El plano del recorrido (el bloque «Itinerario» sobre el mapa, su editor en el
+CMS y la página 404) se pinta sobre **las calles del barrio de la
+corporación**: un fichero de OpenStreetMap que vive en
+**`instalacion/mapas/barrio.json`**, fuera de git y de la imagen, como las
+fotos. La web lo pide en **`/mapas/barrio.json`**: nginx lo lee del montaje
+(`location = /mapas/barrio.json` con `alias`, en `ubicaciones.conf` y
+`sitio-local.conf`) y Vite, en `npm run dev` y `vite preview`, desde la misma
+carpeta. Las fuentes del mapa (`/mapas/fuentes/`, glifos de MapLibre) son
+genéricas y siguen en la web.
+
+- **Sin el fichero no se rompe nada** (404): el itinerario «sobre el mapa» se
+  enseña como la línea de paradas, la 404 se queda con el texto y el editor
+  del recorrido del CMS dice que esta instalación no tiene mapa del barrio (las
+  paradas se siguen editando).
+- **Permisos**: como las fotos, `644` el fichero y `755` las carpetas,
+  `instalacion/` incluida. Si no, 403 y el mapa dice «No se pudo cargar».
+- **Comprimido, opcional pero recomendable**: pesa más de un mega. Con un
+  `barrio.json.gz` al lado (`gzip -k -9 barrio.json`), nginx manda ese
+  (`gzip_static`) y no comprime en cada visita. Si se regenera el `.json`, hay
+  que rehacer el `.gz`, o se seguiría sirviendo el viejo.
+- **Caché**: un día en el navegador.
+
+#### Antes del primer despliegue con el mapa fuera de git (Desamparados)
+
+Desde la etapa 6 de la Fase 8, la imagen ya no lleva el barrio de
+Desamparados. **El VPS NECESITA `instalacion/mapas/barrio.json` antes de
+desplegar**: sin él, la página del recorrido sale en lista y la 404 sin plano.
+En el PC, desde PowerShell en la carpeta del proyecto:
+
+```powershell
+scp instalacion\mapas\barrio.json ubuntu@51.255.45.220:/tmp/barrio.json
+```
+
+En el servidor:
+
+```bash
+sudo install -d -o desamparados -g desamparados -m 755 /srv/desamparados/instalacion/mapas
+sudo install -o desamparados -g desamparados -m 644 /tmp/barrio.json /srv/desamparados/instalacion/mapas/barrio.json
+cd /srv/desamparados/instalacion/mapas && sudo -u desamparados gzip -k -9 -f barrio.json && sudo chmod 644 barrio.json.gz
+rm /tmp/barrio.json
+curl -sI https://pruebas.desamparadosmalaga.com/mapas/barrio.json | head -1   # 200 (tras el despliegue)
+```
+
+#### El barrio de otra corporación
+
+No hay orden que lo genere: el de Desamparados se descargó a mano de
+[Overpass](https://overpass-turbo.eu) el 25-09-2026. Para otra corporación:
+
+1. **La caja**: el recorrido con unos 400 m de margen por cada lado, en
+   grados `[oeste, sur, este, norte]`. Más grande pesa más y no aporta nada.
+2. **La consulta** en Overpass, con esa caja (`sur,oeste,norte,este`):
+   ```
+   [out:json][timeout:60];
+   (
+     way["highway"](S,O,N,E);
+     way["building"](S,O,N,E);
+     way["leisure"~"park|garden"](S,O,N,E);
+     way["landuse"~"grass|forest|recreation_ground"](S,O,N,E);
+   );
+   out geom;
+   ```
+3. **Convertirla a la forma que lee la web** (`Barrio` en
+   `desamparados-web/src/components/mapa/barrio.ts`; el de Desamparados sirve
+   de ejemplo):
+   - `licencia`: «Datos © colaboradores de OpenStreetMap, con licencia ODbL
+     (https://www.openstreetmap.org/copyright). Descargados de Overpass el
+     <fecha>.» Es obligatoria (ODbL) y el mapa la enseña siempre.
+   - `caja`: la del paso 1.
+   - `calles`: FeatureCollection de `LineString` con `{ clase, nombre }`;
+     `clase` es `mayor` (primary, secondary, tertiary…), `menor` (residential,
+     unclassified, living_street), `peatonal` (pedestrian, footway, steps) o
+     `servicio` (service). El editor pega el recorrido a estas calles.
+   - `edificios`: FeatureCollection de `Polygon` con `{ alto }` en metros (de
+     `height`, o `building:levels` × 3; si no hay nada, 10). El más cercano a
+     la salida del recorrido se pinta como el templo.
+   - `verdes`: FeatureCollection de `Polygon`.
+   - Coordenadas con 6 decimales (de sobra para un barrio y el fichero pesa
+     menos).
+4. Dejarlo en `instalacion/mapas/barrio.json` (y su `.gz`), con los permisos
+   de arriba. Después se dibuja el recorrido en el CMS, en el bloque
+   «Itinerario» de la página del recorrido.
+
+### El contenido de partida
+
+Los textos con los que nace la web pública (la portada y las 20 páginas por
+bloques) salen de **`shared/contenido-por-defecto.json`**, que desde la etapa
+6 de la Fase 8 es **neutro**: textos genéricos y presentables, sin nombre de
+corporación, ciudad, templo ni calles, y sin ninguna foto. Cada corporación
+los cambia desde el CMS. Una prueba (`sin-corporacion-escrita.test.ts`) impide
+que vuelva a nombrar a nadie o a citar fotos de `/images/`.
+
+Lo propio de una corporación puede traerse escrito en
+**`instalacion/contenido-inicial.json`** (la «semilla»), fuera de git como
+`datos-entidad.json`:
+
+- **Misma forma que el de partida** y cualquier subconjunto de páginas: una
+  clave por página (`"portada"`, `"historia"`…), y dentro de cada una solo lo
+  que se quiera cambiar; lo que falte sale del neutro (los objetos se mezclan
+  campo a campo; una lista, como `bloques`, sustituye entera a la del neutro).
+- **Se valida al arrancar la API**: una página que no existe, una clave que el
+  neutro no tiene (se perdería en silencio), un valor de otro tipo o un
+  documento que no pasa el esquema de su página **impiden arrancar**, con la
+  lista de todo lo que falla. El HTML se sanea como en un guardado del CMS.
+- **Solo cuenta para las páginas que aún no tienen fila** en la base
+  (`ContenidoPagina`). El arranque de la API (y `npm run seed`) crea las que
+  falten con la semilla de esa página o, si no la trae, con el neutro. **Nunca
+  pisa una que exista**: desde que hay fila, manda la base, como con el
+  contacto y los módulos. Cambiar el fichero después no cambia nada.
+- **Sin el fichero no pasa nada**: las páginas que falten nacen neutras.
+
+**El VPS de Desamparados no la necesita**: sus 21 páginas ya están en la base
+con su contenido de siempre, y el arranque no las toca. La de Desamparados
+(el contenido de partida tal como era antes de la etapa 6) está guardada en
+`instalacion/contenido-inicial.json` del PC A; sirve para montar una base
+nueva de Desamparados (otra web de pruebas, una restauración sin copia) con su
+contenido. Para eso se sube como `datos-entidad.json`, en `644`, **antes del
+primer arranque** contra esa base.
+
+En las pruebas no se lee la de la máquina; una prueba que quiera una la pide
+con `CONTENIDO_INICIAL_DE_PRUEBA=<ruta relativa a la raíz>` (hay ejemplos en
+`shared/__fixtures__/contenido-inicial/`).
 
 ### Instalar una nueva
 

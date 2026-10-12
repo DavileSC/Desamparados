@@ -1,4 +1,5 @@
 import type { SyntheticEvent } from 'react'
+import { COPIAS_DE_FOTOS_FIJAS } from '../config/fotosDeLaInstalacion'
 
 /**
  * Las fotos subidas desde el CMS llevan dos copias reducidas al lado
@@ -9,22 +10,18 @@ import type { SyntheticEvent } from 'react'
  * (`storage/public/portada/01-virgen-rostro.webp`) también las llevan: las
  * genera el mismo script (`utils/variantes-publicas.ts`). Las demás
  * direcciones (las de `/images/`, los jpg y png de antes) no tienen copias y se
- * quedan como están, salvo la foto de la portada por defecto, que lleva la suya.
+ * quedan como están, salvo las fijas de la instalación que las llevan
+ * (`COPIAS_DE_FOTOS_FIJAS`).
  */
 const SUBIDA = /^((?:https?:\/\/[^/?#]+)?\/storage\/public\/)([a-f0-9]{32})\.webp$/i
 const DE_LA_SIEMBRA = /^((?:https?:\/\/[^/?#]+)?\/storage\/public\/portada\/)(\d{2}-[a-z0-9-]+?)(?<!-640|-1280)\.webp$/i
-
-/** Las fotos fijas de `public/images` que tienen una copia más pequeña al lado. */
-const FIJAS: Record<string, string> = {
-  '/images/hero-1920.webp': '/images/hero-960.webp 960w, /images/hero-1920.webp 1920w',
-}
 
 /** El ancho de la foto original como mucho: el backend la recorta a 1920 px de lado. */
 const ANCHO_ORIGINAL = 1920
 
 /** El `srcset` de una foto subida, o undefined si la URL no es de una subida con copias. */
 export function srcsetDeSubida(url: string | null | undefined): string | undefined {
-  if (url && FIJAS[url]) return FIJAS[url]
+  if (url && Object.hasOwn(COPIAS_DE_FOTOS_FIJAS, url)) return COPIAS_DE_FOTOS_FIJAS[url]
   const partes = url ? SUBIDA.exec(url) ?? DE_LA_SIEMBRA.exec(url) : null
   if (!partes) return undefined
   const [, carpeta, hex] = partes

@@ -57,8 +57,16 @@ function cajaDe(linea: Coordenada[]) {
  * Con «reducir movimiento» la cámara empieza enseñando el recorrido entero y
  * no se desliza. En la vista en vivo del constructor sale entero y dibujado.
  */
-export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario & { recorrido: Recorrido } }) {
+export default function RecorridoEnMapa({ bloque, onSinMapa }: {
+  bloque: BloqueItinerario & { recorrido: Recorrido }
+  /** Esta instalación no tiene mapa del barrio: quien lo pinta enseña las paradas de otra forma. */
+  onSinMapa?: () => void
+}) {
   const { paradas } = bloque
+  // Por una referencia: el mapa se crea una vez y no debe rehacerse porque
+  // cambie la función.
+  const avisarSinMapa = useRef(onSinMapa)
+  avisarSinMapa.current = onSinMapa
   const linea = bloque.recorrido.linea
   const reducir = useReducedMotion() ?? false
   const enConstructor = useModoEdicion() !== null
@@ -166,6 +174,10 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
     let medidor: ResizeObserver | null = null
     cargarBarrio().then((barrio) => {
       if (!vivo || !contenedor.current) return
+      if (!barrio) {
+        avisarSinMapa.current?.()
+        return
+      }
       // La iglesia de la que sale y a la que vuelve: se destaca, y la cruz va encima.
       const templo = edificioDelTemplo(barrio, linea[0])
       const m = new maplibregl.Map({

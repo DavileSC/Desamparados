@@ -8,13 +8,14 @@ import { ANCHOS_VARIANTES, nombreDeVariante } from '../domain/variantes-de-foto.
 const FOTO_WEBP = /^[a-f0-9]{32}\.webp$/i;
 
 /**
- * Las fotos de la portada que pone la siembra (`portada/01-virgen-rostro.webp`):
+ * Las fotos de la portada que pone la siembra (`portada/01-rostro.webp`):
  * son las primeras que ve cualquier visita y van a pantalla completa, así que
- * también llevan copias (`01-virgen-rostro-640.webp`). La web las reconoce por
- * la misma forma (ver `lib/fotoSubida.ts`). Las copias no cuentan como fotos.
+ * también llevan copias (`01-rostro-640.webp`). La web las reconoce por la
+ * misma forma (ver `lib/fotoSubida.ts`). Las copias no cuentan como fotos. La
+ * siembra la usa también para elegir qué fotos de la instalación toma.
  */
 const CARPETA_PORTADA = 'portada';
-const FOTO_DE_PORTADA = /^\d{2}-[a-z0-9-]+(?<!-640|-1280)\.webp$/i;
+export const FOTO_DE_PORTADA = /^\d{2}-[a-z0-9-]+(?<!-640|-1280)\.webp$/i;
 
 /**
  * Una WebP sin pérdida lleva un trozo `VP8L` en la cabecera. Sus copias se

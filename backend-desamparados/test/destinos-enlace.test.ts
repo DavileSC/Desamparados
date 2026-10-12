@@ -32,6 +32,15 @@ describe('destinos de los enlaces', () => {
     assert.equal(esDestinoValido('/noticias/-a'), false);
   });
 
+  test('una dirección antigua que redirige se acepta, pero no es un destino que ofrecer', () => {
+    // /parroquia-pasionistas pasó a /parroquia (12-10-2026): las páginas que
+    // la llevan guardada tienen que poder volver a guardarse.
+    assert.ok(esDestinoValido('/parroquia-pasionistas'));
+    assert.ok(esDestinoValido('/parroquia-pasionistas#como-llegar'));
+    assert.ok(!RUTAS_DESTINO.has('/parroquia-pasionistas'));
+    assert.ok(RUTAS_DESTINO.has('/parroquia'));
+  });
+
   test('nada de fuera del sitio', () => {
     for (const enlace of ['https://otro.test', '//otro.test', 'javascript:alert(1)', 'corporacion']) {
       assert.equal(esDestinoValido(enlace), false, enlace);

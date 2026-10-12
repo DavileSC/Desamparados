@@ -4,12 +4,15 @@ import { GOLD, SERIF } from '../../inicio/estilos'
 import { claseDelCartel, cuandoEnCartel, fotoDelCartel, hora, notaDelActo } from './cultos'
 import EnlacesDelActo from './EnlacesDelActo'
 import { MARCA } from '../../../theme/marca'
+import { useFotoQueFalla } from '../../../hooks/useFotoQueFalla'
 
 const ORO_SUAVE = MARCA.acentoCartel
 
 /**
  * Un culto solemne, como un cartel: la foto a un lado y, al otro, qué es,
- * su dedicatoria, cuándo y dónde. En el móvil la foto va arriba.
+ * su dedicatoria, cuándo y dónde. En el móvil la foto va arriba. Si la foto no
+ * está (la fija de una instalación que no la tiene, o una borrada), el cartel
+ * se queda con el texto a todo lo ancho: ni icono roto ni una columna vacía.
  */
 export default function CartelDeCulto({ evento, sinHora = false }: {
   evento: ApiEvent
@@ -17,23 +20,24 @@ export default function CartelDeCulto({ evento, sinHora = false }: {
   sinHora?: boolean
 }) {
   const foto = fotoDelCartel(evento)
+  const { visible: conFoto, alFallar } = useFotoQueFalla(foto.src)
   const nota = notaDelActo(evento)
   return (
     <Box
       component="article"
       aria-labelledby={`cartel-${evento.id}`}
-      sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '42% minmax(0, 1fr)' }, backgroundColor: '#120f11', minHeight: { md: 300 } }}
+      sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: conFoto ? '42% minmax(0, 1fr)' : '1fr' }, backgroundColor: '#120f11', minHeight: { md: 300 } }}
     >
-      <Box sx={{
+      {conFoto && <Box sx={{
         position: 'relative', height: { xs: 220, md: 'auto' }, overflow: 'hidden',
         '&::after': {
           content: '""', position: 'absolute', inset: 0,
           background: { xs: 'linear-gradient(180deg, transparent 55%, #120f11)', md: 'linear-gradient(90deg, transparent 55%, #120f11)' },
         },
       }}>
-        <Box component="img" src={foto.src} alt={foto.alt} loading="lazy" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }} />
-      </Box>
-      <Box sx={{ p: { xs: '6px 16px 20px', md: '32px 36px 28px 16px' }, display: 'grid', gap: 1, alignContent: 'center' }}>
+        <Box component="img" src={foto.src} alt={foto.alt} loading="lazy" onError={alFallar} sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }} />
+      </Box>}
+      <Box sx={{ p: { xs: conFoto ? '6px 16px 20px' : '20px 16px', md: conFoto ? '32px 36px 28px 16px' : '32px 36px 28px' }, display: 'grid', gap: 1, alignContent: 'center' }}>
         <Typography component="span" sx={{ fontSize: 11, letterSpacing: '0.24em', textTransform: 'uppercase', color: ORO_SUAVE }}>
           {claseDelCartel(evento)}
         </Typography>

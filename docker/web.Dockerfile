@@ -8,7 +8,9 @@
 # con ellos index.html, el manifest, robots.txt, /instalacion.js y el sitio de
 # nginx (docker/nginx/40-instalacion.sh). Tampoco su marca: el escudo y los
 # iconos se copian al arrancar de /app/instalacion/marca a /marca/ (o, si
-# faltan, los genéricos de shared/marca-de-partida). Una sola imagen para todas.
+# faltan, los genéricos de shared/marca-de-partida). Ni sus fotos: nginx sirve
+# /images/ directamente de /app/instalacion/imagenes (ubicaciones.conf). Una
+# sola imagen para todas.
 #
 # El contexto de construcción es la raíz del repositorio (igual que la API),
 # porque aquí se copian tanto `desamparados-web/` como `docker/nginx/`.

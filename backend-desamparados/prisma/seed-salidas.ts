@@ -5,10 +5,18 @@ import db from '../src/config/db';
 import type { PuestoDelCatalogo } from '../src/domain/salidas';
 
 /**
- * Las dos salidas de siempre, con los mismos valores que les dio la migración
- * `salidas_configurables`. Los puestos vivían en shared/puestos-procesion.json;
- * desde que las salidas son filas del CMS, este es su único origen en el
- * código: lo que se cambie después se cambia en el CMS.
+ * Las dos salidas de partida: una con ropa y cuota (la estación de penitencia,
+ * con su fecha atada a la Pascua) y otra sin túnica y con donativo, para que
+ * cada camino de la mesa y de las papeletas tenga con qué funcionar. Los
+ * puestos vivían en shared/puestos-procesion.json; desde que las salidas son
+ * filas del CMS, este es su único origen en el código: lo que se cambie
+ * después se cambia en el CMS.
+ *
+ * Nombres e indicaciones de cualquier corporación, no de una. Los slugs son los
+ * de la migración `salidas_configurables`, que ya crea las dos filas en toda
+ * base nueva (con los nombres de entonces): con otro slug, cada siembra
+ * añadiría dos salidas más, y las pruebas, la demostración y la mesa las buscan
+ * por él. Cada corporación puede cambiarlo después en la ficha de la salida.
  */
 
 const PUESTOS_PASION: PuestoDelCatalogo[] = [
@@ -25,7 +33,7 @@ const PUESTOS_PASION: PuestoDelCatalogo[] = [
   { nombre: 'Mantilla', tunica: false, tocado: null, alturaHombro: false },
 ];
 
-// En el Rosario vespertino se va de traje: nadie lleva túnica.
+// En el rosario se va de traje: nadie lleva túnica.
 const PUESTOS_ROSARIO: PuestoDelCatalogo[] = [
   { nombre: 'Cruz de guía', tunica: false, tocado: null, alturaHombro: false },
   { nombre: 'Farol', tunica: false, tocado: null, alturaHombro: false },
@@ -40,8 +48,8 @@ const PUESTOS_ROSARIO: PuestoDelCatalogo[] = [
 export const SALIDAS_DE_SIEMPRE: Prisma.SalidaCreateInput[] = [
   {
     slug: 'sabado-de-pasion',
-    nombre: 'Sábado de Pasión',
-    articulo: 'el',
+    nombre: 'Estación de penitencia',
+    articulo: 'la',
     orden: 1,
     conRopa: true,
     cobro: CobroSalida.CUOTA,
@@ -49,18 +57,18 @@ export const SALIDAS_DE_SIEMPRE: Prisma.SalidaCreateInput[] = [
     fecha: FechaSalida.PASCUA,
     diasDesdePascua: -8,
     puestos: PUESTOS_PASION as unknown as Prisma.InputJsonValue,
-    indicaciones: 'Se ruega puntualidad y decoro en la vestimenta. Es obligatorio portar la medalla del Grupo Parroquial y calzado oscuro. Guarde silencio durante la formación.',
+    indicaciones: 'Se ruega puntualidad y decoro en la vestimenta. Es obligatorio portar la medalla de la corporación y calzado oscuro. Guarde silencio durante la formación.',
   },
   {
     slug: 'rosario-vespertino',
-    nombre: 'Rosario vespertino',
+    nombre: 'Rosario de la Aurora',
     articulo: 'el',
     orden: 2,
     conRopa: false,
     cobro: CobroSalida.DONATIVO,
     fecha: FechaSalida.MANUAL,
     puestos: PUESTOS_ROSARIO as unknown as Prisma.InputJsonValue,
-    indicaciones: 'Se va en traje oscuro, con la medalla del Grupo Parroquial. Se ruega puntualidad y recogimiento durante el rezo.',
+    indicaciones: 'Se va en traje oscuro, con la medalla de la corporación. Se ruega puntualidad y recogimiento durante el rezo.',
   },
 ];
 

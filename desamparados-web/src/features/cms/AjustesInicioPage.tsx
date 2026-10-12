@@ -1,6 +1,7 @@
-import { useMemo, useState, type ChangeEvent, type KeyboardEvent, type MouseEvent } from 'react'
+import { useMemo, useState, type ChangeEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react'
 import {
   Alert, Box, Button, ButtonBase, Chip, CircularProgress, FormControlLabel, Menu, MenuItem, Paper, Radio, RadioGroup, Stack, TextField, Typography,
+  type SxProps, type Theme,
 } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -16,6 +17,7 @@ import { ORO_CLARO } from './inicio/estiloRetablo'
 import { conArticulo } from '../../domain/articulos'
 import { fotosDelAnio, hoyEnTexto, tiempoDelDia, tramoEnPalabras } from '../../domain/tiemposDelRetablo'
 import { site } from '../../config/site'
+import { useFotoQueFalla } from '../../hooks/useFotoQueFalla'
 
 const TIPOS = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_BYTES = 5 * 1024 * 1024
@@ -37,6 +39,16 @@ const diasHasta = (dia: string) => {
   return Math.round((Date.UTC(Number(dia.slice(0, 4)), Number(dia.slice(5, 7)) - 1, Number(dia.slice(8, 10))) - Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())) / 86_400_000)
 }
 
+/**
+ * Una foto de las vistas previas, o `hueco` si no hay o falla. La de partida
+ * del retablo es una fija de la instalación (`FOTO_POR_DEFECTO`): en la que no
+ * la tiene da 404, y el navegador pintaría el icono roto con el texto encima.
+ */
+function FotoOHueco({ src, alt, sx, hueco = null }: { src: string; alt: string; sx: SxProps<Theme>; hueco?: ReactNode }) {
+  const { visible, alFallar } = useFotoQueFalla(src)
+  return visible ? <Box component="img" src={src} alt={alt} onError={alFallar} sx={sx} /> : <>{hueco}</>
+}
+
 /** La foto recortada como en el Inicio: en columna (ordenador) o en franja (móvil), con su cuenta atrás. */
 function Vista({ foto, x, y, forma, cuenta }: { foto: string; x: number; y: number; forma: 'columna' | 'franja'; cuenta: CuentaDeHoy | null }) {
   const columna = forma === 'columna'
@@ -44,7 +56,7 @@ function Vista({ foto, x, y, forma, cuenta }: { foto: string; x: number; y: numb
   return (
     <Stack spacing={0.75} sx={{ minWidth: 0 }}>
       <Box sx={{ position: 'relative', overflow: 'hidden', borderRadius: 1.5, backgroundColor: '#0b0a0c', ...(columna ? { width: 140, aspectRatio: '9 / 19' } : { width: '100%', maxWidth: 420, aspectRatio: '4 / 1' }) }}>
-        <Box component="img" src={foto} alt="" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${x}% ${y}%`, opacity: 0.85 }} />
+        <FotoOHueco src={foto} alt="" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${x}% ${y}%`, opacity: 0.85 }} />
         <Box sx={{ position: 'absolute', inset: 0, background: columna ? 'linear-gradient(180deg, rgba(18,16,19,0) 45%, #121013 100%)' : 'linear-gradient(90deg, rgba(18,16,19,.85), rgba(18,16,19,.1))' }} />
         {cuenta && dias !== null && (
           <Box sx={{ position: 'absolute', left: 12, right: 8, bottom: 8, color: '#f7f1e8', display: 'flex', flexDirection: columna ? 'column' : 'row', alignItems: columna ? 'flex-start' : 'baseline', columnGap: 1 }}>
@@ -305,7 +317,7 @@ export default function AjustesInicioPage() {
                     <ButtonBase onClick={() => setElegido(f.indice)} aria-pressed={activa} aria-label={`${f.nombre}: cambiar su foto o su encuadre`}
                       sx={{ flex: 1, minWidth: 0, justifyContent: 'flex-start', gap: 1.5, p: 1, textAlign: 'left', borderRadius: 1.5 }}>
                       <Box sx={{ width: 48, height: 60, flex: 'none', borderRadius: 1, overflow: 'hidden', bgcolor: '#0b0a0c' }}>
-                        {f.foto && <Box component="img" src={f.foto} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${f.x}% ${f.y}%`, display: 'block' }} />}
+                        {f.foto && <FotoOHueco src={f.foto} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${f.x}% ${f.y}%`, display: 'block' }} />}
                       </Box>
                       <Box sx={{ minWidth: 0 }}>
                         {/* Un `div`: las etiquetas de MUI son bloques y no caben dentro de un párrafo. */}
@@ -361,7 +373,13 @@ export default function AjustesInicioPage() {
                 onKeyDown={conTeclas}
                 sx={{ position: 'relative', alignSelf: 'flex-start', maxWidth: '100%', borderRadius: 1.5, overflow: 'hidden', cursor: 'crosshair', backgroundColor: '#0b0a0c', '&:focus-visible': { outline: `2px solid ${ORO_CLARO}`, outlineOffset: 2 } }}
               >
-                <Box component="img" src={fotoVisible} alt="Foto del retablo" sx={{ display: 'block', width: 'auto', maxWidth: '100%', height: 'auto', maxHeight: 280, userSelect: 'none', pointerEvents: 'none' }} />
+                <FotoOHueco
+                  src={fotoVisible}
+                  alt="Foto del retablo"
+                  sx={{ display: 'block', width: 'auto', maxWidth: '100%', height: 'auto', maxHeight: 280, userSelect: 'none', pointerEvents: 'none' }}
+                  // Sin foto, un hueco del tamaño de la columna: el punto se sigue pudiendo poner.
+                  hueco={<Box sx={{ width: 133, height: 280, display: 'grid', placeItems: 'center', p: 2, textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,.6)' }}>Sin foto: elige una</Box>}
+                />
                 <Box aria-hidden="true" sx={{ position: 'absolute', left: `${encuadre.x}%`, top: `${encuadre.y}%`, width: 34, height: 34, ml: '-17px', mt: '-17px', borderRadius: '50%', border: `2px solid ${ORO_CLARO}`, boxShadow: '0 0 0 3px rgba(0,0,0,.45)' }} />
               </Box>
             ) : (

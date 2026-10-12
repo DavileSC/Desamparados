@@ -19,7 +19,7 @@
     { "ruta": "/nuestros-fines", "requisito": ["nucleo"] },
     { "ruta": "/nuestros-fines/caridad", "requisito": ["nucleo"] },
     { "ruta": "/nuestros-fines/formacion", "requisito": ["nucleo"] },
-    { "ruta": "/parroquia-pasionistas", "requisito": ["nucleo"] },
+    { "ruta": "/parroquia", "requisito": ["nucleo"] },
     { "ruta": "/politica-cookies", "requisito": ["nucleo"] },
     { "ruta": "/politica-privacidad", "requisito": ["nucleo"] },
     { "ruta": "/publicaciones", "requisito": ["publicaciones"] },

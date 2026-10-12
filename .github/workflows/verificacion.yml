@@ -201,6 +201,9 @@ jobs:
       - name: Comprobar que index.html se rellena al arrancar
         run: |
           grep -q '{{nombre}}' dist/index.html || { echo "::error::dist/index.html ya no lleva las marcas: ¿se han compilado los datos dentro?"; exit 1; }
+          # Ni las fotos de la corporación: van en instalacion/imagenes y nginx
+          # las lee del montaje. Si vuelve public/images, irían en la imagen de todas.
+          [ ! -e dist/images ] || { echo "::error::dist/ lleva images/: las fotos de la corporación van en instalacion/imagenes."; exit 1; }
           node scripts/instalacion-web.mjs --plantilla dist/index.html --destino "$RUNNER_TEMP/web" --datos ../shared/datos-entidad.ejemplo.json --comprimir
           if grep -n '{{' "$RUNNER_TEMP/web/index.html"; then echo "::error::Quedan marcas sin rellenar en index.html."; exit 1; fi
           [ -f "$RUNNER_TEMP/web/marca/escudo-sobre-oscuro.png" ] || { echo "::error::La orden no ha copiado la marca a marca/."; exit 1; }

@@ -133,13 +133,24 @@ jobs:
       # La web arrancada como en el servidor: lo que sirve tiene que llevar los
       # datos montados y ninguna marca de la plantilla (también comprimido, que
       # es lo que manda gzip_static), y /instalacion.js no se puede quedar en
-      # la caché del navegador.
+      # la caché del navegador. Con unas fotos de la instalación montadas
+      # (instalacion/imagenes), en 644/755 como en el servidor.
       - name: Prueba de humo
         run: |
           imagen="$REGISTRO-web:$GITHUB_SHA"
           nombre=$(node -p "require('./shared/datos-entidad.ejemplo.json').identidad.nombre")
+          fotos=$(mktemp -d)
+          mkdir "$fotos/cabeceras"
+          cp shared/marca-de-partida/icono-192.png "$fotos/cabeceras/prueba.png"
+          echo 'no es una foto' > "$fotos/notas.txt"
+          chmod 755 "$fotos" "$fotos/cabeceras" && chmod 644 "$fotos/cabeceras/prueba.png" "$fotos/notas.txt"
+          mapas=$(mktemp -d)
+          echo '{"caja":[0,0,1,1]}' > "$mapas/barrio.json"
+          chmod 755 "$mapas" && chmod 644 "$mapas/barrio.json"
           docker run -d --name web-humo -p 127.0.0.1:8099:80 \
             -v "$PWD/shared/datos-entidad.ejemplo.json:/app/instalacion/datos-entidad.json:ro" \
+            -v "$fotos:/app/instalacion/imagenes:ro" \
+            -v "$mapas:/app/instalacion/mapas:ro" \
             -v "$PWD/docker/nginx/sitio-tras-proxy.conf:/etc/nginx/conf.d/desamparados.conf:ro" \
             "$imagen" >/dev/null
           trap 'docker logs web-humo; docker rm -f web-humo >/dev/null' EXIT
@@ -177,6 +188,34 @@ jobs:
           for viejo in /favicon.ico /favicon-32.png /apple-touch-icon.png /icono-192.png /icono-512.png; do
             curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' "http://127.0.0.1:8099$viejo" | grep -q '^301 .*/marca/' \
               || { echo "::error::$viejo no redirige a /marca/."; mal=1; }
+          done
+          # Las fotos de la instalación, del montaje y no de la imagen. Lo que
+          # no está, o no es una foto, es un 404: nunca la portada con un 200.
+          es_imagen /images/cabeceras/prueba.png
+          for ruta in /images/no-esta.webp /images/notas.txt /images/cabeceras/; do
+            codigo=$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:8099$ruta")
+            [ "$codigo" = 404 ] || { echo "::error::$ruta da $codigo y no 404."; mal=1; }
+          done
+          # El mapa del barrio, también del montaje.
+          curl -fsS http://127.0.0.1:8099/mapas/barrio.json | grep -q '"caja"' \
+            || { echo "::error::/mapas/barrio.json no sirve el del montaje."; mal=1; }
+          exit "$mal"
+
+      # Sin instalacion/mapas ni instalacion/imagenes (otra corporación), el
+      # barrio y las fotos son un 404, nunca la portada con un 200.
+      - name: Prueba de humo sin mapa ni fotos
+        run: |
+          imagen="$REGISTRO-web:$GITHUB_SHA"
+          docker run -d --name web-sin -p 127.0.0.1:8098:80 \
+            -v "$PWD/shared/datos-entidad.ejemplo.json:/app/instalacion/datos-entidad.json:ro" \
+            -v "$PWD/docker/nginx/sitio-tras-proxy.conf:/etc/nginx/conf.d/desamparados.conf:ro" \
+            "$imagen" >/dev/null
+          trap 'docker logs web-sin; docker rm -f web-sin >/dev/null' EXIT
+          for _ in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:8098/ && break; sleep 1; done
+          mal=0
+          for ruta in /mapas/barrio.json /images/hero-1920.webp; do
+            codigo=$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:8098$ruta")
+            [ "$codigo" = 404 ] || { echo "::error::Sin montaje, $ruta da $codigo y no 404."; mal=1; }
           done
           exit "$mal"
 

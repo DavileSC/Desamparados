@@ -28,6 +28,8 @@ function SondaPortadaPublica() {
 }
 
 type Textos = typeof POR_DEFECTO.portada
+/** El título del hero de partida: neutro, se lee del JSON y no se escribe aquí. */
+const TITULO = POR_DEFECTO.portada.hero.titulo
 
 interface Opciones {
   /** Ruta cuyo PUT responde 500, para probar el guardado a medias. */
@@ -184,7 +186,7 @@ describe('PortadaAdminPage', () => {
 
   it('sin cambios, guardar no se puede pulsar ni se manda nada', async () => {
     const { peticiones } = montar()
-    await screen.findByDisplayValue('Desamparados Málaga')
+    await screen.findByDisplayValue(TITULO)
 
     expect(screen.getByRole('button', { name: 'Guardar' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Descartar cambios' })).toBeDisabled()
@@ -195,7 +197,7 @@ describe('PortadaAdminPage', () => {
 
   it('descartar vuelve los textos y las fotos a lo guardado, sin mandar nada', async () => {
     const { peticiones, usuario } = montar()
-    const titulo = await screen.findByDisplayValue('Desamparados Málaga')
+    const titulo = await screen.findByDisplayValue(TITULO)
 
     await retocar(usuario, titulo)
     await usuario.click(screen.getByRole('button', { name: /bajar la foto 1/i }))
@@ -205,8 +207,8 @@ describe('PortadaAdminPage', () => {
     await usuario.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Descartar cambios' }))
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-    expect(screen.getByDisplayValue('Desamparados Málaga')).toBeInTheDocument()
-    expect(screen.queryByDisplayValue('Desamparados Málaga!')).not.toBeInTheDocument()
+    expect(screen.getByDisplayValue(TITULO)).toBeInTheDocument()
+    expect(screen.queryByDisplayValue(`${TITULO}!`)).not.toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Foto 1' })).toBeInTheDocument()
     expect(screen.getByDisplayValue('Primera')).toBeInTheDocument()
     expect(screen.getAllByDisplayValue(/Primera|Segunda/).map((el) => (el as HTMLInputElement).value)).toEqual(['Primera', 'Segunda'])
@@ -216,12 +218,12 @@ describe('PortadaAdminPage', () => {
 
   it('la vista previa pinta el bloque real con lo que se está escribiendo', async () => {
     const { usuario } = montar()
-    const titulo = await screen.findByDisplayValue('Desamparados Málaga')
+    const titulo = await screen.findByDisplayValue(TITULO)
 
     const vista = screen.getByTestId('vista-previa-portada')
-    expect(vista).toHaveTextContent('Desamparados Málaga')
+    expect(vista).toHaveTextContent(TITULO)
     await retocar(usuario, titulo)
-    expect(vista).toHaveTextContent('Desamparados Málaga!')
+    expect(vista).toHaveTextContent(`${TITULO}!`)
     // Solo para mirar: fuera del foco y de los lectores de pantalla.
     expect(vista).toHaveAttribute('inert')
     expect(vista).toHaveAttribute('aria-hidden', 'true')
@@ -229,7 +231,7 @@ describe('PortadaAdminPage', () => {
 
   it('la vista previa de un apartado solo se monta al abrirlo', async () => {
     const { usuario } = montar()
-    await screen.findByDisplayValue('Desamparados Málaga')
+    await screen.findByDisplayValue(TITULO)
     expect(screen.getAllByTestId('vista-previa-portada')).toHaveLength(1)
 
     await usuario.click(screen.getByRole('button', { name: /^procesión$/i }))
@@ -239,7 +241,7 @@ describe('PortadaAdminPage', () => {
   it('si solo cambian los textos, no reescribe la lista de fotos', async () => {
     const { peticiones, usuario } = montar()
 
-    await retocar(usuario, await screen.findByDisplayValue('Desamparados Málaga'))
+    await retocar(usuario, await screen.findByDisplayValue(TITULO))
     await guardar(usuario)
 
     await waitFor(() => expect(putsA(peticiones)).toEqual(['/api/contenido/portada']))
@@ -285,14 +287,14 @@ describe('PortadaAdminPage', () => {
     expect(screen.getByRole('button', { name: /accesos directos/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^procesión$/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /publicaciones/i })).toBeInTheDocument()
-    expect(screen.getByDisplayValue('Desamparados Málaga')).toBeInTheDocument()
+    expect(screen.getByDisplayValue(TITULO)).toBeInTheDocument()
     expect(screen.getByDisplayValue('Últimas noticias')).toBeInTheDocument()
-    expect(screen.getByDisplayValue('DESAMPARADOS')).toBeInTheDocument()
+    expect(screen.getByDisplayValue(POR_DEFECTO.portada.publicaciones.marcaDeAgua)).toBeInTheDocument()
   })
 
   it('cada campo dice dónde sale en la web pública', async () => {
     montar()
-    await screen.findByDisplayValue('Desamparados Málaga')
+    await screen.findByDisplayValue(TITULO)
 
     expect(screen.getByText(/el texto pequeño en versalitas, sobre el título grande/i)).toBeInTheDocument()
     const fotoDelSabado = screen.getByText(/ocupa el fondo del bloque a todo lo ancho/i)
@@ -304,7 +306,7 @@ describe('PortadaAdminPage', () => {
   it('guarda las fotos y los textos, cada uno a su sitio', async () => {
     const { peticiones, usuario } = montar()
 
-    await retocar(usuario, await screen.findByDisplayValue('Desamparados Málaga'))
+    await retocar(usuario, await screen.findByDisplayValue(TITULO))
     await retocar(usuario, descripcionesDeFoto()[0])
     await guardar(usuario)
 
@@ -313,7 +315,7 @@ describe('PortadaAdminPage', () => {
       expect(peticiones()).toContainEqual(expect.objectContaining({ url: '/api/contenido/portada', metodo: 'PUT' }))
     })
     const enviados = peticiones().find((p) => p.url === '/api/contenido/portada')?.cuerpo as { datos: { hero: { titulo: string } } }
-    expect(enviados.datos.hero.titulo).toBe('Desamparados Málaga!')
+    expect(enviados.datos.hero.titulo).toBe(`${TITULO}!`)
   })
 
   it('si fallan los textos después de guardar las fotos, lo dice', async () => {
@@ -323,7 +325,7 @@ describe('PortadaAdminPage', () => {
 
     // Se tocan las DOS cosas: una foto y un texto. Con solo el texto, el mensaje
     // correcto sería otro (no se guardó nada), y el test no probaría este caso.
-    await retocar(usuario, await screen.findByDisplayValue('Desamparados Málaga'))
+    await retocar(usuario, await screen.findByDisplayValue(TITULO))
     await retocar(usuario, descripcionesDeFoto()[0])
     await guardar(usuario)
 
@@ -343,7 +345,7 @@ describe('PortadaAdminPage', () => {
     // El mismo mensaje al revés también sería mentira: aquí no se ha guardado nada.
     const { peticiones, usuario } = montar({ fallaEn: '/portada/imagenes' })
 
-    await retocar(usuario, await screen.findByDisplayValue('Desamparados Málaga'))
+    await retocar(usuario, await screen.findByDisplayValue(TITULO))
     await retocar(usuario, descripcionesDeFoto()[0])
     await guardar(usuario)
 
@@ -361,7 +363,7 @@ describe('PortadaAdminPage', () => {
     const clavePublica = ['home', 'portada']
     await waitFor(() => expect(queryClient.getQueryCache().getAll().map((q) => q.queryKey)).toContainEqual(clavePublica))
 
-    await retocar(usuario, await screen.findByDisplayValue('Desamparados Málaga'))
+    await retocar(usuario, await screen.findByDisplayValue(TITULO))
     await guardar(usuario)
 
     await waitFor(() => expect(invalidar).toHaveBeenCalledWith({ queryKey: clavePublica }))
@@ -370,7 +372,7 @@ describe('PortadaAdminPage', () => {
   it('no invalida nada si el guardado ha fallado entero', async () => {
     const { usuario, invalidar } = montar({ fallaEn: '/contenido/portada' })
 
-    await retocar(usuario, await screen.findByDisplayValue('Desamparados Málaga'))
+    await retocar(usuario, await screen.findByDisplayValue(TITULO))
     await guardar(usuario)
 
     await screen.findByRole('alert')
@@ -383,7 +385,7 @@ describe('PortadaAdminPage', () => {
     const textos = structuredClone(POR_DEFECTO.portada)
     textos.accesos.teselas = [...textos.accesos.teselas].reverse()
     const { usuario } = montar({ textos })
-    await screen.findByDisplayValue('Desamparados Málaga')
+    await screen.findByDisplayValue(TITULO)
     await usuario.click(screen.getByRole('button', { name: /accesos directos/i }))
 
     const mosaico = screen.getByRole('group', { name: /textos de los accesos/i })
@@ -396,7 +398,7 @@ describe('PortadaAdminPage', () => {
 
   it('el acceso se edita bajo su nombre actual, que cambia al escribirlo', async () => {
     const { usuario } = montar()
-    await screen.findByDisplayValue('Desamparados Málaga')
+    await screen.findByDisplayValue(TITULO)
     await usuario.click(screen.getByRole('button', { name: /accesos directos/i }))
 
     await retocar(usuario, within(screen.getByRole('group', { name: 'Caridad' })).getByLabelText('Título'))
@@ -406,7 +408,7 @@ describe('PortadaAdminPage', () => {
 
   it('el título de la Procesión se escribe en varias líneas, porque el salto es parte del bloque', async () => {
     const { usuario } = montar()
-    await screen.findByDisplayValue('Desamparados Málaga')
+    await screen.findByDisplayValue(TITULO)
     await usuario.click(screen.getByRole('button', { name: /^procesión$/i }))
 
     // El texto llega con un salto de línea real; las consultas de Testing Library
@@ -414,16 +416,19 @@ describe('PortadaAdminPage', () => {
     expect(campoMultilinea('Una devoción que camina con nosotros.').tagName).toBe('TEXTAREA')
   })
 
-  it('la foto de la Procesión se puede cambiar pero no quitar', async () => {
-    // El backend valida ese campo con `rutaImagenPublica` (contenido.schema.ts) y
-    // no admite cadena vacía: un botón de quitar dejaría el documento entero
-    // inguardable, también los textos de los otros cinco bloques.
-    const { usuario } = montar()
-    await screen.findByDisplayValue('Desamparados Málaga')
+  it('la foto de la Procesión se puede quitar: el contenido de partida nace sin ella', async () => {
+    // Desde la etapa 6 de la Fase 8 el backend admite la cadena vacía (el
+    // contenido de partida es neutro y no trae foto de nadie), y la banda sin
+    // foto queda con su fondo oscuro. Antes no se podía quitar.
+    const textos = structuredClone(POR_DEFECTO.portada)
+    textos.sabadoDePasion.imagenUrl = '/storage/public/una-foto.webp'
+    const { usuario } = montar({ textos })
+    await screen.findByDisplayValue(TITULO)
     await usuario.click(screen.getByRole('button', { name: /^procesión$/i }))
 
     const campo = within(screen.getByRole('group', { name: 'Foto del bloque' }))
     expect(campo.getByRole('button', { name: /cambiar foto/i })).toBeInTheDocument()
-    expect(campo.queryByRole('button', { name: /quitar foto/i })).not.toBeInTheDocument()
+    await usuario.click(campo.getByRole('button', { name: /quitar foto/i }))
+    expect(campo.getByRole('button', { name: /subir foto/i })).toBeInTheDocument()
   })
 })

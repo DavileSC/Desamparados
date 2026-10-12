@@ -14,6 +14,7 @@ import { deLaCorporacion } from './domain/articulos.js';
  * `app` se importa de forma dinámica, después de la comprobación. Los tests
  * importan `app` directamente y no pasan por aquí.
  */
+let contenidoInicial: import('./domain/contenido-inicial.js').ContenidoInicial | undefined;
 try {
   comprobarEntorno();
   // La clave del doble factor se resuelve de forma perezosa, en el primer uso
@@ -25,6 +26,10 @@ try {
   // un escudo que no es PNG o no se puede leer impide arrancar, con el motivo.
   const { resumenDeLaMarca } = await import('./domain/marca.js');
   console.log(`[Marca] ${resumenDeLaMarca()}`);
+  // La semilla del contenido (instalacion/contenido-inicial.json), también
+  // aquí: un fichero roto se dice al arrancar, no el día que falte una página.
+  const { leerContenidoInicial } = await import('./domain/contenido-inicial.js');
+  contenidoInicial = leerContenidoInicial();
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exit(1);
@@ -52,6 +57,20 @@ try {
   await CorporacionService.cargar();
 } catch (error) {
   console.error(`[Corporación] No se pudieron leer los datos de contacto de la base de datos: ${describirErrorParaLog(error)}`);
+  process.exit(1);
+}
+
+// Las páginas de la web pública que aún no tengan fila nacen con la semilla
+// de la instalación o con el contenido neutro. Las que existen no se tocan.
+// Sin esto, una instalación nueva enseñaría el neutro aunque trajera su
+// semilla, hasta que alguien lanzara la siembra a mano.
+const { sembrarPaginasQueFalten } = await import('./domain/contenido-inicial.js');
+try {
+  const { conSemilla, neutras } = await sembrarPaginasQueFalten(contenidoInicial);
+  if (conSemilla.length) console.log(`[Contenido] Creadas con la semilla de la instalación: ${conSemilla.join(', ')}`);
+  if (neutras.length) console.log(`[Contenido] Creadas con el contenido de partida: ${neutras.join(', ')}`);
+} catch (error) {
+  console.error(`[Contenido] No se pudieron crear las páginas que faltan: ${describirErrorParaLog(error)}`);
   process.exit(1);
 }
 

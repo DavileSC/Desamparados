@@ -37,11 +37,11 @@ describe('Hero', () => {
     observe.mockRestore()
   })
 
-  it('ofrece la agenda como segunda acción, no las noticias que ya vienen justo debajo', () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta({ imagenes: [] })))
+  it('ofrece la agenda como segunda acción, no las noticias que ya vienen justo debajo', async () => {
+    respuestaPortada(POR_DEFECTO.portada)
     renderWithProviders(<Hero />)
 
-    expect(screen.getByRole('link', { name: /conoce el grupo parroquial/i })).toHaveAttribute('href', '/historia')
+    expect(await screen.findByRole('link', { name: POR_DEFECTO.portada.hero.botonPrincipal })).toHaveAttribute('href', '/historia')
     expect(screen.getByRole('link', { name: /agenda y cultos/i })).toHaveAttribute('href', '/agenda')
     expect(screen.queryByRole('link', { name: /ver actualidad/i })).not.toBeInTheDocument()
   })
@@ -104,15 +104,26 @@ describe('Hero', () => {
     expect(screen.getAllByRole('img')).toHaveLength(1)
   })
 
-  it('sin fotos en el CMS, o sin API, enseña la de siempre', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta({ imagenes: [] })))
+  it('sin fotos en el CMS, o sin API, ninguna: una escrita en el código sería de una corporación', async () => {
+    expect(IMAGENES_POR_DEFECTO).toEqual([])
+    // Que la respuesta haya llegado y pasado por react-query: sin foto no
+    // cambia nada a la vista que se pueda esperar.
+    const asentarse = () => act(() => new Promise((r) => { setTimeout(r, 30) }))
+    const conLista = vi.fn().mockResolvedValue(respuesta({ imagenes: [] }))
+    vi.stubGlobal('fetch', conLista)
     const { unmount } = renderWithProviders(<Hero />)
-    expect(await screen.findByRole('img', { name: IMAGENES_POR_DEFECTO[0].descripcion })).toHaveAttribute('src', IMAGENES_POR_DEFECTO[0].url)
+    await vi.waitFor(() => expect(conLista).toHaveBeenCalled())
+    await asentarse()
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
     unmount()
 
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('sin red')))
+    const sinRed = vi.fn().mockRejectedValue(new TypeError('sin red'))
+    vi.stubGlobal('fetch', sinRed)
     renderWithProviders(<Hero />)
-    expect(await screen.findByRole('img', { name: IMAGENES_POR_DEFECTO[0].descripcion })).toHaveAttribute('src', IMAGENES_POR_DEFECTO[0].url)
+    await vi.waitFor(() => expect(sinRed).toHaveBeenCalled())
+    await asentarse()
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
   it('no pinta ninguna foto hasta saber cuál va primero', () => {
@@ -125,23 +136,44 @@ describe('Hero', () => {
 
   it('enseña los textos que llegan del servidor', async () => {
     const textos = structuredClone(POR_DEFECTO.portada)
-    textos.hero.titulo = 'Desamparados de Málaga'
+    textos.hero.titulo = 'Un título distinto'
     textos.hero.parrafo = 'Un párrafo distinto.'
     respuestaPortada(textos)
 
     renderWithProviders(<Hero />)
 
-    expect(await screen.findByRole('heading', { name: 'Desamparados de Málaga', level: 1 })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Un título distinto', level: 1 })).toBeInTheDocument()
     expect(screen.getByText('Un párrafo distinto.')).toBeInTheDocument()
   })
 
-  it('si la API falla, enseña los textos de siempre en vez de un hueco', async () => {
+  it('si la API falla, enseña los textos de partida en vez de un hueco', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('sin red')))
 
     renderWithProviders(<Hero />)
 
-    expect(await screen.findByRole('heading', { name: 'Desamparados Málaga', level: 1 })).toBeInTheDocument()
-    expect(screen.getByText(/Devoción, historia y patrimonio/)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: POR_DEFECTO.portada.hero.titulo, level: 1 })).toBeInTheDocument()
+    expect(screen.getByText(POR_DEFECTO.portada.hero.parrafo)).toBeInTheDocument()
+  })
+
+  it('mientras llegan los textos no enseña los de partida, sino su hueco', async () => {
+    // Si se pintaran los de partida mientras tanto, cada visita empezaría con
+    // unos textos que no son los de esta corporación.
+    let responder!: () => void
+    const textos = structuredClone(POR_DEFECTO.portada)
+    textos.hero.titulo = 'El título de esta corporación'
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => new Promise<Response>((resolve) => {
+      responder = () => resolve(respuesta({ imagenes: [], textos }))
+    })))
+    const { container } = renderWithProviders(<Hero />)
+
+    // El título está (la página no pierde su encabezado), pero vacío de texto.
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('')
+    expect(screen.queryByText(POR_DEFECTO.portada.hero.parrafo)).not.toBeInTheDocument()
+    expect(container.querySelectorAll('[data-esqueleto-portada]').length).toBeGreaterThanOrEqual(4)
+
+    responder()
+    expect(await screen.findByRole('heading', { name: 'El título de esta corporación', level: 1 })).toBeInTheDocument()
+    expect(container.querySelector('[data-esqueleto-portada]')).toBeNull()
   })
 
   describe('con vídeo de fondo', () => {

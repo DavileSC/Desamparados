@@ -29,7 +29,7 @@ export { MAX_FOTOS_PORTADA }
 const AYUDA_FOTO = 'JPG, PNG o WebP apaisado, de al menos 1920 píxeles de ancho y hasta 5 MB.'
 const AYUDA_FOTO_AGENDA = `${AYUDA_FOTO} Va detrás del calendario a todo lo ancho, desenfocada y oscurecida para que no le quite protagonismo. `
   + 'Sin foto, el bloque queda sobre fondo oscuro liso. Al cambiarla y guardar, la anterior se borra del servidor salvo que la use algo más.'
-const AYUDA_FOTO_SABADO = `${AYUDA_FOTO} Ocupa el fondo del bloque a todo lo ancho. `
+const AYUDA_FOTO_SABADO = `${AYUDA_FOTO} Ocupa el fondo del bloque a todo lo ancho; sin ella, el fondo queda oscuro. `
   + 'Al cambiarla y guardar, la anterior se borra del servidor salvo que la use algo más.'
 
 export default function PortadaAdminPage() {
@@ -356,16 +356,14 @@ export default function PortadaAdminPage() {
             ayuda="El enlace del final del bloque. Sigue llevando a la página de la salida procesional."
           />
           {/*
-            Sin botón de quitar: el bloque es una banda de foto a sangre y no
-            existe el estado «sin foto». El backend tampoco lo admite
-            (`rutaImagenPublica` en contenido.schema.ts rechaza la cadena vacía),
-            así que quitarla dejaría todo el documento sin poder guardarse.
+            Se puede quitar: el contenido de partida es neutro y no trae foto
+            (etapa 6 de la Fase 8), y el backend admite la cadena vacía. Sin
+            foto, el bloque queda con su fondo oscuro y sus textos.
           */}
           <CampoImagen
             etiqueta="Foto del bloque"
             ayuda={AYUDA_FOTO_SABADO}
             apaisada
-            sinQuitar
             valor={textos.sabadoDePasion.imagenUrl}
             onCambio={(imagenUrl) => cambiarSabado({ imagenUrl })}
           />

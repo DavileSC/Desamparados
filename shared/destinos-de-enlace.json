@@ -19,5 +19,13 @@
     { "ruta": "/politica-privacidad", "nombre": "Política de privacidad", "grupo": "Legal" },
     { "ruta": "/politica-cookies", "nombre": "Política de cookies", "grupo": "Legal" }
   ],
+  "_comentario_antiguas": [
+    "Direcciones que cambiaron y que la web redirige a la nueva. Se aceptan al",
+    "guardar (un enlace ya guardado no impide volver a guardar su página) pero",
+    "el CMS no las ofrece."
+  ],
+  "antiguas": [
+    { "ruta": "/parroquia-pasionistas", "ahora": "/parroquia" }
+  ],
   "prefijoNoticia": "/noticias/"
 }

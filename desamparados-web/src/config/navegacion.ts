@@ -45,7 +45,7 @@ export const menuPublico: EntradaMenu[] = [
         href: '/historia',
         hijos: [{ label: 'Órganos de Gobierno', href: '/historia/organos-de-gobierno', modulo: 'nucleo' }],
       },
-      { label: 'Parroquia · Pasionistas', href: '/parroquia-pasionistas', modulo: 'nucleo' },
+      { label: 'Parroquia', href: '/parroquia', modulo: 'nucleo' },
       {
         label: 'Nuestros fines', modulo: 'nucleo',
         href: '/nuestros-fines',

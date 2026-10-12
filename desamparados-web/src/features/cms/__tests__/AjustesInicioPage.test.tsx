@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import AjustesInicioPage from '../AjustesInicioPage'
@@ -34,6 +34,18 @@ function servidor(ajustes: Record<string, unknown> = AJUSTES) {
 }
 
 describe('Ajustes del Inicio', () => {
+  it('una foto que no carga no deja el icono roto: queda el hueco y el punto se sigue pudiendo poner', async () => {
+    // La de partida es una fija de la instalación; en la que no la tiene, 404.
+    servidor()
+    renderWithProviders(<AjustesInicioPage />)
+
+    const foto = await screen.findByRole('img', { name: 'Foto del retablo' })
+    fireEvent.error(foto)
+    expect(screen.queryByRole('img', { name: 'Foto del retablo' })).not.toBeInTheDocument()
+    expect(screen.getByText('Sin foto: elige una')).toBeInTheDocument()
+    expect(screen.getByRole('slider', { name: 'Punto de la foto que no se recorta' })).toBeInTheDocument()
+  })
+
   it('enseña la foto guardada con su punto y la guarda al moverlo con las flechas', async () => {
     const enviado = servidor()
     const usuario = userEvent.setup()

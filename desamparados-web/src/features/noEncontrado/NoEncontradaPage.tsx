@@ -39,7 +39,9 @@ export default function NoEncontradaPage() {
   // Una vez: preguntar por WebGL crea un lienzo, y no hace falta en cada
   // pintado. Con el ahorro de datos o una conexión lenta, como el vídeo del
   // hero, el mapa no se descarga: el texto dice lo mismo.
-  const [conMapa] = useState(() => hayWebGL() && !ahorraDatos())
+  // Y sin el mapa del barrio en la instalación (instalacion/mapas): eso solo
+  // se sabe al pedirlo, y entonces el mapa avisa y la página se queda con el texto.
+  const [conMapa, setConMapa] = useState(() => hayWebGL() && !ahorraDatos())
   const recorrido = useQuery({
     queryKey: CLAVE_RECORRIDO,
     queryFn: () => getContenido<PaginaDeBloques>('recorrido'),
@@ -106,7 +108,7 @@ export default function NoEncontradaPage() {
               // En el móvil y la tableta, el mapa va primero: es lo que dice de un vistazo qué ha pasado.
               <Box sx={{ order: { xs: -1, md: 0 }, width: '100%', maxWidth: { xs: 640, md: 'none' }, justifySelf: 'center' }}>
                 <Suspense fallback={huecoDelMapa}>
-                  {desocupado ? <MapaFueraDelRecorrido linea={linea} /> : huecoDelMapa}
+                  {desocupado ? <MapaFueraDelRecorrido linea={linea} onSinMapa={() => setConMapa(false)} /> : huecoDelMapa}
                 </Suspense>
               </Box>
             )}

@@ -1,10 +1,10 @@
 {
   "portada": {
     "hero": {
-      "ceja": "Grupo Parroquial · Málaga",
-      "titulo": "Desamparados Málaga",
-      "parrafo": "Devoción, historia y patrimonio en el corazón de Málaga. Acompáñanos en nuestro solemne caminar.",
-      "botonPrincipal": "Conoce el Grupo Parroquial",
+      "ceja": "Bienvenidos",
+      "titulo": "Fe, tradición y comunidad",
+      "parrafo": "Devoción, historia y patrimonio al servicio de nuestra comunidad. Acompáñanos a lo largo de todo el año.",
+      "botonPrincipal": "Conócenos",
       "enlaceSecundario": "Agenda y cultos",
       "video": ""
     },
@@ -16,24 +16,24 @@
     "agenda": {
       "ceja": "Cultos",
       "titulo": "Agenda y Cultos",
-      "parrafo": "La vida de oración del Grupo Parroquial a lo largo del año litúrgico: cultos, formación y convivencia.",
+      "parrafo": "La vida de oración de la corporación a lo largo del año litúrgico: cultos, formación y convivencia.",
       "enlace": "Calendario completo",
       "directoTitulo": "Ver en directo",
       "directoTexto": "Retransmisión desde la sede",
-      "imagenUrl": "/images/trono-comitiva.webp"
+      "imagenUrl": ""
     },
     "accesos": {
       "placa": {
         "ceja": "Hazte hermano",
         "titulo": "Forma parte de nuestra historia",
-        "texto": "Una comunidad de fe que vive la devoción a nuestra Sagrada Titular y trabaja por el bien común.",
+        "texto": "Una comunidad de fe que vive la devoción a su imagen titular y trabaja por el bien común.",
         "boton": "Quiero ser hermano"
       },
       "teselas": [
         {
           "clave": "sede",
           "titulo": "Nuestra sede",
-          "descripcion": "Parroquia de los Pasionistas"
+          "descripcion": "Dónde estamos y cómo llegar"
         },
         {
           "clave": "caridad",
@@ -43,7 +43,7 @@
         {
           "clave": "historia",
           "titulo": "Historia",
-          "descripcion": "Orígenes y evolución del Grupo Parroquial"
+          "descripcion": "Orígenes y evolución de la corporación"
         },
         {
           "clave": "boletines",
@@ -63,31 +63,31 @@
       ]
     },
     "sabadoDePasion": {
-      "ceja": "Sábado de Pasión",
+      "ceja": "Salida procesional",
       "titulo": "Una devoción que\ncamina con nosotros.",
-      "parrafo": "La fe compartida, el encuentro y la emoción de acompañar a Nuestra Señora por las calles de Málaga.",
-      "enlace": "Vive el Sábado de Pasión",
-      "imagenUrl": "/images/nazarenos-1280.webp",
-      "imagenAlt": "Nazarenos del Grupo, de capirote negro, con sus cirios y la bandera blanca en la salida procesional"
+      "parrafo": "La fe compartida, el encuentro y la emoción de acompañar a nuestra imagen titular por las calles.",
+      "enlace": "Conoce la salida procesional",
+      "imagenUrl": "",
+      "imagenAlt": ""
     },
     "publicaciones": {
       "boton": "Archivo de publicaciones",
-      "marcaDeAgua": "DESAMPARADOS"
+      "marcaDeAgua": "PUBLICACIONES"
     }
   },
   "recorrido": {
     "cabecera": {
       "titulo": "Recorrido",
-      "subtitulo": "Itinerario oficial de la estación de penitencia.",
-      "foto": "/images/cabeceras/nazarenos-con-cirios.webp",
-      "fotoAlt": "Nazarenos de negro con cirios, en fila por la calle",
+      "subtitulo": "Itinerario de la salida procesional.",
+      "foto": "",
+      "fotoAlt": "",
       "encuadre": 45
     },
     "bloques": [
       {
         "tipo": "texto",
         "titulo": "",
-        "html": "<p>El itinerario de la procesión del Sábado de Pasión recorre algunas de las calles más emblemáticas de Málaga. Los horarios son orientativos y pueden sufrir ligeras modificaciones en función del ritmo del cortejo y de las circunstancias del momento.</p>"
+        "html": "<p>Aquí se publica el itinerario de la salida procesional, con sus calles y sus horas de paso aproximadas. Se completa desde el CMS cuando se conozca.</p>"
       },
       {
         "tipo": "itinerario",
@@ -95,953 +95,13 @@
         "paradas": [
           {
             "hora": "",
-            "lugar": "Salida desde el Templo",
-            "enRuta": 0
+            "lugar": "Salida del templo"
           },
           {
             "hora": "",
-            "lugar": "C. Corregidor Francisco de Luque",
-            "enRuta": 0.0567
-          },
-          {
-            "hora": "",
-            "lugar": "C. Corregidor Nicolás Isidro"
-          },
-          {
-            "hora": "",
-            "lugar": "C. Corregidor Ruiz de Molina"
-          },
-          {
-            "hora": "",
-            "lugar": "C. Almogía",
-            "enRuta": 0.1442
-          },
-          {
-            "hora": "",
-            "lugar": "C. Igualeja",
-            "enRuta": 0.1826
-          },
-          {
-            "hora": "",
-            "lugar": "C. Amate"
-          },
-          {
-            "hora": "",
-            "lugar": "Av. de José Ortega y Gasset",
-            "enRuta": 0.3481
-          },
-          {
-            "hora": "",
-            "lugar": "C. Alfarnate",
-            "enRuta": 0.3902
-          },
-          {
-            "hora": "",
-            "lugar": "C. Alcalde Antonio Verdejo",
-            "enRuta": 0.491
-          },
-          {
-            "hora": "",
-            "lugar": "Av. de José Ortega y Gasset"
-          },
-          {
-            "hora": "",
-            "lugar": "C. Valle de Abdalajís",
-            "enRuta": 0.5917
-          },
-          {
-            "hora": "",
-            "lugar": "C. de Alozaina"
-          },
-          {
-            "hora": "",
-            "lugar": "C. Ciudad de Andújar",
-            "enRuta": 0.7187
-          },
-          {
-            "hora": "",
-            "lugar": "Plaza Río Trabancos",
-            "enRuta": 0.7439
-          },
-          {
-            "hora": "",
-            "lugar": "C. Periana",
-            "enRuta": 0.8051
-          },
-          {
-            "hora": "",
-            "lugar": "Plaza Río Riaza",
-            "enRuta": 0.8272
-          },
-          {
-            "hora": "",
-            "lugar": "C. Corregidor Paz Guzmán",
-            "enRuta": 0.9519
-          },
-          {
-            "hora": "",
-            "lugar": "Regreso al Templo",
-            "enRuta": 1
+            "lugar": "Entrada en el templo"
           }
-        ],
-        "recorrido": {
-          "esquinas": [
-            [
-              -4.449245,
-              36.711928
-            ],
-            [
-              -4.449632,
-              36.713287
-            ],
-            [
-              -4.452207,
-              36.712779
-            ],
-            [
-              -4.451853,
-              36.711876
-            ],
-            [
-              -4.452475,
-              36.711713
-            ],
-            [
-              -4.453623,
-              36.710534
-            ],
-            [
-              -4.45535,
-              36.710165
-            ],
-            [
-              -4.45534,
-              36.709674
-            ],
-            [
-              -4.455103,
-              36.709562
-            ],
-            [
-              -4.455232,
-              36.709244
-            ],
-            [
-              -4.455093,
-              36.708608
-            ],
-            [
-              -4.453301,
-              36.708978
-            ],
-            [
-              -4.449085,
-              36.709691
-            ],
-            [
-              -4.448827,
-              36.708763
-            ],
-            [
-              -4.448183,
-              36.708883
-            ],
-            [
-              -4.448366,
-              36.709537
-            ],
-            [
-              -4.446956,
-              36.709791
-            ],
-            [
-              -4.446903,
-              36.709688
-            ],
-            [
-              -4.446248,
-              36.709812
-            ],
-            [
-              -4.446371,
-              36.710182
-            ],
-            [
-              -4.447814,
-              36.709924
-            ],
-            [
-              -4.447949,
-              36.710462
-            ],
-            [
-              -4.447562,
-              36.71053
-            ],
-            [
-              -4.447439,
-              36.710995
-            ],
-            [
-              -4.447744,
-              36.71108
-            ],
-            [
-              -4.447822,
-              36.711316
-            ],
-            [
-              -4.447433,
-              36.711381
-            ],
-            [
-              -4.447656,
-              36.712129
-            ],
-            [
-              -4.448023,
-              36.712062
-            ],
-            [
-              -4.448098,
-              36.712363
-            ],
-            [
-              -4.449289,
-              36.712155
-            ],
-            [
-              -4.449245,
-              36.711928
-            ]
-          ],
-          "linea": [
-            [
-              -4.449227,
-              36.711919
-            ],
-            [
-              -4.449263,
-              36.712047
-            ],
-            [
-              -4.449294,
-              36.712152
-            ],
-            [
-              -4.449337,
-              36.712301
-            ],
-            [
-              -4.44937,
-              36.712416
-            ],
-            [
-              -4.44938,
-              36.712452
-            ],
-            [
-              -4.449388,
-              36.71248
-            ],
-            [
-              -4.449441,
-              36.712672
-            ],
-            [
-              -4.449575,
-              36.71312
-            ],
-            [
-              -4.449606,
-              36.713217
-            ],
-            [
-              -4.449636,
-              36.713244
-            ],
-            [
-              -4.449669,
-              36.713274
-            ],
-            [
-              -4.449641,
-              36.713305
-            ],
-            [
-              -4.449669,
-              36.713274
-            ],
-            [
-              -4.449706,
-              36.713252
-            ],
-            [
-              -4.44975,
-              36.71324
-            ],
-            [
-              -4.449796,
-              36.713239
-            ],
-            [
-              -4.449841,
-              36.713248
-            ],
-            [
-              -4.44988,
-              36.713267
-            ],
-            [
-              -4.449903,
-              36.713254
-            ],
-            [
-              -4.449959,
-              36.713219
-            ],
-            [
-              -4.450032,
-              36.713205
-            ],
-            [
-              -4.450436,
-              36.713123
-            ],
-            [
-              -4.450653,
-              36.713085
-            ],
-            [
-              -4.45073,
-              36.713072
-            ],
-            [
-              -4.45127,
-              36.712979
-            ],
-            [
-              -4.451385,
-              36.71296
-            ],
-            [
-              -4.451491,
-              36.712942
-            ],
-            [
-              -4.451931,
-              36.712864
-            ],
-            [
-              -4.452089,
-              36.71284
-            ],
-            [
-              -4.45208,
-              36.71282
-            ],
-            [
-              -4.452081,
-              36.7128
-            ],
-            [
-              -4.45209,
-              36.71278
-            ],
-            [
-              -4.452107,
-              36.712764
-            ],
-            [
-              -4.452134,
-              36.712753
-            ],
-            [
-              -4.452164,
-              36.712751
-            ],
-            [
-              -4.452193,
-              36.712759
-            ],
-            [
-              -4.452213,
-              36.712777
-            ],
-            [
-              -4.452227,
-              36.712798
-            ],
-            [
-              -4.452159,
-              36.712646
-            ],
-            [
-              -4.452136,
-              36.712585
-            ],
-            [
-              -4.452091,
-              36.712467
-            ],
-            [
-              -4.451878,
-              36.711882
-            ],
-            [
-              -4.451963,
-              36.711863
-            ],
-            [
-              -4.451999,
-              36.711855
-            ],
-            [
-              -4.45219,
-              36.711818
-            ],
-            [
-              -4.452283,
-              36.711797
-            ],
-            [
-              -4.452334,
-              36.711779
-            ],
-            [
-              -4.452389,
-              36.711745
-            ],
-            [
-              -4.452526,
-              36.711619
-            ],
-            [
-              -4.452773,
-              36.711388
-            ],
-            [
-              -4.452902,
-              36.711274
-            ],
-            [
-              -4.453265,
-              36.710937
-            ],
-            [
-              -4.453465,
-              36.71075
-            ],
-            [
-              -4.45351,
-              36.71069
-            ],
-            [
-              -4.453554,
-              36.7106
-            ],
-            [
-              -4.45357,
-              36.710517
-            ],
-            [
-              -4.453657,
-              36.710497
-            ],
-            [
-              -4.453695,
-              36.710488
-            ],
-            [
-              -4.453891,
-              36.710448
-            ],
-            [
-              -4.453962,
-              36.710434
-            ],
-            [
-              -4.45475,
-              36.710273
-            ],
-            [
-              -4.455065,
-              36.710207
-            ],
-            [
-              -4.455227,
-              36.710176
-            ],
-            [
-              -4.455334,
-              36.710158
-            ],
-            [
-              -4.455331,
-              36.710042
-            ],
-            [
-              -4.455327,
-              36.709945
-            ],
-            [
-              -4.455345,
-              36.709793
-            ],
-            [
-              -4.45538,
-              36.709702
-            ],
-            [
-              -4.455426,
-              36.709656
-            ],
-            [
-              -4.455361,
-              36.709662
-            ],
-            [
-              -4.455297,
-              36.709653
-            ],
-            [
-              -4.455239,
-              36.709629
-            ],
-            [
-              -4.455201,
-              36.709601
-            ],
-            [
-              -4.455172,
-              36.709566
-            ],
-            [
-              -4.455153,
-              36.709523
-            ],
-            [
-              -4.455148,
-              36.709478
-            ],
-            [
-              -4.455155,
-              36.709441
-            ],
-            [
-              -4.455172,
-              36.709406
-            ],
-            [
-              -4.455197,
-              36.709375
-            ],
-            [
-              -4.455278,
-              36.709325
-            ],
-            [
-              -4.455258,
-              36.709205
-            ],
-            [
-              -4.455173,
-              36.709217
-            ],
-            [
-              -4.45516,
-              36.709052
-            ],
-            [
-              -4.455103,
-              36.70862
-            ],
-            [
-              -4.454974,
-              36.708632
-            ],
-            [
-              -4.454746,
-              36.708683
-            ],
-            [
-              -4.454386,
-              36.70875
-            ],
-            [
-              -4.454058,
-              36.708824
-            ],
-            [
-              -4.453722,
-              36.708892
-            ],
-            [
-              -4.453337,
-              36.708967
-            ],
-            [
-              -4.453294,
-              36.708975
-            ],
-            [
-              -4.453195,
-              36.70899
-            ],
-            [
-              -4.452309,
-              36.709121
-            ],
-            [
-              -4.452251,
-              36.70913
-            ],
-            [
-              -4.45197,
-              36.709167
-            ],
-            [
-              -4.451884,
-              36.709184
-            ],
-            [
-              -4.451424,
-              36.709276
-            ],
-            [
-              -4.451147,
-              36.709328
-            ],
-            [
-              -4.451121,
-              36.709332
-            ],
-            [
-              -4.451063,
-              36.709343
-            ],
-            [
-              -4.45103,
-              36.709261
-            ],
-            [
-              -4.450937,
-              36.70928
-            ],
-            [
-              -4.450975,
-              36.709379
-            ],
-            [
-              -4.450904,
-              36.709381
-            ],
-            [
-              -4.4508,
-              36.709385
-            ],
-            [
-              -4.450138,
-              36.709504
-            ],
-            [
-              -4.450075,
-              36.709516
-            ],
-            [
-              -4.449166,
-              36.709684
-            ],
-            [
-              -4.449079,
-              36.709699
-            ],
-            [
-              -4.449065,
-              36.709643
-            ],
-            [
-              -4.448995,
-              36.709395
-            ],
-            [
-              -4.448846,
-              36.708843
-            ],
-            [
-              -4.44883,
-              36.708784
-            ],
-            [
-              -4.448752,
-              36.708798
-            ],
-            [
-              -4.448719,
-              36.708803
-            ],
-            [
-              -4.448287,
-              36.708879
-            ],
-            [
-              -4.4482,
-              36.708894
-            ],
-            [
-              -4.448212,
-              36.708939
-            ],
-            [
-              -4.44822,
-              36.708967
-            ],
-            [
-              -4.448324,
-              36.709343
-            ],
-            [
-              -4.448365,
-              36.709503
-            ],
-            [
-              -4.448296,
-              36.709515
-            ],
-            [
-              -4.447811,
-              36.709603
-            ],
-            [
-              -4.447756,
-              36.709613
-            ],
-            [
-              -4.447721,
-              36.709619
-            ],
-            [
-              -4.447666,
-              36.709642
-            ],
-            [
-              -4.447205,
-              36.709736
-            ],
-            [
-              -4.447033,
-              36.709769
-            ],
-            [
-              -4.446997,
-              36.709776
-            ],
-            [
-              -4.446958,
-              36.709784
-            ],
-            [
-              -4.44692,
-              36.70968
-            ],
-            [
-              -4.446514,
-              36.709757
-            ],
-            [
-              -4.446406,
-              36.709778
-            ],
-            [
-              -4.446322,
-              36.709794
-            ],
-            [
-              -4.446268,
-              36.709804
-            ],
-            [
-              -4.446373,
-              36.71018
-            ],
-            [
-              -4.446407,
-              36.710173
-            ],
-            [
-              -4.446635,
-              36.710129
-            ],
-            [
-              -4.446909,
-              36.71008
-            ],
-            [
-              -4.446985,
-              36.710064
-            ],
-            [
-              -4.44705,
-              36.71005
-            ],
-            [
-              -4.447117,
-              36.710057
-            ],
-            [
-              -4.447545,
-              36.709984
-            ],
-            [
-              -4.447803,
-              36.709933
-            ],
-            [
-              -4.44782,
-              36.709991
-            ],
-            [
-              -4.447946,
-              36.710428
-            ],
-            [
-              -4.447961,
-              36.710481
-            ],
-            [
-              -4.447946,
-              36.710428
-            ],
-            [
-              -4.447891,
-              36.710439
-            ],
-            [
-              -4.447877,
-              36.710442
-            ],
-            [
-              -4.447683,
-              36.710482
-            ],
-            [
-              -4.447603,
-              36.710498
-            ],
-            [
-              -4.447583,
-              36.710548
-            ],
-            [
-              -4.447575,
-              36.710567
-            ],
-            [
-              -4.44744,
-              36.710899
-            ],
-            [
-              -4.447414,
-              36.710969
-            ],
-            [
-              -4.447407,
-              36.710987
-            ],
-            [
-              -4.44757,
-              36.710956
-            ],
-            [
-              -4.447589,
-              36.710953
-            ],
-            [
-              -4.447611,
-              36.711035
-            ],
-            [
-              -4.447734,
-              36.711013
-            ],
-            [
-              -4.447746,
-              36.71106
-            ],
-            [
-              -4.447761,
-              36.711112
-            ],
-            [
-              -4.447818,
-              36.71132
-            ],
-            [
-              -4.447695,
-              36.711342
-            ],
-            [
-              -4.44745,
-              36.711385
-            ],
-            [
-              -4.44746,
-              36.71142
-            ],
-            [
-              -4.447659,
-              36.712125
-            ],
-            [
-              -4.447907,
-              36.712081
-            ],
-            [
-              -4.447939,
-              36.712075
-            ],
-            [
-              -4.44803,
-              36.712059
-            ],
-            [
-              -4.448088,
-              36.712296
-            ],
-            [
-              -4.448089,
-              36.712327
-            ],
-            [
-              -4.44809,
-              36.712371
-            ],
-            [
-              -4.448197,
-              36.712348
-            ],
-            [
-              -4.449143,
-              36.71218
-            ],
-            [
-              -4.449294,
-              36.712152
-            ],
-            [
-              -4.449263,
-              36.712047
-            ],
-            [
-              -4.449227,
-              36.711919
-            ]
-          ],
-          "pegado": true
-        },
-        "presentacion": {
-          "disposicion": "plano"
-        }
+        ]
       }
     ]
   },
@@ -1049,9 +109,9 @@
     "cabecera": {
       "ceja": "Corporación · Historia",
       "titulo": "Historia",
-      "subtitulo": "De la devoción popular en la parroquia de los Pasionistas al Sábado de Pasión por el barrio de los Corazones.",
-      "foto": "/images/hero-1920.webp",
-      "fotoAlt": "Nuestra Señora de los Desamparados, muy velada al fondo de la página"
+      "subtitulo": "De dónde venimos y cómo hemos llegado hasta hoy.",
+      "foto": "",
+      "fotoAlt": ""
     },
     "bloques": [
       {
@@ -1059,22 +119,10 @@
         "titulo": "Cronología",
         "hitos": [
           {
-            "periodo": "Años 50",
-            "etiqueta": "Los orígenes",
-            "titulo": "La devoción crece en la parroquia",
-            "relato": "Los orígenes del Grupo Parroquial Nuestra Señora de los Desamparados se encuentran en la devoción popular que, a lo largo del siglo XX, fue creciendo en torno a la imagen de Nuestra Señora de los Desamparados en la Parroquia de los Padres Pasionistas. Lo que comenzó como un pequeño grupo de fieles animados por el amor a la Virgen fue conformándose paulatinamente en una corporación religiosa con identidad propia.",
-            "foto": {
-              "url": "/images/triduo.jpg",
-              "alt": "Rostro de Nuestra Señora de los Desamparados bajo su corona",
-              "pie": "La imagen en su altar de la parroquia"
-            },
-            "tono": "ninguno"
-          },
-          {
-            "periodo": "Años 60",
-            "etiqueta": "Culto y liturgia",
-            "titulo": "El culto a la Virgen, primero",
-            "relato": "En sus primeros años, el Grupo Parroquial se dedicó especialmente a la promoción del culto a la Virgen y a la organización de las celebraciones litúrgicas propias de la parroquia.",
+            "periodo": "Los orígenes",
+            "etiqueta": "Fundación",
+            "titulo": "Un grupo de fieles en torno a una devoción",
+            "relato": "Aquí se cuenta cómo nació la corporación: quiénes la fundaron, en qué parroquia y en torno a qué devoción.\n\nCada hito de la cronología se edita desde el CMS, con su foto si se tiene.",
             "foto": {
               "url": "",
               "alt": "",
@@ -1083,34 +131,22 @@
             "tono": "ninguno"
           },
           {
-            "periodo": "Años 80",
-            "etiqueta": "Caridad y formación",
-            "titulo": "Los fines se amplían",
-            "relato": "Con el tiempo, el Grupo Parroquial fue ampliando sus fines y actividades, incorporando la caridad hacia los más necesitados y la formación religiosa de hermanos y devotos como ejes fundamentales de su acción.",
+            "periodo": "El crecimiento",
+            "etiqueta": "Consolidación",
+            "titulo": "Los primeros cultos y la primera salida",
+            "relato": "Los años en que la corporación se fue consolidando: sus primeros cultos, sus primeros hermanos y su primera salida procesional.",
             "foto": {
               "url": "",
               "alt": "",
               "pie": ""
-            },
-            "tono": "ninguno"
-          },
-          {
-            "periodo": "Años 90",
-            "etiqueta": "Sábado de Pasión",
-            "titulo": "La primera salida procesional",
-            "relato": "La consolidación de la corporación como Grupo Parroquial permitió dar un paso decisivo en su vida pública: la salida procesional del Sábado de Pasión, momento en el que la imagen de la Sagrada Titular recorre las calles del barrio de los Corazones, acompañada por sus hermanos y por una numerosa feligresía.",
-            "foto": {
-              "url": "/images/trono-comitiva.webp",
-              "alt": "El trono de Nuestra Señora de los Desamparados en la calle, entre ciriales y árboles",
-              "pie": "Sábado de Pasión, por el barrio de los Corazones"
             },
             "tono": "granate"
           },
           {
             "periodo": "Hoy",
-            "etiqueta": "Con la mirada en la Virgen",
-            "titulo": "Signo de esperanza en Málaga",
-            "relato": "A lo largo de su historia, el Grupo Parroquial ha vivido momentos de esplendor y otros de dificultad, pero siempre ha mantenido firme su compromiso con la fe, la tradición y el servicio a la comunidad. Cada generación de hermanos ha heredado la responsabilidad de conservar y transmitir el legado recibido.\n\nHoy, el Grupo Parroquial Nuestra Señora de los Desamparados continúa su camino con la mirada puesta en la Virgen María, buscando ser signo de esperanza en la Iglesia de Málaga y testigo vivo de la misericordia de Dios hacia todos, especialmente hacia los más desamparados.",
+            "etiqueta": "El presente",
+            "titulo": "Una comunidad viva",
+            "relato": "La corporación sigue hoy viva gracias a sus hermanos: culto, caridad y formación a lo largo de todo el año.",
             "foto": {
               "url": "",
               "alt": "",
@@ -1122,7 +158,7 @@
       },
       {
         "tipo": "llamada",
-        "titulo": "Quién gobierna hoy el Grupo Parroquial",
+        "titulo": "Quién gobierna hoy la corporación",
         "texto": "Seguir leyendo",
         "boton": "Órganos de Gobierno",
         "enlace": "/historia/organos-de-gobierno"
@@ -1132,74 +168,41 @@
   "cultos": {
     "cabecera": {
       "titulo": "Cultos",
-      "subtitulo": "Celebraciones y devociones en honor a nuestra Sagrada Titular.",
+      "subtitulo": "Celebraciones y devociones en honor de nuestra imagen titular.",
       "foto": "",
       "fotoAlt": ""
     },
     "bloques": [
       {
-        "tipo": "fotoTexto",
-        "titulo": "En honor de Nuestra Señora de los Desamparados",
-        "presentacion": {
-          "estilo": "fundido",
-          "lado": "derecha"
-        },
-        "url": "/images/virgen-rostro.jpg",
-        "alt": "Rostro de Nuestra Señora de los Desamparados, con la corona de plata y el encaje",
-        "pie": "",
-        "html": "<p>La vida espiritual del Grupo Parroquial se alimenta de los cultos que celebramos a lo largo del año. Todos en la parroquia de Santa María Goretti, abiertos a quien quiera acompañarnos, sea o no hermano.</p>",
-        "boton": "",
-        "enlace": ""
+        "tipo": "texto",
+        "titulo": "",
+        "html": "<p>La vida espiritual de la corporación se alimenta de los cultos que celebra a lo largo del año. Aquí se presentan, con sus fechas en la agenda.</p>"
       },
       {
         "tipo": "programa",
         "titulo": "Programa del año",
         "filas": [
           {
-            "cuando": "Cuaresma",
-            "mes": 3,
-            "titulo": "Semana Santa y Sábado de Pasión",
-            "texto": "Nuestra salida procesional por las calles de Málaga, el momento culminante del año cofrade del Grupo Parroquial.",
-            "boton": "El Sábado de Pasión",
-            "enlace": "/sabado-de-pasion"
-          },
-          {
-            "cuando": "Octubre",
-            "mes": 10,
-            "titulo": "Rosario vespertino",
-            "texto": "En el mes del Rosario, la Virgen sale por las calles del barrio mientras se rezan sus misterios.",
+            "cuando": "Cada mes",
+            "mes": 0,
+            "titulo": "Eucaristía mensual",
+            "texto": "La misa que reúne a los hermanos una vez al mes.",
             "boton": "",
             "enlace": ""
           },
           {
-            "cuando": "Noviembre",
-            "mes": 11,
-            "titulo": "Solemne Triduo",
-            "texto": "Tres días de culto en honor de la Sagrada Titular, con predicación y celebración de los sacramentos.",
-            "boton": "Sobre la Sagrada Titular",
-            "enlace": "/desamparados"
+            "cuando": "Cuaresma",
+            "mes": 3,
+            "titulo": "Cultos de Cuaresma",
+            "texto": "La preparación de la Semana Santa, con los cultos en honor de nuestra imagen titular.",
+            "boton": "",
+            "enlace": ""
           },
           {
             "cuando": "Por anunciar",
             "mes": 0,
             "titulo": "Besamanos",
-            "texto": "Los devotos y hermanos pueden venerar de cerca la imagen de la Sagrada Titular.",
-            "boton": "",
-            "enlace": ""
-          },
-          {
-            "cuando": "Diciembre",
-            "mes": 12,
-            "titulo": "Navidad",
-            "texto": "Las celebraciones que abren el año litúrgico en la vida parroquial y cofrade.",
-            "boton": "",
-            "enlace": ""
-          },
-          {
-            "cuando": "Cada mes",
-            "mes": 0,
-            "titulo": "Culto mensual",
-            "texto": "Eucaristía y oración fraterna con los hermanos, generalmente el primer sábado de mes.",
+            "texto": "Los devotos y hermanos pueden venerar de cerca la imagen titular.",
             "boton": "",
             "enlace": ""
           }
@@ -1212,9 +215,9 @@
           "estilo": "franja",
           "alineacion": "centro"
         },
-        "texto": "Desde ahora me felicitarán todas las generaciones, porque el Poderoso ha hecho obras grandes por mí.",
-        "autor": "María",
-        "fuente": "Evangelio según san Lucas, 1, 48-49"
+        "texto": "Donde están dos o tres reunidos en mi nombre, allí estoy yo en medio de ellos.",
+        "autor": "",
+        "fuente": "Evangelio según san Mateo, 18, 20"
       },
       {
         "tipo": "botones",
@@ -1227,11 +230,6 @@
             "texto": "Ver la agenda",
             "enlace": "/agenda",
             "estilo": "principal"
-          },
-          {
-            "texto": "La parroquia",
-            "enlace": "/parroquia-pasionistas",
-            "estilo": "secundario"
           }
         ]
       }
@@ -1241,18 +239,18 @@
     "cabecera": {
       "titulo": "Órganos de Gobierno",
       "subtitulo": "Junta de Gobierno y órganos de dirección de la corporación.",
-      "foto": "/images/cabeceras/virgen-de-perfil.webp",
-      "fotoAlt": "El rostro de la Virgen de los Desamparados de perfil, con corona de plata y encaje",
+      "foto": "",
+      "fotoAlt": "",
       "encuadre": 55
     },
     "bloques": [
       {
         "tipo": "texto",
         "titulo": "",
-        "html": "<p>La Junta de Gobierno es el órgano colegiado encargado de la dirección, administración y representación del Grupo Parroquial. Desde sus distintas vocalías, trabaja unida al servicio de los hermanos y de la misión evangelizadora de la corporación.</p><p>Gobernar un grupo parroquial es, sobre todo, servir: cada cargo es una tarea que alguien asume por amor a la Virgen y a sus hermanos, en comunión con la parroquia.</p>",
         "presentacion": {
           "estilo": "carta"
-        }
+        },
+        "html": "<p>La Junta de Gobierno es el órgano colegiado encargado de la dirección y la administración de la corporación, de acuerdo con sus reglas y con lo que decide el Cabildo General de hermanos.</p>"
       },
       {
         "tipo": "relacion",
@@ -1263,13 +261,7 @@
           {
             "cargo": "Hermano Mayor",
             "nombre": "",
-            "texto": "Representa al Grupo Parroquial y dirige su vida con la Junta.",
-            "enlace": ""
-          },
-          {
-            "cargo": "Teniente Hermano Mayor",
-            "nombre": "",
-            "texto": "Asiste al Hermano Mayor y le sustituye en su ausencia.",
+            "texto": "Representa a la corporación y dirige su vida con la Junta.",
             "enlace": ""
           },
           {
@@ -1281,39 +273,28 @@
           {
             "cargo": "Tesorería",
             "nombre": "",
-            "texto": "Administra los bienes del Grupo Parroquial, con transparencia.",
+            "texto": "Administra los bienes de la corporación, con transparencia.",
             "enlace": ""
           },
           {
             "cargo": "Vocalía de Cultos",
             "nombre": "",
-            "texto": "Los cultos y las celebraciones en honor de la Titular",
+            "texto": "Los cultos y las celebraciones del año.",
             "enlace": "/cultos"
           },
           {
             "cargo": "Vocalía de Caridad",
             "nombre": "",
-            "texto": "La ayuda a quien la necesita",
+            "texto": "La ayuda a quien la necesita.",
             "enlace": "/nuestros-fines/caridad"
           },
           {
             "cargo": "Vocalía de Formación",
             "nombre": "",
-            "texto": "Crecer en la fe",
+            "texto": "Crecer en la fe.",
             "enlace": "/nuestros-fines/formacion"
           }
         ]
-      },
-      {
-        "tipo": "cita",
-        "titulo": "",
-        "presentacion": {
-          "estilo": "franja",
-          "alineacion": "centro"
-        },
-        "texto": "El que quiera ser grande entre vosotros, que sea vuestro servidor.",
-        "autor": "Jesús",
-        "fuente": "Evangelio según san Mateo, 20, 26"
       },
       {
         "tipo": "llamada",
@@ -1326,205 +307,17 @@
   },
   "parroquia": {
     "cabecera": {
-      "titulo": "Parroquia · Pasionistas",
-      "subtitulo": "Santa María Goretti, nuestra sede canónica, y la comunidad pasionista que la atiende.",
-      "foto": "/images/cabeceras/cruz-de-guia.webp",
-      "fotoAlt": "La cruz de guía y los banderines dentro del templo, entre nazarenos, antes de la salida",
+      "titulo": "Parroquia",
+      "subtitulo": "Nuestra sede canónica y la comunidad parroquial que nos acoge.",
+      "foto": "",
+      "fotoAlt": "",
       "encuadre": 35
     },
     "bloques": [
       {
-        "tipo": "dibujo",
-        "titulo": "Santa María Goretti",
-        "presentacion": {
-          "ladoDibujo": "derecha"
-        },
-        "dibujo": "templo",
-        "html": "<p>El Grupo Parroquial tiene su sede canónica en la <strong>Parroquia de Santa María Goretti</strong>, en la calle Corregidor Paz Guzmán, en el distrito de Cruz de Humilladero. Es una parroquia de barrio, de unos diez mil vecinos, y desde que se fundó la atiende una comunidad de <strong>Padres Pasionistas</strong>.</p><p>Su templo, del arquitecto Verdú, se terminó en 1981: paredes blancas, una cubierta verde que se abre en abanico y la torre de la cruz. En él celebramos nuestros cultos y en él se reúne el Grupo durante el año.</p>",
-        "foto": {
-          "url": "/images/templo-goretti.webp",
-          "ia": true,
-          "alt": "Ilustración del templo de Santa María Goretti: edificio blanco de cubierta verde, con la torre de la cruz y una imagen tras la verja"
-        }
-      },
-      {
-        "tipo": "horario",
-        "titulo": "Horarios y despacho",
-        "misas": [
-          {
-            "etiqueta": "Lunes a sábado",
-            "dias": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6
-            ],
-            "horas": [
-              "09:30",
-              "19:00"
-            ],
-            "horasVerano": [
-              "09:30",
-              "20:00"
-            ]
-          },
-          {
-            "etiqueta": "Domingos y festivos",
-            "dias": [
-              0
-            ],
-            "horas": [
-              "10:00",
-              "12:00"
-            ],
-            "horasVerano": []
-          }
-        ],
-        "despacho": [
-          {
-            "dias": [
-              2,
-              5
-            ],
-            "desde": "18:00",
-            "hasta": "20:00"
-          }
-        ],
-        "verano": {
-          "desde": "07-01",
-          "hasta": "08-31"
-        },
-        "lineas": [
-          {
-            "etiqueta": "Confesiones",
-            "valor": "Antes de cada misa"
-          },
-          {
-            "etiqueta": "Teléfono",
-            "valor": "952 331 203"
-          },
-          {
-            "etiqueta": "Correo",
-            "valor": "goretti@diocesismalaga.es"
-          }
-        ]
-      },
-      {
-        "tipo": "mapa",
-        "titulo": "Cómo llegar",
-        "presentacion": {
-          "alto": "medio",
-          "disposicion": "lado",
-          "ancla": "como-llegar"
-        },
-        "lugar": "Parroquia de Santa María Goretti",
-        "direccion": "C. Corregidor Paz Guzmán, 13, 29006 Málaga",
-        "indicaciones": "En el barrio, en el distrito de Cruz de Humilladero."
-      },
-      {
-        "tipo": "dibujo",
-        "titulo": "Los Pasionistas",
-        "presentacion": {
-          "fondo": "oscuro",
-          "ladoDibujo": "izquierda"
-        },
-        "dibujo": "signoPasionista",
-        "html": "<p>La Congregación de la Pasión de Jesucristo, cuyos religiosos firman con las siglas C.P., la fundó <strong>San Pablo de la Cruz</strong> en Italia, en el siglo XVIII. Su carisma es mantener viva la memoria de la Pasión de Cristo y anunciarla, sobre todo a quienes sufren.</p><p>Llegaron a Málaga en 1972, cuando el obispado erigió esta parroquia y se la encomendó. Desde entonces ha sido una comunidad abierta y volcada con los jóvenes, y su trabajo ha salido de la parroquia: capellanías de colegios y del cementerio, el Teléfono de la Esperanza, ejercicios espirituales y acompañamiento espiritual.</p><p>En el barrio sostienen Cáritas parroquial y el hogar del jubilado, la catequesis de niños, jóvenes y adultos, la preparación de bautizos y bodas y grupos como la Legión de María.</p>"
-      },
-      {
-        "tipo": "cita",
+        "tipo": "texto",
         "titulo": "",
-        "presentacion": {
-          "estilo": "grande",
-          "alineacion": "centro",
-          "fondo": "oscuro"
-        },
-        "texto": "La Pasión de Jesús es la obra más grande y maravillosa del amor de Dios.",
-        "autor": "San Pablo de la Cruz",
-        "fuente": "Fundador de los Pasionistas"
-      },
-      {
-        "tipo": "cronologia",
-        "titulo": "La parroquia en fechas",
-        "presentacion": {
-          "disposicion": "cinta"
-        },
-        "hitos": [
-          {
-            "periodo": "1972",
-            "etiqueta": "Erección",
-            "titulo": "Nace la parroquia",
-            "relato": "En noviembre de 1972 el obispado erige la parroquia de Santa María Goretti y la encomienda a los Pasionistas, que acababan de llegar a Málaga.",
-            "foto": {
-              "url": "",
-              "alt": "",
-              "pie": ""
-            },
-            "tono": "ninguno"
-          },
-          {
-            "periodo": "1973",
-            "etiqueta": "Río Baeza",
-            "titulo": "En unos bajos de la barriada",
-            "relato": "Todavía sin templo, la parroquia empieza a funcionar en unos locales de la calle Río Baeza. La inaugura el obispo Ángel Suquía el 3 de junio de 1973.",
-            "foto": {
-              "url": "",
-              "alt": "",
-              "pie": ""
-            },
-            "tono": "ninguno"
-          },
-          {
-            "periodo": "1981",
-            "etiqueta": "El templo",
-            "titulo": "Una iglesia sin columnas",
-            "relato": "A finales de 1981 terminan las obras del templo, del arquitecto Verdú: una estructura triangular sin columnas, con forma de concha y lucernas circulares.\n\nLo bendice el obispo Ramón Buxarráis en diciembre de 1982.",
-            "foto": {
-              "url": "",
-              "alt": "",
-              "pie": ""
-            },
-            "tono": "oro"
-          },
-          {
-            "periodo": "1997",
-            "etiqueta": "Retablo",
-            "titulo": "Un retablo nuevo",
-            "relato": "Se remodela el retablo y se incorpora nueva imaginería.",
-            "foto": {
-              "url": "",
-              "alt": "",
-              "pie": ""
-            },
-            "tono": "ninguno"
-          },
-          {
-            "periodo": "2008",
-            "etiqueta": "Dedicación",
-            "titulo": "La dedicación del templo",
-            "relato": "Tras renovar en 2007 la cubierta, el suelo y la iluminación, el obispo Antonio Dorado Soto dedica solemnemente el templo el 12 de abril de 2008. La fecha se recuerda cada año.",
-            "foto": {
-              "url": "",
-              "alt": "",
-              "pie": ""
-            },
-            "tono": "granate"
-          },
-          {
-            "periodo": "2011",
-            "etiqueta": "Imágenes",
-            "titulo": "San Gabriel y Santa María Goretti",
-            "relato": "Llegan al templo las imágenes de San Gabriel de la Dolorosa, santo pasionista, y de Santa María Goretti, titular de la parroquia.",
-            "foto": {
-              "url": "",
-              "alt": "",
-              "pie": ""
-            },
-            "tono": "ninguno"
-          }
-        ]
+        "html": "<p>La corporación tiene su sede canónica en su parroquia, donde recibe culto su imagen titular y donde se reúnen sus hermanos. Aquí se cuenta su historia, sus horarios y cómo llegar.</p>"
       },
       {
         "tipo": "botones",
@@ -1534,14 +327,9 @@
         },
         "botones": [
           {
-            "texto": "Agenda de cultos",
-            "enlace": "/agenda",
+            "texto": "Escríbenos",
+            "enlace": "/contacto",
             "estilo": "principal"
-          },
-          {
-            "texto": "Historia del Grupo",
-            "enlace": "/historia",
-            "estilo": "secundario"
           }
         ]
       }
@@ -1550,9 +338,9 @@
   "nuestros-fines": {
     "cabecera": {
       "titulo": "Nuestros fines",
-      "subtitulo": "Culto, caridad y formación: para qué existe el Grupo Parroquial.",
-      "foto": "/images/cabeceras/virgen-en-su-altar.webp",
-      "fotoAlt": "La Virgen de los Desamparados en su altar, entre candeleros encendidos y ante un dosel rojo",
+      "subtitulo": "Culto, caridad y formación: para qué existe la corporación.",
+      "foto": "",
+      "fotoAlt": "",
       "encuadre": 35
     },
     "bloques": [
@@ -1562,11 +350,11 @@
         "presentacion": {
           "disposicion": "foco"
         },
-        "centro": "Desamparados",
+        "centro": "Fe",
         "fines": [
           {
             "titulo": "Culto",
-            "texto": "La eucaristía, el triduo, el besamanos y el rosario por el barrio: los momentos en que el Grupo se reúne ante su Titular.",
+            "texto": "La eucaristía y los cultos del año: los momentos en que la corporación se reúne ante su imagen titular.",
             "boton": "Ver los cultos",
             "enlace": "/cultos"
           },
@@ -1583,18 +371,7 @@
             "enlace": "/nuestros-fines/formacion"
           }
         ],
-        "texto": "La salida procesional es lo que más se ve, pero es solo una parte. El resto del año el Grupo reza, ayuda y aprende, y cualquiera puede sumarse."
-      },
-      {
-        "tipo": "cita",
-        "titulo": "",
-        "presentacion": {
-          "estilo": "enfoque",
-          "alineacion": "izquierda"
-        },
-        "texto": "Venid a mí todos los que estáis cansados y agobiados, y yo os aliviaré.",
-        "autor": "Jesús",
-        "fuente": "Evangelio según san Mateo, 11, 28"
+        "texto": "La salida procesional es lo que más se ve, pero es solo una parte. El resto del año la corporación reza, ayuda y aprende, y cualquiera puede sumarse."
       },
       {
         "tipo": "llamada",
@@ -1602,7 +379,7 @@
         "presentacion": {
           "estilo": "fila"
         },
-        "texto": "Si quieres vivir todo esto desde dentro, hazte hermano del Grupo Parroquial.",
+        "texto": "Si quieres vivir todo esto desde dentro, hazte hermano.",
         "boton": "Hazte hermano",
         "enlace": "/hazte-hermano"
       }
@@ -1611,9 +388,9 @@
   "caridad": {
     "cabecera": {
       "titulo": "Caridad",
-      "subtitulo": "Mirar con los ojos de la Virgen a quienes hoy están sin amparo.",
-      "foto": "/images/cabeceras/rostro.webp",
-      "fotoAlt": "El rostro de la Virgen de los Desamparados, con la mirada alzada y una lágrima en la mejilla",
+      "subtitulo": "La ayuda a quien la necesita, a lo largo de todo el año.",
+      "foto": "",
+      "fotoAlt": "",
       "encuadre": 40
     },
     "bloques": [
@@ -1625,7 +402,7 @@
           "alineacion": "centro",
           "ancho": "estrecho"
         },
-        "html": "<p>Para una corporación que lleva el nombre de los <strong>Desamparados</strong>, la caridad es casi una obligación: ser signo de la misericordia de Dios con quienes viven en soledad, enfermedad o exclusión. Lo hacemos desde la parroquia, junto a quienes ya trabajan en el barrio, y con lo que cada hermano aporta de su tiempo y de su bolsillo.</p>"
+        "html": "<p>La caridad es uno de los fines de la corporación. Con lo que aportan los hermanos y en colaboración con la parroquia, ayudamos a quien lo necesita.</p>"
       },
       {
         "tipo": "puertas",
@@ -1634,92 +411,20 @@
           {
             "ceja": "Si lo necesitas",
             "titulo": "Necesito ayuda",
-            "texto": "Acude a Cáritas parroquial de Santa María Goretti. Pregunta en el despacho parroquial o escríbenos y te orientamos, con discreción y sin preguntas de más.",
-            "datos": [
-              {
-                "etiqueta": "Despacho",
-                "valor": "Martes y viernes",
-                "nota": "18:00 – 20:00",
-                "copiable": false
-              },
-              {
-                "etiqueta": "Dónde",
-                "valor": "C. Corregidor Paz Guzmán, 13",
-                "nota": "Parroquia de Santa María Goretti",
-                "copiable": false
-              }
-            ],
-            "boton": "Cómo llegar",
-            "enlace": "/parroquia-pasionistas#como-llegar"
+            "texto": "Escríbenos y te orientamos, con discreción y sin preguntas de más.",
+            "datos": [],
+            "boton": "Escríbenos",
+            "enlace": "/contacto"
           },
           {
             "ceja": "Si puedes dar",
             "titulo": "Quiero ayudar",
-            "texto": "No hace falta ser hermano ni tener experiencia: basta con ganas y un par de horas cuando se pueda, o con un donativo. Escríbenos y te contamos en qué andamos ahora.",
-            "datos": [
-              {
-                "etiqueta": "Tu tiempo",
-                "valor": "Voluntario",
-                "nota": "Sin experiencia previa",
-                "copiable": false
-              },
-              {
-                "etiqueta": "Donativo",
-                "valor": "",
-                "nota": "",
-                "copiable": true
-              }
-            ],
+            "texto": "No hace falta ser hermano ni tener experiencia: basta con ganas y un poco de tiempo, o con un donativo.",
+            "datos": [],
             "boton": "Escríbenos",
             "enlace": "/contacto"
           }
         ]
-      },
-      {
-        "tipo": "tarjetas",
-        "titulo": "Qué hacemos",
-        "presentacion": {
-          "columnas": "4",
-          "estilo": "numeradas",
-          "alineacion": "izquierda"
-        },
-        "tarjetas": [
-          {
-            "titulo": "Alimentos",
-            "descripcion": "Recogemos y repartimos alimentos para familias que pasan por un mal momento.",
-            "enlace": "",
-            "icono": "manos"
-          },
-          {
-            "titulo": "Familias en dificultad",
-            "descripcion": "Acompañamos a familias del barrio con necesidades concretas, con discreción y sin preguntas de más.",
-            "enlace": "",
-            "icono": "grupo"
-          },
-          {
-            "titulo": "Enfermos y mayores",
-            "descripcion": "Visitamos a enfermos y a personas mayores que viven solas: a veces lo que más falta es compañía.",
-            "enlace": "",
-            "icono": "corazon"
-          },
-          {
-            "titulo": "Con otras entidades",
-            "descripcion": "Colaboramos con Cáritas parroquial y con otras entidades sociales de Málaga para llegar más lejos.",
-            "enlace": "",
-            "icono": "iglesia"
-          }
-        ]
-      },
-      {
-        "tipo": "cita",
-        "titulo": "",
-        "presentacion": {
-          "estilo": "franja",
-          "alineacion": "centro"
-        },
-        "texto": "Cada vez que lo hicisteis con uno de estos, mis hermanos más pequeños, conmigo lo hicisteis.",
-        "autor": "Jesús",
-        "fuente": "Evangelio según san Mateo, 25, 40"
       }
     ]
   },
@@ -1727,8 +432,8 @@
     "cabecera": {
       "titulo": "Formación",
       "subtitulo": "Crecer en la fe para entender lo que celebramos.",
-      "foto": "/images/cabeceras/cera.webp",
-      "fotoAlt": "Cirios del trono con el emblema pasionista; detrás, la Virgen desenfocada",
+      "foto": "",
+      "fotoAlt": "",
       "encuadre": 40
     },
     "bloques": [
@@ -1738,7 +443,7 @@
         "presentacion": {
           "estilo": "carta"
         },
-        "html": "<p>La formación es uno de los pilares del Grupo Parroquial. No se trata de acumular conocimientos, sino de ayudar a cada hermano a conocer mejor a Dios, a vivir el Evangelio en lo de cada día y a entender lo que celebramos: por qué rezamos un triduo, qué significa el besamanos o por qué salimos a la calle.</p><h3>Catequesis y charlas</h3><p>Durante el curso, sesiones para profundizar en la fe, la liturgia y la devoción a la Virgen.</p><h3>Retiros y oración</h3><p>Momentos para parar, rezar juntos y prepararse para los tiempos fuertes del año: el Adviento y la Cuaresma.</p><h3>La espiritualidad de la Pasión</h3><p>De la mano de los Pasionistas, que nos acompañan en la parroquia, con la Cruz como escuela de amor.</p><h3>Jóvenes y nuevos hermanos</h3><p>Una atención especial para que conozcan la historia, los fines y las tradiciones del Grupo.</p><p>Todo lo que proponemos está abierto a hermanos, devotos y a cualquiera que quiera acercarse, y las fechas se anuncian en la Agenda. La preparación para los sacramentos la lleva la parroquia de Santa María Goretti: pregunta en el despacho parroquial, los martes y viernes de 18:00 a 20:00.</p>"
+        "html": "<p>La formación es uno de los pilares de la corporación. No se trata solo de aprender, sino de crecer en la fe y de entender lo que celebramos a lo largo del año.</p>"
       },
       {
         "tipo": "cita",
@@ -1747,9 +452,9 @@
           "estilo": "franja",
           "alineacion": "centro"
         },
-        "texto": "María conservaba todas estas cosas, meditándolas en su corazón.",
+        "texto": "Estad siempre dispuestos a dar razón de vuestra esperanza a todo el que os la pida.",
         "autor": "",
-        "fuente": "Evangelio según san Lucas, 2, 19"
+        "fuente": "Primera carta de san Pedro, 3, 15"
       },
       {
         "tipo": "botones",
@@ -1774,69 +479,35 @@
   },
   "sabado-de-pasion": {
     "cabecera": {
-      "titulo": "Sábado de Pasión",
-      "subtitulo": "Nuestra salida procesional por las calles de Málaga.",
-      "foto": "/images/cabeceras/nazarenos.webp",
-      "fotoAlt": "Nazarenos del Grupo, de capirote negro, por la calle en la salida procesional",
+      "titulo": "Salida procesional",
+      "subtitulo": "Nuestra salida procesional por las calles.",
+      "foto": "",
+      "fotoAlt": "",
       "encuadre": 55
     },
     "bloques": [
       {
         "tipo": "texto",
         "titulo": "",
-        "html": "<p>El Sábado de Pasión es el día grande de nuestro Grupo Parroquial. En esta jornada, Nuestra Señora de los Desamparados sale en estación de penitencia por las calles del barrio de los Corazones, acompañada por sus hermanos y por una multitud de devotos que llenan las calles de fe y emoción.</p><p>La procesión es fruto del trabajo y la ilusión de toda una comunidad. Desde la preparación del trono hasta el acompañamiento musical, cada detalle está pensado para que la salida sea un auténtico acto de fe, arte y devoción.</p>"
-      },
-      {
-        "tipo": "galeria",
-        "titulo": "",
-        "medios": [
-          {
-            "tipo": "foto",
-            "url": "/images/trono-comitiva.webp",
-            "portada": "",
-            "alt": "El trono de la Virgen en la calle, entre ciriales y árboles",
-            "pie": ""
-          },
-          {
-            "tipo": "foto",
-            "url": "/images/trono-candeleria.webp",
-            "portada": "",
-            "alt": "La Virgen de los Desamparados en su trono, con la candelería y las flores blancas",
-            "pie": ""
-          },
-          {
-            "tipo": "foto",
-            "url": "/images/trono-varales.webp",
-            "portada": "",
-            "alt": "Los hombres de trono en fila bajo los varales",
-            "pie": ""
-          },
-          {
-            "tipo": "foto",
-            "url": "/images/trono-cera.webp",
-            "portada": "",
-            "alt": "La cera del trono con el escudo pasionista, y la Virgen detrás",
-            "pie": ""
-          }
-        ]
+        "html": "<p>La salida procesional es el día grande de la corporación. Aquí se cuenta cómo se vive, quién la hace posible y cómo participar.</p>"
       },
       {
         "tipo": "tarjetas",
-        "titulo": "Descubre el Sábado de Pasión",
+        "titulo": "Descubre la salida procesional",
         "tarjetas": [
           {
             "titulo": "Recorrido",
-            "descripcion": "Itinerario oficial de la estación de penitencia por las calles del barrio de los Corazones.",
+            "descripcion": "El itinerario y las horas de paso.",
             "enlace": "/sabado-de-pasion/recorrido"
           },
           {
             "titulo": "Trono",
-            "descripcion": "El trono de nuestra Sagrada Titular, símbolo de devoción y arte cofrade.",
+            "descripcion": "El trono de nuestra imagen titular.",
             "enlace": "/sabado-de-pasion/trono"
           },
           {
             "titulo": "Enseres",
-            "descripcion": "El patrimonio del Grupo Parroquial, pieza a pieza.",
+            "descripcion": "El patrimonio de la corporación, pieza a pieza.",
             "enlace": "/sabado-de-pasion/enseres"
           }
         ]
@@ -1846,474 +517,87 @@
   "trono": {
     "cabecera": {
       "titulo": "Trono",
-      "subtitulo": "El trono de nuestra Sagrada Titular.",
-      "foto": "/images/cabeceras/trono-de-noche.webp",
-      "fotoAlt": "El trono de la Virgen entre las casas del barrio, de noche, en blanco y negro",
+      "subtitulo": "El trono de nuestra imagen titular.",
+      "foto": "",
+      "fotoAlt": "",
       "encuadre": 55
     },
     "bloques": [
       {
-        "tipo": "fotoFija",
+        "tipo": "texto",
         "titulo": "",
-        "pasos": [
-          {
-            "titulo": "Patrimonio y devoción",
-            "texto": "El trono de Nuestra Señora de los Desamparados es una de las piezas más destacadas del patrimonio artístico y devocional del Grupo Parroquial. Diseñado para resaltar la belleza de la Sagrada Titular, combina la solidez de la ebanistería con el brillo de los metales, los bordados y las flores que lo adornan en su salida procesional.",
-            "foto": {
-              "url": "/images/trono-candeleria.webp",
-              "alt": "El trono de la Virgen, entre la candelería",
-              "pie": "El trono"
-            }
-          },
-          {
-            "titulo": "Un conjunto armonioso",
-            "texto": "Cada detalle del trono ha sido pensado para crear un conjunto armonioso que acompañe la imagen de la Virgen. Sus líneas, inspiradas en la tradición cofrade malagueña, se enriquecen con apliques dorados, lámparas de cristal y un exorno floral que varía cada año para vestir de manera única el trono.",
-            "foto": {
-              "url": "/images/trono-cera.webp",
-              "alt": "Cirios y flores blancas del exorno del trono",
-              "pie": "Cera y flor"
-            }
-          },
-          {
-            "titulo": "El andar de la Virgen",
-            "texto": "El trono lo llevan sus hombres de trono, que con esfuerzo y devoción hacen posible que la Virgen avance entre el pueblo. Su andar pausado y solemne marca el ritmo de la procesión, generando momentos de gran emoción en cada una de las calles que recorre.",
-            "foto": {
-              "url": "/images/trono-varales.webp",
-              "alt": "Los portadores, en fila junto al trono",
-              "pie": "Bajo los varales"
-            }
-          },
-          {
-            "titulo": "La comitiva",
-            "texto": "Alrededor del trono se organizan los cargos de la procesión, los hermanos de luz y la música, configurando una comitiva que honra a la Sagrada Titular y que expresa la identidad propia del Grupo Parroquial en el Sábado de Pasión.",
-            "foto": {
-              "url": "/images/trono-comitiva.webp",
-              "alt": "El trono avanza entre ciriales y el público",
-              "pie": "La comitiva"
-            }
-          }
-        ]
+        "html": "<p>Aquí se presenta el trono: su historia, sus autores y las piezas que lo componen.</p>"
       }
     ]
   },
   "enseres": {
     "cabecera": {
       "titulo": "Enseres",
-      "subtitulo": "El patrimonio del Grupo Parroquial, pieza a pieza.",
-      "foto": "/images/cabeceras/insignias-de-noche.webp",
-      "fotoAlt": "Banderines bordados en plata y cruces del cortejo, de noche por la calle",
+      "subtitulo": "El patrimonio de la corporación, pieza a pieza.",
+      "foto": "",
+      "fotoAlt": "",
       "encuadre": 45
     },
     "bloques": [
       {
         "tipo": "texto",
         "titulo": "",
-        "html": "<p>Los enseres procesionales son elementos fundamentales que acompañan al Grupo Parroquial en la calle. El cuidado de los enseres es tarea de todos los hermanos, conscientes de que estos objetos no son meros adornos, sino signos visibles de una identidad cofrade que se transmite de generación en generación con respeto y cariño.</p>"
-      },
-      {
-        "tipo": "carrusel",
-        "titulo": "",
-        "piezas": [
-          {
-            "familia": "Insignias",
-            "titulo": "Cruz de guía",
-            "texto": "Abre el cortejo y marca el camino. Madera con cantoneras y escudo de metal plateado, entre los primeros nazarenos.",
-            "foto": {
-              "url": "/images/enseres/cruz-de-guia.webp",
-              "alt": "La cruz de guía del Grupo, entre los nazarenos y los banderines",
-              "pie": ""
-            },
-            "datos": [
-              {
-                "etiqueta": "Autor",
-                "valor": "Orfebrería Hermanos Lozano"
-              },
-              {
-                "etiqueta": "Año",
-                "valor": "1997"
-              },
-              {
-                "etiqueta": "Materiales",
-                "valor": "Madera, metal plateado"
-              }
-            ]
-          },
-          {
-            "familia": "Insignias",
-            "titulo": "Banderines",
-            "texto": "Acompañan a la cruz de guía en el primer tramo. Cada uno lleva su relieve en metal plateado sobre terciopelo negro y su número en la punta.",
-            "foto": {
-              "url": "/images/enseres/banderines.webp",
-              "alt": "Los banderines del cortejo, de noche, con sus relieves de metal plateado",
-              "pie": ""
-            },
-            "datos": [
-              {
-                "etiqueta": "Bordado",
-                "valor": "Taller de bordado de la Esperanza"
-              },
-              {
-                "etiqueta": "Año",
-                "valor": "2004"
-              },
-              {
-                "etiqueta": "Materiales",
-                "valor": "Terciopelo, metal plateado"
-              }
-            ]
-          },
-          {
-            "familia": "Bordado",
-            "titulo": "Manto de salida",
-            "texto": "Terciopelo azul noche bordado en oro y plata, con el anagrama repetido por toda la cola. Se restauró en 2018.",
-            "foto": {
-              "url": "/images/enseres/manto-de-salida.webp",
-              "alt": "Detalle del manto azul de la Virgen, bordado en oro y plata",
-              "pie": ""
-            },
-            "datos": [
-              {
-                "etiqueta": "Bordado",
-                "valor": "Taller de bordado de la Esperanza"
-              },
-              {
-                "etiqueta": "Año",
-                "valor": "1976, restaurado en 2018"
-              },
-              {
-                "etiqueta": "Materiales",
-                "valor": "Terciopelo, oro fino"
-              }
-            ]
-          },
-          {
-            "familia": "Trono",
-            "titulo": "Candelería",
-            "texto": "La cera del trono lleva el escudo del Grupo. Se enciende al anochecer, el Sábado de Pasión, y alumbra la cara de la Virgen.",
-            "foto": {
-              "url": "/images/enseres/candeleria.webp",
-              "alt": "Cirios del trono con el escudo del Grupo, delante de la Virgen",
-              "pie": ""
-            },
-            "datos": [
-              {
-                "etiqueta": "Orfebre",
-                "valor": "Talleres Marín"
-              },
-              {
-                "etiqueta": "Año",
-                "valor": "2021"
-              },
-              {
-                "etiqueta": "Piezas",
-                "valor": "64 candeleros"
-              }
-            ]
-          },
-          {
-            "familia": "Trono",
-            "titulo": "Trono de la Virgen",
-            "texto": "La pieza mayor del Grupo. Caoba, metal plateado, jarras y candelería, portado por su cuadrilla.",
-            "foto": {
-              "url": "/images/trono-candeleria.webp",
-              "alt": "El trono de la Virgen de los Desamparados, con la candelería",
-              "pie": ""
-            },
-            "datos": [
-              {
-                "etiqueta": "Autor",
-                "valor": "Talleres Marín"
-              },
-              {
-                "etiqueta": "Año",
-                "valor": "2008"
-              },
-              {
-                "etiqueta": "Materiales",
-                "valor": "Caoba, metal plateado"
-              }
-            ]
-          }
-        ]
+        "html": "<p>Los enseres procesionales acompañan a la imagen titular en su salida. Aquí se presentan, pieza a pieza.</p>"
       }
     ]
   },
   "rosario": {
     "cabecera": {
-      "titulo": "Rosario vespertino",
-      "subtitulo": "La Virgen por las calles del barrio, al caer la tarde de octubre.",
-      "foto": "/images/cabeceras/virgen-de-noche.webp",
-      "fotoAlt": "La Virgen de los Desamparados con el rosario en la mano, entre cirios encendidos, de noche",
+      "titulo": "Rosario",
+      "subtitulo": "El rezo del Santo Rosario por las calles.",
+      "foto": "",
+      "fotoAlt": "",
       "encuadre": 40
     },
     "bloques": [
       {
         "tipo": "texto",
         "titulo": "",
-        "html": "<p>El Rosario vespertino es el rezo público y solemne del Santo Rosario al caer la tarde, en procesión por las calles de nuestro barrio. Cada mes de octubre, el mes del Rosario, Nuestra Señora de los Desamparados sale en un trono pequeño y recorre durante algo menos de dos horas las calles de la feligresía.</p><p>La acompañamos los hermanos del Grupo Parroquial, en traje y con la cera en la mano, rezando los misterios a lo largo del camino. Es una salida más íntima y cercana que la del Sábado de Pasión: la Virgen pasa a la puerta de las casas de sus vecinos, y quien quiera puede sumarse al rezo desde la acera.</p>"
-      },
-      {
-        "tipo": "itinerario",
-        "titulo": "Itinerario y horarios aproximados",
-        "paradas": [
-          {
-            "hora": "19:30",
-            "lugar": "Salida desde el Templo"
-          },
-          {
-            "hora": "19:40",
-            "lugar": "C. Corregidor Antonio de Bobadilla"
-          },
-          {
-            "hora": "19:50",
-            "lugar": "C. Corregidor Ruiz de Pereda"
-          },
-          {
-            "hora": "20:00",
-            "lugar": "C. Corregidor Francisco de Molina"
-          },
-          {
-            "hora": "20:10",
-            "lugar": "C. Pedro Zapata"
-          },
-          {
-            "hora": "20:25",
-            "lugar": "C. Villalón"
-          },
-          {
-            "hora": "20:40",
-            "lugar": "C. Juan Gris"
-          },
-          {
-            "hora": "20:50",
-            "lugar": "C. de Alozaina"
-          },
-          {
-            "hora": "21:00",
-            "lugar": "C. Periana"
-          },
-          {
-            "hora": "21:10",
-            "lugar": "Plaza de Nuestra Señora del Carmen"
-          },
-          {
-            "hora": "21:20",
-            "lugar": "C. Corregidor Paz y Guzmán"
-          },
-          {
-            "hora": "21:30",
-            "lugar": "Regreso al Templo"
-          }
-        ],
-        "presentacion": {
-          "disposicion": "indice"
-        }
-      },
-      {
-        "tipo": "galeria",
-        "titulo": "",
-        "presentacion": {
-          "disposicion": "tiras"
-        },
-        "medios": [
-          {
-            "tipo": "foto",
-            "url": "/images/trono-candeleria.webp",
-            "portada": "",
-            "alt": "El trono de la Virgen con la candelería encendida",
-            "pie": ""
-          },
-          {
-            "tipo": "foto",
-            "url": "/images/virgen-rostro.jpg",
-            "portada": "",
-            "alt": "El rostro de Nuestra Señora de los Desamparados",
-            "pie": ""
-          },
-          {
-            "tipo": "foto",
-            "url": "/images/trono-comitiva.webp",
-            "portada": "",
-            "alt": "El trono avanzando entre los hermanos que lo acompañan",
-            "pie": ""
-          },
-          {
-            "tipo": "foto",
-            "url": "/images/trono-cera.webp",
-            "portada": "",
-            "alt": "La cera encendida en el trono",
-            "pie": ""
-          },
-          {
-            "tipo": "foto",
-            "url": "/images/cabeceras/trono-en-la-calle.webp",
-            "portada": "",
-            "alt": "La Virgen en su trono por una calle del barrio",
-            "pie": ""
-          },
-          {
-            "tipo": "foto",
-            "url": "/images/trono-varales.webp",
-            "portada": "",
-            "alt": "Los varales del trono",
-            "pie": ""
-          }
-        ]
+        "html": "<p>El rezo público del Santo Rosario por las calles, acompañando a nuestra imagen titular.</p>"
       }
     ]
   },
   "desamparados": {
     "cabecera": {
-      "titulo": "Desamparados",
-      "subtitulo": "Historia y devoción a nuestra Amantísima Titular.",
-      "foto": "/images/cabeceras/virgen-dosel-rojo.webp",
-      "fotoAlt": "Nuestra Señora de los Desamparados con corona de plata y rostrillo de encaje, ante un dosel rojo",
+      "titulo": "Nuestra imagen titular",
+      "subtitulo": "Historia y devoción.",
+      "foto": "",
+      "fotoAlt": "",
       "encuadre": 35
     },
     "bloques": [
       {
         "tipo": "texto",
         "titulo": "",
-        "html": "<p>La devoción a Nuestra Señora de los Desamparados tiene sus raíces en la tradición mariana valenciana, extendiéndose posteriormente por todo el territorio español. En nuestro Grupo Parroquial, la Virgen de los Desamparados es acogida como Madre y Titular, patrona de aquellos que se sienten solos, olvidados o necesitados de misericordia.</p><p>A lo largo de los años, la imagen titular ha sido venerada en la sede canónica de la corporación, siendo centro de los cultos más solemnes y de la piedad de hermanos y devotos. Su rostro sereno y su manto protector invitan a la confianza, recordando que nadie queda desamparado bajo la mirada de María.</p><p>Cada noviembre, el Grupo Parroquial celebra solemne triduo en su honor, culminando con un devoto besamanos que congrega a fieles de toda la ciudad. Estas celebraciones son expresión viva de la fe puesta en la Virgen y del compromiso de la corporación con su advocación.</p>"
+        "html": "<p>Aquí se cuenta la historia de nuestra imagen titular: su advocación, su autor y la devoción que despierta.</p>"
       }
     ]
   },
   "ajuar": {
     "cabecera": {
       "titulo": "Ajuar",
-      "subtitulo": "Manto, corona y joyas de la Sagrada Titular.",
-      "foto": "/images/cabeceras/saya.webp",
-      "fotoAlt": "Las manos de la Virgen sobre la saya bordada en oro, con el rosario y el encaje del pecherín",
+      "subtitulo": "Mantos, coronas y joyas de nuestra imagen titular.",
+      "foto": "",
+      "fotoAlt": "",
       "encuadre": 40
     },
     "bloques": [
       {
         "tipo": "texto",
         "titulo": "",
-        "html": "<p>El ajuar de la Sagrada Titular está compuesto por piezas de extraordinario valor artístico y devocional, fruto del afecto y la generosidad de los hermanos a lo largo de la historia de la corporación. Cada elemento ha sido confeccionado con los mejores materiales y con el más fino trabajo de bordado y orfebrería.</p><p>El ajuar se va enriqueciendo con nuevas donaciones y restauraciones que garantizan su conservación para las futuras generaciones, manteniendo vivo el esplendor con el que la Virgen de los Desamparados preside cada acto de culto y cada estación de penitencia.</p>"
-      },
-      {
-        "tipo": "carrusel",
-        "titulo": "",
-        "piezas": [
-          {
-            "familia": "Orfebrería",
-            "titulo": "Corona",
-            "texto": "La corona, obra de orfebrería detallada, realza la majestad de la imagen: un resplandor de rayos y estrellas, rematado por la cruz, que enmarca el rostro de la Señora sobre la toca de encaje.",
-            "foto": {
-              "url": "/images/ajuar/corona.webp",
-              "alt": "La Virgen de los Desamparados de perfil, con la corona de rayos y estrellas y la toca de encaje",
-              "pie": ""
-            },
-            "datos": [
-              {
-                "etiqueta": "Resplandor",
-                "valor": "Rayos y estrellas"
-              },
-              {
-                "etiqueta": "Remate",
-                "valor": "Cruz"
-              }
-            ]
-          },
-          {
-            "familia": "Joyería",
-            "titulo": "Corazón de los siete puñales",
-            "texto": "Sobre el pecherín, el corazón traspasado por siete puñales: los siete dolores de María. A su lado, el broche con el nombre de la Virgen.",
-            "foto": {
-              "url": "/images/ajuar/corazon.webp",
-              "alt": "El corazón de plata atravesado por siete puñales, sobre el pecherín de encaje",
-              "pie": ""
-            },
-            "datos": [
-              {
-                "etiqueta": "Puñales",
-                "valor": "Siete"
-              }
-            ]
-          },
-          {
-            "familia": "Bordado",
-            "titulo": "Manto",
-            "texto": "El manto principal, de rico terciopelo, luce bordados en oro que representan motivos marianos y los emblemas del Grupo Parroquial. Así cae sobre el trono al salir a la calle.",
-            "foto": {
-              "url": "/images/ajuar/manto.webp",
-              "alt": "El manto de terciopelo azul, con bordados en oro, cayendo sobre el trono",
-              "pie": ""
-            },
-            "datos": [
-              {
-                "etiqueta": "Tejido",
-                "valor": "Terciopelo azul"
-              },
-              {
-                "etiqueta": "Bordado",
-                "valor": "Oro"
-              }
-            ]
-          },
-          {
-            "familia": "Bordado",
-            "titulo": "Saya",
-            "texto": "Tela clara y cintura bordada en oro, con la flor de lis y la rejilla de hilo; sobre ella, el encaje dorado de la toca de sobremanto.",
-            "foto": {
-              "url": "/images/ajuar/saya.webp",
-              "alt": "La saya clara con la cintura bordada en oro, entre las manos de la Virgen",
-              "pie": ""
-            },
-            "datos": [
-              {
-                "etiqueta": "Bordado",
-                "valor": "Oro"
-              }
-            ]
-          },
-          {
-            "familia": "Joyería",
-            "titulo": "Rosario",
-            "texto": "Cuentas negras facetadas que caen de la mano derecha sobre la saya, con la medalla del anagrama mariano.",
-            "foto": {
-              "url": "/images/ajuar/rosario.webp",
-              "alt": "La mano derecha de la Virgen con el rosario de cuentas negras sobre la saya",
-              "pie": ""
-            },
-            "datos": [
-              {
-                "etiqueta": "Cuentas",
-                "valor": "Negras, facetadas"
-              }
-            ]
-          },
-          {
-            "familia": "Joyería",
-            "titulo": "Perlas",
-            "texto": "La pulsera en la muñeca y el collar a la cintura, junto al puño de encaje y la manga ribeteada en oro.",
-            "foto": {
-              "url": "/images/ajuar/perlas.webp",
-              "alt": "La mano izquierda de la Virgen con la pulsera de perlas y el puño de encaje",
-              "pie": ""
-            },
-            "datos": []
-          },
-          {
-            "familia": "Altar",
-            "titulo": "La Señora, vestida",
-            "texto": "Todo el ajuar junto, como preside sus cultos: corona, toca, corazón y manto, entre la cera encendida.",
-            "foto": {
-              "url": "/images/ajuar/altar.webp",
-              "alt": "La Virgen de los Desamparados en su altar, vestida y entre velas encendidas",
-              "pie": ""
-            },
-            "datos": []
-          }
-        ]
+        "html": "<p>El ajuar de la imagen titular lo forman piezas de gran valor artístico y devocional. Aquí se presentan, pieza a pieza.</p>"
       }
     ]
   },
   "agenda": {
     "cabecera": {
       "titulo": "Agenda",
-      "subtitulo": "Calendario de cultos, actos y celebraciones del Grupo Parroquial.",
+      "subtitulo": "Calendario de cultos, actos y celebraciones de la corporación.",
       "foto": "",
       "fotoAlt": ""
     },
@@ -2328,9 +612,9 @@
   "noticias": {
     "cabecera": {
       "titulo": "Noticias",
-      "subtitulo": "Últimas noticias del Grupo Parroquial Nuestra Señora de los Desamparados.",
-      "foto": "/images/cabeceras/trono-en-la-calle.webp",
-      "fotoAlt": "El trono de la Virgen en la calle, entre ciriales y bajo los árboles",
+      "subtitulo": "Las últimas noticias de la corporación.",
+      "foto": "",
+      "fotoAlt": "",
       "encuadre": 55
     },
     "bloques": [
@@ -2345,8 +629,8 @@
     "cabecera": {
       "titulo": "Publicaciones",
       "subtitulo": "Boletines, dossieres de prensa y documentos de nuestra historia.",
-      "foto": "/images/cabeceras/manto.webp",
-      "fotoAlt": "El manto de terciopelo azul, bordado en oro, sobre el trono y bajo los árboles",
+      "foto": "",
+      "fotoAlt": "",
       "encuadre": 45
     },
     "bloques": [
@@ -2360,9 +644,9 @@
   "boletines": {
     "cabecera": {
       "titulo": "Boletines",
-      "subtitulo": "El boletín informativo del Grupo Parroquial, número a número.",
-      "foto": "/images/cabeceras/virgen-entre-candeleros.webp",
-      "fotoAlt": "La Virgen de los Desamparados entre candeleros encendidos, ante un dosel rojo",
+      "subtitulo": "El boletín informativo de la corporación, número a número.",
+      "foto": "",
+      "fotoAlt": "",
       "encuadre": 35
     },
     "bloques": [
@@ -2376,9 +660,9 @@
   "dossier-prensa": {
     "cabecera": {
       "titulo": "Dossier de prensa",
-      "subtitulo": "La información del Grupo Parroquial para los medios y para quien la necesite.",
-      "foto": "/images/cabeceras/hombres-de-trono.webp",
-      "fotoAlt": "Hombres de trono en fila bajo los varales, en la calle",
+      "subtitulo": "La información de la corporación para los medios y para quien la necesite.",
+      "foto": "",
+      "fotoAlt": "",
       "encuadre": 40
     },
     "bloques": [
@@ -2393,8 +677,8 @@
     "cabecera": {
       "titulo": "Contacto",
       "subtitulo": "Estamos a tu disposición.",
-      "foto": "/images/cabeceras/nazarenos-con-cirios.webp",
-      "fotoAlt": "Nazarenos con túnica negra y cirios por una avenida arbolada, camino de la cruz de guía",
+      "foto": "",
+      "fotoAlt": "",
       "encuadre": 45
     },
     "bloques": [
@@ -2402,24 +686,7 @@
         "tipo": "contacto",
         "titulo": "",
         "tituloDatos": "Datos de contacto",
-        "lineas": [
-          {
-            "etiqueta": "Email",
-            "valor": "goretti.desamparados@gmail.com"
-          },
-          {
-            "etiqueta": "Teléfono",
-            "valor": "644 90 01 67"
-          },
-          {
-            "etiqueta": "Dirección",
-            "valor": "Iglesia Parroquial Santa María Goretti, C. Corregidor Paz Guzmán, 13, Málaga"
-          },
-          {
-            "etiqueta": "Horario de Secretaría",
-            "valor": "Primer viernes de cada mes, de 19:30 a 21:00"
-          }
-        ]
+        "lineas": []
       }
     ]
   }

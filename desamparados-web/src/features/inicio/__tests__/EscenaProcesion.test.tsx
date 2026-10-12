@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import EscenaProcesion from '../EscenaProcesion'
 import { responderPortada, textosDePrueba } from './ayudas'
@@ -32,15 +32,32 @@ describe('EscenaProcesion', () => {
     expect(titulo.textContent).toContain('\n')
   })
 
-  it('con la foto de siempre mantiene los cuatro tamaños', async () => {
-    // Mientras nadie suba otra, la del repositorio sigue sirviéndose con srcset:
-    // sería una pena perder los cuatro tamaños sin que nadie haya cambiado nada.
-    responderPortada(textosDePrueba())
+  it('la foto fija de nazarenos de la instalación mantiene los cuatro tamaños', async () => {
+    // Si el contenido la nombra (Desamparados la tiene en instalacion/imagenes),
+    // se sirve con srcset: sería una pena perder los cuatro tamaños.
+    const textos = textosDePrueba()
+    textos.sabadoDePasion.imagenUrl = '/images/nazarenos-1280.webp'
+    textos.sabadoDePasion.imagenAlt = 'Nazarenos con la bandera blanca'
+    responderPortada(textos)
 
     renderWithProviders(<EscenaProcesion />)
 
-    const foto = await screen.findByRole('img', { name: /nazarenos/i })
+    const foto = await screen.findByRole('img', { name: 'Nazarenos con la bandera blanca' })
     expect(foto).toHaveAttribute('srcset', expect.stringContaining('nazarenos-1920.webp'))
+  })
+
+  it('sin foto, o con una que no está, la escena se queda con su fondo: ni icono roto ni el alt flotando', async () => {
+    const textos = textosDePrueba()
+    textos.sabadoDePasion.imagenUrl = '/images/no-esta-en-esta-instalacion.webp'
+    textos.sabadoDePasion.imagenAlt = 'Una foto que no está'
+    responderPortada(textos)
+
+    renderWithProviders(<EscenaProcesion />)
+
+    const foto = await screen.findByRole('img', { name: 'Una foto que no está' })
+    fireEvent.error(foto)
+    expect(screen.queryByRole('img', { name: 'Una foto que no está' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument()
   })
 
   it('una foto subida se sirve con sus copias reducidas', async () => {
@@ -69,5 +86,24 @@ describe('EscenaProcesion', () => {
 
     const foto = await screen.findByRole('img', { name: 'Una foto antigua' })
     expect(foto).not.toHaveAttribute('srcset')
+  })
+
+  it('mientras llegan los textos, sus huesos y no los de partida', async () => {
+    let responder!: () => void
+    const textos = textosDePrueba()
+    textos.sabadoDePasion.titulo = 'El título de esta corporación'
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => new Promise<Response>((resolve) => {
+      responder = () => resolve(new Response(JSON.stringify({ imagenes: [], textos }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    })))
+    const { container } = renderWithProviders(<EscenaProcesion />)
+
+    const partida = textosDePrueba().sabadoDePasion
+    expect(screen.queryByText(partida.ceja)).not.toBeInTheDocument()
+    expect(screen.queryByText(partida.enlace)).not.toBeInTheDocument()
+    expect(container.querySelectorAll('[data-esqueleto-portada]').length).toBe(4)
+
+    responder()
+    expect(await screen.findByRole('heading', { name: 'El título de esta corporación' })).toBeInTheDocument()
+    expect(container.querySelector('[data-esqueleto-portada]')).toBeNull()
   })
 })

@@ -1,0 +1,9 @@
+{
+  "portada": {
+    "hero": { "titulo": "La corporación de las pruebas" }
+  },
+  "boletines": {
+    "cabecera": { "titulo": "Hojas informativas", "subtitulo": "Una semilla de prueba.", "foto": "", "fotoAlt": "", "encuadre": 35 },
+    "bloques": [{ "tipo": "listado", "titulo": "Todas las hojas", "fuente": "boletines" }]
+  }
+}

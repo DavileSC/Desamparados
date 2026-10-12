@@ -1,5 +1,4 @@
 import type { ImagenPortada } from '../../lib/api/portada'
-import { site } from '../../config/site'
 
 /**
  * Ajustes de la rotación de fotos de la cabecera. Viven fuera de Hero.tsx
@@ -7,10 +6,13 @@ import { site } from '../../config/site'
  * fast refresh de Vite.
  */
 
-/** Sin fotos en el CMS (o sin API) la portada enseña la de siempre. */
-export const IMAGENES_POR_DEFECTO: ImagenPortada[] = [
-  { url: '/images/hero-1920.webp', descripcion: `${site.titular} en su trono procesional` },
-]
+/**
+ * Sin fotos en el CMS (o sin API), ninguna: la cabecera se queda en su fondo
+ * liso con los textos. Una foto escrita aquí sería de una corporación y en las
+ * demás instalaciones daría 404 (con su texto alternativo en el sitio de la
+ * foto); las fotos de la portada son contenido y se ponen en el CMS.
+ */
+export const IMAGENES_POR_DEFECTO: ImagenPortada[] = []
 /** Lo que se queda cada foto antes de fundirse con la siguiente. */
 export const INTERVALO_ROTACION_MS = 7000
 /** Duración del fundido, en segundos. */

@@ -438,6 +438,27 @@ el script y el arranque, y la fija `test/paginas-sin-migrar.test.ts`.
 el cambio necesita su propio paso de migración y alguien que avise si falta. El
 compilador no ve dentro de una columna JSON.
 
+**Las claves del contenido de partida son la forma, aunque su valor esté
+vacío** (desde la etapa 6 de la Fase 8, `shared/contenido-por-defecto.json` es
+neutro). Por la misma regla de `mezclarConDefectos`, una clave que no está en
+el de partida se tira al leer: si la cabecera neutra de una página no trae
+`encuadre` porque no lleva foto, el encuadre de la foto que suba la
+corporación desaparece al guardarlo. Por eso el neutro conserva todas las
+claves de antes, también las de fotos vacías. Y la semilla de cada instalación
+(`instalacion/contenido-inicial.json`) se comprueba contra esas claves al
+arrancar: quitar o renombrar una en el de partida hace que la API de una
+instalación con semilla no arranque hasta corregir su fichero (el mensaje dice
+cuál).
+
+**Mientras carga, la portada va en huesos, no con los textos de partida**
+(`TextoDePortada`). Una prueba de un bloque de la portada que busque sus
+textos sin simular `/portada` ya no los encuentra: tiene que responderla
+(`responderPortada` de `inicio/__tests__/ayudas.ts`) y esperar con `findBy…`.
+Y el simulado tiene que dar una `Response` **nueva** en cada llamada: los
+huesos piden la portada antes que el bloque sus datos (los efectos de los
+hijos van primero), y con una sola instancia el primero consume el cuerpo y
+el segundo falla (pasó en `NoticiasDestacadas.test.tsx`).
+
 ---
 
 ## 10. Las fotos del CMS se recortan a 1920 px de lado
@@ -720,9 +741,54 @@ done
 git show $C:docs/marca/escudo-original.png > instalacion/marca/originales/escudo-original.png
 git show $C:desamparados-web/public/images/escudo-grupo.png > /tmp/escudo-grupo.png
 npm --prefix desamparados-web run marca -- --optimizar /tmp/escudo-grupo.png --destino instalacion/marca/escudo-sobre-oscuro.png
-cp desamparados-web/public/images/hero.jpg instalacion/marca/compartir.jpg
+git show $C:desamparados-web/public/images/hero.jpg > instalacion/marca/compartir.jpg
 ```
 
 El `apple-touch-icon.png` de la historia tiene canal alfa y da un aviso (no un
 error); el del PC B ya está guardado sin él. Comprobarlo: `npm run dev` de la
 web y la API sin ningún «Falta …» ni «se usa la marca de partida».
+
+### Las fotos de la corporación, también fuera (etapa 6)
+
+`desamparados-web/public/images/` pasó entero a `instalacion/imagenes/`, con
+la misma estructura, y se sigue pidiendo en `/images/…` (despliegue.md, «Las
+fotos de la corporación»). Lo que no se ve:
+
+**nginx las lee del montaje, no de una copia.** A diferencia de la marca, aquí
+el `chmod 0644` del arranque no protege nada: un fichero en 640 da 403, y una
+carpeta sin `x` para otros (`instalacion/` incluida) deja sin todas las de
+dentro. 644 y 755, siempre.
+
+**El código no puede escribir una foto de `/images/`.** Otra instalación no la
+tiene. Las fijas que el código usa por defecto (la de siempre, las de los
+carteles, las copias reducidas, el convenio `-1000` de las cabeceras) están
+todas en `src/config/fotosDeLaInstalacion.ts`, y quien las pinta las quita si
+fallan (`hooks/useFotoQueFalla.ts`): sin eso, el navegador enseña el icono roto
+con el texto alternativo. Lo vigila `backend/test/sin-fotos-escritas.test.ts`.
+
+**En Vite, sin `public/images`, el estático de Vite daría la portada** (200 con
+HTML) para `/images/…`: el plugin `instalacion-vite.mjs` contesta antes, con la
+foto o con un 404.
+
+**En el otro PC, tras el pull**, las fotos desaparecen de la web local hasta
+que se copia `instalacion/imagenes/` del PC A. O de la historia, **con Git
+Bash** (nunca `>` de PowerShell), desde la raíz; `aeca868` es el último commit
+de `main` que las tenía:
+
+```bash
+mkdir -p instalacion/imagenes
+git archive aeca868 desamparados-web/public/images | tar -x --strip-components=3 -C instalacion/imagenes
+```
+
+**El mapa del barrio, igual.** `public/mapas/barrio-desamparados.json` pasó a
+`instalacion/mapas/barrio.json` y se sirve en `/mapas/barrio.json` (las fuentes
+de `public/mapas/fuentes/` se quedan: son genéricas). `cargarBarrio()` da
+`null` con un 404 (esta instalación no tiene barrio, y se recuerda) y un error
+con cualquier otro fallo (se reintenta): no confundirlos, que con el primero el
+recorrido pasa a la lista y la 404 retira el plano, y con el segundo el mapa
+dice «No se pudo cargar». En el PC B, tras el pull, con Git Bash:
+
+```bash
+mkdir -p instalacion/mapas
+git show aeca868:desamparados-web/public/mapas/barrio-desamparados.json > instalacion/mapas/barrio.json
+```

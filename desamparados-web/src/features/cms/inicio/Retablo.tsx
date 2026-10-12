@@ -5,6 +5,8 @@ import { ORO_CLARO } from './estiloRetablo'
 import { site } from '../../../config/site'
 import { conArticulo } from '../../../domain/articulos'
 import type { CuentaDeHoy } from '../../../lib/api/panel'
+import { FOTO_DE_SIEMPRE_REDUCIDA } from '../../../config/fotosDeLaInstalacion'
+import { useFotoQueFalla } from '../../../hooks/useFotoQueFalla'
 
 const FECHA_LARGA = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
 const FECHA_CORTA = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -42,7 +44,7 @@ function rotuloDe(c: CuentaDeHoy, hoy: Date): Rotulo {
 }
 
 /** La foto de siempre (la del hero de la web) y su encuadre: el rostro de la Virgen. */
-export const FOTO_POR_DEFECTO = '/images/hero-960.webp'
+export const FOTO_POR_DEFECTO = FOTO_DE_SIEMPRE_REDUCIDA
 
 export default function Retablo({ hoy = new Date(), foto = FOTO_POR_DEFECTO, x = 50, y = 30, cuenta }: {
   hoy?: Date
@@ -59,6 +61,10 @@ export default function Retablo({ hoy = new Date(), foto = FOTO_POR_DEFECTO, x =
   cuenta?: CuentaDeHoy | null
 }) {
   const rotulo = cuenta ? rotuloDe(cuenta, hoy) : null
+  // La de siempre es una foto fija que otra instalación no tiene (404): sin
+  // ella el retablo se queda en su fondo oscuro, sin el icono roto con el
+  // nombre de la Titular. Cada una pone la suya en «Ajustes del Inicio».
+  const { visible: conFoto, alFallar } = useFotoQueFalla(foto)
   const diasContados = Math.round(useCuenta(rotulo?.dias ?? 0, 1600))
 
   return (
@@ -82,15 +88,16 @@ export default function Retablo({ hoy = new Date(), foto = FOTO_POR_DEFECTO, x =
         },
       }}
     >
-      <Box
+      {conFoto && <Box
         component="img"
         src={foto}
+        onError={alFallar}
         alt={site.titular}
         sx={{
           position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${x}% ${y}%`, transformOrigin: `${x}% ${y}%`, opacity: 0.85,
           animation: `${acercar} 22s ease-out both`, ...sinMovimiento,
         }}
-      />
+      />}
       <Box aria-hidden="true" sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(18,16,19,0) 40%, rgba(18,16,19,.92) 78%, #121013 100%)' }} />
       {rotulo && <Box className="rotulo" sx={{ position: 'relative', px: { xs: 2.5, md: 5.5 }, pb: 'clamp(16px, 6cqh, 48px)', pt: 3, display: 'flex', flexDirection: 'column', gap: 1 }}>
         <Typography id="retablo-estacion" sx={{ fontSize: 12, letterSpacing: '0.24em', textTransform: 'uppercase', color: ORO_CLARO }}>

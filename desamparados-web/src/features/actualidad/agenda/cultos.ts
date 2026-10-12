@@ -1,6 +1,7 @@
 import type { ApiEvent } from '../../../lib/api/agenda'
 import { TIPOS, inicioDeMes, inicioDelDia } from '../../inicio/agenda'
 import { site } from '../../../config/site'
+import { FOTO_DE_CULTO, FOTO_DE_SALIDA } from '../../../config/fotosDeLaInstalacion'
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
@@ -52,13 +53,15 @@ export function claseDelCartel(evento: ApiEvent) {
 
 /**
  * La foto del cartel. Sin una propia, la de la Titular en los cultos y la de
- * la procesión en las salidas: las dos que ya tiene la web.
+ * la procesión en las salidas: las fijas de la instalación
+ * (`config/fotosDeLaInstalacion.ts`). Una instalación que no las tiene da 404,
+ * y el cartel y la ventana se quedan sin foto (`useFotoQueFalla`).
  */
 export function fotoDelCartel(evento: ApiEvent): { src: string; alt: string } {
   if (evento.fotoCartel) return { src: evento.fotoCartel, alt: `Cartel: ${evento.title}` }
   return evento.type === 'PROCESION'
-    ? { src: '/images/trono-comitiva.webp', alt: `${site.titular} en su trono, por las calles` }
-    : { src: '/images/triduo.jpg', alt: site.titular }
+    ? { src: FOTO_DE_SALIDA, alt: `${site.titular} en su trono, por las calles` }
+    : { src: FOTO_DE_CULTO, alt: site.titular }
 }
 
 /**

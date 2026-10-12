@@ -3,13 +3,20 @@ import type { Coordenada } from '../../lib/api/contenido'
 
 /**
  * El mapa del barrio: las calles, los edificios y las zonas verdes de
- * OpenStreetMap alrededor del recorrido, en un solo fichero nuestro
- * (`public/mapas/barrio-desamparados.json`). La web no pide nada a ningún
- * servidor de mapas: ni cookies, ni claves, ni terceros.
+ * OpenStreetMap alrededor del recorrido, en un solo fichero de la instalación
+ * (`instalacion/mapas/barrio.json`, fuera de git y de la imagen: cada
+ * corporación tiene su barrio). nginx y Vite lo sirven en `/mapas/barrio.json`.
+ * La web no pide nada a ningún servidor de mapas: ni cookies, ni claves, ni
+ * terceros.
  *
- * Se descargó de Overpass el 25-09-2026 con un margen de unos 400 m alrededor
- * del recorrido. Si algún año el recorrido sale de ahí, hay que volver a
- * generarlo (ver `licencia` dentro del fichero para la atribución).
+ * Se genera con Overpass, con un margen de unos 400 m alrededor del recorrido
+ * (cómo, en docs/despliegue.md, «El mapa del barrio»). Si algún año el
+ * recorrido sale de ahí, hay que volver a generarlo (ver `licencia` dentro del
+ * fichero para la atribución).
+ *
+ * Una instalación sin él no tiene mapa: el recorrido se enseña en lista, la 404
+ * va sin plano y el editor del CMS lo dice. Por eso `cargarBarrio` distingue el
+ * 404 (no hay barrio, `null`) de un fallo de red (error, que se reintenta).
  */
 export interface Barrio {
   licencia: string
@@ -20,18 +27,23 @@ export interface Barrio {
   verdes: FeatureCollection<Polygon>
 }
 
-const URL_BARRIO = '/mapas/barrio-desamparados.json'
+const URL_BARRIO = '/mapas/barrio.json'
 
 /** El reconocimiento que pide la licencia de OpenStreetMap. Va siempre en el mapa. */
 export const ATRIBUCION = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">colaboradores de OpenStreetMap</a>'
 
-let enCamino: Promise<Barrio> | null = null
+let enCamino: Promise<Barrio | null> | null = null
 
-/** El barrio, pedido una sola vez aunque lo pidan la web y el editor a la vez. */
-export function cargarBarrio(): Promise<Barrio> {
+/**
+ * El barrio, pedido una sola vez aunque lo pidan la web y el editor a la vez.
+ * `null` si esta instalación no lo tiene (404): eso no cambia hasta recargar,
+ * así que se recuerda como un resultado y no se vuelve a pedir.
+ */
+export function cargarBarrio(): Promise<Barrio | null> {
   if (!enCamino) {
     enCamino = fetch(URL_BARRIO)
       .then((r) => {
+        if (r.status === 404) return null
         if (!r.ok) throw new Error(`No se pudo leer el mapa del barrio (${r.status})`)
         return r.json() as Promise<Barrio>
       })

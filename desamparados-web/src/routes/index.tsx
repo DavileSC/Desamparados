@@ -168,7 +168,7 @@ const router = createBrowserRouter([
           { index: true, element: pagina(InicioPage, 'nucleo') },
           { path: 'historia', element: pagina(HistoriaPage, 'nucleo') },
           { path: 'historia/organos-de-gobierno', element: pagina(OrganosDeGobiernoPage, 'nucleo') },
-          { path: 'parroquia-pasionistas', element: pagina(ParroquiaPage, 'nucleo') },
+          { path: 'parroquia', element: pagina(ParroquiaPage, 'nucleo') },
           { path: 'nuestros-fines', element: pagina(NuestrosFinesPage, 'nucleo') },
           { path: 'nuestros-fines/caridad', element: pagina(CaridadPage, 'nucleo') },
           { path: 'nuestros-fines/formacion', element: pagina(FormacionPage, 'nucleo') },
@@ -198,6 +198,8 @@ const router = createBrowserRouter([
           { path: 'politica-privacidad', element: pagina(PoliticaDePrivacidadPage, 'nucleo') },
           { path: 'politica-cookies', element: pagina(PoliticaDeCookiesPage, 'nucleo') },
           { path: 'condiciones-de-compra', element: pagina(CondicionesDeCompraPage, 'tienda-web') },
+          // La parroquia se llamaba como la orden que la atiende (hasta el 12-10-2026).
+          { path: 'parroquia-pasionistas', element: <DireccionAntigua a="/parroquia" /> },
           // Las direcciones de antes de quitar las portadas de sección (25-09-2026):
           // /corporacion/historia sigue llevando a /historia, y así con todas.
           { path: 'corporacion/*', element: <DireccionAntigua /> },

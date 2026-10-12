@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { Box, Grid, Typography } from '@mui/material'
 import TarjetaCristal from '../TarjetaCristal'
 import { hayWebGL } from '../mapa/barrio'
@@ -23,8 +23,8 @@ const soloLector = { position: 'absolute', width: 1, height: 1, overflow: 'hidde
  * siempre, el marcado que tenía `RecorridoPage`), en una línea vertical que
  * une las paradas como el recorrido que son, en una tabla compacta o sobre el
  * mapa del barrio, con la línea del recorrido dibujándose al bajar
- * (`RecorridoEnMapa`). Sin recorrido dibujado, o en un navegador sin WebGL,
- * «sobre el mapa» se pinta como la línea.
+ * (`RecorridoEnMapa`). Sin recorrido dibujado, en un navegador sin WebGL o en
+ * una instalación sin mapa del barrio, «sobre el mapa» se pinta como la línea.
  *
  * El itinerario repite lugares (la procesión pasa dos veces por la misma
  * plaza): las claves necesitan el índice o React se lía al reordenar.
@@ -33,11 +33,15 @@ export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
   const disposicion = valorDe(bloque, 'disposicion')
   const ultima = bloque.paradas.length - 1
 
+  // Sin el fichero del barrio (instalacion/mapas) no se sabe hasta pedirlo:
+  // el mapa avisa y se pasa a la línea, que enseña las mismas paradas.
+  const [sinMapa, setSinMapa] = useState(false)
+
   const { recorrido } = bloque
-  if (disposicion === 'plano' && recorrido && recorrido.linea.length >= 2 && hayWebGL()) {
+  if (disposicion === 'plano' && recorrido && recorrido.linea.length >= 2 && !sinMapa && hayWebGL()) {
     return (
       <Suspense fallback={<EsqueletoDelRecorrido bloque={bloque} />}>
-        <RecorridoEnMapa bloque={{ ...bloque, recorrido }} />
+        <RecorridoEnMapa bloque={{ ...bloque, recorrido }} onSinMapa={() => setSinMapa(true)} />
       </Suspense>
     )
   }

@@ -54,8 +54,14 @@ function placa(calle: string): HTMLElement {
  * al lado; el mapa lo acompaña. Con «reducir movimiento» sale ya dibujado y
  * quieto.
  */
-export default function MapaFueraDelRecorrido({ linea }: { linea: Coordenada[] }) {
+export default function MapaFueraDelRecorrido({ linea, onSinMapa }: {
+  linea: Coordenada[]
+  /** Esta instalación no tiene mapa del barrio: la página se queda con el texto. */
+  onSinMapa?: () => void
+}) {
   const contenedor = useRef<HTMLDivElement>(null)
+  const avisarSinMapa = useRef(onSinMapa)
+  avisarSinMapa.current = onSinMapa
   const reducir = useReducedMotion() ?? false
   const [error, setError] = useState(false)
 
@@ -66,6 +72,10 @@ export default function MapaFueraDelRecorrido({ linea }: { linea: Coordenada[] }
     let fotograma = 0
     cargarBarrio().then((barrio) => {
       if (!vivo || !contenedor.current) return
+      if (!barrio) {
+        avisarSinMapa.current?.()
+        return
+      }
       const desvio = calleFueraDelRecorrido(barrio, linea)
       const todo = desvio ? [...linea, ...desvio.linea] : linea
       const caja = new maplibregl.LngLatBounds(todo[0], todo[0])

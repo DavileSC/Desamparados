@@ -120,7 +120,7 @@ async function main() {
   await sembrarContenido({ soloTablasVacias: plan.entorno === 'production' });
 
   // 4. Las salidas procesionales: sin ellas no hay papeletas, ni repartos, ni
-  //    mesa. Antes de la demostración, que cuelga sus papeletas de la Pasión.
+  //    mesa. Antes de la demostración, que cuelga sus papeletas de la estación de penitencia.
   await sembrarSalidas({ soloSiNoHay: plan.entorno === 'production' });
 
   // 4b. Los módulos que esta instalación tiene encendidos (instalacion/datos-entidad.json).

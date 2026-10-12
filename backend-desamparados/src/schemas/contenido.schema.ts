@@ -59,7 +59,11 @@ const portadaSchema = type({
   },
   sabadoDePasion: {
     ceja: ETIQUETA, titulo: TITULO, parrafo: PARRAFO, enlace: ETIQUETA,
-    imagenUrl: rutaImagenPublica,
+    // Vacía desde la etapa 6 de la Fase 8: el contenido de partida es neutro y
+    // no trae foto de nadie. Exigirla dejaría a una corporación nueva sin poder
+    // guardar ningún texto de la portada hasta subir esta foto; sin ella, la
+    // web no pinta la banda (InicioPage).
+    imagenUrl: sinFoto.or(rutaImagenPublica),
     imagenAlt: DESCRIPCION,
   },
   publicaciones: { boton: ETIQUETA, marcaDeAgua: ETIQUETA },

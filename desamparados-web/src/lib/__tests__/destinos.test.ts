@@ -22,6 +22,13 @@ describe('destinos de los enlaces del CMS', () => {
     expect(rutasDelRouter()).toContain(`${PREFIJO_NOTICIA}:slug`)
   })
 
+  it('una dirección antigua que redirige vale, pero el selector no la ofrece', () => {
+    // /parroquia-pasionistas pasó a /parroquia (12-10-2026): un enlace ya guardado no impide guardar.
+    expect(esDestinoValido('/parroquia-pasionistas#como-llegar')).toBe(true)
+    expect(DESTINOS_FIJOS.map((d) => d.ruta)).not.toContain('/parroquia-pasionistas')
+    expect(DESTINOS_FIJOS.map((d) => d.ruta)).toContain('/parroquia')
+  })
+
   it('una ruta inventada no vale; una noticia, sí', () => {
     expect(esDestinoValido('/hola')).toBe(false)
     expect(esDestinoValido('//otro.test')).toBe(false)

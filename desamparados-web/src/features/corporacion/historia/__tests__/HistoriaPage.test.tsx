@@ -59,11 +59,16 @@ describe('HistoriaPage', () => {
   })
 
   it('las fotos van dentro de su hito y la de fondo no se anuncia', async () => {
-    responder(HISTORIA)
+    // El de partida es neutro y no trae fotos: se le ponen aquí, como haría el CMS.
+    const conFotos = structuredClone(HISTORIA)
+    conFotos.cabecera = { ...conFotos.cabecera, foto: '/storage/public/fondo.webp', fotoAlt: 'La imagen titular, al fondo' }
+    const hitosConFotos = (conFotos.bloques.find((b) => b.tipo === 'cronologia') as BloqueCronologia).hitos
+    hitosConFotos[0].foto = { url: '/storage/public/primer-hito.webp', alt: 'El primer hito', pie: '' }
+    responder(conFotos)
     renderWithProviders(<HistoriaPage />)
     await screen.findByRole('heading', { level: 1, name: 'Historia' })
 
-    const conFoto = HITOS.filter((hito) => hito.foto.url !== '')
+    const conFoto = hitosConFotos.filter((hito) => hito.foto.url !== '')
     expect(conFoto.length).toBeGreaterThan(0)
     for (const hito of conFoto) {
       expect(screen.getByRole('img', { name: hito.foto.alt })).toBeInTheDocument()
@@ -71,7 +76,7 @@ describe('HistoriaPage', () => {
     // La foto velada de fondo es decorativa: ni alt ni papel de imagen, aunque
     // la cabecera guarde una descripción (el esquema la pide en cuanto hay foto).
     expect(screen.getAllByRole('img')).toHaveLength(conFoto.length)
-    expect(document.querySelector('img[alt=""]')).toHaveAttribute('src', HISTORIA.cabecera.foto)
+    expect(document.querySelector('img[alt=""]')).toHaveAttribute('src', conFotos.cabecera.foto)
   })
 
   it('cierra con la llamada a Órganos de Gobierno, con el aspecto de siempre', async () => {
@@ -82,7 +87,7 @@ describe('HistoriaPage', () => {
       'href',
       '/historia/organos-de-gobierno',
     )
-    expect(screen.getByRole('heading', { level: 2, name: 'Quién gobierna hoy el Grupo Parroquial' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Quién gobierna hoy la corporación' })).toBeInTheDocument()
     expect(screen.getByText('Seguir leyendo')).toBeInTheDocument()
   })
 

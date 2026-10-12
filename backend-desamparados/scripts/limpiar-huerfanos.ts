@@ -34,7 +34,7 @@ import { carpetaDeSubidas, privateStorageDir, publicStorageDir } from '../src/mi
 import { borrarDocumentosPrivados, buscarDocumentosHuerfanos, documentosPrivadosReferenciados } from '../src/utils/documentos-privados.js';
 import fs from 'node:fs/promises';
 import { borrarSubida, buscarHuerfanos, buscarRestosDeSubidas, nombreDeSubida, subidasReferenciadas } from '../src/utils/ficheros-publicos.js';
-import { ARCHIVO_PUBLICACION_PENDIENTE, IMAGENES_PORTADA, urlImagenPortada } from '../prisma/seed-contenido.js';
+import { ARCHIVO_PUBLICACION_PENDIENTE, imagenesPortada, urlImagenPortada } from '../prisma/seed-contenido.js';
 
 const argumentos = process.argv.slice(2);
 const borrar = argumentos.includes('--borrar');
@@ -53,7 +53,7 @@ try {
 
   // Los activos del seed también cuentan como «en uso»: hoy viven en subcarpetas
   // y el filtro ya los deja fuera, pero así no dependen de eso.
-  for (const ruta of [ARCHIVO_PUBLICACION_PENDIENTE, ...IMAGENES_PORTADA.map((i) => urlImagenPortada(i.archivo))]) {
+  for (const ruta of [ARCHIVO_PUBLICACION_PENDIENTE, ...imagenesPortada().map((i) => urlImagenPortada(i.archivo))]) {
     const nombre = nombreDeSubida(ruta);
     if (nombre) referenciados.add(nombre);
   }

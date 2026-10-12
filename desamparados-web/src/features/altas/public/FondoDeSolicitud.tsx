@@ -11,9 +11,14 @@
  * ni con el pie.
  *
  * Está aparte porque es solo eso, decorado: la pantalla del alta se queda con
- * los pasos y los campos.
+ * los pasos y los campos. Por lo mismo, en una instalación sin la foto de
+ * siempre (`config/fotosDeLaInstalacion.ts`) se quita y quedan los degradados
+ * sobre el fondo liso.
  */
 import { Box } from '@mui/material'
+import { FOTO_DE_SIEMPRE } from '../../../config/fotosDeLaInstalacion'
+import { useFotoQueFalla } from '../../../hooks/useFotoQueFalla'
+import { propsDeFoto } from '../../../lib/fotoSubida'
 
 /** Fondo de página: la foto se funde a él en los bordes. */
 const FONDO = '#121113'
@@ -23,13 +28,12 @@ const FONDO_VELO_LEVE = 'rgba(18, 17, 19, 0.25)'
 const OPACIDAD_VIRGEN = 0.18
 
 export default function FondoDeSolicitud() {
+  const { visible, alFallar } = useFotoQueFalla(FOTO_DE_SIEMPRE)
   return (
     <Box aria-hidden="true" sx={{ position: 'absolute', inset: 0, zIndex: -1, overflow: 'hidden', pointerEvents: 'none' }}>
-      <Box
+      {visible && <Box
         component="img"
-        src="/images/hero-1920.webp"
-        srcSet="/images/hero-960.webp 960w, /images/hero-1920.webp 1920w"
-        sizes="(min-width: 900px) 60vw, 100vw"
+        {...propsDeFoto(FOTO_DE_SIEMPRE, '(min-width: 900px) 60vw, 100vw', alFallar)}
         alt=""
         decoding="async"
         fetchPriority="low"
@@ -47,7 +51,7 @@ export default function FondoDeSolicitud() {
           opacity: OPACIDAD_VIRGEN,
           filter: 'saturate(0.85)',
         }}
-      />
+      />}
       <Box sx={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, ${FONDO} 0%, transparent 22%, transparent 76%, ${FONDO} 100%)` }} />
       <Box
         sx={{

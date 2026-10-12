@@ -4,6 +4,7 @@ import type { ApiEvent } from '../../../lib/api/agenda'
 import { GRANATE } from '../../inicio/estilos'
 import { claseDelActo, cuandoEnCartel, fotoDelCartel, hora, notaDelActo } from './cultos'
 import EnlacesDelActo from './EnlacesDelActo'
+import { useFotoQueFalla } from '../../../hooks/useFotoQueFalla'
 
 /** La ventana es otra hoja, un punto más clara que el calendario. */
 const HOJA = '#fbf8f2'
@@ -32,6 +33,8 @@ export default function VentanaDelActo({ evento, origen, quieto, esDialogo, onCe
   const cerrar = useRef<HTMLButtonElement>(null)
   const nota = notaDelActo(evento)
   const foto = evento.cartel ? fotoDelCartel(evento) : null
+  // Sin la foto (la fija de una instalación que no la tiene), la ventana sin ella.
+  const { visible: conFoto, alFallar } = useFotoQueFalla(foto?.src)
 
   // Nace de la casilla: se mide cuando ya está colocada (el Popper la coloca
   // después de montarla) y se anima desde el tamaño y el sitio de la casilla.
@@ -76,8 +79,8 @@ export default function VentanaDelActo({ evento, origen, quieto, esDialogo, onCe
         border: `1px solid ${RAYA}`, boxShadow: '0 24px 48px -18px rgba(20,14,16,0.45)',
       }}
     >
-      {foto && (
-        <Box component="img" src={foto.src} alt={foto.alt} sx={{ display: 'block', width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', objectPosition: 'center 25%' }} />
+      {foto && conFoto && (
+        <Box component="img" src={foto.src} alt={foto.alt} onError={alFallar} sx={{ display: 'block', width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', objectPosition: 'center 25%' }} />
       )}
       <ButtonBase
         ref={cerrar}
