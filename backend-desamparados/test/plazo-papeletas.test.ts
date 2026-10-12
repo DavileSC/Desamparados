@@ -26,7 +26,7 @@ import { apellidosTrasCambio, componerApellidos, partirApellidos } from '../src/
 import { enmascararIban } from '../src/domain/iban.js';
 import { esIbanValido, normalizarIban } from '../src/config/common.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
-import { idDeSalida, PASION, ROSARIO, salida } from './fixtures/salidas.js';
+import { aLaSalida, deLaSalida, idDeSalida, literal, PASION, ROSARIO, salida } from './fixtures/salidas.js';
 import { diaMadrid, sumarDias } from '../src/domain/fecha-salida.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 
@@ -209,7 +209,7 @@ test('abrir exige días de reparto; al abrir se avisa y queda un borrador de not
     assert.equal(noticia?.visible, false, 'es un borrador');
     assert.match(noticia?.contenido ?? '', /<ul>/);
     assert.equal(await PlazoPapeletasService.estaAbierto(await salida(PASION)), true);
-    assert.equal(noticia?.titulo, `Abierta la inscripción del Sábado de Pasión ${PlazoPapeletasService.anioDeLaProcesion(await salida(PASION))}`);
+    assert.equal(noticia?.titulo, `Abierta la inscripción ${await deLaSalida(PASION)} ${PlazoPapeletasService.anioDeLaProcesion(await salida(PASION))}`);
 
     // Los correos salen después de responder.
     await new Promise((r) => setTimeout(r, 50));
@@ -268,7 +268,7 @@ test('el Rosario tiene su plazo y sus días; se pide con donativo, se paga en l�
     await fijarPlazo(false, ROSARIO);
     await assert.rejects(
       MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: rosario.id, hermanoId: e.titular.id, puesto: 'Farol', donativo: 5 }),
-      /Rosario vespertino no está abierta/,
+      literal(`${await deLaSalida(ROSARIO)} no está abierta`),
     );
     await fijarPlazo(true, ROSARIO);
 
@@ -278,7 +278,7 @@ test('el Rosario tiene su plazo y sus días; se pide con donativo, se paga en l�
     assert.equal(r.salida, ROSARIO);
     await assert.rejects(
       MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: rosario.id, hermanoId: e.titular.id, puesto: 'Vela' }),
-      /Ya está apuntado al Rosario vespertino/,
+      literal(`Ya está apuntado ${await aLaSalida(ROSARIO)}`),
     );
 
     const estado = await MiProcesionService.getMiEstado(e.usuario.id);
@@ -331,7 +331,7 @@ test('los días de reparto y la fecha del Rosario salen en la Agenda pública', 
     assert.equal(movido.eventoId, rosario.eventoId, 'cambiar la fecha mueve el mismo acto');
     const enAgenda = await db.evento.findUniqueOrThrow({ where: { id: rosario.eventoId } });
     assert.equal(enAgenda.type, 'PROCESION');
-    assert.equal(enAgenda.title, 'Rosario vespertino');
+    assert.equal(enAgenda.title, (await salida(ROSARIO)).nombre);
     assert.equal((await salida(ROSARIO)).eventoId, rosario.eventoId, 'la salida queda enlazada a su acto');
     // La de la Pascua se calcula sola.
     await assert.rejects(SalidasService.fijarFecha(await salida(PASION), { inicio: dentroDe(10).toISOString() }, meta), /se calcula por la Pascua/);
@@ -342,7 +342,7 @@ test('los días de reparto y la fecha del Rosario salen en la Agenda pública', 
     const turno = await TurnosService.crearTurno({ fecha: iso(12).slice(0, 10), horaInicio: iso(12), horaFin: iso(15), capacidadEstimada: 60, salida: ROSARIO }, await salida(ROSARIO), meta);
     e.turnos.push(turno.id);
     const acto = await db.evento.findUniqueOrThrow({ where: { id: turno.eventoId! } });
-    assert.equal(acto.title, 'Reparto de papeletas del Rosario vespertino');
+    assert.equal(acto.title, `Reparto de papeletas ${await deLaSalida(ROSARIO)}`);
     assert.equal(acto.startDate.toISOString(), iso(12));
 
     await TurnosService.eliminarTurno(turno.id, meta);

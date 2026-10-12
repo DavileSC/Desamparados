@@ -21,7 +21,7 @@ import { PapeletasService } from '../src/services/procesion/papeletas.service.js
 import { MesaService } from '../src/services/procesion/mesa.service.js';
 import { PlazoPapeletasService } from '../src/services/procesion/plazo.service.js';
 import { anioDeLaMesa, ZonasService, type EntregaEnMesa, type InscripcionEnMesa } from '../src/services/procesion/zonas.service.js';
-import { idDeSalida, PASION, ROSARIO, salida } from './fixtures/salidas.js';
+import { conceptoDe, idDeSalida, PASION, ROSARIO, salida } from './fixtures/salidas.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { InventarioService } from '../src/services/inventario.service.js';
 import { ReciboService } from '../src/services/recibo.service.js';
@@ -160,7 +160,7 @@ test('inscribir crea la solicitud, sin papeleta ni recibo; sin nada que pagar va
     const papeleta = await db.papeletaSitio.findUniqueOrThrow({ where: { id: hecha.papeletaId }, include: { recibo: true } });
     assert.equal(papeleta.puesto, 'Trono');
     assert.equal(papeleta.recibo.estado, EstadoPago.EXENTO);
-    assert.equal(papeleta.recibo.concepto, `Papeleta Sábado de Pasión ${YEAR}`);
+    assert.equal(papeleta.recibo.concepto, await conceptoDe(PASION, YEAR));
     assert.equal(await db.transaccion.count({ where: { hermanoId: h.id } }), 0, 'sin dinero, sin asiento');
     const recogida = await db.solicitud.findUniqueOrThrow({ where: { id: r.solicitudId } });
     assert.equal(recogida.estado, 'RECOGIDA');
@@ -360,7 +360,7 @@ test('el Rosario: su propia solicitud, con la voluntad que se ajusta al cobrar, 
     const recibo = await db.recibo.findUniqueOrThrow({ where: { id: cobro.cobrados[0].id } });
     assert.equal(recibo.tipo, TipoRecibo.DONATIVO);
     // El Rosario lleva su propio año: el de octubre, no el de la Pasión.
-    assert.equal(recibo.concepto, `Donativo Rosario vespertino ${await anioDeLaMesa(await salida(ROSARIO))}`);
+    assert.equal(recibo.concepto, await conceptoDe(ROSARIO, await anioDeLaMesa(await salida(ROSARIO))));
 
     const tunica = await e.prenda(TipoPrenda.TUNICA);
     const hecha = await e.entregar(rosario.solicitudId, { origenTunica: 'ROPERO', numTunicaAsignada: tunica.numero, puesto: 'Trono' });

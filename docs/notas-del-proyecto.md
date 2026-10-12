@@ -312,6 +312,17 @@ corporación» en `despliegue.md`). Una prueba que espere «del Grupo» o
 con el ejemplo si lo que se prueba es justo la frase. Cuando se cambió, cayeron
 así 17 pruebas de la web y 7 de la API.
 
+**La base del CI es nueva; la de desarrollo, no.** La migración
+`salidas_neutras_en_base_nueva` renombra las dos salidas sembradas («Estación
+de penitencia», «Rosario de la Aurora») solo en una base sin páginas, que es
+la del CI; la de desarrollo sigue con «Sábado de Pasión» y «Rosario
+vespertino». Una prueba que escriba el nombre de una salida pasa en local y
+falla en GitHub (pasó el 12-10-2026 con siete). Lo esperado se calcula de la
+salida de la base: `conceptoDe`, `deLaSalida`, `aLaSalida` y `literal` de
+`test/fixtures/salidas.ts`. Para reproducir el CI en local, la suite sobre una
+base nueva: `DATABASE_URL` y `DATABASE_NAME` a una base vacía, `npx prisma
+migrate deploy`, `npx prisma db seed` y `npm test`.
+
 ## 6 bis. MariaDB 11.8 y los choques de transacciones
 
 La base de desarrollo trae `innodb_snapshot_isolation=ON`: si dos transacciones
