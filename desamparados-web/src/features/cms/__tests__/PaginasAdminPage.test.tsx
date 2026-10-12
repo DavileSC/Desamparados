@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
@@ -16,9 +16,10 @@ const seccionesPlegables = () => [...new Set(PAGINAS_PUBLICAS.map((p) => p.grupo
   .filter((grupo) => { const suyas = PAGINAS_PUBLICAS.filter((p) => p.grupo === grupo); return !(suyas.length === 1 && suyas[0].nombre === grupo) })
 
 /** Con todas las páginas encendidas, salvo que se pidan otros módulos. */
-function montar(modulos: readonly string[] = TODOS_CON_PAGINAS_PROPIAS) {
+function montar(modulos: readonly string[] = TODOS_CON_PAGINAS_PROPIAS, nombresEnMenu?: Record<string, string>) {
+  const queryClient = crearQueryClientDePruebas(modulos, nombresEnMenu)
   render(
-    <QueryClientProvider client={crearQueryClientDePruebas(modulos)}>
+    <QueryClientProvider client={queryClient}>
       <HelmetProvider>
         <ThemeProvider theme={crearTemaCms('claro')}>
           <MemoryRouter><PaginasAdminPage /></MemoryRouter>
@@ -26,7 +27,10 @@ function montar(modulos: readonly string[] = TODOS_CON_PAGINAS_PROPIAS) {
       </HelmetProvider>
     </QueryClientProvider>,
   )
+  return queryClient
 }
+
+afterEach(() => { vi.unstubAllGlobals() })
 
 describe('PaginasAdminPage', () => {
   it('enseña una entrada por cada página del catálogo compartido', async () => {
@@ -130,7 +134,8 @@ describe('PaginasAdminPage', () => {
 
   it('una sección de una sola página con su nombre es ya el enlace, sin plegar', () => {
     montar()
-    expect(screen.queryByRole('button', { name: /Rosario/ })).not.toBeInTheDocument()
+    // Anclado: el botón de su nombre en el menú también dice «Rosario».
+    expect(screen.queryByRole('button', { name: /^Rosario/ })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Rosario' })).toHaveAttribute('href', '/cms/paginas/rosario')
   })
 
@@ -142,6 +147,77 @@ describe('PaginasAdminPage', () => {
     await user.click(screen.getByRole('button', { name: /Sagrada titular/ }))
     expect(screen.getByRole('link', { name: 'Ajuar' })).toHaveAttribute('href', '/cms/paginas/ajuar')
     expect(screen.queryByRole('link', { name: 'Desamparados' })).not.toBeInTheDocument()
+  })
+
+  it('una página con otro nombre en el menú lo enseña en su fila', async () => {
+    const user = userEvent.setup()
+    montar(TODOS_CON_PAGINAS_PROPIAS, { '/parroquia': 'Parroquia · Pasionistas' })
+    await user.click(screen.getByRole('button', { name: /Corporación/ }))
+    const parroquia = screen.getByRole('link', { name: 'Parroquia' }).closest('li')!
+    expect(within(parroquia).getByText('En el menú: Parroquia · Pasionistas')).toBeInTheDocument()
+    // Las que se llaman igual en el menú no repiten nada.
+    const cultos = screen.getByRole('link', { name: 'Cultos' }).closest('li')!
+    expect(within(cultos).queryByText(/En el menú/)).not.toBeInTheDocument()
+  })
+
+  it('cambiar el nombre en el menú guarda todos los nombres y la web lo recoge sin recargar', async () => {
+    const user = userEvent.setup()
+    const fetchSimulado = vi.fn(async (_url: string, init?: RequestInit) => {
+      const { nombres } = JSON.parse(String(init?.body)) as { nombres: Record<string, string> }
+      return new Response(JSON.stringify({ nombres }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    })
+    vi.stubGlobal('fetch', fetchSimulado)
+    const queryClient = montar(TODOS_CON_PAGINAS_PROPIAS, { '/agenda': 'Calendario' })
+    await user.click(screen.getByRole('button', { name: /Corporación/ }))
+    await user.click(screen.getByRole('button', { name: 'Cambiar el nombre en el menú de la página Parroquia' }))
+
+    const dialogo = screen.getByRole('dialog')
+    const campo = within(dialogo).getByLabelText('Nombre en el menú')
+    // Vacío, con el de siempre como marcador.
+    expect(campo).toHaveValue('')
+    expect(campo).toHaveAttribute('placeholder', 'Parroquia')
+    await user.type(campo, '  Parroquia · Pasionistas ')
+    await user.click(within(dialogo).getByRole('button', { name: 'Guardar' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    const [url, init] = fetchSimulado.mock.calls[0]
+    expect(url).toMatch(/\/api\/cms\/menu$/)
+    expect(init?.method).toBe('PUT')
+    // Los que ya había siguen: se guardan todos de una vez.
+    expect(JSON.parse(String(init?.body))).toEqual({ nombres: { '/agenda': 'Calendario', '/parroquia': 'Parroquia · Pasionistas' } })
+    expect(queryClient.getQueryData(['menu', 'nombres'])).toEqual({ '/agenda': 'Calendario', '/parroquia': 'Parroquia · Pasionistas' })
+    expect(screen.getByText('En el menú: Parroquia · Pasionistas')).toBeInTheDocument()
+  })
+
+  it('dejar el nombre vacío vuelve al de siempre', async () => {
+    const user = userEvent.setup()
+    const fetchSimulado = vi.fn(async (_url: string, init?: RequestInit) =>
+      new Response(String(init?.body), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    vi.stubGlobal('fetch', fetchSimulado)
+    montar(TODOS_CON_PAGINAS_PROPIAS, { '/parroquia': 'Parroquia · Pasionistas' })
+    await user.click(screen.getByRole('button', { name: /Corporación/ }))
+    await user.click(screen.getByRole('button', { name: 'Cambiar el nombre en el menú de la página Parroquia' }))
+    const campo = within(screen.getByRole('dialog')).getByLabelText('Nombre en el menú')
+    expect(campo).toHaveValue('Parroquia · Pasionistas')
+    await user.clear(campo)
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(JSON.parse(String(fetchSimulado.mock.calls[0][1]?.body))).toEqual({ nombres: {} })
+    const parroquia = screen.getByRole('link', { name: 'Parroquia' }).closest('li')!
+    expect(within(parroquia).queryByText(/En el menú/)).not.toBeInTheDocument()
+  })
+
+  it('las entradas del menú que no son páginas de bloques se renombran al final', async () => {
+    const user = userEvent.setup()
+    montar(TODOS_CON_PAGINAS_PROPIAS, { '/tienda': 'Tienda solidaria' })
+    await user.click(screen.getByRole('button', { name: /Otras entradas del menú/ }))
+    const region = screen.getByRole('region', { name: /Otras entradas del menú/ })
+    for (const nombre of ['Inicio', 'Apadrina', 'Tienda solidaria', 'Hazte hermano', 'Acceso hermanos']) {
+      expect(within(region).getByText(nombre)).toBeInTheDocument()
+    }
+    // Las páginas de bloques no se repiten aquí.
+    expect(within(region).queryByText('Contacto')).not.toBeInTheDocument()
+    expect(within(region).getByRole('button', { name: 'Cambiar el nombre en el menú de la página Tienda' })).toBeInTheDocument()
   })
 
   it('el menú lleva al índice, y el índice y las páginas dejan pasar a los mismos cargos', () => {

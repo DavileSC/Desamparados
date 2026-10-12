@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { CLAVES_DE_INSTALACION, CLAVES_MODULO } from '../domain/modulos'
 import { CLAVE_MODULOS } from '../lib/api/modulos'
 import { CLAVE_CORPORACION } from '../lib/api/corporacion'
+import { CLAVE_NOMBRES_EN_MENU, type NombresEnMenu } from '../lib/api/menu'
 import { DATOS } from './instalacion'
 
 const MODULOS_DEL_EJEMPLO: readonly string[] = [
@@ -37,13 +38,14 @@ export const TODOS_CON_PAGINAS_PROPIAS: readonly string[] = [...CLAVES_MODULO, '
  * propias de una corporación no existen en las demás. La prueba que las visite
  * pasa `TODOS_CON_PAGINAS_PROPIAS`.
  */
-export function crearQueryClientDePruebas(modulos?: readonly string[]): QueryClient {
+export function crearQueryClientDePruebas(modulos?: readonly string[], nombresEnMenu?: NombresEnMenu): QueryClient {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   })
   queryClient.setQueryDefaults(CLAVE_MODULOS, { gcTime: Infinity, staleTime: Infinity })
   queryClient.setQueryData(CLAVE_MODULOS, [...(modulos ?? MODULOS_DEL_EJEMPLO)])
   sembrarContacto(queryClient)
+  sembrarNombresEnMenu(queryClient, nombresEnMenu)
   return queryClient
 }
 
@@ -58,4 +60,15 @@ export function crearQueryClientDePruebas(modulos?: readonly string[]): QueryCli
 export function sembrarContacto(queryClient: QueryClient) {
   queryClient.setQueryDefaults(CLAVE_CORPORACION, { gcTime: Infinity, staleTime: Infinity })
   queryClient.setQueryData(CLAVE_CORPORACION, { secretaria: DATOS.secretaria, sede: DATOS.sede, redes: DATOS.redes, privacidad: DATOS.privacidad })
+}
+
+/**
+ * Los nombres del menú, sin ninguno cambiado (como una instalación nueva): el
+ * menú sale con los de siempre y ninguna pantalla pide /menu al `fetch`
+ * simulado. La prueba que quiera uno cambiado pasa `nombres`. El `gcTime`, por
+ * lo mismo que los módulos.
+ */
+export function sembrarNombresEnMenu(queryClient: QueryClient, nombres: NombresEnMenu = {}) {
+  queryClient.setQueryDefaults(CLAVE_NOMBRES_EN_MENU, { gcTime: Infinity, staleTime: Infinity })
+  queryClient.setQueryData(CLAVE_NOMBRES_EN_MENU, nombres)
 }

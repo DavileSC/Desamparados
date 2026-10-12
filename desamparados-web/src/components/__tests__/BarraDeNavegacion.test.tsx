@@ -88,6 +88,16 @@ describe('BarraDeNavegacion en escritorio', () => {
     expect(screen.getByRole('link', { name: 'Enseres', hidden: true })).toHaveAttribute('href', '/sabado-de-pasion/enseres')
   })
 
+  it('con un nombre puesto en el CMS, la página sale con él; sin él, con el de siempre', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<BarraDeNavegacion />, { nombresEnMenu: { '/parroquia': 'Parroquia · Pasionistas', '/contacto': 'Escríbenos' } })
+    expect(within(navEscritorio()).getByRole('link', { name: 'Escríbenos', hidden: true })).toHaveAttribute('href', '/contacto')
+    await user.hover(within(navEscritorio()).getByRole('button', { name: 'Corporación', hidden: true }))
+    expect(screen.getByRole('link', { name: 'Parroquia · Pasionistas', hidden: true })).toHaveAttribute('href', '/parroquia')
+    expect(screen.queryByRole('link', { name: 'Parroquia', hidden: true })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Cultos', hidden: true })).toHaveAttribute('href', '/cultos')
+  })
+
   it('sin las páginas propias, Corporación despliega sin ellas', async () => {
     const user = userEvent.setup()
     renderWithProviders(<BarraDeNavegacion />)
@@ -181,6 +191,14 @@ describe('BarraDeNavegacion en móvil', () => {
     expect(screen.getByRole('link', { name: 'Historia' })).toHaveAttribute('href', '/historia')
     expect(screen.getByRole('link', { name: 'Órganos de Gobierno' })).toHaveAttribute('href', '/historia/organos-de-gobierno')
     expect(screen.getByRole('button', { name: 'Corporación' })).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('el cajón usa también los nombres puestos en el CMS', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<BarraDeNavegacion />, { nombresEnMenu: { '/parroquia': 'Parroquia · Pasionistas' } })
+    await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
+    await user.click(screen.getByRole('button', { name: 'Corporación' }))
+    expect(screen.getByRole('link', { name: 'Parroquia · Pasionistas' })).toHaveAttribute('href', '/parroquia')
   })
 
   it('llega con la sección de la página actual ya desplegada', async () => {

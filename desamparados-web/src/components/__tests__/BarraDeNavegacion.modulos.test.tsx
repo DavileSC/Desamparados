@@ -29,6 +29,12 @@ describe('la barra y el pie con módulos apagados', () => {
     expect(screen.getByRole('link', { name: 'Agenda' })).toHaveAttribute('href', '/agenda')
   })
 
+  it('el pie enlaza los destacados con el nombre que tengan en el menú', () => {
+    renderWithProviders(<PieDePagina />, { nombresEnMenu: { '/agenda': 'Calendario' } })
+    expect(screen.getByRole('link', { name: 'Calendario' })).toHaveAttribute('href', '/agenda')
+    expect(screen.queryByRole('link', { name: 'Agenda' })).not.toBeInTheDocument()
+  })
+
   it('el pie firma el desarrollo web con su LinkedIn', () => {
     renderWithProviders(<PieDePagina />)
     expect(screen.getByRole('link', { name: /David Silva Cuevas/ })).toHaveAttribute('href', 'https://www.linkedin.com/in/david-silva-cuevas/')

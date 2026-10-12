@@ -60,6 +60,16 @@ try {
   process.exit(1);
 }
 
+// Los nombres del menú, igual: la web los pide en cada visita. Si la base no
+// responde aquí, tampoco respondería a lo anterior.
+const { MenuService } = await import('./services/menu.service');
+try {
+  await MenuService.cargar();
+} catch (error) {
+  console.error(`[Menú] No se pudieron leer los nombres del menú de la base de datos: ${describirErrorParaLog(error)}`);
+  process.exit(1);
+}
+
 // Las páginas de la web pública que aún no tengan fila nacen con la semilla
 // de la instalación o con el contenido neutro. Las que existen no se tocan.
 // Sin esto, una instalación nueva enseñaría el neutro aunque trajera su

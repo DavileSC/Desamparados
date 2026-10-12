@@ -34,6 +34,7 @@ import { contenidoRoutes } from './routes/contenido.routes.js';
 import { seccionesRoutes } from './routes/secciones.routes.js';
 import { modulosRoutes, modulosCmsRoutes } from './routes/modulos.routes.js';
 import { corporacionRoutes, corporacionCmsRoutes } from './routes/corporacion.routes.js';
+import { menuRoutes, menuCmsRoutes } from './routes/menu.routes.js';
 import { conModulo, nucleo } from './middleware/modulos.js';
 import { roperoRoutes } from './routes/ropero.routes.js';
 import { SitemapController } from './controllers/sitemap.controller.js';
@@ -194,6 +195,8 @@ app.use('/api/modulos', nucleo, modulosRoutes);         // Qué módulos están 
 app.use('/api/cms/modulos', nucleo, modulosCmsRoutes);  // Encenderlos y apagarlos, desde Sistema → Módulos
 app.use('/api/corporacion', nucleo, corporacionRoutes);         // Secretaría, sede y redes, para la web
 app.use('/api/cms/corporacion', nucleo, corporacionCmsRoutes);  // Cambiarlos, desde Sistema → Datos de la corporación
+app.use('/api/menu', nucleo, menuRoutes);         // Nombres de las páginas en el menú público, para la web
+app.use('/api/cms/menu', nucleo, menuCmsRoutes);  // Cambiarlos, desde el índice de Páginas del CMS
 
 // El sitemap, en la raíz y no bajo /api: es donde lo buscan los buscadores
 // (lo anuncia robots.txt). nginx manda aquí /sitemap.xml (docker/nginx/ubicaciones.conf).

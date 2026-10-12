@@ -1,5 +1,5 @@
 import CATALOGO from '../../../../shared/paginas-publicas.json'
-import { menuPublico, type EntradaMenu } from '../../config/navegacion'
+import { menuPublico, ponerNombres, type EntradaMenu } from '../../config/navegacion'
 import type { SlugContenido } from '../../lib/api/contenido'
 import { CABECERA_CON_COPIA } from '../../config/fotosDeLaInstalacion'
 
@@ -49,12 +49,13 @@ const normal = (texto: string) => texto.trim().toLocaleLowerCase('es')
  * («Corporación · Sábado de Pasión» en Enseres). Sale del menú y no se escribe
  * en el CMS, para que no pueda quedarse desfasada si el menú cambia. Una
  * sección que se llama como la propia página no se repite, y las de primer
- * nivel (Contacto) no llevan ninguna.
+ * nivel (Contacto) no llevan ninguna. Con los nombres del menú que se pusieron
+ * en el CMS (`useNombresEnMenu`), como los ve el visitante en la barra.
  */
-export function cejaDePagina(slug: string, titulo: string): string[] {
+export function cejaDePagina(slug: string, titulo: string, nombres: Readonly<Record<string, string>> = {}): string[] {
   const ruta = RUTAS.get(slug)
   if (!ruta) return []
-  return (seccionesHasta(ruta, menuPublico) ?? []).filter((seccion) => normal(seccion) !== normal(titulo))
+  return (seccionesHasta(ruta, ponerNombres(menuPublico, nombres)) ?? []).filter((seccion) => normal(seccion) !== normal(titulo))
 }
 
 /**

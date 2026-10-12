@@ -6,6 +6,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { LazyMotion, domAnimation } from 'framer-motion'
 import theme from '../theme'
 import { crearQueryClientDePruebas } from './queryClient'
+import type { NombresEnMenu } from '../lib/api/menu'
 
 const Hijos = createContext<ReactNode>(null)
 const HijosActuales = () => <>{useContext(Hijos)}</>
@@ -21,8 +22,8 @@ function ConRouterDeDatos({ ruta, children }: { ruta: string; children: ReactNod
   return <Hijos.Provider value={children}><RouterProvider router={router} /></Hijos.Provider>
 }
 
-export default function AllTheProviders({ children, ruta = '/', modulos, routerDeDatos = false }: { children: ReactNode; ruta?: string; modulos?: readonly string[]; routerDeDatos?: boolean }) {
-  const queryClient = crearQueryClientDePruebas(modulos)
+export default function AllTheProviders({ children, ruta = '/', modulos, nombresEnMenu, routerDeDatos = false }: { children: ReactNode; ruta?: string; modulos?: readonly string[]; nombresEnMenu?: NombresEnMenu; routerDeDatos?: boolean }) {
+  const queryClient = crearQueryClientDePruebas(modulos, nombresEnMenu)
   const contenido = (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>

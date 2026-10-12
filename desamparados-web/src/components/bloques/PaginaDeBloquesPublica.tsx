@@ -14,6 +14,7 @@ import ConBloquesCargados from './ConBloquesCargados'
 import EnCarga, { estadoDeConsulta } from '../esqueleto/EnCarga'
 import { cejaDePagina, tipoDeCabecera } from './cabecera'
 import { useBorradorPagina } from './borrador'
+import { useNombresEnMenu } from '../../hooks/useNombresEnMenu'
 import CATALOGO from '../../../../shared/paginas-publicas.json'
 import { getContenido, type PaginaDeBloques, type SlugContenido } from '../../lib/api/contenido'
 import { SECCION_SIN_CABECERA, SECCION_TRAS_CABECERA } from '../espaciado'
@@ -73,7 +74,8 @@ export default function PaginaDeBloquesPublica({ slug }: Props) {
   // metía en un trozo compartido que bajaba también la portada.
   const titulo = guardada?.cabecera.titulo ?? CATALOGO.paginas.find((p) => p.slug === slug)?.nombre ?? ''
   useBajarAlAncla(Boolean(data))
-  const ceja = cejaDePagina(slug, titulo)
+  const nombresEnMenu = useNombresEnMenu()
+  const ceja = cejaDePagina(slug, titulo, nombresEnMenu)
   const seccion = sinCabecera ? SECCION_SIN_CABECERA : SECCION_TRAS_CABECERA
 
   return (

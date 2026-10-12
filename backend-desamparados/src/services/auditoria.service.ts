@@ -192,6 +192,8 @@ export const ACCIONES_AUDITORIA = {
   MODULO_APAGAR: 'MODULO_APAGAR',
   // Sistema → Datos de la corporación: Secretaría, sede, redes y privacidad
   CORPORACION_ACTUALIZAR: 'CORPORACION_ACTUALIZAR',
+  // CMS → Páginas: el nombre de una página en el menú público
+  MENU_NOMBRES_ACTUALIZAR: 'MENU_NOMBRES_ACTUALIZAR',
   // Correo que no salió. No es una acción de nadie, pero se guarda aquí porque
   // es el único sitio del CMS donde el staff puede enterarse: antes el fallo
   // moría en un console.error y el alta se daba por buena sin avisar a nadie.

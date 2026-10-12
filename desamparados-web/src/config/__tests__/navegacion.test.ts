@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { menuPublico, aplanarMenu, menuVisible, type EntradaMenu } from '../navegacion'
+import { menuPublico, aplanarMenu, menuVisible, enlacesDelMenu, ponerNombres, type EntradaMenu } from '../navegacion'
+import CATALOGO from '../../../../shared/entradas-del-menu.json'
 // El fuente del router como texto (`?raw` de Vite): así el test no necesita los
 // tipos de Node, que `tsconfig.app.json` no incluye para `src/`.
 import fuente from '../../routes/index.tsx?raw'
@@ -113,6 +114,27 @@ describe('menuPublico', () => {
     const conPropias = dibujar(menuVisible(menuPublico, new Set(['paginas-propias']))).join('\n')
     expect(conPropias).toContain('Sábado de Pasión /sabado-de-pasion\n    Recorrido')
     expect(conPropias).toContain('Desamparados /desamparados')
+  })
+
+  it('el catálogo compartido de nombres es el de los enlaces del menú, con su nombre de siempre', () => {
+    // El servidor solo deja renombrar lo que está en shared/entradas-del-menu.json:
+    // si el menú cambia y el catálogo no, una página nueva no se podría renombrar
+    // (o se aceptaría una que ya no está).
+    expect(CATALOGO.entradas).toEqual(enlacesDelMenu(menuPublico).map((e) => ({ ruta: e.href, nombre: e.label })))
+    expect(new Set(CATALOGO.entradas.map((e) => e.ruta)).size, 'una ruta repetida').toBe(CATALOGO.entradas.length)
+    for (const e of CATALOGO.entradas) expect(e.nombre.length, e.ruta).toBeLessThanOrEqual(CATALOGO.tope)
+  })
+
+  it('ponerNombres cambia el nombre de las páginas, no el de los títulos que solo despliegan', () => {
+    const nombres = { '/parroquia': 'Parroquia · Pasionistas', '/historia': 'Nuestra historia', '/publicaciones': 'Archivo', '/corporacion': 'No vale' }
+    const dibujo = dibujar(ponerNombres(menuPublico, nombres)).join('\n')
+    expect(dibujo).toContain('  Parroquia · Pasionistas /parroquia')
+    // Una subsección con páginas dentro sí es un enlace: cambia.
+    expect(dibujo).toContain('  Nuestra historia /historia\n    Órganos de Gobierno')
+    // «Publicaciones» despliega y comparte ruta con «Todas las publicaciones»: cambia solo la página.
+    expect(dibujo).toContain('Publicaciones /publicaciones\n  Archivo /publicaciones')
+    expect(dibujo).toContain('Corporación /corporacion')
+    expect(ponerNombres(menuPublico, {})).toBe(menuPublico)
   })
 
   it('todas las entradas llevan su módulo', () => {

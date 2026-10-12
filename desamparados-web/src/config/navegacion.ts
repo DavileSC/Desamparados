@@ -112,6 +112,30 @@ export function aplanarMenu(entradas: EntradaMenu[]): EntradaMenu[] {
 }
 
 /**
+ * Las entradas que llevan a una página: todas menos los títulos de primer
+ * nivel con subpáginas, que solo despliegan. Son las que pueden cambiar de
+ * nombre desde el CMS (`shared/entradas-del-menu.json` es su copia para el
+ * servidor, y `navegacion.test.ts` vigila que coincidan).
+ */
+export function enlacesDelMenu(entradas: EntradaMenu[]): EntradaMenu[] {
+  return entradas.flatMap((e) => (e.hijos?.length ? aplanarMenu(e.hijos) : [e]))
+}
+
+/**
+ * El menú con los nombres que se pusieron en el CMS (ruta → nombre). Un título
+ * de primer nivel que solo despliega no se toca aunque comparta la ruta con
+ * una de sus páginas («Publicaciones» y «Todas las publicaciones»).
+ */
+export function ponerNombres(entradas: EntradaMenu[], nombres: Readonly<Record<string, string>>, primerNivel = true): EntradaMenu[] {
+  if (Object.keys(nombres).length === 0) return entradas
+  return entradas.map((e) => {
+    const esTitulo = primerNivel && Boolean(e.hijos?.length)
+    const label = esTitulo ? e.label : nombres[e.href] ?? e.label
+    return e.hijos ? { ...e, label, hijos: ponerNombres(e.hijos, nombres, false) } : { ...e, label }
+  })
+}
+
+/**
  * El menú con estos módulos encendidos. Una sección (que no es enlace) que se
  * quede sin hijos desaparece: un título que no despliega nada confunde.
  */

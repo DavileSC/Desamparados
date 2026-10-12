@@ -15,6 +15,11 @@ describe('cejaDePagina', () => {
     expect(cejaDePagina('ajuar', 'Ajuar')).toEqual(['Sagrada titular'])
   })
 
+  it('con los nombres del menú que se pusieron en el CMS, como en la barra', () => {
+    const nombres = { '/historia': 'Nuestra historia', '/corporacion': 'No vale' }
+    expect(cejaDePagina('organos-de-gobierno', 'Órganos de Gobierno', nombres)).toEqual(['Corporación', 'Nuestra historia'])
+  })
+
   it('no repite una sección que se llama como la página, y las de primer nivel no llevan', () => {
     expect(cejaDePagina('publicaciones', 'Publicaciones')).toEqual([])
     expect(cejaDePagina('contacto', 'Contacto')).toEqual([])

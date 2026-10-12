@@ -6,6 +6,7 @@ import RedDeErrores from './components/RedDeErrores'
 import { useCargarSesion, useVaciarCacheAlCambiarDeUsuario } from './features/altas/auth/session'
 import { portadaDelInicio } from './lib/api/portada'
 import { CLAVE_CORPORACION, datosDeContacto } from './lib/api/corporacion'
+import { CLAVE_NOMBRES_EN_MENU, nombresEnMenu } from './lib/api/menu'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,6 +34,13 @@ if (window.location.pathname === '/') {
  * tiempo que `useContacto`.
  */
 void queryClient.prefetchQuery({ queryKey: CLAVE_CORPORACION, queryFn: datosDeContacto, staleTime: 10 * 60_000 })
+
+/*
+ * Los nombres del menú, igual: la barra sale en todas las páginas y, si
+ * llegaran tarde, se vería un instante el nombre de siempre y luego el bueno.
+ * Misma clave y mismo tiempo que `useNombresEnMenu`.
+ */
+void queryClient.prefetchQuery({ queryKey: CLAVE_NOMBRES_EN_MENU, queryFn: nombresEnMenu, staleTime: 10 * 60_000 })
 
 function App() {
   // Recupera la sesion de la cookie httpOnly. Una sola vez, al arrancar.

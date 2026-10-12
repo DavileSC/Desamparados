@@ -8,7 +8,7 @@ import CssBaseline from '@mui/material/CssBaseline'
 import theme from '../../../theme'
 import { renderWithProviders } from '../../../test/test-utils'
 import InicioPage from '../InicioPage'
-import { sembrarContacto } from '../../../test/queryClient'
+import { sembrarContacto, sembrarNombresEnMenu } from '../../../test/queryClient'
 
 afterEach(() => { vi.unstubAllGlobals() })
 
@@ -67,6 +67,7 @@ describe('InicioPage', () => {
     // esta prueba va de los módulos, y el `[]` del fetch no es una respuesta
     // de /corporacion.
     sembrarContacto(queryClient)
+    sembrarNombresEnMenu(queryClient)
 
     render(
       <MemoryRouter>

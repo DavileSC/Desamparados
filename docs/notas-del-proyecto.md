@@ -792,3 +792,35 @@ dice «No se pudo cargar». En el PC B, tras el pull, con Git Bash:
 mkdir -p instalacion/mapas
 git show aeca868:desamparados-web/public/mapas/barrio-desamparados.json > instalacion/mapas/barrio.json
 ```
+
+---
+
+## 14. Los nombres del menú: dos listas que tienen que cuadrar
+
+El nombre de cada página en el menú público se cambia en CMS → Páginas y se
+guarda en `Configuracion` (`nombres_en_menu`, ruta → nombre, solo los que no
+son el de siempre). Lo que no se ve:
+
+**El menú está en dos sitios.** El de verdad es `config/navegacion.ts` de la
+web, y no puede salir de un JSON: la guardiana de módulos lo lee como texto
+(§12). El servidor, que no puede importarlo, valida contra
+`shared/entradas-del-menu.json`: las entradas que llevan a una página (todas
+menos los títulos de primer nivel con subpáginas, que solo despliegan), con su
+nombre de siempre. **Quien añada, quite o renombre una entrada del menú cambia
+los dos**; `config/__tests__/navegacion.test.ts` falla si no cuadran. Sin eso,
+una entrada nueva no se podría renombrar (400 «No es una entrada del menú») o
+se aceptaría una que ya no existe.
+
+**`/publicaciones` es a la vez un título y una página.** «Publicaciones»
+(título que despliega) y «Todas las publicaciones» comparten ruta: el nombre
+guardado para `/publicaciones` es el de la página, nunca el del título
+(`ponerNombres` no toca los títulos de primer nivel con hijos).
+
+**Una ruta que deja el menú no rompe nada.** Al leer, `depurarNombres` tira lo
+que ya no está en el catálogo; el siguiente guardado lo borra de la fila.
+
+**La migración `nombres_en_menu` solo escribe en una base en marcha** (hay
+filas en `ContenidoPagina`), como `salidas_neutras_en_base_nueva`: así
+Desamparados recupera «Parroquia · Pasionistas» y otra corporación empieza
+con «Parroquia». La prueba que lo comprueba tapa `ContenidoPagina` con una
+tabla temporal en su conexión, en vez de vaciarla.
