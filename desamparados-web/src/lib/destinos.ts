@@ -18,9 +18,9 @@ export interface Destino {
  * rechaza cualquier otra al guardar (backend: domain/destinos.ts).
  */
 export const DESTINOS_FIJOS: Destino[] = [
-  ...DESTINOS.otros.filter((d) => d.grupo === 'General'),
+  ...(DESTINOS.otros as Destino[]).filter((d) => d.grupo === 'General'),
   ...(CATALOGO.paginas as Destino[]).map(({ ruta, nombre, grupo, modulo }) => ({ ruta, nombre, grupo, modulo })),
-  ...DESTINOS.otros.filter((d) => d.grupo !== 'General'),
+  ...(DESTINOS.otros as Destino[]).filter((d) => d.grupo !== 'General'),
 ]
 
 /**
