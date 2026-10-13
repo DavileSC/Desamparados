@@ -6,6 +6,8 @@ import { after, before, describe, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import { Role } from '@prisma/client';
+import { ArkErrors } from 'arktype';
+import { corporacionSchema } from '../src/schemas/corporacion.schema.js';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
@@ -110,5 +112,37 @@ describe('los datos de la corporación', () => {
     const malaRed = await pedir('/cms/corporacion', { rol: 'ADMIN', metodo: 'PUT', cuerpo: { ...NUEVOS, redes: { ...NUEVOS.redes, facebook: 'facebook.com/prueba' } } });
     assert.equal(malaRed.status, 400);
     assert.deepEqual((await pedir('/corporacion')).cuerpo, antes);
+  });
+});
+
+// WP11: el teléfono se guarda sin el +34, que la web antepone en los datos
+// estructurados; escrito con él, salía «+34 +34 952…».
+describe('el teléfono de Secretaría', () => {
+  const telefonoDe = (telefono: string | null) => {
+    const r = corporacionSchema({
+      body: {
+        secretaria: { horario: null, telefono, email: null },
+        sede: { nombre: null, calle: null, codigoPostal: null, localidad: null },
+        redes: { facebook: null, instagram: null, x: null, tiktok: null, youtube: null },
+        privacidad: { emailDerechos: null },
+      },
+    });
+    return r instanceof ArkErrors ? r : r.body.secretaria.telefono;
+  };
+
+  test('se guarda sin el prefijo de España, escrito como se escriba', () => {
+    assert.equal(telefonoDe('+34 952 123 456'), '952 123 456');
+    assert.equal(telefonoDe('0034-952123456'), '952123456');
+    assert.equal(telefonoDe('+34952123456'), '952123456');
+    assert.equal(telefonoDe(' 952 12 34 56 '), '952 12 34 56');
+    assert.equal(telefonoDe(''), null);
+    assert.equal(telefonoDe(null), null);
+  });
+
+  test('uno de fuera conserva su prefijo; lo que no es un teléfono, no pasa', () => {
+    assert.equal(telefonoDe('+351 21 123 4567'), '+351 21 123 4567');
+    assert.ok(telefonoDe('llamar por la tarde') instanceof ArkErrors);
+    assert.ok(telefonoDe('12') instanceof ArkErrors);
+    assert.ok(telefonoDe('952 123 456 <b>') instanceof ArkErrors);
   });
 });
