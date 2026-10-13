@@ -26,7 +26,7 @@ import { apellidosTrasCambio, componerApellidos, partirApellidos } from '../src/
 import { enmascararIban } from '../src/domain/iban.js';
 import { esIbanValido, normalizarIban } from '../src/config/common.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
-import { aLaSalida, deLaSalida, idDeSalida, literal, PASION, ROSARIO, salida } from './fixtures/salidas.js';
+import { aLaSalida, deLaSalida, idDeSalida, literal, PASION, ROSARIO, salida, conFechaDePrueba } from './fixtures/salidas.js';
 import { diaMadrid, sumarDias } from '../src/domain/fecha-salida.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 
@@ -287,6 +287,8 @@ test('una salida con fecha a mano no abre su plazo sin fecha, y sin salida o con
 test('el Rosario tiene su plazo y sus días; se pide con donativo, se paga en línea y, pagada, ya no se cancela desde el área', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
+  // Sin próxima fecha no se pide: el Rosario lleva la suya mientras dura la prueba.
+  const quitarFecha = await conFechaDePrueba(ROSARIO);
   try {
     const pasion = await e.turno(26);
     const rosario = await e.turno(28, ROSARIO);
@@ -337,6 +339,7 @@ test('el Rosario tiene su plazo y sus días; se pide con donativo, se paga en l�
     }
   } finally {
     await e.recoger();
+    await quitarFecha();
   }
 });
 

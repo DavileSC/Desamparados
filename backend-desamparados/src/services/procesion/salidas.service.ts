@@ -17,7 +17,7 @@ import { enMadrid } from '../../domain/datos-areas.js';
 import type { PuestoDelCatalogo } from '../../domain/salidas.js';
 import type { ConfiguracionCortejo } from '../../domain/cortejo.js';
 import type { DatosSalida, SalidaCms, SalidaWeb } from '../../dtos/procesion.dto.js';
-import { articuloDe, type Articulo } from '../../domain/articulos.js';
+import { articuloDe, conArticulo, mayuscula, segunNumero, type Articulo } from '../../domain/articulos.js';
 
 export type SalidaConActo = Salida & { acto: Evento | null };
 
@@ -57,6 +57,19 @@ export function reglaDe(s: SalidaConActo): ReglaFecha {
 }
 
 /**
+ * Sin próxima fecha no se sabe para qué año es una solicitud: una salida a
+ * mano sin acto toma el año natural, y quien pedía en diciembre para la de
+ * enero dejaba una solicitud de una salida que ya pasó. El plazo ya lo exige
+ * al abrirse; esto lo exige al pedir (en el área y en la mesa), por si la
+ * salida se quedó sin fecha con el plazo abierto.
+ */
+export function exigirProximaFecha(s: SalidaConActo, hoy = diaMadrid(new Date())): void {
+  if (proximaFecha(reglaDe(s), hoy)) return;
+  const art = articuloDe(s);
+  throw new HttpError(`${mayuscula(conArticulo(art, s.nombre))} ${segunNumero(art, 'todavía no tiene', 'todavía no tienen')} fecha: no se puede pedir la papeleta hasta que se ponga.`, 409);
+}
+
+/**
  * La salida de una petición: `?salida=<slug>` en las lecturas, `salida` en el
  * cuerpo en las escrituras. Sin ella o si no existe, el 400 de `porSlug`.
  */
@@ -64,6 +77,24 @@ export function salidaDe(peticion: { query?: Record<string, unknown>; body?: unk
   const delCuerpo = (peticion.body as { salida?: unknown } | undefined)?.salida;
   const slug = peticion.query?.salida ?? delCuerpo;
   return SalidasService.porSlug(typeof slug === 'string' ? slug : undefined);
+}
+
+/**
+ * El acto de la Agenda de ese año (en Madrid) con el nombre de la salida y
+ * tipo PROCESION que no sea la fecha de otra salida, o `null`.
+ */
+async function actoDelAnio(tx: Prisma.TransactionClient, salida: SalidaConActo, anio: string): Promise<number | null> {
+  const candidatos = await tx.evento.findMany({
+    where: {
+      title: salida.nombre,
+      type: TipoEvento.PROCESION,
+      startDate: { gte: new Date(`${Number(anio) - 1}-12-31T00:00:00Z`), lt: new Date(`${Number(anio) + 1}-01-02T00:00:00Z`) },
+      salidas: { none: { id: { not: salida.id } } },
+    },
+    orderBy: { startDate: 'desc' },
+    select: { id: true, startDate: true },
+  });
+  return candidatos.find((e) => diaMadrid(e.startDate).startsWith(`${anio}-`))?.id ?? null;
 }
 
 /** La próxima salida para la cuenta atrás de la portada: lo justo, nada de cuotas ni puestos. */
@@ -148,6 +179,14 @@ export class SalidasService {
   static async editar(id: number, cambios: Partial<DatosSalida>, meta?: MetaDeAuditoria): Promise<SalidaConActo> {
     const antes = await SalidasService.porId(id);
     comprobarFecha({ ...antes, ...cambios } as DatosSalida);
+    // Pasarla a mano sin acto la deja sin fecha, y sin fecha su año es el
+    // natural: con el plazo abierto, las solicitudes del año de la salida
+    // dejaban de verse y las nuevas nacían para una salida ya pasada. Con el
+    // plazo abierto se pasa a mano con su fecha, en `fijarFecha` (`aMano`).
+    if (cambios.fecha === FechaSalida.MANUAL && antes.fecha !== FechaSalida.MANUAL && antes.plazoAbierto
+      && !proximaFecha(reglaDe({ ...antes, fecha: FechaSalida.MANUAL }), diaMadrid(new Date()))) {
+      throw new HttpError('Con el plazo abierto, la salida no puede quedarse sin fecha: pásala a mano junto con su fecha, o cierra antes el plazo.', 409);
+    }
     try {
       // Una salida desactivada deja de verse, pero su plazo seguía abierto: al
       // reactivarla, la solicitud volvía abierta sin que nadie la abriera.
@@ -207,15 +246,37 @@ export class SalidasService {
    * Fija (o cambia) la fecha de una salida a mano: crea su acto en la Agenda o
    * mueve el que ya tenía si es del mismo año, y lo enlaza a la fila. Las de la Pascua se calculan
    * solas: ponerles fecha a mano dejaría dos fechas que no coinciden.
+   *
+   * Con `aMano`, una de la Pascua pasa a mano con esta fecha en la misma
+   * transacción: en dos llamadas (cambiar el modo y luego la fecha), si la
+   * segunda fallaba la salida se quedaba a mano y sin fecha.
    */
-  static async fijarFecha(salida: SalidaConActo, datos: { inicio: string; lugar?: string | null }, meta?: MetaDeAuditoria) {
-    if (salida.fecha !== FechaSalida.MANUAL) {
+  static async fijarFecha(salida: SalidaConActo, datos: { inicio: string; lugar?: string | null; aMano?: boolean }, meta?: MetaDeAuditoria) {
+    const pasaAMano = salida.fecha !== FechaSalida.MANUAL;
+    if (pasaAMano && !datos.aMano) {
       throw new HttpError('Esta salida se calcula por la Pascua: su fecha no se pone a mano.', 409);
     }
     const inicio = new Date(datos.inicio);
     if (Number.isNaN(inicio.getTime())) throw new HttpError('La fecha de la salida no es válida.');
 
+    const hoy = diaMadrid(new Date());
+    const dia = diaMadrid(inicio);
     const antes = SalidasService.fecha(salida);
+    const mismoAnio = !!antes && diaMadrid(antes.inicio).slice(0, 4) === dia.slice(0, 4);
+    // Un día pasado solo para corregir la del mismo año (la salida ya
+    // celebrada, con su día mal puesto). Fuera de eso era un año mal escrito:
+    // 2025 por 2026 creaba un acto de 2025, dejaba suelto el de 2026 y la
+    // salida pasaba a «por anunciar».
+    if (dia < hoy && !mismoAnio) {
+      throw new HttpError(`La fecha de la salida no puede ser un día que ya ha pasado (hoy es ${hoy.split('-').reverse().join('/')}).`);
+    }
+    if (pasaAMano && salida.plazoAbierto) {
+      const anio = anioDeLaSalida(reglaDe(salida), hoy);
+      if (Number(dia.slice(0, 4)) !== anio) {
+        throw new HttpError(`Con el plazo abierto, la fecha a mano tiene que ser de ${anio}, el año de la salida que se prepara: las solicitudes ya hechas son de ese año.`, 409);
+      }
+    }
+
     const acto = {
       title: salida.nombre,
       description: salida.indicaciones,
@@ -226,26 +287,34 @@ export class SalidasService {
     // Un acto por año: si el enlazado es de otro, se crea uno nuevo y el viejo
     // se queda en la Agenda como historia. Moverlo borraría la fecha de la
     // salida de aquel año, que es lo que sus papeletas impresas dicen.
-    const mismoAnio = antes && diaMadrid(antes.inicio).slice(0, 4) === diaMadrid(inicio).slice(0, 4);
     // Solo se enlaza el último acto: poner ya la del año que viene, con la de
     // este todavía por delante, dejaba a la mesa, la Puerta y el cortejo sin
     // las papeletas que se están repartiendo.
-    if (antes && !mismoAnio && inicio > antes.inicio && diaMadrid(antes.inicio) >= diaMadrid(new Date())) {
+    if (antes && !mismoAnio && inicio > antes.inicio && diaMadrid(antes.inicio) >= hoy) {
       throw new HttpError(`La salida de ${diaMadrid(antes.inicio).slice(0, 4)} todavía no se ha celebrado: la del año siguiente se pone cuando pase. Si esa fecha está mal, cámbiala dentro de su año.`, 409);
     }
     // Crear el acto y enlazarlo, juntos: si el enlace fallaba, quedaba un acto
     // suelto en la Agenda pública con el nombre de la salida.
     const evento = await db.$transaction(async (tx) => {
-      const guardado = antes && mismoAnio
-        ? await tx.evento.update({ where: { id: antes.eventoId }, data: acto })
+      // De otro año, pero ese año ya tiene su acto (se corrigió un año mal
+      // puesto y se vuelve a él): se reutiliza en vez de dejar dos iguales el
+      // mismo día en la Agenda. Solo uno que no sea la fecha de otra salida.
+      const delMismoAnio = antes && mismoAnio ? null : await actoDelAnio(tx, salida, dia.slice(0, 4));
+      const reutilizado = antes && mismoAnio ? antes.eventoId : delMismoAnio;
+      const guardado = reutilizado
+        ? await tx.evento.update({ where: { id: reutilizado }, data: acto })
         : await tx.evento.create({ data: acto });
-      await tx.salida.update({ where: { id: salida.id }, data: { eventoId: guardado.id } });
+      await tx.salida.update({
+        where: { id: salida.id },
+        data: { eventoId: guardado.id, ...(pasaAMano && { fecha: FechaSalida.MANUAL, diasDesdePascua: null }) },
+      });
       return guardado;
     });
 
     await AuditoriaService.log(ACCIONES_AUDITORIA.SALIDA_FECHAR, meta ?? {}, 'salida', salida.id, {
       antes: antes && { eventoId: antes.eventoId, inicio: antes.inicio.toISOString(), lugar: antes.lugar },
       despues: { eventoId: evento.id, inicio: evento.startDate.toISOString(), lugar: evento.location },
+      ...(pasaAMano && { fecha: { antes: salida.fecha, despues: FechaSalida.MANUAL } }),
     });
     return { eventoId: evento.id, inicio: evento.startDate, lugar: evento.location };
   }

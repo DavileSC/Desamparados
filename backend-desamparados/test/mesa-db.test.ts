@@ -21,7 +21,7 @@ import { PapeletasService } from '../src/services/procesion/papeletas.service.js
 import { MesaService } from '../src/services/procesion/mesa.service.js';
 import { PlazoPapeletasService } from '../src/services/procesion/plazo.service.js';
 import { anioDeLaMesa, ZonasService, type EntregaEnMesa, type InscripcionEnMesa } from '../src/services/procesion/zonas.service.js';
-import { conceptoDe, idDeSalida, PASION, ROSARIO, salida } from './fixtures/salidas.js';
+import { conceptoDe, idDeSalida, PASION, ROSARIO, salida, conFechaDePrueba } from './fixtures/salidas.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { InventarioService } from '../src/services/inventario.service.js';
 import { ReciboService } from '../src/services/recibo.service.js';
@@ -345,6 +345,8 @@ test('una cuota devuelta se cobra con su reemisión; lo de otra familia no se co
 test('el Rosario: su propia solicitud, con la voluntad que se ajusta al cobrar, y se recoge sin ropa', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
+  // Sin próxima fecha no se pide: el Rosario lleva la suya mientras dura la prueba.
+  const quitarFecha = await conFechaDePrueba(ROSARIO);
   try {
     const h = await e.hermano();
     const pasion = await e.inscribir(h.id);
@@ -379,6 +381,7 @@ test('el Rosario: su propia solicitud, con la voluntad que se ajusta al cobrar, 
     assert.equal(await db.transaccion.count({ where: { hermanoId: otro.id } }), 0);
   } finally {
     await e.recoger();
+    await quitarFecha();
   }
 });
 

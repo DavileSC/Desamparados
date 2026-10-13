@@ -16,7 +16,8 @@ import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { PASION } from './fixtures/salidas.js';
-import { SalidasService } from '../src/services/procesion/salidas.service.js';
+import { SalidasService, exigirProximaFecha } from '../src/services/procesion/salidas.service.js';
+import { HttpError } from '../src/utils/error.handle.js';
 import { TurnosService } from '../src/services/procesion/turnos.service.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 
@@ -538,5 +539,92 @@ test('a mano, el panel lista los repartos desde la salida anterior, también los
     await db.turno.deleteMany({ where: { salidaId: salida.id } });
     await db.salida.delete({ where: { id: salida.id } });
     await db.evento.deleteMany({ where: { id: { in: [viejo.id, acto.id] } } });
+  }
+});
+
+// NG6: con el plazo abierto, una salida no se queda sin fecha al pasarla a mano.
+test('con el plazo abierto, pasar a mano sin fecha da 409; con su fecha (aMano) va en una sola operación', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const staff = await crearUsuarioPrueba(Role.SECRETARIA);
+  const slug = `prueba-salida-${Date.now()}`;
+  const eventos: number[] = [];
+  try {
+    const alta = await fetch(`${baseUrl}/api/cms/salidas`, { method: 'POST', headers: cookieDe(staff.id, Role.SECRETARIA), body: JSON.stringify(datosDeAlta(slug)) });
+    assert.equal(alta.status, 201);
+    const { id, anio } = await alta.json() as { id: number; anio: number };
+    await db.salida.update({ where: { id }, data: { plazoAbierto: true } });
+
+    const sinFecha = await fetch(`${baseUrl}/api/cms/salidas/${id}`, { method: 'PUT', headers: cookieDe(staff.id, Role.SECRETARIA), body: JSON.stringify({ fecha: 'MANUAL' }) });
+    assert.equal(sinFecha.status, 409);
+    assert.equal((await db.salida.findUniqueOrThrow({ where: { id } })).fecha, 'PASCUA');
+
+    const fijar = (cuerpo: object) => fetch(`${baseUrl}/api/cms/salidas/${id}/fecha`, { method: 'PUT', headers: cookieDe(staff.id, Role.SECRETARIA), body: JSON.stringify(cuerpo) });
+    // Sin `aMano`, una de la Pascua sigue sin admitir fecha.
+    assert.equal((await fijar({ inicio: `${anio}-12-20T18:00:00.000Z` })).status, 409);
+    // Con el plazo abierto, de otro año que el de la salida que se prepara, no: las solicitudes son de ese año.
+    assert.equal((await fijar({ inicio: `${anio + 1}-01-10T18:00:00.000Z`, aMano: true })).status, 409);
+    // Si la fecha no vale, tampoco cambia el modo.
+    assert.equal((await fijar({ inicio: '2001-01-01T18:00:00.000Z', aMano: true })).status, 400);
+    assert.equal((await db.salida.findUniqueOrThrow({ where: { id } })).fecha, 'PASCUA');
+
+    const bien = await fijar({ inicio: `${anio}-12-20T18:00:00.000Z`, lugar: 'Templo', aMano: true });
+    assert.equal(bien.status, 200);
+    const despues = await db.salida.findUniqueOrThrow({ where: { id } });
+    assert.equal(despues.fecha, 'MANUAL');
+    assert.equal(despues.diasDesdePascua, null);
+    assert.ok(despues.eventoId);
+    eventos.push(despues.eventoId!);
+    assert.equal((await bien.json() as { anio: number }).anio, anio, 'el año de la salida no cambia');
+  } finally {
+    await db.salida.deleteMany({ where: { slug } });
+    if (eventos.length) await db.evento.deleteMany({ where: { id: { in: eventos } } });
+    await borrarUsuarioPrueba(staff.id);
+  }
+});
+
+test('sin próxima fecha no se pide papeleta (área y mesa usan exigirProximaFecha)', () => {
+  const base = { nombre: 'Traslado', articulo: 'el', fecha: 'MANUAL', diasDesdePascua: null } as const;
+  const sinActo = { ...base, acto: null } as unknown as Parameters<typeof exigirProximaFecha>[0];
+  assert.throws(() => exigirProximaFecha(sinActo, '2026-11-20'), (e: unknown) => e instanceof HttpError && e.status === 409 && /todavía no tiene fecha/.test(e.message));
+  const pasada = { ...base, acto: { startDate: new Date('2026-10-17T16:00:00Z') } } as unknown as Parameters<typeof exigirProximaFecha>[0];
+  assert.throws(() => exigirProximaFecha(pasada, '2026-11-20'));
+  const conFecha = { ...base, acto: { startDate: new Date('2027-01-06T11:00:00Z') } } as unknown as Parameters<typeof exigirProximaFecha>[0];
+  assert.doesNotThrow(() => exigirProximaFecha(conFecha, '2026-11-20'));
+});
+
+// NG11: un año mal puesto no deja actos duplicados ni fechas pasadas.
+test('fijar la fecha: un día pasado da 400 (salvo dentro del mismo año) y volver a un año reutiliza su acto', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const staff = await crearUsuarioPrueba(Role.SECRETARIA);
+  const slug = `prueba-salida-${Date.now()}`;
+  const nombre = `Traslado NG11 ${Date.now()}`;
+  try {
+    const alta = await fetch(`${baseUrl}/api/cms/salidas`, {
+      method: 'POST', headers: cookieDe(staff.id, Role.SECRETARIA),
+      body: JSON.stringify(datosDeAlta(slug, { nombre, fecha: 'MANUAL', diasDesdePascua: null })),
+    });
+    const { id } = await alta.json() as { id: number };
+    const fijar = (inicio: string) => fetch(`${baseUrl}/api/cms/salidas/${id}/fecha`, { method: 'PUT', headers: cookieDe(staff.id, Role.SECRETARIA), body: JSON.stringify({ inicio }) });
+
+    const pasado = await fijar('2001-10-17T16:00:00.000Z');
+    assert.equal(pasado.status, 400);
+    assert.match((await pasado.json() as { error: string }).error, /ya ha pasado/);
+
+    assert.equal((await fijar('2097-10-17T16:00:00.000Z')).status, 200);
+    const de2097 = (await db.salida.findUniqueOrThrow({ where: { id } })).eventoId!;
+    // Se equivocó de año hacia delante; la de 2097 (ya «celebrada») se corrige a 2098…
+    await db.evento.update({ where: { id: de2097 }, data: { startDate: new Date('2020-10-17T16:00:00.000Z') } });
+    // …dentro de su año sí se puede corregir un día pasado.
+    assert.equal((await fijar('2020-10-18T16:00:00.000Z')).status, 200);
+    assert.equal((await db.salida.findUniqueOrThrow({ where: { id } })).eventoId, de2097);
+    const conDia2098 = await db.evento.create({ data: { title: nombre, type: 'PROCESION', startDate: new Date('2098-10-16T16:00:00.000Z') } });
+    assert.equal((await fijar('2098-10-17T16:00:00.000Z')).status, 200);
+    const enlazado = (await db.salida.findUniqueOrThrow({ where: { id } })).eventoId;
+    assert.equal(enlazado, conDia2098.id, 'el acto que ya había de 2098 se reutiliza');
+    assert.equal(await db.evento.count({ where: { title: nombre, startDate: { gte: new Date('2098-01-01T00:00:00Z') } } }), 1, 'sin duplicados en la Agenda');
+  } finally {
+    await db.salida.deleteMany({ where: { slug } });
+    await db.evento.deleteMany({ where: { title: nombre } });
+    await borrarUsuarioPrueba(staff.id);
   }
 });

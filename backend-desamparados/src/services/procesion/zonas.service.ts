@@ -37,7 +37,7 @@ import {
   notaDePerdon, pendienteDeLaSalida, requisitosParaRecoger, tipoReciboDe, type CuotaDelHermano,
 } from '../../domain/salidas.js';
 import { articuloDe } from '../../domain/articulos.js';
-import type { SalidaConActo } from './salidas.service.js';
+import { exigirProximaFecha, type SalidaConActo } from './salidas.service.js';
 import { PapeletasService, type SolicitudConRecibo } from './papeletas.service.js';
 import { PlazoPapeletasService } from './plazo.service.js';
 import { archivoDePapeleta, datosDeLaPapeleta, papeletaEnPdf } from './papeleta-pdf.js';
@@ -187,6 +187,7 @@ export class ZonasService {
     if (!hermano.activo) throw new HttpError(`${hermano.nombre} no está en activo: Secretaría tiene que darla de alta o reactivarla antes.`, 409);
     if (!dto.puesto.trim()) throw new HttpError('Falta el puesto.');
     const alturaHombro = alturaDictada(dto.alturaHombro);
+    exigirProximaFecha(dto.salida);
     const year = anioDeLaMesa(dto.salida);
 
     const { resultado, repetida } = await unaVez(clave, 'inscribir', async (tx) => {
