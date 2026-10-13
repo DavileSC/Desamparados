@@ -4,7 +4,7 @@ import Boton from '../Boton'
 import TarjetaCristal from '../TarjetaCristal'
 import { anchoMaximo, valorDe } from './presentacion'
 import type { BloqueLlamada as Datos } from '../../lib/api/contenido'
-import { esDestinoValido } from '../../lib/destinos'
+import { useEnlaceVivo } from '../../hooks/useEnlaceVivo'
 import { MARCA, alfa } from '../../theme/marca'
 
 /** El botón de cada color. `granate` es el de siempre. */
@@ -23,6 +23,7 @@ const VARIANTE_BOTON = { granate: 'primary', dorado: 'secondary', contorno: 'out
  * El título del bloque lo pinta `BloquesDePagina` encima, como en los demás.
  */
 export default function BloqueLlamada({ bloque }: { bloque: Datos }) {
+  const enlaceVivo = useEnlaceVivo()
   const estilo = valorDe(bloque, 'estilo')
   const izquierda = valorDe(bloque, 'alineacion') === 'izquierda'
   const variante = VARIANTE_BOTON[valorDe(bloque, 'boton') as keyof typeof VARIANTE_BOTON] ?? 'primary'
@@ -35,7 +36,7 @@ export default function BloqueLlamada({ bloque }: { bloque: Datos }) {
         </Typography>
       )}
       {/* Sin destino que exista, sin botón: llevaría a «página no encontrada». */}
-      {esDestinoValido(bloque.enlace) && (
+      {enlaceVivo(bloque.enlace) && (
         <Box>
           <Boton component={Link} to={bloque.enlace} appVariant={variante}>{bloque.boton}</Boton>
         </Box>
@@ -64,7 +65,7 @@ export default function BloqueLlamada({ bloque }: { bloque: Datos }) {
             {bloque.texto}
           </Typography>
         )}
-        {esDestinoValido(bloque.enlace) && (
+        {enlaceVivo(bloque.enlace) && (
           <Box sx={{ flexShrink: 0 }}>
             <Boton component={Link} to={bloque.enlace} appVariant={variante}>{bloque.boton}</Boton>
           </Box>

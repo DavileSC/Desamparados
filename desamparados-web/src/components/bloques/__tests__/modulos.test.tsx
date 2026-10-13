@@ -24,4 +24,29 @@ describe('los bloques y los módulos', () => {
     expect(screen.getByText('Hola')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Donativo' })).not.toBeInTheDocument()
   })
+
+  it('un enlace a una página de un módulo apagado no se pinta, aunque esté guardado', () => {
+    const bloques = [
+      { tipo: 'botones', titulo: '', botones: [
+        { texto: 'Ver la agenda', enlace: '/agenda', estilo: 'principal' },
+        { texto: 'Nuestra historia', enlace: '/historia', estilo: 'secundario' },
+      ] },
+      { tipo: 'llamada', titulo: 'Únete', texto: 'Hazte hermano.', boton: 'Hazte hermano', enlace: '/hazte-hermano' },
+      { tipo: 'tarjetas', titulo: '', tarjetas: [{ titulo: 'Próximos cultos', descripcion: 'La agenda.', enlace: '/agenda' }] },
+    ] as unknown as Bloque[]
+    const { unmount } = renderWithProviders(<BloquesDePagina bloques={bloques} />, { modulos: ['noticias'] })
+    expect(screen.getByRole('link', { name: 'Nuestra historia' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Ver la agenda' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Hazte hermano/ })).not.toBeInTheDocument()
+    // La tarjeta se queda, sin enlace: su texto sigue diciendo algo.
+    expect(screen.getByRole('heading', { name: 'Próximos cultos' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Próximos cultos/ })).not.toBeInTheDocument()
+    unmount()
+
+    renderWithProviders(<BloquesDePagina bloques={bloques} />, { modulos: ['agenda', 'alta-web'] })
+    expect(screen.getByRole('link', { name: 'Ver la agenda' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Hazte hermano/ })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Próximos cultos/ })).toBeInTheDocument()
+  })
 })
+

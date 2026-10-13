@@ -3,7 +3,7 @@ import { Box, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { eventosDelCalendario } from '../../lib/api/agenda'
-import { esDestinoValido } from '../../lib/destinos'
+import { useEnlaceVivo } from '../../hooks/useEnlaceVivo'
 import { enlaceConFlecha } from '../estiloDeBoton'
 import { useModulos } from '../../hooks/useModulos'
 import { anchoMaximo } from './presentacion'
@@ -58,7 +58,8 @@ export default function BloquePrograma({ bloque }: { bloque: Datos }) {
 }
 
 function Fila({ fila, proximo, fecha }: { fila: FilaDePrograma; proximo: boolean; fecha: string }) {
-  const conBoton = fila.boton.trim() !== '' && esDestinoValido(fila.enlace)
+  const enlaceVivo = useEnlaceVivo()
+  const conBoton = fila.boton.trim() !== '' && enlaceVivo(fila.enlace)
   return (
     <Box component="li" aria-current={proximo ? 'date' : undefined} sx={{
       display: 'grid', alignItems: 'baseline',

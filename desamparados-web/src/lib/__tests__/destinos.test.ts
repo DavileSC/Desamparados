@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { DESTINOS_FIJOS, PREFIJO_NOTICIA, destinosActivos, esDestinoValido } from '../destinos'
+import { DESTINOS_FIJOS, PREFIJO_NOTICIA, destinosActivos, esDestinoValido, esEnlaceVivo } from '../destinos'
 // El fuente del router como texto, como en config/__tests__/navegacion.test.ts.
 import fuente from '../../routes/index.tsx?raw'
+import { paginasPublicasActivas } from '../../app/cmsNavegacion'
 
 /** Las rutas reales del router: el bloque público y las absolutas de fuera de él. */
 function rutasDelRouter(): Set<string> {
@@ -47,4 +48,32 @@ describe('destinos de los enlaces del CMS', () => {
     expect(rutas([])).toContain('/ajuar')
     expect(rutas([])).toContain('/historia')
   })
+
+  it('el selector no ofrece las páginas de un módulo apagado: agenda, noticias, hazte hermano', () => {
+    const rutas = (activos: string[]) => destinosActivos(new Set(activos)).map((d) => d.ruta)
+    for (const [ruta, modulo] of [['/agenda', 'agenda'], ['/noticias', 'noticias'], ['/publicaciones', 'publicaciones'], ['/hazte-hermano', 'alta-web']]) {
+      expect(rutas([]), ruta).not.toContain(ruta)
+      expect(rutas([modulo]), ruta).toContain(ruta)
+    }
+  })
+
+  it('un enlace vivo es válido y de un módulo encendido; una noticia es de Noticias', () => {
+    expect(esEnlaceVivo('/agenda', new Set())).toBe(false)
+    expect(esEnlaceVivo('/agenda', new Set(['agenda']))).toBe(true)
+    expect(esEnlaceVivo('/hazte-hermano', new Set(['agenda']))).toBe(false)
+    expect(esEnlaceVivo(`${PREFIJO_NOTICIA}apertura-del-curso`, new Set())).toBe(false)
+    expect(esEnlaceVivo(`${PREFIJO_NOTICIA}apertura-del-curso`, new Set(['noticias']))).toBe(true)
+    // Lo del núcleo vale siempre, también antes de saber qué módulos hay.
+    expect(esEnlaceVivo('/historia#fundacion', null)).toBe(true)
+    expect(esEnlaceVivo('/hola', new Set(['agenda']))).toBe(false)
+  })
+
+  it('el índice de Páginas del CMS tampoco ofrece las de un módulo apagado', () => {
+    const rutas = (activos: string[]) => paginasPublicasActivas(new Set(activos)).map((p) => p.ruta)
+    for (const [ruta, modulo] of [['/agenda', 'agenda'], ['/noticias', 'noticias'], ['/publicaciones', 'publicaciones']]) {
+      expect(rutas([]), ruta).not.toContain(ruta)
+      expect(rutas([modulo]), ruta).toContain(ruta)
+    }
+  })
 })
+

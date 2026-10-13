@@ -113,11 +113,11 @@ describe('la envoltura de cada bloque', () => {
 describe('los bloques nuevos', () => {
   it('foto con texto: la foto con su descripción, el texto y el botón a su página', () => {
     renderWithProviders(<BloquesDePagina bloques={[{
-      tipo: 'fotoTexto', titulo: '', url: FOTO, alt: 'La Virgen en su camarín', pie: '', html: '<p>Nuestra titular</p>', boton: 'Conócela', enlace: '/desamparados',
+      tipo: 'fotoTexto', titulo: '', url: FOTO, alt: 'La Virgen en su camarín', pie: '', html: '<p>Nuestra titular</p>', boton: 'Conócela', enlace: '/historia',
     }]} />)
     expect(screen.getByRole('img', { name: 'La Virgen en su camarín' })).toBeInTheDocument()
     expect(screen.getByText('Nuestra titular')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Conócela' })).toHaveAttribute('href', '/desamparados')
+    expect(screen.getByRole('link', { name: 'Conócela' })).toHaveAttribute('href', '/historia')
   })
 
   it('cita: en un blockquote, firmada', () => {

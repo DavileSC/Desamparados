@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Box, Typography } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
-import { esDestinoValido } from '../../lib/destinos'
+import { useEnlaceVivo } from '../../hooks/useEnlaceVivo'
 import { anchoMaximo } from './presentacion'
 import type { BloqueRelacion as Datos, FilaDeRelacion } from '../../lib/api/contenido'
 import { MARCA } from '../../theme/marca'
@@ -43,8 +43,9 @@ export default function BloqueRelacion({ bloque }: { bloque: Datos }) {
 }
 
 function Fila({ fila, primera }: { fila: FilaDeRelacion; primera: boolean }) {
+  const enlaceVivo = useEnlaceVivo()
   const conNombre = fila.nombre.trim() !== ''
-  const enlace = fila.enlace && esDestinoValido(fila.enlace) ? fila.enlace : ''
+  const enlace = fila.enlace && enlaceVivo(fila.enlace) ? fila.enlace : ''
   const funcion = fila.texto && (enlace
     ? (
       <Box component={Link} to={enlace} sx={{

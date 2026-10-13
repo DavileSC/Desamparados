@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Box, Typography, useMediaQuery } from '@mui/material'
 import { m, useInView, useReducedMotion } from 'framer-motion'
 import { SERIF } from '../../features/inicio/estilos'
-import { esDestinoValido } from '../../lib/destinos'
+import { useEnlaceVivo } from '../../hooks/useEnlaceVivo'
 import { useModoEdicion } from './modoEdicion'
 import { anchoMaximo, valorDe } from './presentacion'
 import FinesEnFoco from './FinesEnFoco'
@@ -156,7 +156,8 @@ const SITIOS = [
 const ALINEACIONES = ['center', 'right', 'left'] as const
 
 function Fin({ fin, color, alineacion, apagado }: { fin: FinDeAnillo; color: string; alineacion: 'left' | 'center' | 'right'; apagado: boolean }) {
-  const conBoton = fin.boton.trim() !== '' && esDestinoValido(fin.enlace)
+  const enlaceVivo = useEnlaceVivo()
+  const conBoton = fin.boton.trim() !== '' && enlaceVivo(fin.enlace)
   return (
     <Box sx={{
       display: 'flex', flexDirection: 'column', gap: 1.25, textAlign: alineacion,

@@ -11,7 +11,7 @@ import MarcoEditable from '../../../components/bloques/MarcoEditable'
 import BloqueCronologia from '../../../components/bloques/BloqueCronologia'
 import { idDeHito } from '../../../components/bloques/cronologia'
 import { GOLD, SERIF, ceja, enlaceBloque } from '../../inicio/estilos'
-import { esDestinoValido } from '../../../lib/destinos'
+import { useEnlaceVivo } from '../../../hooks/useEnlaceVivo'
 import { useBorradorPagina } from '../../../components/bloques/borrador'
 import BloquesEsqueleto from '../../../components/bloques/BloquesEsqueleto'
 import ConBloquesCargados from '../../../components/bloques/ConBloquesCargados'
@@ -271,6 +271,7 @@ function BloqueEspecial({ bloque, idTitulo, conAnclas }: { bloque: Bloque; idTit
 
 /** El cierre de la página: rótulo, frase grande y un enlace con flecha. */
 function Cierre({ bloque, idTitulo }: { bloque: BloqueLlamada; idTitulo: string }) {
+  const enlaceVivo = useEnlaceVivo()
   return (
     <Box component="section" aria-labelledby={bloque.titulo ? idTitulo : undefined} sx={{ py: { xs: 8, md: 12 } }}>
       <ContenedorDePagina>
@@ -293,7 +294,7 @@ function Cierre({ bloque, idTitulo }: { bloque: BloqueLlamada; idTitulo: string 
             )}
           </Revela>
           {/* Como en BloqueLlamada: un destino que no existe no se pinta. */}
-          {esDestinoValido(bloque.enlace) && (
+          {enlaceVivo(bloque.enlace) && (
             <Revela orden={1}>
               <Box component={Link} to={bloque.enlace} sx={enlaceBloque}>
                 {bloque.boton} <ArrowForwardIcon />

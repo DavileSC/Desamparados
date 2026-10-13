@@ -5,7 +5,7 @@ import { GOLD, GRANATE, PAPEL, SERIF } from '../../features/inicio/estilos'
 import { ICONOS } from './iconos'
 import { anchoMaximo, valorDe } from './presentacion'
 import type { BloqueTarjetas as Datos, TarjetaEnlace } from '../../lib/api/contenido'
-import { esDestinoValido } from '../../lib/destinos'
+import { useEnlaceVivo } from '../../hooks/useEnlaceVivo'
 import { propsDeFoto } from '../../lib/fotoSubida'
 import { MARCA, alfa } from '../../theme/marca'
 
@@ -70,6 +70,7 @@ export default function BloqueTarjetas({ bloque }: { bloque: Datos }) {
  * enlaces de quien navega con lector de pantalla.
  */
 function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEnlace; estilo: Exclude<Estilo, 'numeradas'>; horizontal: boolean; centrada: boolean }) {
+  const enlaceVivo = useEnlaceVivo()
   const icono = tarjeta.icono ? ICONOS[tarjeta.icono] : null
   const foto = tarjeta.foto ?? ''
   const oscura = estilo === 'granate'
@@ -126,7 +127,7 @@ function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEn
   // Un enlace guardado antes de que el CMS solo dejara elegir páginas que
   // existen puede llevar a ninguna parte: mejor una tarjeta informativa que
   // una que promete y acaba en «página no encontrada».
-  if (!tarjeta.enlace || !esDestinoValido(tarjeta.enlace)) return recuadro(false)
+  if (!tarjeta.enlace || !enlaceVivo(tarjeta.enlace)) return recuadro(false)
 
   return (
     <Box component={Link} to={tarjeta.enlace} sx={{ display: 'block', height: '100%', textDecoration: 'none', color: 'inherit' }}>
@@ -145,6 +146,7 @@ const ROSA = MARCA.principalClaro
  * hace de icono. En el móvil, una debajo de otra con el filete arriba.
  */
 function Numeradas({ bloque }: { bloque: Datos }) {
+  const enlaceVivo = useEnlaceVivo()
   const cuantas = bloque.tarjetas.length
   const eleccion = valorDe(bloque, 'columnas')
   const porFila = eleccion === 'auto' ? Math.min(cuantas, 4) : Number(eleccion)
@@ -156,7 +158,7 @@ function Numeradas({ bloque }: { bloque: Datos }) {
       display: 'grid', gridTemplateColumns: { xs: '1fr', md: `repeat(${porFila}, minmax(0, 1fr))` }, columnGap: 5,
     }}>
       {bloque.tarjetas.map((tarjeta, indice) => {
-        const enlace = tarjeta.enlace && esDestinoValido(tarjeta.enlace) ? tarjeta.enlace : ''
+        const enlace = tarjeta.enlace && enlaceVivo(tarjeta.enlace) ? tarjeta.enlace : ''
         const contenido = (
           <>
             <Typography component="span" aria-hidden sx={{ display: 'block', fontFamily: SERIF, fontSize: { xs: 38, md: 44 }, lineHeight: 1, fontWeight: 300, color: ROSA, mb: 1.5 }}>
