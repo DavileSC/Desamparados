@@ -13,7 +13,16 @@
 //      migraciones, como en cualquier despliegue.
 //   2. Desde el servidor los correos salen de verdad. Todo correo que no sea de
 //      ejemplo (@ejemplo.invalido, @ejemplo.test) ni esté en la lista de los que
-//      se quedan pasa a @ejemplo.invalido, con lo que lleva delante de la arroba.
+//      se quedan pasa a @ejemplo.invalido, con lo que lleva delante de la arroba
+//      y el id de la fila: `pepe+12@ejemplo.invalido`. Sin el id,
+//      pepe@gmail.com y pepe@hotmail.com acababan los dos en
+//      pepe@ejemplo.invalido, el `UPDATE` de `User` (correo único) fallaba con
+//      el 1062 y el cliente se paraba ahí: los datos ya cargados, y los
+//      correos reales de las fichas, los pedidos y los donativos, sin tocar.
+//      También el correo de los donativos en línea, que va dentro del JSON
+//      `PagoEnLinea.donativo` (con él se mandan los certificados del 182).
+//      Al final, el fichero dice cuántos correos de verdad quedan: tiene que
+//      ser 0 (ver docs/servidor.md).
 //
 // Antes de los datos, el fichero vacía cada tabla: el servidor ya tiene filas
 // propias (los módulos que siembra la API al arrancar). `_prisma_migrations` no
@@ -62,8 +71,10 @@ function muchosAMuchos(texto) {
   return [...lados].filter(([, n]) => n === 2).map(([nombre]) => nombre)
 }
 
-// Las columnas de correo, por modelo (las que se llaman email, email2…).
-const correos = { User: ['email'], Hermano: ['email', 'email2'], PedidoTienda: ['email'], Apadrinamiento: ['email'], ComunicadoEnvio: ['email'] }
+// Las columnas de correo, por modelo (las que se llaman email, email2…). `User`
+// va la última: es la única con el correo único, y si aun así fallara, lo
+// demás ya estaría cambiado.
+const correos = { Hermano: ['email', 'email2'], PedidoTienda: ['email'], Apadrinamiento: ['email'], ComunicadoEnvio: ['email'], User: ['email'] }
 
 const salida = createWriteStream(destino, { encoding: 'utf8' })
 salida.write(`-- Datos de la base de pruebas, sacados el ${new Date().toISOString()}.
@@ -106,17 +117,27 @@ if (desconocidas.size) {
 
 // Los correos que no son de ejemplo ni están en la lista, a @ejemplo.invalido.
 const lista = seQuedan.map((c) => `'${c.toLowerCase().replaceAll("'", "''")}'`).join(', ') || "''"
+// Un correo de verdad: con arroba, que no es de ejemplo ni de la lista.
+const deVerdad = (x) => `${x} LIKE '%@%' AND ${x} NOT LIKE '%@ejemplo.invalido' AND ${x} NOT LIKE '%@ejemplo.test' AND LOWER(${x}) NOT IN (${lista})`
+// Lo de delante de la arroba (recortado: la columna es de 191) y el id de la fila, que lo hace único.
+const inventado = (x) => `CONCAT(LEFT(SUBSTRING_INDEX(${x}, '@', 1), 120), '+', \`id\`, '@ejemplo.invalido')`
+const enElDonativo = "JSON_VALUE(`donativo`, '$.email')"
 // mariadb-dump deja la conexión con `autocommit=0` tras la última tabla: sin
 // volver a encenderlo, estos UPDATE quedan en una transacción que nadie
 // confirma y se deshacen al cerrar el cliente, sin ningún error.
 salida.write('\n-- Ningún correo de verdad, salvo los que se quedan.\nSET autocommit = 1;\n')
+salida.write(`UPDATE \`PagoEnLinea\` SET \`donativo\` = JSON_SET(\`donativo\`, '$.email', ${inventado(enElDonativo)}) WHERE ${deVerdad(enElDonativo)};\n`)
 for (const [tabla, columnas] of Object.entries(correos)) {
   for (const c of columnas) {
-    salida.write(`UPDATE \`${tabla}\` SET \`${c}\` = CONCAT(SUBSTRING_INDEX(\`${c}\`, '@', 1), '@ejemplo.invalido') ` +
-      `WHERE \`${c}\` LIKE '%@%' AND \`${c}\` NOT LIKE '%@ejemplo.invalido' AND \`${c}\` NOT LIKE '%@ejemplo.test' ` +
-      `AND LOWER(\`${c}\`) NOT IN (${lista});\n`)
+    salida.write(`UPDATE \`${tabla}\` SET \`${c}\` = ${inventado(`\`${c}\``)} WHERE ${deVerdad(`\`${c}\``)};\n`)
   }
 }
+// La comprobación: cuántos quedan. Si no es 0, algo falló y no se arranca la API.
+const quedan = [
+  `SELECT COUNT(*) AS n FROM \`PagoEnLinea\` WHERE ${deVerdad(enElDonativo)}`,
+  ...Object.entries(correos).flatMap(([tabla, columnas]) => columnas.map((c) => `SELECT COUNT(*) AS n FROM \`${tabla}\` WHERE ${deVerdad(`\`${c}\``)}`)),
+]
+salida.write(`SELECT SUM(n) AS correos_de_verdad_que_quedan FROM (${quedan.join(' UNION ALL ')}) AS t;\n`)
 salida.end('COMMIT;\nSET FOREIGN_KEY_CHECKS = 1;\n')
 await new Promise((resolver) => salida.on('finish', resolver))
 console.log(`Hecho: ${destino}. Se quedan con su correo: ${seQuedan.join(', ') || 'ninguno'}.`)

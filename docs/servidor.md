@@ -343,6 +343,14 @@ sudo shred -u /tmp/base-pruebas.sql /tmp/storage-pruebas.tgz
 La contraseña de root de la base no se teclea: la lee el propio contenedor de
 su entorno. Las cuentas quedan con las mismas contraseñas que en desarrollo.
 
+**Antes del `dc start`, mirar lo que escribe la carga.** Tiene que terminar
+sin ningún `ERROR` y con `correos_de_verdad_que_quedan` a `0`. El cliente se
+para en el primer error, y lo que quede detrás no se ejecuta: si fuera uno de
+los `UPDATE` de los correos, la web de pruebas, que manda correo de verdad,
+escribiría a hermanos y donantes reales (avisos, invitaciones, los
+certificados del 182). Con un error o con otra cifra, no se arranca la API:
+se corrige y se vuelve a cargar.
+
 ## Desplegar
 
 Pestaña Actions → «Desplegar en el servidor» → Run workflow (sobre `main`).
