@@ -653,6 +653,10 @@ otra pantalla.
 se monta como núcleo: un pago empezado antes de apagar Pago en línea es
 dinero real.
 
+**La baja del boletín tampoco se apaga.** `POST /api/boletin/baja` y su
+página, `/boletin/baja`, son del núcleo y no de Comunicados: quien recibió un
+boletín antes de apagar el módulo tiene que poder darse de baja con su enlace.
+
 **Con el área de hermanos apagada, el acceso rechaza a todo el mundo.**
 `/acceso` responde 404 con «El área de hermanos no está activada en esta
 instalación», y una sesión de hermano que ya existiera se ignora en

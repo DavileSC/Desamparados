@@ -55,6 +55,10 @@ export const enviarPrueba = (id: number) => llamarApi<{ message: string }>(`/com
 export const enviarComunicado = (id: number) => llamarApi<{ message: string; destinatarios: number }>(`/comunicados/${id}/enviar`, { method: 'POST' })
 export const reintentarFallidos = (id: number) => llamarApi<{ message: string }>(`/comunicados/${id}/reintentar`, { method: 'POST' })
 
-/** La baja del boletín desde el enlace del correo: sin sesión. */
+/**
+ * La baja del boletín desde el enlace del correo: sin sesión. Va por el núcleo
+ * (`/boletin`), no por Comunicados: apagar el módulo no deja sin baja a quien
+ * ya recibió un boletín.
+ */
 export const bajaDelBoletin = (token: string) =>
-  llamarApi<{ message: string }>('/comunicados/baja-boletin', { method: 'POST', json: { token }, auth: false })
+  llamarApi<{ message: string }>('/boletin/baja', { method: 'POST', json: { token }, auth: false })

@@ -217,7 +217,9 @@ const router = createBrowserRouter([
       {
         path: '/boletin/baja',
         element: <MarcoPublico />,
-        children: [{ index: true, element: pagina(BajaBoletinPage, 'comunicados') }],
+        // Del núcleo: la baja de un boletín ya enviado funciona aunque se
+        // apague Comunicados (notas §12), igual que su ruta en la API.
+        children: [{ index: true, element: pagina(BajaBoletinPage, 'nucleo') }],
       },
       {
         path: '/acceso',
