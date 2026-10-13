@@ -1093,8 +1093,10 @@ test('una cuota devuelta y reemitida se debe una vez: en impagos, en el panel y 
     assert.equal(deuda?.total, 30);
 
     const listado = await ReciboService.getAdminRecibos({ q: hermano.apellidos, limit: '50' } as never, anio);
-    const fila = (listado.data as { id: number; reemitido: boolean }[]).find((r) => r.id === devuelta.id);
+    const fila = listado.data.find((r) => r.id === devuelta.id);
     assert.equal(fila?.reemitido, true);
+    // Con la remesa (o sin ella): la web solo ofrece «volver a pendiente» a un REMESADO sin remesa.
+    assert.ok(fila && 'remesaId' in fila && fila.remesaId === null);
   } finally {
     await e.recoger();
   }

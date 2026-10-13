@@ -51,6 +51,9 @@ export class ReciboService {
         select: {
           id: true, year: true, concepto: true, importe: true, fechaEmision: true,
           estado: true, fechaPago: true, metodoPago: true, observaciones: true, tipo: true,
+          // Un REMESADO sin remesa (de cuando se podía «enviar al banco» a
+          // mano) puede volver a PENDIENTE; con remesa, no: la web lo decide por esto.
+          remesaId: true,
           hermano: { select: { id: true, nombre: true, apellidos: true, numeroHermano: true } }
         }
       }),
