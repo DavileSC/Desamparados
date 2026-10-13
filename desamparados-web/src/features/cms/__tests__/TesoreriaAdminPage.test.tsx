@@ -20,6 +20,8 @@ const json = (cuerpo: unknown, status = 200) => Promise.resolve(new Response(JSO
 const recibo = (id: number, estado: string, concepto: string) => ({
   id, year: 2026, concepto, importe: '25.00', fechaEmision: '2026-01-10T10:00:00.000Z', estado,
   fechaPago: null, metodoPago: null, hermano: { id: 5, nombre: 'Ana', apellidos: 'Pérez Ruiz', numeroHermano: 12 },
+  // Hoy un remesado siempre va en una remesa; los de antes pueden no llevarla.
+  remesaId: estado === 'REMESADO' ? 3 : null,
 })
 
 /**
@@ -332,6 +334,40 @@ describe('TesoreriaAdminPage', () => {
 
     await waitFor(() => expect(llamadas(simulado, (_, i) => i?.method === 'PUT')).toHaveLength(1))
     expect(JSON.parse(String((llamadas(simulado, (_, i) => i?.method === 'PUT')[0][1] as RequestInit).body))).toEqual({ estado: 'ANULADO' })
+  })
+
+  it('un remesado con remesa no puede volver a pendiente', async () => {
+    const user = userEvent.setup({ delay: null })
+    vi.stubGlobal('fetch', servidor([recibo(7, 'REMESADO', 'Cuota anual')]))
+    renderWithProviders(<TesoreriaAdminPage />)
+    await user.click(await screen.findByRole('button', { name: 'Más acciones de Cuota anual de Ana Pérez Ruiz' }))
+    expect(screen.getByRole('menuitem', { name: 'Anular' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Volver a pendiente' })).not.toBeInTheDocument()
+  })
+
+  // De antes de que solo una remesa pusiera el estado: no está en ningún fichero.
+  it('un remesado sin remesa vuelve a pendiente, y anularlo no habla del banco', async () => {
+    const user = userEvent.setup({ delay: null })
+    const simulado = servidor([{ ...recibo(7, 'REMESADO', 'Cuota anual'), remesaId: null }])
+    vi.stubGlobal('fetch', simulado)
+    renderWithProviders(<TesoreriaAdminPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Más acciones de Cuota anual de Ana Pérez Ruiz' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Anular' }))
+    let ventana = screen.getByRole('dialog')
+    expect(within(ventana).queryByText(/el banco lo cargará igual/i)).not.toBeInTheDocument()
+    expect(within(ventana).queryByRole('checkbox')).not.toBeInTheDocument()
+    expect(within(ventana).getByRole('button', { name: 'Anular' })).toBeEnabled()
+    await user.click(within(ventana).getByRole('button', { name: 'Volver' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+
+    await user.click(screen.getByRole('button', { name: 'Más acciones de Cuota anual de Ana Pérez Ruiz' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Volver a pendiente' }))
+    ventana = screen.getByRole('dialog')
+    expect(within(ventana).getByText(/la próxima remesa lo recogerá/)).toBeInTheDocument()
+    await user.click(within(ventana).getByRole('button', { name: 'Volver a pendiente' }))
+    await waitFor(() => expect(llamadas(simulado, (_, i) => i?.method === 'PUT')).toHaveLength(1))
+    expect(JSON.parse(String((llamadas(simulado, (_, i) => i?.method === 'PUT')[0][1] as RequestInit).body))).toEqual({ estado: 'PENDIENTE' })
   })
 
   it('la devolución de un cobrado no puede ser de antes del cobro, y el rechazo del servidor se ve en la ventana', async () => {

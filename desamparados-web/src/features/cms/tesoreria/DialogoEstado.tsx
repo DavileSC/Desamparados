@@ -28,7 +28,7 @@ function explicacion({ recibo, destino }: CambioEstado): string[] {
     case 'ANULADO':
       return [
         'El recibo deja de contar. En Contabilidad no se apunta nada.',
-        ...(recibo.estado === 'REMESADO' ? [ANULAR_REMESADO] : []),
+        ...(enUnaRemesa(recibo) ? [ANULAR_REMESADO] : []),
         ...papeleta,
         'No se puede deshacer.',
       ]
@@ -47,6 +47,10 @@ function explicacion({ recibo, destino }: CambioEstado): string[] {
         'Es dinero que se le devuelve al hermano: no queda nada por cobrar y no se reemite.',
         'No se puede deshacer.',
       ]
+    case 'PENDIENTE':
+      return [
+        'No va en ninguna remesa: vuelve a quedar por cobrar y la próxima remesa lo recogerá. En Contabilidad no se apunta nada.',
+      ]
     default:
       return []
   }
@@ -56,6 +60,13 @@ function explicacion({ recibo, destino }: CambioEstado): string[] {
 // él: si el fichero está en el banco, el cargo llega igual, y el abono de la
 // remesa deja de cuadrar con lo apuntado (el extracto lo manda a dudosos).
 const ANULAR_REMESADO = 'Va en una remesa ya generada. Anularlo aquí no lo saca del fichero: si ya está en el banco, el banco lo cargará igual al hermano, y entonces habrá que devolvérselo aparte. El abono de esa remesa no cuadrará con lo apuntado y el extracto lo dejará como dudoso.'
+
+/**
+ * Va de verdad en un fichero SEPA. Un REMESADO sin remesa (de antes de que
+ * solo una remesa pusiera ese estado) no está en ningún banco: anularlo no
+ * pide la advertencia ni la casilla.
+ */
+const enUnaRemesa = (recibo: AdminReceipt) => recibo.estado === 'REMESADO' && recibo.remesaId !== null
 
 const comoDia = (dia: string) => dia.split('-').reverse().join('/')
 
@@ -93,7 +104,7 @@ export default function DialogoEstado({ cambio, guardando, error, errorDelDia = 
   const antesDelCobro = diaDelCobro !== null && dia < diaDelCobro
   const diaValido = formatoValido && !antesDelCobro
   // Anular un remesado pide decir aparte que se sabe lo del banco.
-  const pideASabiendas = cambio?.destino === 'ANULADO' && cambio.recibo.estado === 'REMESADO'
+  const pideASabiendas = cambio?.destino === 'ANULADO' && enUnaRemesa(cambio.recibo)
   const confirmar = () => onConfirmar(devolver
     ? { ...(texto ? { comision: Number(texto.replace(',', '.')) } : {}), fechaDevolucion: dia }
     : {})

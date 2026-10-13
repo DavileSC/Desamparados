@@ -20,6 +20,12 @@ export interface AdminReceipt {
   hermano: { id: number; nombre: string; apellidos: string; numeroHermano: number | null }
   /** Devuelto y ya reemitido: su recibo nuevo sigue su curso y este no pide nada. */
   reemitido?: boolean
+  /**
+   * La remesa que lo lleva. Un REMESADO sin ella (de antes de que solo una
+   * remesa pusiera ese estado) no va en ningún fichero: puede volver a
+   * PENDIENTE, y anularlo no tiene nada que ver con el banco.
+   */
+  remesaId: number | null
 }
 
 /** Lo justo para elegir a quién se le emite un recibo: sin DNI ni datos de contacto. */
