@@ -229,6 +229,48 @@ describe('calendario de la agenda en el CMS', () => {
     assert.ok(resumen.portada && 'siguiente' in resumen, 'con el resumen de hoy');
   });
 
+  // NG4: el acto de un día de reparto (y el de una salida) no se mueve desde la Agenda.
+  const editar = (id: number, cuerpo: object) => fetch(`${baseUrl}/api/events/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Cookie: `${COOKIE_CMS}=${generateToken(usuarios[Role.SECRETARIA]!, Role.SECRETARIA)}` },
+    body: JSON.stringify(cuerpo),
+  });
+
+  test('el acto de un reparto no cambia de día ni de título desde la Agenda; la descripción, sí', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const antes = await db.evento.findUniqueOrThrow({ where: { id: cal.reparto } });
+    const otroDia = await editar(cal.reparto, { startDate: new Date(2091, 2, 16, 18).toISOString(), endDate: new Date(2091, 2, 16, 21).toISOString() });
+    assert.equal(otroDia.status, 409);
+    assert.match((await otroDia.json() as { error: string }).error, /desde Procesión/);
+    assert.equal((await editar(cal.reparto, { title: 'Otro título' })).status, 409);
+    // El formulario entero, con la fecha de siempre y otra descripción: pasa.
+    const descripcion = await editar(cal.reparto, {
+      title: antes.title, startDate: antes.startDate.toISOString(), endDate: antes.endDate!.toISOString(), type: antes.type, description: 'Trae el DNI',
+    });
+    assert.equal(descripcion.status, 200);
+    const despues = await db.evento.findUniqueOrThrow({ where: { id: cal.reparto } });
+    assert.equal(despues.startDate.getTime(), antes.startDate.getTime());
+    assert.equal(despues.description, 'Trae el DNI');
+  });
+
+  test('el acto de una salida no cambia de día desde la Agenda', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const acto = await db.evento.create({ data: { title: `${marca} salida`, startDate: new Date(2091, 2, 20, 19), type: 'PROCESION' } });
+    const salida = await db.salida.create({
+      data: { slug: `prueba-ng4-${Date.now()}`, nombre: `${marca} salida`, fecha: 'MANUAL', eventoId: acto.id, puestos: [], activa: false },
+    });
+    try {
+      const res = await editar(acto.id, { startDate: new Date(2092, 2, 20, 19).toISOString() });
+      assert.equal(res.status, 409);
+      assert.match((await res.json() as { error: string }).error, /ficha de la salida/);
+      assert.equal((await db.evento.findUniqueOrThrow({ where: { id: acto.id } })).startDate.getTime(), acto.startDate.getTime());
+      assert.equal((await editar(acto.id, { location: 'Plaza' })).status, 200);
+    } finally {
+      await db.salida.delete({ where: { id: salida.id } });
+      await db.evento.delete({ where: { id: acto.id } });
+    }
+  });
+
   test('marca los actos que puso un día de reparto', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { data } = await (await pedir(Role.SECRETARIA)).json() as Calendario;

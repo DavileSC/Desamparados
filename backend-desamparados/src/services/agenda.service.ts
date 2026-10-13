@@ -316,6 +316,31 @@ static async createEvent(data: CreateEventDto) {
       throw new HttpError('La actualización provoca que la fecha de fin sea anterior a la de inicio.');
     }
 
+    // El acto de una salida es su fecha, y el de un día de reparto anuncia
+    // ese turno: moverlos aquí se saltaba las reglas de `fijarFecha` (un acto
+    // por año, no pasar al año siguiente con la salida sin celebrar) y dejaba
+    // el turno en su día con el anuncio en otro. Fecha, título y tipo se
+    // cambian desde su sitio; la descripción, el lugar y el cartel, aquí.
+    // Se compara con lo guardado, no con lo que llega: la web manda el
+    // formulario entero aunque solo cambie la descripción.
+    const cambiaLoSuyo =
+      (data.startDate !== undefined && finalStartDate.getTime() !== actual.startDate.getTime()) ||
+      (data.endDate !== undefined && (finalEndDate?.getTime() ?? null) !== (actual.endDate?.getTime() ?? null)) ||
+      (data.title !== undefined && data.title !== actual.title) ||
+      (data.type !== undefined && data.type !== actual.type);
+    if (cambiaLoSuyo) {
+      const [salida, turno] = await Promise.all([
+        db.salida.findFirst({ where: { eventoId: id }, select: { nombre: true } }),
+        db.turno.findFirst({ where: { eventoId: id }, select: { id: true } }),
+      ]);
+      if (salida) {
+        throw new HttpError(`Este acto es la fecha de la salida «${salida.nombre}»: su día, su título y su tipo se cambian desde la ficha de la salida, no desde la Agenda.`, 409);
+      }
+      if (turno) {
+        throw new HttpError('Este acto anuncia un día de reparto de papeletas: su día, su título y su tipo se cambian desde Procesión, no desde la Agenda.', 409);
+      }
+    }
+
     const actualizado = await db.evento.update({
       where: { id },
       data: {
