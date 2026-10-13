@@ -7,9 +7,11 @@
 #   ./docker/actualizar.sh --sin-copia                     # solo si la copia ya está hecha
 #
 # Qué hace, en orden, y por qué en ese orden:
-#   1. Comprueba que el repositorio no tiene cambios a mano: un `git pull`
-#      encima los mezclaría o se pararía a medias. Los datos de la corporación
-#      (instalacion/) y el .env no cuentan: están fuera de git.
+#   1. Comprueba que el repositorio no tiene cambios a mano ni ficheros sueltos
+#      (todo lo de la carpeta entra en las imágenes) y que todo es de este
+#      usuario: un `git pull` encima los mezclaría o se pararía a medias. Los
+#      datos de la corporación (instalacion/), el .env y storage/ no cuentan:
+#      git los ignora.
 #   2. Hace la copia de seguridad ANTES de tocar nada. Las migraciones cambian
 #      la base y no tienen vuelta atrás: si la versión nueva sale mal, lo único
 #      que devuelve la base a como estaba es esta copia.
@@ -36,7 +38,7 @@ DESTINO=""
 for arg in "$@"; do
   case "$arg" in
     --sin-copia) SIN_COPIA=1 ;;
-    -h|--help) sed -n '2,25p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,26p' "$0"; exit 0 ;;
     -*) fallo "Opción desconocida: $arg" ;;
     *) DESTINO="$arg" ;;
   esac
@@ -48,16 +50,29 @@ done
 # Sin ellos la web no se construye y la API no arranca: mejor parar antes de la copia.
 [[ -f instalacion/datos-entidad.json ]] || fallo "Falta instalacion/datos-entidad.json, los datos de la corporación. Cópialo de shared/datos-entidad.ejemplo.json y rellénalo (docs/despliegue.md, «Los datos de la corporación»)."
 command -v docker >/dev/null || fallo "No encuentro docker."
+# docker guarda su configuración en ~/.docker al construir: sin carpeta
+# personal, fallaría tras la copia y con el código ya cambiado.
+[[ -n "${HOME:-}" && -d "$HOME" && -w "$HOME" ]] || fallo "$(id -un) no tiene carpeta personal donde escribir (${HOME:-sin HOME}) y docker la necesita para construir: sudo install -d -o $(id -un) -g $(id -gn) -m 700 ${HOME:-/home/$(id -un)}"
 
 compose() { docker compose -f compose.yaml "$@"; }
 
 # --- 1. Sin cambios a mano ---
-if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
-  git status --short --untracked-files=no >&2
-  fallo "Hay cambios a mano en el repositorio. Guárdalos o descártalos antes de actualizar."
+# Los sueltos también: lo que hay en la carpeta entra en las imágenes, y una
+# migración que ya no está en git se aplicaría igual.
+if [[ -n "$(git status --porcelain)" ]]; then
+  git status --short >&2
+  fallo "Hay cambios a mano o ficheros que no son de git en el repositorio. Guárdalos, descártalos o bórralos antes de actualizar."
 fi
 
+# Un git lanzado como root (un checkout a mano) deja ficheros que este usuario
+# no puede cambiar: el avance rápido los salta sin fallar y la imagen sale con
+# el código mezclado, incluso con una migración que ya no está en git.
+AJENO="$(find . \( -path ./backend-desamparados/storage -o -path ./instalacion \) -prune -o ! -user "$(id -u)" -print -quit)"
+[[ -z "$AJENO" ]] || fallo "Hay ficheros del repositorio que no son de $(id -un) (por ejemplo $AJENO): alguien ha usado git como root y la versión nueva saldría mezclada. Arréglalo con «sudo chown -R $(id -un):$(id -gn) $PROYECTO_DIR» y mira «sudo -u $(id -un) git status» (como root, git lo volvería a dejar así) antes de actualizar."
+
 ANTES="$(git rev-parse --short HEAD)"
+NUEVAS=0
+if [[ "$SIN_COPIA" -eq 1 ]]; then COPIA="tu última copia"; else COPIA="la copia recién hecha"; fi
 
 # nginx, con su propio usuario, sirve del montaje la marca, las fotos y el
 # mapa: un fichero subido sin lectura para los demás da 403. Se arregla aquí
@@ -85,7 +100,7 @@ fi
 
 # --- 3. El código ---
 log "Trayendo el código…"
-git fetch --quiet --tags origin
+git fetch --quiet --tags origin || fallo "No he podido traer el código de origin (mira el error de git de arriba: ¿red, o la clave de acceso al repositorio?). No se ha tocado nada."
 if [[ -n "$DESTINO" ]]; then
   git rev-parse --verify --quiet "$DESTINO^{commit}" >/dev/null || fallo "No existe la versión «$DESTINO»."
   # Una etiqueta o un commit concreto: se deja la copia en él, sin rama.
@@ -101,7 +116,7 @@ if [[ "$ANTES" == "$DESPUES" ]]; then
 else
   log "De $ANTES a $DESPUES:"
   git log --oneline "$ANTES..$DESPUES" | sed 's/^/    /'
-  NUEVAS="$(git diff --name-only "$ANTES" "$DESPUES" -- backend-desamparados/prisma/migrations | grep -c 'migration.sql$' || true)"
+  NUEVAS="$(git diff --name-only --diff-filter=A "$ANTES" "$DESPUES" -- backend-desamparados/prisma/migrations | grep -c 'migration.sql$' || true)"
   log "Migraciones nuevas: $NUEVAS."
 fi
 
@@ -109,22 +124,32 @@ fi
 log "Construyendo las imágenes (la web sigue en marcha)…"
 compose build --quiet
 log "Cambiando los contenedores y aplicando las migraciones…"
+estado=""
 if ! compose up -d --remove-orphans; then
-  compose logs --no-color --tail 40 migraciones >&2 || true
-  # MariaDB no deshace a medias los cambios de esquema: una migración que falla
-  # puede dejar parte hecha. Por eso aquí se remite a la copia y no se promete nada.
-  fallo "No se ha podido levantar (mira el registro de arriba). Si fallaron las migraciones, la API sigue parada y la base puede haber quedado a medias: restaura la copia recién hecha antes de volver a la versión $ANTES."
+  # `up` falla igual si las migraciones salen mal que si la API no arranca (la
+  # web la espera sana). Lo segundo suele ser un dato de instalacion/ o del
+  # .env, con la base intacta: mandar a restaurar la copia sería un destrozo.
+  salida_migraciones="$(docker inspect -f '{{.State.ExitCode}}' "$(compose ps -aq migraciones)" 2>/dev/null || true)"
+  if [[ "$salida_migraciones" != "0" ]]; then
+    compose logs --no-color --tail 40 migraciones >&2 || true
+    # MariaDB no deshace a medias los cambios de esquema: una migración que falla
+    # puede dejar parte hecha. Por eso aquí se remite a la copia y no se promete nada.
+    fallo "Han fallado las migraciones, o no han llegado a correr (mira el registro de arriba). La API sigue parada y la base puede haber quedado a medias: restaura $COPIA antes de volver a la versión $ANTES."
+  fi
+  estado="no arranca"
 fi
 
 # --- 6. Comprobación ---
-log "Esperando a que la API esté sana…"
-for _ in $(seq 1 60); do
-  estado="$(docker inspect -f '{{.State.Health.Status}}' "$(compose ps -q api)" 2>/dev/null || echo desconocido)"
-  if [[ "$estado" == "healthy" ]]; then
-    break
-  fi
-  sleep 5
-done
+if [[ -z "$estado" ]]; then
+  log "Esperando a que la API esté sana…"
+  for _ in $(seq 1 60); do
+    estado="$(docker inspect -f '{{.State.Health.Status}}' "$(compose ps -q api)" 2>/dev/null || echo desconocido)"
+    if [[ "$estado" == "healthy" ]]; then
+      break
+    fi
+    sleep 5
+  done
+fi
 
 if [[ "$estado" == "healthy" ]]; then
   # La web escribe sus datos al arrancar (/instalacion.js, index.html…) y, con
@@ -144,12 +169,20 @@ fi
 
 compose ps >&2
 compose logs --no-color --tail 60 api >&2 || true
+if [[ "$NUEVAS" -gt 0 ]]; then
+  RESTAURAR="Restaura la base de $COPIA (docs/despliegue.md, «Restaurar»): el código anterior no conoce las $NUEVAS migraciones nuevas."
+else
+  RESTAURAR="No hay que restaurar la base: esta versión no traía migraciones."
+fi
 cat >&2 <<EOF
 
-La API no ha quedado sana en cinco minutos. Para volver a la versión anterior:
-  1. docker compose stop api web
-  2. Restaura la base de la copia recién hecha (docs/despliegue.md, «Restaurar»).
-  3. git checkout $ANTES && docker compose up -d --build
-Sin restaurar la base, el código anterior no conoce las migraciones nuevas.
+La API no arranca, aunque las migraciones se han aplicado bien (registro de arriba).
+  - Si es un dato de instalacion/ o del .env, corrígelo y «docker compose up -d».
+EOF
+[[ "$ANTES" == "$DESPUES" ]] || cat >&2 <<EOF
+  - Si es la versión nueva, para volver a la $ANTES:
+      1. docker compose stop api web
+      2. $RESTAURAR
+      3. sudo -u $(id -un) git checkout $ANTES && sudo -u $(id -un) docker compose up -d --build
 EOF
 exit 1
