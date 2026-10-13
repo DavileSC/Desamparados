@@ -6,7 +6,7 @@ import BloquesDePagina from '../BloquesDePagina'
 import { ModoEdicionContext } from '../modoEdicion'
 import { ICONOS } from '../iconos'
 import { hoyEnMadrid, opcionesFijas, valorDe, visibilidadDe } from '../presentacion'
-import { instanteEnMadrid } from '../fechas'
+import { instanteEnMadrid } from '../../../lib/horaDeMadrid'
 import CATALOGO from '../../../../../shared/presentacion-de-bloques.json'
 import type { Bloque } from '../../../lib/api/contenido'
 

@@ -10,7 +10,7 @@ import CartelDeCulto from '../actualidad/agenda/CartelDeCulto'
 import CampoImagen from './CampoImagen'
 import { PAPEL } from '../inicio/estilos'
 import temaPublico from '../../theme'
-import { aDia, aHora } from '../../lib/fechas'
+import { diaEnMadrid, horaEnMadrid, instanteEnMadrid } from '../../lib/horaDeMadrid'
 import { ANCHO_EDICION } from './PantallaEdicion'
 import AvisoCambiosSinGuardar from './ficha/AvisoCambiosSinGuardar'
 import { useFichaCms } from './ficha/useFichaCms'
@@ -39,7 +39,13 @@ interface Formulario {
 
 const vacio: Formulario = { title: '', description: '', location: '', type: 'CULTO', dia: '', hora: '', conFin: false, diaFin: '', horaFin: '', cartel: false, dedicatoria: '', fotoCartel: '' }
 
-const momento = (dia: string, hora: string) => (dia && hora ? new Date(`${dia}T${hora}`) : null)
+// El día y la hora se escriben y se leen en hora de Madrid, que es la del acto,
+// aunque este equipo esté en otra zona: tomados en la del navegador, un acto
+// puesto desde Canarias quedaba una hora más tarde en la Agenda.
+const momento = (dia: string, hora: string) => {
+  const instante = dia && hora ? instanteEnMadrid(`${dia}T${hora}`) : null
+  return instante === null ? null : new Date(instante)
+}
 
 function desdeEvento(evento: ApiEvent): Formulario {
   const inicio = new Date(evento.startDate)
@@ -47,8 +53,8 @@ function desdeEvento(evento: ApiEvent): Formulario {
   return {
     title: evento.title, description: evento.description ?? '', location: evento.location ?? '',
     type: evento.type,
-    dia: aDia(inicio), hora: aHora(inicio),
-    conFin: fin !== null, diaFin: fin ? aDia(fin) : '', horaFin: fin ? aHora(fin) : '',
+    dia: diaEnMadrid(inicio), hora: horaEnMadrid(inicio),
+    conFin: fin !== null, diaFin: fin ? diaEnMadrid(fin) : '', horaFin: fin ? horaEnMadrid(fin) : '',
     cartel: evento.cartel ?? false, dedicatoria: evento.dedicatoria ?? '', fotoCartel: evento.fotoCartel ?? '',
   }
 }
@@ -98,12 +104,11 @@ export default function AgendaEditPage() {
   const finAntes = Boolean(inicio && fin && fin < inicio)
   // La vista previa, con el día aunque falte la hora, y sin inventarse una:
   // antes enseñaba la hora de ahora (y el día de hoy si faltaba el día).
-  const inicioPrevia = inicio ?? (form.dia ? new Date(`${form.dia}T00:00`) : new Date(new Date().setHours(0, 0, 0, 0)))
-  const hoy = new Date()
-  hoy.setHours(0, 0, 0, 0)
+  const hoy = new Date(new Date().setHours(0, 0, 0, 0))
+  const inicioPrevia = inicio ?? momento(form.dia, '00:00') ?? hoy
   // Mismo corte que el servidor: lo anterior a hoy a las 00:00 va a «Pasados».
   // Basta el día para saberlo: el aviso sale antes de poner la hora.
-  const yaPaso = Boolean(form.dia && new Date(`${form.dia}T00:00`) < hoy)
+  const yaPaso = Boolean(form.dia && form.dia < diaEnMadrid(new Date()))
   const falta = [form.title.trim() === '' && 'el título', !form.dia && 'el día', !form.hora && 'la hora', form.conFin && !form.horaFin && 'la hora del final'].filter(Boolean) as string[]
   const sePuedeGuardar = falta.length === 0 && !finAntes
 

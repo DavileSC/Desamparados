@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import ProcesionAdminPage from '../ProcesionAdminPage'
@@ -38,6 +38,28 @@ beforeEach(() => como('SECRETARIA'))
 afterEach(() => { vi.unstubAllGlobals(); localStorage.clear() })
 
 describe('ProcesionAdminPage', () => {
+  it('un día de reparto se guarda en hora de Madrid, aunque este equipo esté en otra zona', async () => {
+    // Desde Canarias (una hora menos): tomadas en la zona del navegador, las
+    // 18:00 se guardaban como las 19:00 de Madrid, que es lo que leen los hermanos.
+    const zonaDeAntes = process.env.TZ
+    process.env.TZ = 'Atlantic/Canary'
+    try {
+      const user = userEvent.setup()
+      const llamadas = servidor()
+      renderWithProviders(<ProcesionAdminPage />)
+      await user.click(await screen.findByRole('button', { name: 'Nuevo día de reparto' }))
+      await user.type(within(screen.getByRole('dialog')).getByLabelText(/^Día/), '2027-03-08')
+      await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+      await waitFor(() => expect(llamadas.some((l) => l.metodo === 'POST')).toBe(true))
+      expect(llamadas.find((l) => l.metodo === 'POST')?.cuerpo).toMatchObject({
+        fecha: '2027-03-08', horaInicio: '2027-03-08T17:00:00.000Z', horaFin: '2027-03-08T20:00:00.000Z',
+      })
+    } finally {
+      process.env.TZ = zonaDeAntes
+    }
+  })
+
   it('abrir pregunta antes y avisa por correo y deja el borrador de noticia', async () => {
     const user = userEvent.setup()
     const llamadas = servidor()

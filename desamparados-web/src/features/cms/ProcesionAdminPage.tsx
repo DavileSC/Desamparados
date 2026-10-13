@@ -27,6 +27,7 @@ import { site } from '../../config/site'
 import { useModulos } from '../../hooks/useModulos'
 import { deArticulo, laCorporacion, segunLaCorporacion, type Articulo } from '../../domain/articulos'
 import { euros } from '../../lib/euros'
+import { isoEnMadrid } from '../../lib/horaDeMadrid'
 
 const ZONA = 'Europe/Madrid'
 const formatoDia = new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
@@ -123,11 +124,12 @@ export default function ProcesionAdminPage() {
     if (!slug) return
     setGuardando(true); setErrorDia(null)
     try {
-      // Las horas se escriben en hora de Madrid, que es la del navegador de quien las pone.
+      // Las horas se escriben en hora de Madrid, que es la que leen los
+      // hermanos en su área, aunque este equipo esté en otra zona.
       await crearTurno({
         fecha: dia.fecha,
-        horaInicio: new Date(`${dia.fecha}T${dia.horaInicio}`).toISOString(),
-        horaFin: new Date(`${dia.fecha}T${dia.horaFin}`).toISOString(),
+        horaInicio: isoEnMadrid(`${dia.fecha}T${dia.horaInicio}`),
+        horaFin: isoEnMadrid(`${dia.fecha}T${dia.horaFin}`),
         capacidadEstimada: Number(dia.aforo),
         salida: slug,
       })

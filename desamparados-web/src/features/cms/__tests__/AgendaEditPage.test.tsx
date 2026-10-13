@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeAll, afterAll } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider, useLocation } from 'react-router-dom'
@@ -6,12 +6,18 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { HelmetProvider } from 'react-helmet-async'
 import { TemaCmsProvider } from '../../../app/temaCms'
 import AgendaEditPage from '../AgendaEditPage'
+import { isoEnMadrid } from '../../../lib/horaDeMadrid'
 
-// Fechas en hora local, como las escribe quien usa la ficha.
-const enLocal = (dia: string, hora: string) => new Date(`${dia}T${hora}`).toISOString()
+// Las fechas del acto son de Madrid, sea cual sea la zona del equipo de quien
+// edita. Las pruebas corren desde Canarias (una hora menos): con la zona de la
+// máquina (Madrid en local, UTC en el CI) no se distinguiría una cosa de otra.
+const enMadrid = (dia: string, hora: string) => isoEnMadrid(`${dia}T${hora}`)
+const zonaDeAntes = process.env.TZ
+beforeAll(() => { process.env.TZ = 'Atlantic/Canary' })
+afterAll(() => { process.env.TZ = zonaDeAntes })
 const besapies = {
   id: 3, title: 'Besapiés', description: 'A la Virgen de los Desamparados.', location: 'Parroquia',
-  startDate: enLocal('2099-10-12', '18:00'), endDate: null, type: 'CULTO',
+  startDate: enMadrid('2099-10-12', '18:00'), endDate: null, type: 'CULTO',
   updatedAt: new Date().toISOString(),
 }
 const ensayo = { ...besapies, id: 4, title: 'Ensayo de costaleros', description: null, type: 'ENSAYO' }
@@ -62,7 +68,9 @@ describe('AgendaEditPage', () => {
     expect(screen.getByLabelText('Hora')).toHaveValue('18:00')
     const vista = screen.getByTestId('vista-previa-evento')
     expect(vista).toHaveTextContent('A la Virgen de los Desamparados.')
-    expect(vista).toHaveTextContent('18:00 · Parroquia')
+    // La vista previa es la lista de la portada, que pinta la hora en la zona
+    // de quien mira (aquí, Canarias): la ficha, en cambio, la de Madrid.
+    expect(vista).toHaveTextContent(`${new Date(besapies.startDate).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} · Parroquia`)
     expect(vista).toHaveTextContent('Culto')
   })
 
@@ -107,7 +115,7 @@ describe('AgendaEditPage', () => {
     expect(await screen.findByText('Añadido a la agenda: ya se ve en la web.')).toBeInTheDocument()
     const peticion = guardado(simulado)!
     expect(peticion.metodo).toBe('POST')
-    expect(peticion.cuerpo).toMatchObject({ title: 'Función principal', startDate: enLocal('2099-11-08', '12:00'), endDate: null, type: 'CULTO' })
+    expect(peticion.cuerpo).toMatchObject({ title: 'Función principal', startDate: enMadrid('2099-11-08', '12:00'), endDate: null, type: 'CULTO' })
     expect(peticion.cuerpo).not.toHaveProperty('visibility')
   })
 
@@ -145,7 +153,7 @@ describe('AgendaEditPage', () => {
     await usuario.click(screen.getByRole('button', { name: 'Añadir a la agenda' }))
 
     await waitFor(() => expect(guardado(simulado)?.metodo).toBe('POST'))
-    expect(guardado(simulado)!.cuerpo).toMatchObject({ title: 'Besapiés', location: 'Parroquia', startDate: enLocal('2099-10-19', '18:00') })
+    expect(guardado(simulado)!.cuerpo).toMatchObject({ title: 'Besapiés', location: 'Parroquia', startDate: enMadrid('2099-10-19', '18:00') })
   })
 
   it('desde el día del calendario, el acto nuevo nace con ese día y sin nada que guardar', async () => {
@@ -158,7 +166,7 @@ describe('AgendaEditPage', () => {
     await usuario.click(screen.getByRole('button', { name: 'Añadir a la agenda' }))
 
     await waitFor(() => expect(guardado(simulado)?.metodo).toBe('POST'))
-    expect(guardado(simulado)!.cuerpo).toMatchObject({ title: 'Ensayo de acólitos', startDate: enLocal('2099-10-21', '18:15') })
+    expect(guardado(simulado)!.cuerpo).toMatchObject({ title: 'Ensayo de acólitos', startDate: enMadrid('2099-10-21', '18:15') })
   })
 
   it('un acto en cartel guarda su dedicatoria y enseña cómo sale en la Agenda', async () => {

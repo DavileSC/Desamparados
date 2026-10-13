@@ -19,17 +19,9 @@ import CabeceraSeccion from '../CabeceraSeccion'
 import { fechaConDia } from './formato'
 import { site } from '../../../config/site'
 import { ARTICULOS, deArticulo, type Articulo } from '../../../domain/articulos'
-import { instanteEnMadrid } from '../../../components/bloques/fechas'
+import { aCampoFechaMadrid, instanteEnMadrid } from '../../../lib/horaDeMadrid'
 
 const mensaje = (e: unknown, porDefecto: string) => (e instanceof Error ? e.message : porDefecto)
-
-/** Un instante ISO como «AAAA-MM-DDTHH:mm» en hora de Madrid, para un campo datetime-local. */
-function aCampoFechaMadrid(iso: string): string {
-  const d = new Date(iso)
-  const dia = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
-  const hora = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d)
-  return `${dia}T${hora}`
-}
 
 function Seccion({ titulo, detalle, children }: { titulo: string; detalle?: string; children: ReactNode }) {
   return (
