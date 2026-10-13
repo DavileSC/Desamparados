@@ -6,6 +6,9 @@ import { NOMBRE_METODO } from '../mesa/formato'
 import { euros } from '../../../lib/euros'
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
 
+/** De dónde venía el pago: no es lo mismo devolver una cuota que un pedido. */
+const ORIGEN: Record<IncidenciaDePago['origen'], string> = { AREA_HERMANOS: 'Área de hermanos', TIENDA: 'Tienda', APADRINAMIENTO: 'Apadrinamiento' }
+
 const fecha = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
 /**
@@ -64,7 +67,7 @@ export default function IncidenciasDePago() {
                 {euros(i.importe)} · {NOMBRE_METODO[i.metodo] ?? i.metodo} · pedido {i.pedido}{i.autorizacion ? ` · autorización ${i.autorizacion}` : ''}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {fecha.format(new Date(i.fecha))}{i.correo ? ` · ${i.correo}` : ''} · {i.motivo}
+                {fecha.format(new Date(i.fecha))} · {ORIGEN[i.origen] ?? i.origen}{i.correo ? ` · ${i.correo}` : ''} · {i.motivo}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -72,8 +75,9 @@ export default function IncidenciasDePago() {
                 Devuelto
               </Button>
               {/* Un pedido de la tienda cobrado y sin completar no tiene otra salida.
-                  Sin `origen` se ofrece igual y el servidor dice que no si no es de la tienda. */}
-              {(i.origen === undefined || i.origen === 'TIENDA') && (
+                  Solo cuando el servidor dice que se puede: una cuota o un pedido ya
+                  borrado se resuelven con «Devuelto» a secas. */}
+              {i.anulable && (
                 <Button size="small" variant="outlined" color="inherit" disabled={resolviendo === i.id} onClick={() => setAnulando(i)}>
                   Devuelto y anular el pedido
                 </Button>

@@ -124,12 +124,13 @@ export interface IncidenciaDePago {
   autorizacion: string | null
   motivo: string | null
   correo: string | null
+  /** Qué se pagaba. */
+  origen: 'AREA_HERMANOS' | 'TIENDA' | 'APADRINAMIENTO'
   /**
-   * Qué se pagaba (TIENDA, AREA_HERMANOS…). El servidor aún no lo manda en
-   * todas sus versiones: sin él, se ofrece anular y el servidor dice que no
-   * (409) si lo que se pagaba no se puede anular desde aquí.
+   * Si se puede resolver anulando lo que se pagaba: hoy, un pedido de la
+   * tienda que aún existe. Lo decide el servidor, que es quien sabe anularlo.
    */
-  origen?: string
+  anulable: boolean
 }
 
 export function incidenciasDePago() {

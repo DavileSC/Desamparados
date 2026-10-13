@@ -5,7 +5,7 @@ import { renderWithProviders } from '../../../../test/test-utils'
 import IncidenciasDePago from '../IncidenciasDePago'
 
 const json = (cuerpo: unknown) => new Response(JSON.stringify(cuerpo), { status: 200, headers: { 'Content-Type': 'application/json' } })
-const INCIDENCIA = { id: 7, pedido: '00000042AB7Z', fecha: '2026-10-02T10:00:00.000Z', importe: 30, metodo: 'TARJETA', autorizacion: '654321', motivo: 'No se pudo aplicar el pago: «Cuota 2026» no está pendiente de pago.', correo: 'hermano@example.com' }
+const INCIDENCIA = { id: 7, pedido: '00000042AB7Z', fecha: '2026-10-02T10:00:00.000Z', importe: 30, metodo: 'TARJETA', autorizacion: '654321', motivo: 'No se pudo aplicar el pago: «Cuota 2026» no está pendiente de pago.', correo: 'hermano@example.com', origen: 'AREA_HERMANOS', anulable: false }
 
 afterEach(() => { vi.unstubAllGlobals() })
 
@@ -39,7 +39,7 @@ describe('IncidenciasDePago', () => {
 
   it('se puede resolver anulando el pedido, tras confirmarlo', async () => {
     const user = userEvent.setup()
-    let pendientes = [{ ...INCIDENCIA, origen: 'TIENDA' }]
+    let pendientes = [{ ...INCIDENCIA, origen: 'TIENDA', anulable: true }]
     const fetch = vi.fn().mockImplementation((_url: string, init: RequestInit = {}) => {
       if (init.method === 'POST') { pendientes = []; return Promise.resolve(json({ message: 'Incidencia resuelta y pedido anulado' })) }
       return Promise.resolve(json(pendientes))
@@ -61,7 +61,7 @@ describe('IncidenciasDePago', () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn().mockImplementation((_url: string, init: RequestInit = {}) => init.method === 'POST'
       ? Promise.resolve(new Response(JSON.stringify({ message: 'Lo que se pagaba con esta incidencia no se puede anular desde aquí.' }), { status: 409, headers: { 'Content-Type': 'application/json' } }))
-      : Promise.resolve(json([INCIDENCIA]))))
+      : Promise.resolve(json([{ ...INCIDENCIA, origen: 'TIENDA', anulable: true }]))))
     renderWithProviders(<IncidenciasDePago />)
 
     await user.click(await screen.findByRole('button', { name: 'Devuelto y anular el pedido' }))
@@ -70,8 +70,16 @@ describe('IncidenciasDePago', () => {
     expect(screen.getByText('Un pago en línea por devolver')).toBeInTheDocument()
   })
 
-  it('con el origen dicho, una cuota del área no ofrece anular', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(json([{ ...INCIDENCIA, origen: 'AREA_HERMANOS' }]))))
+  it('una cuota del área no ofrece anular, y dice de dónde viene', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(json([INCIDENCIA]))))
+    renderWithProviders(<IncidenciasDePago />)
+    expect(await screen.findByRole('button', { name: 'Devuelto' })).toBeInTheDocument()
+    expect(screen.getByText(/· Área de hermanos ·/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Devuelto y anular el pedido' })).not.toBeInTheDocument()
+  })
+
+  it('un pedido de la tienda que el servidor no deja anular tampoco lo ofrece', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(json([{ ...INCIDENCIA, origen: 'TIENDA', anulable: false }]))))
     renderWithProviders(<IncidenciasDePago />)
     expect(await screen.findByRole('button', { name: 'Devuelto' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Devuelto y anular el pedido' })).not.toBeInTheDocument()
