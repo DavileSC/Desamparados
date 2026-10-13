@@ -310,4 +310,22 @@ describe('PedidoTiendaPage', () => {
     renderWithProviders(<PedidoTiendaPage />, { ruta: '/tienda/pedido/abc?resultado=no' })
     expect(await screen.findByText(/El pago no se ha completado/)).toBeInTheDocument()
   })
+
+  // Se agotó mientras pagaba: el banco cobró y el pedido no se pudo completar.
+  // Antes decía «el banco aún no ha confirmado» y prometía un correo que no llegaba.
+  it('cobrado con incidencia, dice que el pago llegó y que se devuelve el dinero, sin esperar', async () => {
+    const simulado = vi.fn().mockImplementation(() => json({ numero: 7, estado: 'PENDIENTE_PAGO', pagoConIncidencia: true, total: 30, nombre: 'Ana', lineas: [] }))
+    vi.stubGlobal('fetch', simulado)
+    renderWithProviders(<PedidoTiendaPage />, { ruta: '/tienda/pedido/abc' })
+    expect(await screen.findByText(/Pago recibido, pero no se ha podido completar: te devolvemos el dinero/)).toBeInTheDocument()
+    expect(screen.queryByText(/Esperando la confirmación del banco/)).not.toBeInTheDocument()
+    expect(simulado).toHaveBeenCalledTimes(1)
+  })
+
+  it('anulado, lo dice y explica qué pasa con el dinero', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => json({ numero: 7, estado: 'CANCELADO', pagoConIncidencia: false, total: 30, nombre: 'Ana', lineas: [] })))
+    renderWithProviders(<PedidoTiendaPage />, { ruta: '/tienda/pedido/abc' })
+    expect(await screen.findByText(/Este pedido está anulado/)).toBeInTheDocument()
+    expect(screen.getByText(/si llegaste a pagarlo, te devolvemos el dinero/i)).toBeInTheDocument()
+  })
 })

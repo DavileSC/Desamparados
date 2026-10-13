@@ -124,14 +124,21 @@ export interface IncidenciaDePago {
   autorizacion: string | null
   motivo: string | null
   correo: string | null
+  /**
+   * Qué se pagaba (TIENDA, AREA_HERMANOS…). El servidor aún no lo manda en
+   * todas sus versiones: sin él, se ofrece anular y el servidor dice que no
+   * (409) si lo que se pagaba no se puede anular desde aquí.
+   */
+  origen?: string
 }
 
 export function incidenciasDePago() {
   return llamarApi<IncidenciaDePago[]>('/recibos/admin/pagos-en-linea/incidencias')
 }
 
-export function resolverIncidenciaDePago(id: number) {
-  return llamarApi<{ message: string }>(`/recibos/admin/pagos-en-linea/incidencias/${id}/resolver`, { method: 'POST' })
+/** Con `anular`, antes de darla por resuelta anula lo que se pagaba (hoy, solo un pedido de la tienda). */
+export function resolverIncidenciaDePago(id: number, opciones: { anular?: boolean } = {}) {
+  return llamarApi<{ message: string }>(`/recibos/admin/pagos-en-linea/incidencias/${id}/resolver`, { method: 'POST', ...(opciones.anular ? { json: { anular: true } } : {}) })
 }
 
 // --- Remesas SEPA ---

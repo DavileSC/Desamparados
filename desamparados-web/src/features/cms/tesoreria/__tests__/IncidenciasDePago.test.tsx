@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
 import IncidenciasDePago from '../IncidenciasDePago'
@@ -33,5 +33,47 @@ describe('IncidenciasDePago', () => {
     await user.click(screen.getByRole('button', { name: 'Devuelto' }))
     await waitFor(() => expect(screen.queryByText('Un pago en línea por devolver')).not.toBeInTheDocument())
     expect(fetch.mock.calls.some(([url, init]) => String(url).includes('/incidencias/7/resolver') && (init as RequestInit).method === 'POST')).toBe(true)
+    // «Devuelto» a secas no anula nada: va sin cuerpo, como siempre.
+    expect(fetch.mock.calls.find(([, init]) => (init as RequestInit).method === 'POST')?.[1]?.body).toBeUndefined()
+  })
+
+  it('se puede resolver anulando el pedido, tras confirmarlo', async () => {
+    const user = userEvent.setup()
+    let pendientes = [{ ...INCIDENCIA, origen: 'TIENDA' }]
+    const fetch = vi.fn().mockImplementation((_url: string, init: RequestInit = {}) => {
+      if (init.method === 'POST') { pendientes = []; return Promise.resolve(json({ message: 'Incidencia resuelta y pedido anulado' })) }
+      return Promise.resolve(json(pendientes))
+    })
+    vi.stubGlobal('fetch', fetch)
+    renderWithProviders(<IncidenciasDePago />)
+
+    await user.click(await screen.findByRole('button', { name: 'Devuelto y anular el pedido' }))
+    expect(fetch.mock.calls.some(([, init]) => (init as RequestInit).method === 'POST')).toBe(false)
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Devuelto y anular' }))
+
+    expect(await screen.findByText('Incidencia resuelta y pedido anulado')).toBeInTheDocument()
+    const [url, init] = fetch.mock.calls.find(([, i]) => (i as RequestInit).method === 'POST')!
+    expect(String(url)).toContain('/incidencias/7/resolver')
+    expect(JSON.parse(String((init as RequestInit).body))).toEqual({ anular: true })
+  })
+
+  it('si lo que se pagaba no se anula desde aquí, dice por qué y la incidencia sigue', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((_url: string, init: RequestInit = {}) => init.method === 'POST'
+      ? Promise.resolve(new Response(JSON.stringify({ message: 'Lo que se pagaba con esta incidencia no se puede anular desde aquí.' }), { status: 409, headers: { 'Content-Type': 'application/json' } }))
+      : Promise.resolve(json([INCIDENCIA]))))
+    renderWithProviders(<IncidenciasDePago />)
+
+    await user.click(await screen.findByRole('button', { name: 'Devuelto y anular el pedido' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Devuelto y anular' }))
+    expect(await screen.findByText(/no se puede anular desde aquí/)).toBeInTheDocument()
+    expect(screen.getByText('Un pago en línea por devolver')).toBeInTheDocument()
+  })
+
+  it('con el origen dicho, una cuota del área no ofrece anular', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(json([{ ...INCIDENCIA, origen: 'AREA_HERMANOS' }]))))
+    renderWithProviders(<IncidenciasDePago />)
+    expect(await screen.findByRole('button', { name: 'Devuelto' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Devuelto y anular el pedido' })).not.toBeInTheDocument()
   })
 })
