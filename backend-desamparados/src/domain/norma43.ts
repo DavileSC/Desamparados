@@ -223,8 +223,9 @@ const diasEntre = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:0
  *   la remesa (se anuló alguno después de generarla) va a dudosos con la
  *   diferencia: darla por cobrada apuntaría menos de lo que entró en el banco.
  * - El cobro de una remesa es un abono que nombra su identificador o que, sin
- *   nombrarlo, trae su total exacto entre la fecha de cobro y diez días
- *   después. Si el importe casara con dos remesas, no se elige ninguna.
+ *   nombrarlo, trae su total exacto (el del fichero o el de sus recibos vivos)
+ *   entre la fecha de cobro y diez días después. Si el importe casara con dos
+ *   remesas, no se elige ninguna.
  * - El resto de movimientos (recibos de luz, donativos por transferencia…) no
  *   son de ninguna remesa y no se tocan.
  */
@@ -269,7 +270,10 @@ export function casarMovimientos(
     const porNombre = remesas.filter((r) => texto.includes(r.mensajeId.toUpperCase()));
     const porImporte = remesas.filter((r) => {
       const dias = diasEntre(r.fechaCobro, m.fechaValor);
-      return r.centimos === m.centimos && dias >= 0 && dias <= 10;
+      // El total del fichero o lo que suman los recibos vivos: si se anuló
+      // uno y se retiró en el banco, el banco abona solo lo que cargó, y sin
+      // nombrar la remesa el abono acababa en «ajenos» sin decir nada.
+      return (r.centimos === m.centimos || r.centimosVivos === m.centimos) && dias >= 0 && dias <= 10;
     });
     const candidatas = porNombre.length > 0 ? porNombre : porImporte;
     if (candidatas.length === 1 && !casado.cobros.some((c) => c.remesaId === candidatas[0].id)) {

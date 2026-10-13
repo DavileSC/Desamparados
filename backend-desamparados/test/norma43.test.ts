@@ -105,6 +105,14 @@ describe('casar el extracto con las remesas', () => {
     }
   });
 
+  test('R4: sin nombrar la remesa, el abono por lo que suman sus recibos vivos es su cobro', () => {
+    // Se anuló un recibo de 36 € y se retiró en el banco: abona 54 € con un concepto genérico.
+    const conAnulado = [{ ...remesas[0], centimosVivos: 5400 }];
+    const c = casarMovimientos([mov('ABONO', 5400, ['ABONO RECIBOS SEPA'], '2026-10-03')], recibos, conAnulado);
+    assert.deepEqual(c.cobros.map((x) => x.remesaId), [3]);
+    assert.deepEqual(c.dudosos, []);
+  });
+
   test('si el importe casa con dos remesas, no elige ninguna', () => {
     const iguales = [...remesas, { id: 5, mensajeId: 'REMESA-000005-20261002', fechaCobro: '2026-10-02', centimos: 9000, centimosVivos: 9000 }];
     const c = casarMovimientos([mov('ABONO', 9000, [], '2026-10-03')], recibos, iguales);
