@@ -686,7 +686,10 @@ test('un ADMIN con otros administradores activos sí puede borrarse desde el CMS
     const activos = await db.user.count({ where: { role: Role.ADMIN, active: true } });
     if (activos < 2) return t.skip('la base de desarrollo no tiene otro ADMIN activo: este sería el último');
 
-    const res = await peticion('/auth/mi-cuenta', cookieSesion(admin.id, Role.ADMIN), 'DELETE', { password: PASSWORD_PRUEBA });
+    // Como en la web: el botón está en el área de hermanos, y a una cuenta del
+    // equipo se le pide además la sesión del CMS abierta en el mismo navegador.
+    const lasDos = `${cookieSesion(admin.id, Role.ADMIN)}; ${cookieSesion(admin.id, Role.ADMIN, 'hermanos')}`;
+    const res = await peticion('/auth/mi-cuenta', lasDos, 'DELETE', { password: PASSWORD_PRUEBA });
     assert.equal(res.status, 200);
     const despues = await db.user.findUnique({ where: { id: admin.id }, select: { active: true, email: true } });
     assert.equal(despues?.active, false);

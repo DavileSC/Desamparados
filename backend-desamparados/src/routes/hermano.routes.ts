@@ -108,8 +108,8 @@ hermanoRouter.post('/admin/:id/emancipar', checkRole(rolesGestionCenso), validat
 // --- RUTAS FAMILIARES (Usuario normal) ---
 // ==========================================
 
-// Son del área de hermanos aunque la sesión sea del CMS: con el área apagada,
-// o la ficha sin confirmar, no se abren (ver `exigirAreaHermanos`).
+// Del área de hermanos y solo con su sesión: con el área apagada, la ficha
+// sin confirmar o solo la sesión del CMS, no se abren (ver `exigirAreaHermanos`).
 hermanoRouter.use(['/mis-perfiles', '/primer-acceso'], exigirAreaHermanos);
 
 hermanoRouter.get('/mis-perfiles', HermanoController.getMyProfiles);

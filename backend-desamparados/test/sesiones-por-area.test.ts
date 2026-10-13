@@ -22,6 +22,7 @@ import { COOKIE_CMS, COOKIE_HERMANO } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba, PASSWORD_PRUEBA } from './fixtures/usuarios.js';
 import { Role } from '@prisma/client';
 import { sinDb } from './fixtures/sin-db.js';
+import { encenderModulos } from './fixtures/modulos.js';
 
 let dbDisponible = false;
 let motivoSinDb = '';
@@ -161,16 +162,87 @@ test('sin ninguna cookie, las rutas con sesión dan 401', async (t) => {
   assert.equal(respuesta.status, 401);
 });
 
-test('solo con la cookie del CMS, una ruta del área de hermanos sigue atendiendo', async (t) => {
+// --- Las rutas propias del área solo valen con la sesión del área ---
+//
+// Antes caían a la del CMS si faltaba la del área. En el ordenador de
+// Secretaría, con el CMS abierto, la sesión de un hermano caducaba sin 401
+// (la web no se enteraba) y sus pantallas pasaban a enseñar las fichas de la
+// secretaria; «Descargar mis datos» bajaba las de ella.
+
+/** Las rutas propias del área de hermanos, una de cada router. */
+const RUTAS_DEL_AREA: { ruta: string; method?: string; body?: unknown }[] = [
+  { ruta: '/api/hermanos/mis-perfiles' },
+  { ruta: '/api/hermanos/mis-perfiles', method: 'POST', body: { nombre: 'Ana', fechaNacimiento: '2018-01-01', parentesco: 'HIJO' } },
+  { ruta: '/api/hermanos/primer-acceso/confirmar', method: 'POST' },
+  { ruta: '/api/procesion/mi-estado' },
+  { ruta: '/api/procesion/mis-papeletas' },
+  { ruta: '/api/recibos/mis-recibos' },
+  { ruta: '/api/recibos/mis-recibos/certificados' },
+  { ruta: '/api/auth/mis-datos' },
+  { ruta: '/api/auth/mi-cuenta', method: 'DELETE', body: { password: 'contraseña-incorrecta-de-prueba' } },
+];
+
+const pedirConCookie = (r: { ruta: string; method?: string; body?: unknown }, cookie: string) => fetch(`${baseUrl}${r.ruta}`, {
+  method: r.method ?? 'GET',
+  headers: { cookie, 'Content-Type': 'application/json' },
+  body: r.body === undefined ? undefined : JSON.stringify(r.body),
+});
+
+test('solo con la cookie del CMS, las rutas propias del área dan 401', async (t) => {
   if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
-  // Es su propia ficha: una sesión del CMS es más fuerte, no más débil.
-  const user = await crearUsuarioPrueba(Role.SECRETARIA);
-  creados.push(user.id);
-  const cms = generateToken(user.id, Role.SECRETARIA, false, 'cms');
-  const respuesta = await fetch(`${baseUrl}/api/hermanos/mis-perfiles`, {
-    headers: { cookie: `${COOKIE_CMS}=${cms}` },
-  });
-  assert.equal(respuesta.status, 200);
+  const restaurar = await encenderModulos(['area-hermanos', 'procesion', 'modelo-182']);
+  try {
+    const user = await crearUsuarioPrueba(Role.SECRETARIA);
+    creados.push(user.id);
+    const cookie = `${COOKIE_CMS}=${generateToken(user.id, Role.SECRETARIA, false, 'cms')}`;
+    for (const r of RUTAS_DEL_AREA) {
+      const res = await pedirConCookie(r, cookie);
+      assert.equal(res.status, 401, `${r.method ?? 'GET'} ${r.ruta}`);
+    }
+    // No se ha dado de alta ninguna ficha con la sesión del CMS.
+    assert.equal(await db.hermano.count({ where: { userId: user.id } }), 0);
+    // Lo del CMS sigue abierto con ella.
+    assert.equal((await fetch(`${baseUrl}/api/auth/me`, { headers: { cookie } })).status, 200);
+  } finally {
+    await restaurar();
+  }
+});
+
+test('con la cookie del área, las rutas propias del área atienden', async (t) => {
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
+  const restaurar = await encenderModulos(['area-hermanos', 'procesion', 'modelo-182']);
+  try {
+    const user = await crearUsuarioPrueba(Role.USER);
+    creados.push(user.id);
+    const cookie = `${COOKIE_HERMANO}=${generateToken(user.id, Role.USER, false, 'hermanos')}`;
+    for (const r of RUTAS_DEL_AREA.filter((r) => !r.method)) {
+      const res = await pedirConCookie(r, cookie);
+      assert.equal(res.status, 200, `GET ${r.ruta}`);
+    }
+    // El borrado llega a comprobar la contraseña: el 401 es suyo, no de la sesión.
+    const borrar = await pedirConCookie(RUTAS_DEL_AREA.find((r) => r.method === 'DELETE')!, cookie);
+    assert.equal(borrar.status, 401);
+    assert.notEqual((await borrar.json() as { error?: string }).error, 'NO_TOKEN_PROVIDED');
+  } finally {
+    await restaurar();
+  }
+});
+
+test('con las dos cookies de cuentas distintas, el área usa la suya', async (t) => {
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
+  const restaurar = await encenderModulos(['area-hermanos']);
+  try {
+    const secretaria = await crearUsuarioPrueba(Role.SECRETARIA);
+    const hermano = await crearUsuarioPrueba(Role.USER);
+    creados.push(secretaria.id, hermano.id);
+    const cookie = `${COOKIE_CMS}=${generateToken(secretaria.id, Role.SECRETARIA, false, 'cms')}; `
+      + `${COOKIE_HERMANO}=${generateToken(hermano.id, Role.USER, false, 'hermanos')}`;
+    const datos = await fetch(`${baseUrl}/api/auth/mis-datos`, { headers: { cookie } });
+    assert.equal(datos.status, 200);
+    assert.equal((await datos.json() as { usuario: { id: number } }).usuario.id, hermano.id);
+  } finally {
+    await restaurar();
+  }
 });
 
 // --- Tarea 5: checkRole exige la sesión del CMS, nunca cae a la de hermanos ---

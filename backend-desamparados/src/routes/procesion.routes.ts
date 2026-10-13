@@ -56,7 +56,7 @@ const rolesCensoMesa = [...ROLES_CENSO_EN_MESA];
 // ==========================================
 //  ZONA HERMANO (APP)
 // ==========================================
-// Del área de hermanos, también con una sesión del CMS (ver `exigirAreaHermanos`).
+// Del área de hermanos y solo con su sesión, nunca con la del CMS (ver `exigirAreaHermanos`).
 procesionRouter.use(['/dias', '/mi-estado', '/avisar', '/mis-papeletas'], exigirAreaHermanos);
 procesionRouter.get('/dias', validate(salidaQuerySchema), ProcesionController.getDias);
 procesionRouter.get('/mi-estado', ProcesionController.getMiEstado);

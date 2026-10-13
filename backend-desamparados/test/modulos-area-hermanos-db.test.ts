@@ -84,7 +84,8 @@ test('apagado, la sesión del CMS tampoco abre las rutas propias del área', asy
 
   await db.modulo.updateMany({ where: { clave: 'area-hermanos' }, data: { activo: true } });
   await ModulosService.cargar();
-  for (const ruta of rutas) assert.equal((await pedir(ruta)).status, 200, `encendido, ${ruta}`);
+  // Encendido tampoco: son del área y solo valen con su sesión.
+  for (const ruta of rutas) assert.equal((await pedir(ruta)).status, 401, `encendido, ${ruta}`);
 
   // Directo a la tabla: lo que se prueba es la guarda, no la regla de requisitos.
   await db.modulo.updateMany({ where: { clave: 'area-hermanos' }, data: { activo: false } });

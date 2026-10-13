@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { type } from 'arktype';
 import { AuthController } from '../controllers/auth.controller';
-import { authenticateToken, resolverSesiones } from '../middleware/session';
+import { authenticateToken, exigirAreaHermanos, resolverSesiones } from '../middleware/session';
 import { checkRole } from '../middleware/checkRole';
 import { conModulo } from '../middleware/modulos';
 import { Role } from '@prisma/client';
@@ -122,14 +122,21 @@ authRoutes.post('/cambiar-contrasena', authenticateToken, limitadorEntrada, vali
 //  RGPD (Datos personales del propio usuario)
 // ==========================================
 
+// Las dos son del área de hermanos («Mi perfil» y la revisión del primer
+// acceso; el CMS no tiene pantalla para ellas) y van con su sesión, nunca con
+// la del CMS: con la del área caducada y el CMS abierto en el mismo
+// navegador, «Descargar mis datos» bajaba los de la cuenta del CMS, que puede
+// ser otra persona. Una cuenta del equipo borra la suya desde el área, con la
+// sesión del CMS abierta a la vez (ver `deleteOwnAccount`).
+
 // Derecho de acceso: exportación completa de mis datos (art. 15 RGPD)
-authRoutes.get('/mis-datos', authenticateToken, AuthController.exportMisDatos);
+authRoutes.get('/mis-datos', authenticateToken, exigirAreaHermanos, AuthController.exportMisDatos);
 
 // Derecho de supresión: anonimización de mi cuenta (art. 17 RGPD).
 // Requiere confirmar con la contraseña actual en el body. Sin checkRole porque
 // también la usan los hermanos; el servicio exige origen 'cms' a las cuentas
 // del equipo y protege al último ADMIN activo.
-authRoutes.delete('/mi-cuenta', authenticateToken, validate(deleteAccountSchema), AuthController.deleteOwnAccount);
+authRoutes.delete('/mi-cuenta', authenticateToken, exigirAreaHermanos, validate(deleteAccountSchema), AuthController.deleteOwnAccount);
 
 
 // ==========================================

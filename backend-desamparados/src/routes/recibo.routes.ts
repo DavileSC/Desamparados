@@ -34,7 +34,7 @@ const validateId = validate(type({ params: { id: idParam } }));
 // ==========================================
 //  RUTAS DE USUARIO (Familia)
 // ==========================================
-// Del área de hermanos, también con una sesión del CMS (ver `exigirAreaHermanos`).
+// Del área de hermanos y solo con su sesión, nunca con la del CMS (ver `exigirAreaHermanos`).
 reciboRoutes.use('/mis-recibos', exigirAreaHermanos);
 reciboRoutes.get('/mis-recibos', validate(misRecibosQuerySchema), ReciboController.getMyRecibos);
 

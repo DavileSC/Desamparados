@@ -9,7 +9,7 @@ import { Role } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
-import { COOKIE_CMS } from '../src/utils/cookies.js';
+import { COOKIE_CMS, COOKIE_HERMANO } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { ModulosService } from '../src/services/modulos.service.js';
 import { CLAVES_MODULO, type ClaveModulo } from '../src/domain/modulos.js';
@@ -65,7 +65,12 @@ before(async () => {
   // base lo tenía apagado, encendido el módulo de la ruta seguiría el 404.
   await ponerEnBase(['area-hermanos'], true);
   const u = await crearUsuarioPrueba(Role.ADMIN);
-  admin = { id: u.id, cookie: `${COOKIE_CMS}=${generateToken(u.id, Role.ADMIN, false, 'cms')}` };
+  // Las dos sesiones, como un cargo con el CMS y el área abiertos: las rutas
+  // del área (/mis-recibos, /procesion/dias) solo valen con la suya.
+  admin = {
+    id: u.id,
+    cookie: `${COOKIE_CMS}=${generateToken(u.id, Role.ADMIN, false, 'cms')}; ${COOKIE_HERMANO}=${generateToken(u.id, Role.ADMIN, false, 'hermanos')}`,
+  };
 });
 
 after(async () => {

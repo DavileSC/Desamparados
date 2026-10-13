@@ -858,7 +858,7 @@ test('mis recibos respetan la página y el tamaño pedidos', async (t) => {
 
   try {
     fichas = await sembrarFamiliaPrueba(usuario.id);
-    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(usuario.id, Role.USER)}` };
+    const cabeceras = { Cookie: `${COOKIE_HERMANO}=${generateToken(usuario.id, Role.USER, false, 'hermanos')}` };
 
     const primera = await fetch(`${baseUrl}/api/recibos/mis-recibos?page=1&limit=2`, { headers: cabeceras });
     assert.equal(primera.status, 200);
@@ -900,7 +900,7 @@ test('mis perfiles respetan la página y el tamaño pedidos', async (t) => {
 
   try {
     fichas = await sembrarFamiliaPrueba(usuario.id);
-    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(usuario.id, Role.USER)}` };
+    const cabeceras = { Cookie: `${COOKIE_HERMANO}=${generateToken(usuario.id, Role.USER, false, 'hermanos')}` };
 
     const primera = await fetch(`${baseUrl}/api/hermanos/mis-perfiles?page=1&limit=2`, { headers: cabeceras });
     assert.equal(primera.status, 200);
@@ -939,7 +939,7 @@ test('mis perfiles caben enteros en la página que pide el selector', async (t) 
 
   try {
     fichas = await sembrarFamiliaPrueba(usuario.id);
-    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(usuario.id, Role.USER)}` };
+    const cabeceras = { Cookie: `${COOKIE_HERMANO}=${generateToken(usuario.id, Role.USER, false, 'hermanos')}` };
     const respuesta = await fetch(`${baseUrl}/api/hermanos/mis-perfiles?page=1&limit=50`, { headers: cabeceras });
     const cuerpo = await respuesta.json() as { data: { id: number }[]; meta: Record<string, number> };
 
@@ -960,7 +960,7 @@ test('mi histórico de papeletas respeta la página y el tamaño pedidos', async
 
   try {
     fichas = await sembrarFamiliaPrueba(usuario.id);
-    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(usuario.id, Role.USER)}` };
+    const cabeceras = { Cookie: `${COOKIE_HERMANO}=${generateToken(usuario.id, Role.USER, false, 'hermanos')}` };
 
     const primera = await fetch(`${baseUrl}/api/procesion/mis-papeletas?page=1&limit=2`, { headers: cabeceras });
     assert.equal(primera.status, 200);

@@ -179,12 +179,17 @@ test('con el primer acceso pendiente, la sesión del CMS tampoco abre el área',
   if (!dbDisponible) { t.skip(SIN_DB); return; }
   const e = await escenario(Role.TESORERIA);
   try {
-    // Solo la cookie del CMS: un cargo recién nombrado que aún no ha revisado su ficha.
+    // Un cargo recién nombrado que aún no ha revisado su ficha.
     const sesionCms = `${COOKIE_CMS}=${generateToken(e.cuenta.id, Role.TESORERIA, false, 'cms')}`;
     for (const { ruta, metodo, cuerpo } of fueraDeLaRevision(e.hijo.id)) {
-      const res = await pedir(ruta, { metodo, cuerpo, cookie: sesionCms });
-      assert.equal(res.status, 403, `${metodo ?? 'GET'} ${ruta}`);
-      assert.equal((await res.json() as { error?: string }).error, PRIMER_ACCESO_PENDIENTE, `${metodo ?? 'GET'} ${ruta}`);
+      // Solo con la cookie del CMS: el área no la acepta (401).
+      const soloCms = await pedir(ruta, { metodo, cuerpo, cookie: sesionCms });
+      assert.equal(soloCms.status, 401, `solo CMS, ${metodo ?? 'GET'} ${ruta}`);
+      // Con las dos: la del área está pendiente y la del CMS no la sustituye;
+      // es un 403 (a la revisión), no un 401 (volver a entrar).
+      const lasDos = await pedir(ruta, { metodo, cuerpo, cookie: `${sesionCms}; ${e.sesionHermano}` });
+      assert.equal(lasDos.status, 403, `las dos, ${metodo ?? 'GET'} ${ruta}`);
+      assert.equal((await lasDos.json() as { error?: string }).error, PRIMER_ACCESO_PENDIENTE, `${metodo ?? 'GET'} ${ruta}`);
     }
     assert.equal((await db.hermano.findUniqueOrThrow({ where: { id: e.hijo.id } })).fechaBaja, null);
     // Lo suyo del CMS sigue abierto: la guarda es solo de las rutas del área.

@@ -15,8 +15,13 @@ declare global {
        * en las rutas de staff, para que la auditoría apunte a quien corresponde.
        */
       user?: AuthTokenPayload;
-      /** Las dos sesiones que trae el navegador, cada una ya validada. */
-      sesiones: { cms: AuthTokenPayload | null; hermano: AuthTokenPayload | null };
+      /**
+       * Las dos sesiones que trae el navegador, cada una ya validada.
+       * `hermanoSinConfirmar`: había una del área, buena, pero `authenticateToken`
+       * la ha apartado por el primer acceso pendiente. `exigirAreaHermanos` la
+       * necesita para responder 403 (ir a la revisión) y no 401 (volver a entrar).
+       */
+      sesiones: { cms: AuthTokenPayload | null; hermano: AuthTokenPayload | null; hermanoSinConfirmar?: boolean };
     }
   }
 }
@@ -142,7 +147,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     return res.status(401).json({ error: 'NO_TOKEN_PROVIDED', message: 'Se requiere una sesión iniciada' });
   }
   if (req.sesiones.hermano?.primerAccesoPendiente && !esDeLaRevision(req)) {
-    req.sesiones = { cms: req.sesiones.cms, hermano: null };
+    req.sesiones = { cms: req.sesiones.cms, hermano: null, hermanoSinConfirmar: true };
     req.user = req.sesiones.cms ?? undefined;
     if (!req.sesiones.cms) {
       return res.status(403).json({
@@ -157,22 +162,31 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
 const guardaDelArea = conModulo('area-hermanos');
 
 /**
- * La guarda de las rutas propias del área de hermanos (mis fichas, mi
- * procesión, mis recibos), detrás de `authenticateToken`; nunca en las
- * `/admin`. `authenticateToken` deja pasar con cualquiera de las dos sesiones,
- * y una del CMS no sabía nada del área: con «Área de hermanos» apagado, o con
- * la cuenta aún sin confirmar su ficha, un cargo entraba por /cms/acceso y
- * pedía papeletas o daba de alta a un menor por la API. Aquí cuenta la
- * identidad que haya quedado, venga de la sesión que venga.
+ * La guarda de las rutas propias del área de hermanos (mis fichas, el primer
+ * acceso, mi procesión, mis recibos y certificados, mis datos y borrar mi
+ * cuenta), detrás de `authenticateToken`; nunca en las `/admin`.
+ *
+ * Solo vale la sesión del área: `authenticateToken` deja pasar con cualquiera
+ * de las dos, y caer a la del CMS hacía dos daños. Uno, un cargo pedía
+ * papeletas o daba de alta a un menor por la API con el área apagada o sin
+ * haber revisado su ficha. Otro, en un ordenador con el CMS abierto, la sesión
+ * del área caducaba sin 401: la web no se enteraba, y sus pantallas (y
+ * «Descargar mis datos») pasaban a ser las de la cuenta del CMS, que puede ser
+ * otra persona. Con las dos cookies, `req.user` queda en la del área.
  */
 export const exigirAreaHermanos = (req: Request, res: Response, next: NextFunction) =>
   guardaDelArea(req, res, (error?: unknown) => {
     if (error) return next(error);
-    if (req.user?.primerAccesoPendiente && !esDeLaRevision(req)) {
+    const hermano = req.sesiones?.hermano;
+    if (req.sesiones?.hermanoSinConfirmar || (hermano?.primerAccesoPendiente && !esDeLaRevision(req))) {
       return res.status(403).json({
         error: PRIMER_ACCESO_PENDIENTE,
         message: 'Antes de usar el área de hermanos tienes que revisar y confirmar tu ficha.',
       });
     }
+    if (!hermano) {
+      return res.status(401).json({ error: 'NO_TOKEN_PROVIDED', message: 'Se requiere una sesión del área de hermanos' });
+    }
+    req.user = hermano;
     next();
   });
