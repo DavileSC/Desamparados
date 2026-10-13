@@ -298,13 +298,15 @@ describe('TesoreriaAdminPage', () => {
     expect(ventana.getByText(/no queda nada por cobrar y no se reemite/i)).toBeInTheDocument()
   })
 
-  it('un pendiente se puede enviar al banco, eximir o anular; uno anulado no ofrece nada', async () => {
+  // Al banco solo lo manda una remesa: «Enviar al banco» a mano dejaba un
+  // recibo «en el banco» que ninguna remesa recogía ni la mesa cobraba.
+  it('un pendiente se puede eximir o anular, no enviar al banco a mano; uno anulado no ofrece nada', async () => {
     const user = userEvent.setup({ delay: null })
     vi.stubGlobal('fetch', servidor([recibo(9, 'PENDIENTE', 'Cuota anual'), recibo(10, 'ANULADO', 'Cuota vieja')]))
     renderWithProviders(<TesoreriaAdminPage />)
 
     await user.click(await screen.findByRole('button', { name: 'Más acciones de Cuota anual de Ana Pérez Ruiz' }))
-    expect(screen.getAllByRole('menuitem').map((m) => m.textContent)).toEqual(['Enviar al banco', 'Eximir de pago', 'Anular'])
+    expect(screen.getAllByRole('menuitem').map((m) => m.textContent)).toEqual(['Eximir de pago', 'Anular'])
     expect(screen.queryByRole('button', { name: 'Más acciones de Cuota vieja de Ana Pérez Ruiz' })).not.toBeInTheDocument()
   })
 

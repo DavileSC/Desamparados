@@ -22,8 +22,6 @@ function explicacion({ recibo, destino }: CambioEstado): string[] {
     ? ['Su papeleta de sitio queda anulada y su sitio en la procesión, libre.']
     : []
   switch (destino) {
-    case 'REMESADO':
-      return ['Queda en el banco, a la espera del cargo. Cuando llegue el dinero, pulsa «Confirmar» y se apunta el ingreso en Contabilidad.']
     case 'EXENTO':
       return ['El hermano no paga este recibo. En Contabilidad no se apunta nada.', 'No se puede deshacer.']
     case 'ANULADO':

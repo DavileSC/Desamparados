@@ -62,10 +62,12 @@ export const ESTADOS_RECIBO: Record<AdminReceiptStatus, EstadoRecibo> = {
 /**
  * Lo que se puede hacer a mano con un recibo en cada estado: el mismo grafo
  * que `domain/recibo-estados.ts` del servidor. Cobrar no está: tiene su botón
- * y su propia operación, porque apunta el ingreso.
+ * y su propia operación, porque apunta el ingreso. Enviar al banco tampoco:
+ * solo lo hace una remesa, y a mano dejaba un recibo «en el banco» que
+ * ninguna remesa recogía, el extracto no veía y la mesa no cobraba.
  */
 export const CAMBIOS_DE_ESTADO: Record<AdminReceiptStatus, readonly AdminReceiptStatus[]> = {
-  PENDIENTE: ['REMESADO', 'EXENTO', 'ANULADO'],
+  PENDIENTE: ['EXENTO', 'ANULADO'],
   REMESADO: ['DEVUELTO', 'ANULADO'],
   PAGADO: ['DEVUELTO', 'REEMBOLSADO'],
   DEVUELTO: [],
@@ -80,7 +82,6 @@ export const CAMBIOS_DE_ESTADO: Record<AdminReceiptStatus, readonly AdminReceipt
  * el dinero al hermano (no se debe).
  */
 export function accionDeCambio(destino: AdminReceiptStatus): string {
-  if (destino === 'REMESADO') return 'Enviar al banco'
   if (destino === 'EXENTO') return 'Eximir de pago'
   if (destino === 'ANULADO') return 'Anular'
   if (destino === 'REEMBOLSADO') return 'Reembolsar al hermano'
