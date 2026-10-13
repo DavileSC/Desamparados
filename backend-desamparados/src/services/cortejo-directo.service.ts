@@ -101,11 +101,6 @@ function recorrido(): Promise<RecorridoDelCortejo | null> {
   return recorridoGuardado.valor;
 }
 
-/** Para las pruebas, que cambian páginas y módulos entre una petición y otra. */
-export function olvidarRecorrido(): void {
-  recorridoGuardado = null;
-}
-
 const leer = () => db.cortejoEnDirecto.findUnique({ where: { id: ID } });
 
 function vigente(fila: NonNullable<Awaited<ReturnType<typeof leer>>>, ahora: Date) {
