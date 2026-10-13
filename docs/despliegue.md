@@ -496,6 +496,9 @@ servidor. Las dos cosas tienen que encajar:
 # Un usuario propio, sin shell. El uid importa: es el del contenedor.
 sudo useradd --system --shell /usr/sbin/nologin --uid 1000 desamparados 2>/dev/null \
   || echo "el uid 1000 ya existe: pon el suyo en APP_UID/APP_GID del .env"
+# Su carpeta personal: useradd --system no la crea, y docker la necesita
+# (~/.docker) para construir cuando actualizar.sh corre como este usuario.
+sudo install -d -o desamparados -g desamparados -m 700 /home/desamparados
 
 # El repositorio, en /srv/desamparados.
 sudo chown -R desamparados:desamparados /srv/desamparados
@@ -1221,15 +1224,17 @@ arranque**: después ya existen todas las páginas. Por eso el guion, justo ante
 de arrancar, dice qué ha encontrado y qué pasa con lo que falta.
 
 Hace en orden lo de «El usuario del sistema…» y «Orden de una puesta en
-producción»: crea el usuario, genera el `.env` con secretos nuevos, prepara
+producción»: crea el usuario, genera el `.env` con secretos nuevos (y para la
+primera vez hasta que se pongan en él `EMAIL_USER` y `EMAIL_PASS`: sin correo
+saliente la API no arranca en producción), prepara
 `storage/` y los permisos de `instalacion/` (755 la carpeta; `marca/`,
 `imagenes/` y `mapas/` en 755/644, que nginx los lee con su propio usuario),
 pide el certificado, levanta todo, comprueba que la web ha escrito sus datos
 al arrancar (si no, enseña su registro y para), siembra y cifra los secretos
 del doble factor. Si se corta, se vuelve a lanzar: no pisa un `.env` que ya
 exista ni repite el certificado. **La contraseña del administrador sale una
-sola vez por pantalla.** Lo que no puede adivinar (correo saliente, copias,
-Redsys, SEPA) lo dice al terminar.
+sola vez por pantalla.** Lo demás que no puede adivinar (copias, Redsys,
+SEPA) lo dice al terminar.
 
 Con `--sin-certificado` se salta el paso 4, para probar antes de tener el
 dominio.
@@ -1264,7 +1269,10 @@ si no es la de siempre, carpeta):
 
 Se para en la primera que falle a propósito: una versión que sale mal debe
 quedarse en una corporación, no en todas. El usuario de ssh necesita poder
-ejecutar `sudo -u desamparados ./docker/actualizar.sh` sin contraseña.
+ejecutar `sudo -u desamparados ./docker/actualizar.sh` sin contraseña, y hay
+que haber entrado una vez a mano en cada servidor para aceptar su huella: el
+guion usa ssh sin preguntas y, con una huella desconocida, esa instalación
+cuenta como fallida («Host key verification failed»).
 
 ## Rotar `TOTP_ENC_KEY`
 
@@ -1454,8 +1462,11 @@ root -e "SELECT COUNT(*) FROM desamparados_prueba.User"
 # 3. Solo para restaurar de verdad:
 #    docker compose stop api web
 #    root desamparados_db < restauracion/db.sql
-#    sudo -u desamparados rsync -a --delete restauracion/storage/ \
+#    Como root y devolviendo el dueño: «sudo -u desamparados rsync» no puede
+#    leer la carpeta donde se ha descifrado la copia.
+#    sudo rsync -a --delete restauracion/storage/ \
 #      /srv/desamparados/backend-desamparados/storage/
+#    sudo chown -R desamparados:desamparados /srv/desamparados/backend-desamparados/storage
 #    docker compose start api web
 
 # 4. Borrar lo descifrado al terminar: lleva el censo entero en claro

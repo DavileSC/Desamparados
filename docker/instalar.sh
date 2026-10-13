@@ -24,6 +24,7 @@
 #   1. El usuario del sistema dueño de los archivos (desamparados).
 #   2. El .env a partir de docker/.env.example, con los secretos generados aquí.
 #      Si ya existe, no lo toca: tendría las contraseñas con que se creó la base.
+#      La primera vez para hasta que se pongan EMAIL_USER y EMAIL_PASS.
 #   3. Las carpetas de las subidas con sus permisos.
 #   4. El certificado, antes del primer arranque (nginx no arranca sin él).
 #   5. Levanta todo: base, migraciones, API, web y antivirus, y comprueba que
@@ -46,7 +47,7 @@ CERTIFICADO=1
 for arg in "$@"; do
   case "$arg" in
     --sin-certificado) CERTIFICADO=0 ;;
-    -h|--help) sed -n '2,34p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,35p' "$0"; exit 0 ;;
     -*) fallo "Opción desconocida: $arg" ;;
     *) CORREO="$arg" ;;
   esac
@@ -85,6 +86,10 @@ if ! id "$USUARIO" >/dev/null 2>&1; then
   else useradd --system --shell /usr/sbin/nologin --uid 1000 --user-group "$USUARIO"; fi
   log "Usuario $USUARIO creado."
 fi
+# useradd --system no crea la carpeta personal, y docker la necesita (~/.docker)
+# para construir cuando actualizar.sh corre como este usuario.
+CASA="$(getent passwd "$USUARIO" | cut -d: -f6)"
+[[ -d "$CASA" ]] || install -d -o "$USUARIO" -g "$USUARIO" -m 700 "$CASA"
 APP_UID="$(id -u "$USUARIO")"
 APP_GID="$(id -g "$USUARIO")"
 # Para actualizar y hacer copias sin root (docker/actualizar.sh). Equivale a
@@ -114,6 +119,13 @@ else
 fi
 chown "$USUARIO:$USUARIO" .env
 chmod 600 .env
+# En producción la API no arranca sin correo saliente: se descubriría tras
+# minutos de construcción, con la API reiniciándose en bucle. Se para aquí, y
+# al relanzar el .env se conserva con sus secretos.
+valor_env() { sed -n "s/^$1=//p" .env | tail -n 1 | tr -d "\"'[:space:]"; }
+if [[ -z "$(valor_env EMAIL_USER)" || -z "$(valor_env EMAIL_PASS)" ]]; then
+  fallo "Falta el correo saliente: pon EMAIL_USER y EMAIL_PASS en $PROYECTO_DIR/.env (la API no arranca sin ellos) y vuelve a lanzar este guion."
+fi
 
 # --- 3. Las carpetas ---
 chown -R "$USUARIO:$USUARIO" "$PROYECTO_DIR"
@@ -161,7 +173,12 @@ echo "    Para añadir contenido-inicial.json, ahora (Ctrl+C y volver a lanzar):
 echo "    Lo demás se puede añadir cuando se quiera (docs/despliegue.md, «Una instalación por corporación»)."
 
 log "Construyendo y levantando (la primera vez tarda: imágenes y firmas del antivirus)…"
-compose up -d --build
+# Si la API no arranca, `up` solo dice «dependency failed»: el porqué está en
+# el registro de las migraciones o en el de la API.
+if ! compose up -d --build; then
+  compose logs --no-color --tail 40 migraciones api >&2 || true
+  fallo "No ha arrancado (mira el registro de arriba: ¿un dato del .env, de $DATOS o una imagen de instalacion/marca/?). Corrígelo y vuelve a lanzar este guion."
+fi
 
 # --- 6. Siembra y doble factor ---
 # La siembra es idempotente: relanzar el guion no duplica nada ni cambia la
@@ -196,7 +213,6 @@ fi
 cat <<EOF
 
 Hecho. Lo que queda, a mano (docs/despliegue.md):
-  - Correo saliente: EMAIL_USER y EMAIL_PASS en .env, y «docker compose up -d».
   - Copias de seguridad: /etc/desamparados/copia.env y el timer de systemd.
   - Si va a cobrar en línea o por domiciliación: REDSYS_* y SEPA_ACREEDOR_*.
   - Guarda fuera del servidor TOTP_ENC_KEY (está en .env): sin ella, todos los
