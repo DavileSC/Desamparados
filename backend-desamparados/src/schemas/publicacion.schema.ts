@@ -28,7 +28,7 @@ export const publicacionesQuerySchema = type({ query: { ...paginacionQuery } });
 
 // Los apartados del listado del CMS. «Incompletas» son las que salen cojas en la
 // web (sin portada o sin descripción), estén publicadas o no.
-export const ESTADOS_PUBLICACION = ['publicadas', 'borradores', 'incompletas'] as const;
+const ESTADOS_PUBLICACION = ['publicadas', 'borradores', 'incompletas'] as const;
 export type EstadoPublicacion = (typeof ESTADOS_PUBLICACION)[number];
 
 // Listado del CMS: búsqueda por palabras, apartado, tipo y página.

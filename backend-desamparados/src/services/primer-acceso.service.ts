@@ -47,7 +47,7 @@ const VALIDEZ_INVITACION_HORAS = 14 * 24;
  */
 export type EstadoInvitacion = 'sin-invitar' | 'vigente' | 'caducada' | 'sustituida' | 'estrenada';
 
-export function situacionDeLaInvitacion(
+function situacionDeLaInvitacion(
   c: { primerAccesoPendiente: boolean; invitadoEn: Date | null; invitacionCaducaEn: Date | null; contrasenaPuestaEn: Date | null },
   ahora = new Date(),
 ): { estado: EstadoInvitacion; caducaEn: string | null } | null {

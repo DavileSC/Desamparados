@@ -54,7 +54,7 @@ export const actualizarNoticiaSchema = type({
 
 // Los apartados del listado del CMS. «Incompletas» son las que salen cojas en la
 // web (sin foto o sin extracto), estén publicadas o no.
-export const ESTADOS_NOTICIA = ['publicadas', 'borradores', 'incompletas'] as const;
+const ESTADOS_NOTICIA = ['publicadas', 'borradores', 'incompletas'] as const;
 export type EstadoNoticia = (typeof ESTADOS_NOTICIA)[number];
 
 // Listado del CMS: búsqueda por palabras, apartado y página.

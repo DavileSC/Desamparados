@@ -16,7 +16,7 @@ import { esDiaValido } from './contabilidad';
  * lo comprueba el servicio.
  */
 
-export const COLUMNAS = [
+const COLUMNAS = [
   { clave: 'numeroHermano', titulo: 'Número', otros: ['n', 'no', 'num', 'numero de hermano', 'n de hermano', 'n hermano', 'numero hermano'] },
   { clave: 'nombre', titulo: 'Nombre', otros: [] },
   { clave: 'primerApellido', titulo: 'Primer apellido', otros: ['apellido 1', 'apellido1', '1 apellido', '1er apellido'] },
