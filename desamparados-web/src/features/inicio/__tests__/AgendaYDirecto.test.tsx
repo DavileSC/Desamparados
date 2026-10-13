@@ -3,7 +3,6 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import AgendaYDirecto from '../AgendaYDirecto'
-import { site } from '../../../config/site'
 import type { ApiEvent } from '../../../lib/api/agenda'
 import { responderPortada, textosDePrueba } from './ayudas'
 
@@ -13,8 +12,6 @@ function evento(parcial: Partial<ApiEvent> & Pick<ApiEvent, 'id' | 'title' | 'st
 
 // Las horas van a mediodía UTC: así el día no cambia sea cual sea la zona horaria del equipo.
 const APERTURA = evento({ id: 1, title: 'Eucaristía de apertura de curso', description: 'Acción de gracias.', startDate: '2026-10-15T12:00:00.000Z' })
-// `site` es de solo lectura para el tipo, no en ejecución: los tests lo cambian para simular un directo publicado.
-const directo = site.directo as { urlAlternativa: string | null }
 
 const TRIDUO = evento({ id: 2, title: 'Solemne triduo', description: 'Rosario y eucaristía.', startDate: '2026-10-20T12:00:00.000Z', endDate: '2026-10-22T12:00:00.000Z' })
 
@@ -39,7 +36,6 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers()
   vi.unstubAllGlobals()
-  directo.urlAlternativa = null
 })
 
 describe('AgendaYDirecto', () => {
@@ -113,19 +109,7 @@ describe('AgendaYDirecto', () => {
     })
   })
 
-  it('solo enseña el aviso de directo cuando hay retransmisión configurada', async () => {
-    servirEventos([APERTURA])
-    const { unmount } = renderWithProviders(<AgendaYDirecto />)
-    await screen.findByRole('button', { name: /eucaristía de apertura/i })
-    expect(screen.queryByRole('link', { name: /ver en directo/i })).not.toBeInTheDocument()
-    unmount()
-
-    directo.urlAlternativa = 'https://www.youtube.com/live/ejemplo'
-    renderWithProviders(<AgendaYDirecto />)
-    expect(await screen.findByRole('link', { name: /ver en directo/i })).toHaveAttribute('href', 'https://www.youtube.com/live/ejemplo')
-  })
-
-  it('enseña los textos de la agenda y del aviso de directo que vienen del CMS', async () => {
+  it('enseña los textos de la agenda que vienen del CMS', async () => {
     const textos = textosDePrueba()
     textos.agenda = {
       ceja: 'Vida litúrgica',
@@ -137,7 +121,6 @@ describe('AgendaYDirecto', () => {
       imagenUrl: '/images/procesion.jpg',
     }
     responderPortada(textos)
-    directo.urlAlternativa = 'https://www.youtube.com/live/ejemplo'
 
     renderWithProviders(<AgendaYDirecto />)
 
@@ -145,9 +128,6 @@ describe('AgendaYDirecto', () => {
     expect(screen.getByRole('heading', { name: 'Próximos cultos' })).toBeInTheDocument()
     expect(screen.getByText('Un párrafo distinto sobre la vida de oración.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /ver toda la agenda/i })).toBeInTheDocument()
-    const aviso = screen.getByRole('link', { name: /síguelo ahora/i })
-    expect(aviso).toHaveTextContent('Síguelo ahora')
-    expect(aviso).toHaveTextContent('Emisión en directo desde la parroquia')
   })
 
   it('pone de fondo la foto elegida en el CMS, y ninguna si se quita', async () => {

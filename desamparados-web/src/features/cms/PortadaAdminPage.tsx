@@ -253,20 +253,6 @@ export default function PortadaAdminPage() {
             maxLength={60}
             ayuda="El enlace del final del bloque. Sigue llevando al calendario."
           />
-          <CampoTexto
-            etiqueta="Título del directo"
-            valor={textos.agenda.directoTitulo}
-            onCambio={(directoTitulo) => cambiarAgenda({ directoTitulo })}
-            maxLength={60}
-            ayuda="El aviso de la retransmisión, que solo sale cuando hay una en marcha."
-          />
-          <CampoTexto
-            etiqueta="Texto del directo"
-            valor={textos.agenda.directoTexto}
-            onCambio={(directoTexto) => cambiarAgenda({ directoTexto })}
-            maxLength={60}
-            ayuda="La línea pequeña bajo ese aviso."
-          />
           <CampoImagen
             etiqueta="Foto del fondo"
             ayuda={AYUDA_FOTO_AGENDA}
