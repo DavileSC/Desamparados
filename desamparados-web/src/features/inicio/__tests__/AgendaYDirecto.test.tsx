@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
@@ -6,6 +6,7 @@ import AgendaYDirecto from '../AgendaYDirecto'
 import type { ApiEvent } from '../../../lib/api/agenda'
 import { responderPortada, textosDePrueba } from './ayudas'
 import { isoEnMadrid } from '../../../lib/horaDeMadrid'
+import { enZonaHoraria } from '../../../test/zonaHoraria'
 
 function evento(parcial: Partial<ApiEvent> & Pick<ApiEvent, 'id' | 'title' | 'startDate'>): ApiEvent {
   return { description: null, location: null, endDate: null, type: 'CULTO', ...parcial }
@@ -151,9 +152,7 @@ describe('AgendaYDirecto desde otra zona horaria', () => {
   // Desde Canarias, una hora menos que en Madrid: con la zona del equipo de
   // pruebas (Madrid en local, UTC en el CI) no se distinguiría leer en Madrid
   // de leer en local.
-  const zonaDeAntes = process.env.TZ
-  beforeAll(() => { process.env.TZ = 'Atlantic/Canary' })
-  afterAll(() => { process.env.TZ = zonaDeAntes })
+  enZonaHoraria('Atlantic/Canary')
 
   it('el día, la hora y el «desde hoy» son los de Madrid', async () => {
     // A las 00:30 del 15 en Madrid; en Canarias, las 23:30 del 14.

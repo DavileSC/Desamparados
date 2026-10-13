@@ -1,13 +1,12 @@
-import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { traerProximosEventos, type ApiEvent } from '../agenda'
 import { isoEnMadrid } from '../../horaDeMadrid'
+import { enZonaHoraria } from '../../../test/zonaHoraria'
 
 // Desde Canarias, una hora menos que en Madrid: con la zona del equipo de
 // pruebas (Madrid en local, UTC en el CI) no se distinguiría leer en Madrid de
 // leer en local.
-const zonaDeAntes = process.env.TZ
-beforeAll(() => { process.env.TZ = 'Atlantic/Canary' })
-afterAll(() => { process.env.TZ = zonaDeAntes })
+enZonaHoraria('Atlantic/Canary')
 afterEach(() => { vi.unstubAllGlobals() })
 
 const acto = (datos: Partial<ApiEvent>): ApiEvent => ({

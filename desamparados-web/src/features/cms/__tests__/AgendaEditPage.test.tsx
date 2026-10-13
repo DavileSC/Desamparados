@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider, useLocation } from 'react-router-dom'
@@ -7,14 +7,13 @@ import { HelmetProvider } from 'react-helmet-async'
 import { TemaCmsProvider } from '../../../app/temaCms'
 import AgendaEditPage from '../AgendaEditPage'
 import { isoEnMadrid } from '../../../lib/horaDeMadrid'
+import { enZonaHoraria } from '../../../test/zonaHoraria'
 
 // Las fechas del acto son de Madrid, sea cual sea la zona del equipo de quien
 // edita. Las pruebas corren desde Canarias (una hora menos): con la zona de la
 // máquina (Madrid en local, UTC en el CI) no se distinguiría una cosa de otra.
 const enMadrid = (dia: string, hora: string) => isoEnMadrid(`${dia}T${hora}`)
-const zonaDeAntes = process.env.TZ
-beforeAll(() => { process.env.TZ = 'Atlantic/Canary' })
-afterAll(() => { process.env.TZ = zonaDeAntes })
+enZonaHoraria('Atlantic/Canary')
 const besapies = {
   id: 3, title: 'Besapiés', description: 'A la Virgen de los Desamparados.', location: 'Parroquia',
   startDate: enMadrid('2099-10-12', '18:00'), endDate: null, type: 'CULTO',

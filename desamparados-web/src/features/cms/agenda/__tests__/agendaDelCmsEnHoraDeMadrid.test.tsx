@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
@@ -7,14 +7,13 @@ import { diaEnMadrid, isoEnMadrid } from '../../../../lib/horaDeMadrid'
 import AgendaAdminPage from '../../AgendaAdminPage'
 import { actosPorDia, leerMes, rejillaDelMes } from '../calendario'
 import { agruparPorMes, cuandoEs, diaDelMes, diaSemana, finEnOtroDia, hora } from '../fechas'
+import { enZonaHoraria } from '../../../../test/zonaHoraria'
 
 // Desde Canarias, una hora menos que en Madrid: la vigilia de las 00:30 del 3
 // de octubre en Madrid es, allí, las 23:30 del 2. Quien edita la Agenda desde
 // allí (o con el portátil en otra zona) la veía en la casilla del 2 y a las
 // 23:30, aunque la web pública ya la pinta el 3 a las 00:30.
-const zonaDeAntes = process.env.TZ
-beforeAll(() => { process.env.TZ = 'Atlantic/Canary' })
-afterAll(() => { process.env.TZ = zonaDeAntes })
+enZonaHoraria('Atlantic/Canary')
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals() })
 
 const vigilia = {

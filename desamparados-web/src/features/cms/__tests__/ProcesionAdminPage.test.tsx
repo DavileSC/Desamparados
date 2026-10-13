@@ -7,6 +7,7 @@ import ProcesionAdminPage from '../ProcesionAdminPage'
 import { useAuthStore } from '../../altas/auth/store'
 import type { PlazoDePapeletas } from '../../../lib/api/procesion'
 import { salidasDePrueba, salidaPasion, salidaRosario, esListaDeSalidas } from '../../../test/salidas'
+import { fijarZonaHoraria } from '../../../test/zonaHoraria'
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 
@@ -61,8 +62,7 @@ describe('ProcesionAdminPage', () => {
   it('un día de reparto se guarda en hora de Madrid, aunque este equipo esté en otra zona', async () => {
     // Desde Canarias (una hora menos): tomadas en la zona del navegador, las
     // 18:00 se guardaban como las 19:00 de Madrid, que es lo que leen los hermanos.
-    const zonaDeAntes = process.env.TZ
-    process.env.TZ = 'Atlantic/Canary'
+    const restaurarZona = fijarZonaHoraria('Atlantic/Canary')
     try {
       const user = userEvent.setup()
       const llamadas = servidor()
@@ -76,7 +76,7 @@ describe('ProcesionAdminPage', () => {
         fecha: '2027-03-08', horaInicio: '2027-03-08T17:00:00.000Z', horaFin: '2027-03-08T20:00:00.000Z',
       })
     } finally {
-      process.env.TZ = zonaDeAntes
+      restaurarZona()
     }
   })
 

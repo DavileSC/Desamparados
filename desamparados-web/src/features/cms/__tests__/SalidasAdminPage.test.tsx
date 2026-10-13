@@ -10,6 +10,7 @@ import { useAuthStore } from '../../altas/auth/store'
 import SalidasAdminPage from '../salidas/SalidasAdminPage'
 import SalidaEditPage from '../salidas/SalidaEditPage'
 import { crearSalida, editarSalida, fijarFechaDeSalida, salidasDelCms, type Salida } from '../../../lib/api/salidas'
+import { fijarZonaHoraria } from '../../../test/zonaHoraria'
 
 // `useSalidas` (tarea 4) llama a estas funciones: se simula el módulo entero y
 // no `fetch`, tal y como pide el encargo (el backend lo termina otro agente).
@@ -125,8 +126,7 @@ describe('SalidaEditPage', () => {
   })
 
   it('la fecha a mano se guarda en hora de Madrid aunque el equipo esté en otra zona', async () => {
-    const zona = process.env.TZ
-    process.env.TZ = 'America/Argentina/Buenos_Aires'
+    const restaurarZona = fijarZonaHoraria('America/Argentina/Buenos_Aires')
     try {
       vi.mocked(fijarFechaDeSalida).mockResolvedValue({ fechaDelAnio: '2026-10-17', acto: null } as never)
       const user = userEvent.setup()
@@ -138,7 +138,7 @@ describe('SalidaEditPage', () => {
       // Buenos Aires (UTC−3) serían las 22:30.
       await waitFor(() => expect(fijarFechaDeSalida).toHaveBeenCalledWith(2, { inicio: '2026-10-17T17:30:00.000Z', lugar: null }))
     } finally {
-      process.env.TZ = zona
+      restaurarZona()
     }
   })
 

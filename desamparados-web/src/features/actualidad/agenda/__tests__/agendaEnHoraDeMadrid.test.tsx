@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
@@ -6,14 +6,13 @@ import type { ApiEvent } from '../../../../lib/api/agenda'
 import { isoEnMadrid } from '../../../../lib/horaDeMadrid'
 import { caeEnElDia, cuandoEnCartel, hora } from '../cultos'
 import CalendarioDeCultos from '../CalendarioDeCultos'
+import { enZonaHoraria } from '../../../../test/zonaHoraria'
 
 // Desde Canarias, una hora menos que en Madrid: una vigilia a las 00:30 del 3
 // de octubre en Madrid es, allí, las 23:30 del 2. Con la zona del equipo de
 // pruebas (Madrid en local, UTC en el CI) no se distinguiría leer en Madrid de
 // leer en local.
-const zonaDeAntes = process.env.TZ
-beforeAll(() => { process.env.TZ = 'Atlantic/Canary' })
-afterAll(() => { process.env.TZ = zonaDeAntes })
+enZonaHoraria('Atlantic/Canary')
 
 const vigilia: ApiEvent = {
   id: 1, title: 'Vigilia de la Titular', description: null, location: null,

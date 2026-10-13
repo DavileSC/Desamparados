@@ -21,14 +21,26 @@ export function instanteEnMadrid(fecha: string): number | null {
   if (!partes) return null
   const [anio, mes, dia, hora, minuto] = partes.slice(1).map(Number)
   const comoUtc = Date.UTC(anio, mes - 1, dia, hora, minuto)
-  // Lo que marca un reloj de Madrid en ese instante UTC: la diferencia es el
-  // desfase de ese día (una hora en invierno, dos en verano).
-  const enMadrid = new Intl.DateTimeFormat('en-GB', {
-    timeZone: ZONA, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
-  }).formatToParts(new Date(comoUtc))
+  // El desfase se mide dos veces porque la primera es en un instante que no es
+  // el buscado (la hora escrita tomada como UTC). La madrugada de los domingos
+  // del cambio de hora cae entre los dos la frontera, y la 01:30 salía con una
+  // hora de error; medido otra vez en el instante ya corregido, sale el bueno.
+  const aproximado = comoUtc - desfaseEnMadrid(comoUtc)
+  return comoUtc - desfaseEnMadrid(aproximado)
+}
+
+const formatoReloj = new Intl.DateTimeFormat('en-GB', {
+  timeZone: ZONA, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+})
+
+/**
+ * Lo que adelanta el reloj de Madrid a UTC en un instante: una hora en
+ * invierno, dos en verano.
+ */
+function desfaseEnMadrid(instante: number): number {
+  const enMadrid = formatoReloj.formatToParts(new Date(instante))
   const valor = (tipo: string) => Number(enMadrid.find((p) => p.type === tipo)?.value)
-  const desfase = Date.UTC(valor('year'), valor('month') - 1, valor('day'), valor('hour'), valor('minute')) - comoUtc
-  return comoUtc - desfase
+  return Date.UTC(valor('year'), valor('month') - 1, valor('day'), valor('hour'), valor('minute')) - instante
 }
 
 /**
