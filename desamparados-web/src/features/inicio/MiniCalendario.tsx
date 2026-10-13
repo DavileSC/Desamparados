@@ -91,6 +91,7 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
           }
 
           const elegido = actos.some(e => e.id === abiertoId)
+          // `dia` es una casilla del calendario (medianoche de este navegador), no un instante: en su zona.
           const fecha = dia.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
           return (
             <Box

@@ -4,12 +4,13 @@ import { keyframes, useTheme } from '@mui/material/styles'
 import { useReducedMotion } from 'framer-motion'
 import type { ApiEvent } from '../../../lib/api/agenda'
 import { GRANATE } from '../../inicio/estilos'
-import { TIPOS, diasDeLaRejilla, inicioDeMes, inicioDelDia, nombreDelMes, sumarMeses } from '../../inicio/agenda'
+import { TIPOS, diasDeLaRejilla, inicioDeMes, nombreDelMes, sumarMeses } from '../../inicio/agenda'
 import { claveDelDia, cuandoEnCartel, hora, primerDiaEnElMes, repartoDeLaSemana, ultimoMes } from './cultos'
 import VentanaDelActo from './VentanaDelActo'
 import Hueso from '../../../components/esqueleto/Hueso'
 import { CORMORANT } from './letraAlmanaque'
 import { MARCA } from '../../../theme/marca'
+import { diaDelCalendario, hoyDelCalendario } from '../../../lib/horaDeMadrid'
 
 const PAPEL = '#f3eee5'
 /** Los días de otro mes, un poco más apagados que la hoja. */
@@ -66,12 +67,13 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
   const estrecho = useMediaQuery(tema.breakpoints.down('md'))
   const movil = useMediaQuery(tema.breakpoints.down('sm'))
   const quieto = useReducedMotion() ?? false
-  const primero = useMemo(() => inicioDeMes(new Date()), [])
+  // Los meses y los días son los de Madrid, se mire desde donde se mire.
+  const primero = useMemo(() => inicioDeMes(hoyDelCalendario()), [])
   const ultimo = useMemo(() => ultimoMes(eventos, primero), [eventos, primero])
 
   // Se abre en el mes del próximo acto: lo que viene, lo primero.
   const [mesElegido, setMes] = useState(() => {
-    const suyo = eventos[0] ? inicioDeMes(new Date(eventos[0].startDate)) : primero
+    const suyo = eventos[0] ? inicioDeMes(diaDelCalendario(eventos[0].startDate)) : primero
     return suyo > primero ? suyo : primero
   })
   // Si un filtro deja el mes elegido fuera de la agenda, se ve el último que queda.
@@ -96,7 +98,7 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
   }
 
   const abrir = (e: ApiEvent) => {
-    cambiarMes(primerDiaEnElMes(e, mes) ? mes : inicioDeMes(inicioDelDia(new Date(e.startDate))))
+    cambiarMes(primerDiaEnElMes(e, mes) ? mes : inicioDeMes(diaDelCalendario(e.startDate)))
     setAbierto(e.id)
   }
 

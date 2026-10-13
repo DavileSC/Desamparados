@@ -12,7 +12,8 @@ import AvisosDeInicio from './AvisosDeInicio'
 import MiniCalendario from './MiniCalendario'
 import ListaDeAgenda, { ListaDeAgendaEsqueleto } from './ListaDeAgenda'
 import EnCarga from '../../components/esqueleto/EnCarga'
-import { inicioDeMes, inicioDelDia, nombreDelMes, sumarMeses } from './agenda'
+import { inicioDeMes, nombreDelMes, sumarMeses } from './agenda'
+import { comienzoEnMadrid, diaDelCalendario, hoyDelCalendario } from '../../lib/horaDeMadrid'
 import { PAPEL, SERIF, TINTA, ceja, enlaceBloque } from './estilos'
 import { propsDeFoto } from '../../lib/fotoSubida'
 import { useModulos } from '../../hooks/useModulos'
@@ -58,7 +59,9 @@ export default function AgendaYDirecto() {
   // La lista llega en milisegundos y en esta instalación todo está encendido: mejor un
   // esqueleto mientras no se sabe que un hueco que luego crece.
   const apagado = activos !== null && !activo('agenda')
-  const hoy = inicioDelDia(new Date())
+  // Hoy, los meses y los días de los actos son los de Madrid, se mire desde
+  // donde se mire; a la API se le piden desde la medianoche de Madrid.
+  const hoy = hoyDelCalendario()
   const [mesElegido, setMesElegido] = useState<Date | null>(null)
   // undefined: nadie ha tocado nada y se abre el próximo acto; null: el visitante lo ha cerrado.
   const [abierto, setAbierto] = useState<string | null | undefined>(undefined)
@@ -70,21 +73,22 @@ export default function AgendaYDirecto() {
   // en cadena tras la de los módulos; ahora la otra solo sale al cambiar de mes.
   const proximo = useQuery({
     queryKey: ['home', 'agenda', 'proximos', hoy.getTime()],
-    queryFn: () => eventosDelCalendario({ desde: hoy, cuantos: ACTOS_POR_VENTANA }),
+    queryFn: () => eventosDelCalendario({ desde: comienzoEnMadrid(hoy), cuantos: ACTOS_POR_VENTANA }),
     enabled: activos !== null && activo('agenda'),
     retry: false,
     staleTime: 60_000,
   })
-  const mesInicial = inicioDeMes(proximo.data?.[0]?.start ?? hoy)
+  const primero = proximo.data?.[0]
+  const mesInicial = inicioDeMes(primero ? diaDelCalendario(primero.start) : hoy)
   const mes = mesElegido ?? mesInicial
-  const iniciales = (proximo.data ?? []).filter((e) => e.start < sumarMeses(mesInicial, 2))
+  const iniciales = (proximo.data ?? []).filter((e) => e.start < comienzoEnMadrid(sumarMeses(mesInicial, 2)))
 
   // Otro mes: la ventana es el mes visible y el siguiente, desde hoy (los actos pasados no se enseñan).
   const ventana = useQuery({
     queryKey: ['home', 'agenda', mes.getTime()],
     queryFn: () => eventosDelCalendario({
-      desde: mes.getTime() > hoy.getTime() ? mes : hoy,
-      hasta: sumarMeses(mes, 2),
+      desde: comienzoEnMadrid(mes.getTime() > hoy.getTime() ? mes : hoy),
+      hasta: comienzoEnMadrid(sumarMeses(mes, 2)),
       cuantos: ACTOS_POR_VENTANA,
     }),
     enabled: proximo.isSuccess && mesElegido !== null,

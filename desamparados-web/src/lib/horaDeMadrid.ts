@@ -53,3 +53,31 @@ export const horaEnMadrid = (instante: string | Date) => formatoHora.format(new 
 
 /** Un instante como «AAAA-MM-DDTHH:mm» en hora de Madrid, para un campo datetime-local. */
 export const aCampoFechaMadrid = (instante: string | Date) => `${diaEnMadrid(instante)}T${horaEnMadrid(instante)}`
+
+/**
+ * El día de Madrid de un instante, como fecha del calendario: la medianoche de
+ * este navegador de ese día. La rejilla de los calendarios y sus casillas son
+ * días sueltos, sin hora (`new Date(año, mes, día)`); un acto a las 00:30 del 3
+ * en Madrid es del día 3 también desde Canarias, donde aún es el 2.
+ */
+export function diaDelCalendario(instante: string | Date): Date {
+  const [anio, mes, dia] = diaEnMadrid(instante).split('-').map(Number)
+  return new Date(anio, mes - 1, dia)
+}
+
+/** Hoy en Madrid, como fecha del calendario. */
+export const hoyDelCalendario = (ahora: Date = new Date()) => diaDelCalendario(ahora)
+
+const dosCifras = (n: number) => String(n).padStart(2, '0')
+
+/**
+ * El instante en que empieza en Madrid un día del calendario: lo que se manda a
+ * la API para pedir los actos «desde hoy» o desde el día 1 de un mes.
+ */
+export function comienzoEnMadrid(dia: Date): Date {
+  return new Date(isoEnMadrid(`${dia.getFullYear()}-${dosCifras(dia.getMonth() + 1)}-${dosCifras(dia.getDate())}T00:00`))
+}
+
+/** Un instante en texto, en español y en hora de Madrid: «sábado, 24 de octubre». */
+export const fechaEnMadrid = (instante: string | Date, opciones: Intl.DateTimeFormatOptions) =>
+  new Intl.DateTimeFormat('es-ES', { ...opciones, timeZone: ZONA }).format(new Date(instante))

@@ -20,12 +20,14 @@ import { DISTANCIA_MAXIMA_M, acumulados, metros, paradaAlcanzada, posicionesEnRu
 import { cortejoEnDirecto } from '../../lib/api/cortejoDirecto'
 import type { BloqueItinerario, Coordenada, RecorridoEnMapa as Recorrido } from '../../lib/api/contenido'
 import { MARCA, alfa } from '../../theme/marca'
+import { horaEnMadrid } from '../../lib/horaDeMadrid'
 
 /** Lo que tarda el play en andar el recorrido entero: despacio, para verlo. */
 const DURACION_PLAY_MS = 60_000
 /** Cada cuánto se pregunta dónde va el cortejo cuando está en la calle. */
 const SONDEO_MS = 20_000
-const horaCorta = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+/** La hora de la última posición del cortejo, la de Madrid, se mire desde donde se mire. */
+const horaCorta = (iso: string) => horaEnMadrid(iso)
 /** La cámara que sigue al trono: cerca e inclinada, con los edificios en relieve. */
 const CAMARA_CERCA = { zoom: 16.6, pitch: 52, bearing: -12 }
 const GRANATE_CLARO = MARCA.principalClaro

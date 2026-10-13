@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { aCampoFechaMadrid, diaEnMadrid, horaEnMadrid, instanteEnMadrid, isoEnMadrid } from '../horaDeMadrid'
+import { aCampoFechaMadrid, comienzoEnMadrid, diaDelCalendario, diaEnMadrid, fechaEnMadrid, horaEnMadrid, hoyDelCalendario, instanteEnMadrid, isoEnMadrid } from '../horaDeMadrid'
 
 // Desde Canarias, una hora menos que en Madrid todo el año: el caso que se
 // escapaba. Con la zona del equipo de pruebas (Madrid en local, UTC en el CI)
@@ -22,5 +22,15 @@ describe('horaDeMadrid', () => {
     expect(diaEnMadrid('2027-03-08T17:00:00.000Z')).toBe('2027-03-08')
     expect(horaEnMadrid('2027-03-08T17:00:00.000Z')).toBe('18:00')
     expect(aCampoFechaMadrid(isoEnMadrid('2026-10-31T23:30'))).toBe('2026-10-31T23:30')
+  })
+
+  it('los calendarios ponen cada acto, y el hoy, en su día de Madrid', () => {
+    // Las 23:30 del 2 en Canarias son las 00:30 del 3 en Madrid.
+    const instante = isoEnMadrid('2026-10-03T00:30')
+    expect(diaDelCalendario(instante)).toEqual(new Date(2026, 9, 3))
+    expect(hoyDelCalendario(new Date(instante))).toEqual(new Date(2026, 9, 3))
+    expect(fechaEnMadrid(instante, { weekday: 'long', day: 'numeric', month: 'long' })).toBe('sábado, 3 de octubre')
+    // Y lo que se pide a la API, desde la medianoche de Madrid.
+    expect(comienzoEnMadrid(new Date(2026, 9, 3)).toISOString()).toBe('2026-10-02T22:00:00.000Z')
   })
 })

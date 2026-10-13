@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import AgendaYDirecto from '../AgendaYDirecto'
 import type { ApiEvent } from '../../../lib/api/agenda'
 import { responderPortada, textosDePrueba } from './ayudas'
+import { isoEnMadrid } from '../../../lib/horaDeMadrid'
 
 function evento(parcial: Partial<ApiEvent> & Pick<ApiEvent, 'id' | 'title' | 'startDate'>): ApiEvent {
   return { description: null, location: null, endDate: null, type: 'CULTO', ...parcial }
@@ -67,7 +68,7 @@ describe('AgendaYDirecto', () => {
     await screen.findByRole('button', { name: /20 de octubre, 1 acto/ })
     const deActos = fetchMock.mock.calls.filter(([url]) => String(url).includes('/events'))
     expect(deActos).toHaveLength(1)
-    expect(new URL(String(deActos[0][0]), 'http://localhost').searchParams.get('from')).toBe(new Date(2026, 9, 5).toISOString())
+    expect(new URL(String(deActos[0][0]), 'http://localhost').searchParams.get('from')).toBe(isoEnMadrid('2026-10-05T00:00'))
   })
 
   it('despliega el próximo acto y, al pulsar un día, abre el suyo', async () => {
@@ -104,8 +105,8 @@ describe('AgendaYDirecto', () => {
     expect(await screen.findByLabelText('Noviembre 2026')).toBeInTheDocument()
     await waitFor(() => {
       const ultima = new URL(String(fetchMock.mock.lastCall?.[0]), 'http://localhost').searchParams
-      expect(ultima.get('from')).toBe(new Date(2026, 10, 1).toISOString())
-      expect(ultima.get('to')).toBe(new Date(2027, 0, 1).toISOString())
+      expect(ultima.get('from')).toBe(isoEnMadrid('2026-11-01T00:00'))
+      expect(ultima.get('to')).toBe(isoEnMadrid('2027-01-01T00:00'))
     })
   })
 
@@ -145,5 +146,30 @@ describe('AgendaYDirecto', () => {
     const otra = renderWithProviders(<AgendaYDirecto />)
     // Mientras llega la portada se ve la foto de partida: hay que esperar a la guardada.
     await waitFor(() => expect(fondo(otra.container)).toBeUndefined())
+  })
+})
+
+describe('AgendaYDirecto desde otra zona horaria', () => {
+  // Desde Canarias, una hora menos que en Madrid: con la zona del equipo de
+  // pruebas (Madrid en local, UTC en el CI) no se distinguiría leer en Madrid
+  // de leer en local.
+  const zonaDeAntes = process.env.TZ
+  beforeAll(() => { process.env.TZ = 'Atlantic/Canary' })
+  afterAll(() => { process.env.TZ = zonaDeAntes })
+
+  it('el día, la hora y el «desde hoy» son los de Madrid', async () => {
+    // A las 00:30 del 15 en Madrid; en Canarias, las 23:30 del 14.
+    const vigilia = evento({ id: 3, title: 'Vigilia de la Titular', startDate: isoEnMadrid('2026-10-15T00:30') })
+    const fetchMock = servirEventos([vigilia])
+    renderWithProviders(<AgendaYDirecto />)
+
+    const fila = await screen.findByRole('button', { name: /vigilia de la titular/i })
+    expect(fila).toHaveTextContent('15')
+    expect(fila).toHaveTextContent('00:30')
+    expect(await screen.findByRole('button', { name: /15 de octubre, 1 acto/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /14 de octubre/ })).not.toBeInTheDocument()
+    // Se piden los actos desde la medianoche de Madrid, no desde la de Canarias.
+    const deActos = fetchMock.mock.calls.filter(([url]) => String(url).includes('/events'))
+    expect(new URL(String(deActos[0][0]), 'http://localhost').searchParams.get('from')).toBe(isoEnMadrid('2026-10-05T00:00'))
   })
 })

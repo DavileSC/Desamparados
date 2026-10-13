@@ -68,9 +68,9 @@ describe('AgendaEditPage', () => {
     expect(screen.getByLabelText('Hora')).toHaveValue('18:00')
     const vista = screen.getByTestId('vista-previa-evento')
     expect(vista).toHaveTextContent('A la Virgen de los Desamparados.')
-    // La vista previa es la lista de la portada, que pinta la hora en la zona
-    // de quien mira (aquí, Canarias): la ficha, en cambio, la de Madrid.
-    expect(vista).toHaveTextContent(`${new Date(besapies.startDate).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} · Parroquia`)
+    // La vista previa es la lista de la portada, que también pinta la hora de
+    // Madrid, no la de quien mira (aquí, Canarias).
+    expect(vista).toHaveTextContent('18:00 · Parroquia')
     expect(vista).toHaveTextContent('Culto')
   })
 

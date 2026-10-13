@@ -1,10 +1,11 @@
 import { Box, Typography, useMediaQuery } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import type { EventoCalendario } from '../../lib/api/agenda'
-import { SERIF, TIPOS, inicioDelDia, nombreDelMes } from './agenda'
+import { SERIF, TIPOS, nombreDelMes } from './agenda'
 import { CONSULTA_ALTA, CONSULTA_MUY_ALTA, GRANATE, PANTALLA_ALTA } from './estilos'
 import { CORMORANT } from '../actualidad/agenda/letraAlmanaque'
 import Hueso, { Lineas } from '../../components/esqueleto/Hueso'
+import { diaDelCalendario, fechaEnMadrid, horaEnMadrid } from '../../lib/horaDeMadrid'
 
 /**
  * Cuántos actos caben en portada, según el alto de la pantalla: cuatro en un
@@ -44,13 +45,16 @@ const filaSx = {
 } as const
 const mesSx = { px: { xs: 2, sm: 3 }, pt: 1.5, pb: 0.25, [PANTALLA_ALTA]: { pt: 2, pb: 0.5 } } as const
 
-const hora = (fecha: Date) => fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-const diaSemana = (fecha: Date) => fecha.toLocaleDateString('es-ES', { weekday: 'short' }).replace('.', '')
+// El día y la hora, los de Madrid: a la que hay que estar, se mire desde donde se mire.
+const hora = (fecha: Date) => horaEnMadrid(fecha)
+const diaSemana = (fecha: Date) => fechaEnMadrid(fecha, { weekday: 'short' }).replace('.', '')
 
 function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abierto: boolean; onAlternar: (id: string) => void }) {
   const tipo = TIPOS[evento.type]
   const panelId = `agenda-acto-${evento.id}`
-  const fin = evento.end && inicioDelDia(evento.end).getTime() !== inicioDelDia(evento.start).getTime() ? evento.end : null
+  const inicio = diaDelCalendario(evento.start)
+  const ultimo = evento.end ? diaDelCalendario(evento.end) : null
+  const fin = ultimo && ultimo.getTime() !== inicio.getTime() ? ultimo : null
 
   return (
     <Box
@@ -83,10 +87,10 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
       >
         <Box component="span" sx={{ textAlign: 'center' }}>
           <Box component="span" sx={{ display: 'block', fontFamily: CORMORANT, fontWeight: 500, fontVariantNumeric: 'lining-nums', fontSize: fin ? { xs: 21, sm: 24 } : 31, lineHeight: 1, whiteSpace: 'nowrap', color: GRANATE, [PANTALLA_ALTA]: { fontSize: fin ? 24 : 34 } }}>
-            {fin ? `${evento.start.getDate()}–${fin.getDate()}` : evento.start.getDate()}
+            {fin ? `${inicio.getDate()}–${fin.getDate()}` : inicio.getDate()}
           </Box>
           <Box component="span" sx={{ display: 'block', mt: 0.5, fontSize: 11, letterSpacing: fin ? '0.06em' : '0.16em', whiteSpace: 'nowrap', textTransform: 'uppercase', color: TENUE }}>
-            {fin ? `${diaSemana(evento.start)}–${diaSemana(fin)}` : diaSemana(evento.start)}
+            {fin ? `${diaSemana(evento.start)}–${diaSemana(evento.end!)}` : diaSemana(evento.start)}
           </Box>
         </Box>
         <Box component="span" sx={{ minWidth: 0 }}>
@@ -136,10 +140,11 @@ export default function ListaDeAgenda({ eventos, abiertoId, hoy, onAlternar }: L
   const desde = indice < MAX_FILAS ? 0 : indice - MAX_FILAS + 1
   const grupos: { clave: string; titulo: string; eventos: EventoCalendario[] }[] = []
   for (const evento of eventos.slice(desde, desde + MAX_FILAS)) {
-    const clave = `${evento.start.getFullYear()}-${evento.start.getMonth()}`
+    const dia = diaDelCalendario(evento.start)
+    const clave = `${dia.getFullYear()}-${dia.getMonth()}`
     const ultimo = grupos[grupos.length - 1]
     if (ultimo?.clave === clave) ultimo.eventos.push(evento)
-    else grupos.push({ clave, titulo: nombreDelMes(evento.start, evento.start.getFullYear() !== hoy.getFullYear()), eventos: [evento] })
+    else grupos.push({ clave, titulo: nombreDelMes(dia, dia.getFullYear() !== hoy.getFullYear()), eventos: [evento] })
   }
 
   return (
