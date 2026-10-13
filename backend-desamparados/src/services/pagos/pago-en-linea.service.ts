@@ -36,13 +36,33 @@ interface LoQueSePaga {
  * Si no se puede aplicar, lanza un HttpError y el pago queda como incidencia.
  */
 type Aplicador = (referenciaId: number, metodo: MetodoEnLinea, meta: MetaDeAuditoria) => Promise<void>;
-const APLICADORES: Partial<Record<OrigenPago, Aplicador>> = {};
-/** El correo de quien pagó sin cuenta, para las incidencias. */
-const CORREO_DE: Partial<Record<OrigenPago, (referenciaId: number) => Promise<string | null>>> = {};
+interface OrigenDePago {
+  aplicar: Aplicador;
+  /** El correo de quien pagó sin cuenta, para las incidencias. */
+  correo: (referenciaId: number) => Promise<string | null>;
+  /**
+   * El banco no lo cobró: lo que esperaba el pago, si sigue pendiente, pasa
+   * a CANCELADO. Sin esto se quedaba PENDIENTE_PAGO para siempre y la pieza
+   * o el producto no se podían quitar.
+   */
+  cancelar: (referenciaId: number) => Promise<void>;
+  /** Deshacer lo pagado al resolver una incidencia (ver `resolver`), si el origen lo admite. */
+  anular?: (referenciaId: number, meta: MetaDeAuditoria) => Promise<void>;
+}
+const ORIGENES: Partial<Record<OrigenPago, OrigenDePago>> = {};
 
-export function registrarOrigenDePago(origen: OrigenPago, aplicar: Aplicador, correo: (referenciaId: number) => Promise<string | null>) {
-  APLICADORES[origen] = aplicar;
-  CORREO_DE[origen] = correo;
+/**
+ * Un intento sin pagar de más de un día ya no cuenta como «alguien lo está
+ * pagando»: cerrar la pestaña del banco no manda ningún aviso, y sin
+ * caducidad bastaba empezar un pago (el alta es pública) para que una pieza
+ * o un producto no se pudieran quitar nunca. Si el banco cobrara después, el
+ * aviso no encontraría qué aplicar y quedaría como incidencia.
+ */
+export const INTENTO_CADUCA_MS = 24 * 60 * 60 * 1000;
+export const intentosVigentesDesde = () => new Date(Date.now() - INTENTO_CADUCA_MS);
+
+export function registrarOrigenDePago(origen: OrigenPago, o: OrigenDePago) {
+  ORIGENES[origen] = o;
 }
 
 export class PagoEnLineaService {
@@ -174,7 +194,8 @@ export class PagoEnLineaService {
     const banco = { respuesta: aviso.respuesta, autorizacion: aviso.autorizacion };
 
     if (!aviso.cobrado) {
-      await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.RECHAZADO, ...banco } });
+      const { count } = await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.RECHAZADO, ...banco } });
+      if (count === 1 && pago.origen !== OrigenPago.AREA_HERMANOS && pago.referenciaId !== null) await ORIGENES[pago.origen]?.cancelar(pago.referenciaId);
       return true;
     }
 
@@ -203,7 +224,7 @@ export class PagoEnLineaService {
     // Lo que no es del área de hermanos lo aplica su propio servicio, con la
     // misma regla: lo que ya no se puede aplicar es incidencia.
     if (pago.origen !== OrigenPago.AREA_HERMANOS) {
-      const aplicar = APLICADORES[pago.origen];
+      const aplicar = ORIGENES[pago.origen]?.aplicar;
       // El pedido se reserva antes de aplicarlo, con la misma clave que el
       // cobro del área. Un segundo aviso del banco que llegue mientras se
       // aplica el primero choca con ella y es el repetido; sin esto, su
@@ -297,7 +318,7 @@ export class PagoEnLineaService {
     const correo = new Map(usuarios.map((u) => [u.id, u.email]));
     // Sin cuenta: de un donativo, el correo que dejó el donante; de la tienda o
     // de un apadrinamiento, el que dé su servicio. Es a quien hay que devolverle el dinero.
-    const sinCuenta = await Promise.all(filas.map((f) => (f.userId === null && f.referenciaId !== null ? CORREO_DE[f.origen]?.(f.referenciaId) ?? null : null)));
+    const sinCuenta = await Promise.all(filas.map((f) => (f.userId === null && f.referenciaId !== null ? ORIGENES[f.origen]?.correo(f.referenciaId) ?? null : null)));
     const deQuien = (f: (typeof filas)[number], i: number) =>
       (f.userId !== null ? correo.get(f.userId) : (f.donativo as { email?: string | null } | null)?.email ?? sinCuenta[i]) ?? null;
     return filas.map((f, i) => ({

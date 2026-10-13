@@ -14,7 +14,7 @@ import db from '../config/db';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
-import { PagoEnLineaService, registrarOrigenDePago, type MetodoEnLinea } from './pagos/pago-en-linea.service.js';
+import { PagoEnLineaService, intentosVigentesDesde, registrarOrigenDePago, type MetodoEnLinea } from './pagos/pago-en-linea.service.js';
 import { idCategoriaDeRecibos } from './recibos/comunes.js';
 import { enviarCorreo } from './correos/envio.js';
 import { PlantillasCorreoService } from './plantillas-correo.service.js';
@@ -186,7 +186,9 @@ async function aplicarPago(pedidoId: number, metodo: MetodoEnLinea, meta: MetaDe
     if (!p) throw new HttpError('El pedido ya no existe.');
     if (p.estado !== EstadoPedido.PENDIENTE_PAGO) throw new HttpError('El pedido ya no estaba pendiente de pago.');
     for (const l of p.lineas) {
-      if (l.productoId === null) continue;
+      // Sin producto es que se borró con el pedido sin pagar (un intento
+      // caducado): no se cobra lo que ya no existe.
+      if (l.productoId === null) throw new HttpError(`«${nombreConTalla(l.nombre, l.nombreTalla)}» ya no está a la venta.`);
       // La talla se borró con el pedido en el banco: sin ella, el descuento
       // caía sobre el producto (sin límite cuando cuenta por tallas) y se
       // cobraba sin comprobar nada.
@@ -217,7 +219,11 @@ async function aplicarPago(pedidoId: number, metodo: MetodoEnLinea, meta: MetaDe
   void correoDePedido(pedido).then(({ asunto, html, uso }) => enviarCorreo(pedido.email, asunto, html, { uso })).catch(console.error);
 }
 
-registrarOrigenDePago(OrigenPago.TIENDA, aplicarPago, async (id) => (await db.pedidoTienda.findUnique({ where: { id }, select: { email: true } }))?.email ?? null);
+registrarOrigenDePago(OrigenPago.TIENDA, {
+  aplicar: aplicarPago,
+  correo: async (id) => (await db.pedidoTienda.findUnique({ where: { id }, select: { email: true } }))?.email ?? null,
+  cancelar: async (id) => { await db.pedidoTienda.updateMany({ where: { id, estado: EstadoPedido.PENDIENTE_PAGO }, data: { estado: EstadoPedido.CANCELADO } }); },
+});
 
 export class TiendaService {
   /** Lo que se vende, para la web pública: solo lo activo. */
@@ -318,7 +324,13 @@ export class TiendaService {
 
   /** Con pedidos, no se borra (los pedidos lo nombran): se retira de la venta. */
   static async borrarProducto(id: number) {
-    const usado = await db.pedidoTiendaLinea.count({ where: { productoId: id } });
+    // Los pedidos cancelados y los intentos caducados no lo atan.
+    const usado = await db.pedidoTiendaLinea.count({
+      where: {
+        productoId: id,
+        pedido: { estado: { not: EstadoPedido.CANCELADO }, NOT: { estado: EstadoPedido.PENDIENTE_PAGO, createdAt: { lt: intentosVigentesDesde() } } },
+      },
+    });
     if (usado > 0) {
       await db.producto.update({ where: { id }, data: { activo: false } });
       return { message: 'Tiene pedidos: se ha retirado de la venta en vez de borrarlo.' };

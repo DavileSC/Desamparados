@@ -213,6 +213,23 @@ test('NG18: si se borra la talla con el pedido en el banco, el aviso queda como 
   }
 });
 
+test('NG9: si el banco no lo cobra, el pedido se cancela y ya no ata al producto', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  process.env.PAGO_EN_LINEA = 'redsys';
+  const e = await escenario();
+  try {
+    const r = await TiendaService.comprar(e.compra([{ productoId: e.estampa.id, cantidad: 1 }]), {});
+    if (r.tipo !== 'banco') return assert.fail('esperaba ir al banco');
+    assert.ok(await PagoEnLineaService.avisoDelBanco(aviso({ Ds_Order: r.pedido, Ds_Amount: '150', Ds_Response: '0190' }), {}));
+    assert.equal((await TiendaService.pedidoPublico(r.token)).estado, 'CANCELADO');
+    assert.equal((await db.pagoEnLinea.findUniqueOrThrow({ where: { pedido: r.pedido } })).estado, 'RECHAZADO');
+    assert.equal((await TiendaService.borrarProducto(e.estampa.id)).message, 'Producto borrado.');
+  } finally {
+    delete process.env.PAGO_EN_LINEA;
+    await e.recoger();
+  }
+});
+
 test('la tienda pública sin sesión, la gestión solo con la del CMS', async (t) => {
   if (!dbDisponible) { t.skip(SIN_DB); return; }
   process.env.PAGO_EN_LINEA = 'simulado';
