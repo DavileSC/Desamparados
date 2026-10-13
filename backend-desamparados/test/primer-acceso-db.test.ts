@@ -8,7 +8,7 @@
 // las rutas: el listado y las invitaciones son de quien lleva el censo.
 
 import assert from 'node:assert/strict';
-import { after, before, test } from 'node:test';
+import { after, before, mock, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import { Prisma, Role } from '@prisma/client';
@@ -130,6 +130,37 @@ test('la invitación sale por correo y su enlace pone la contraseña y abre la s
     // Ya gastado: ni saluda ni vuelve a abrir nada.
     assert.equal((await pedir('/api/auth/primer-acceso/datos', { metodo: 'POST', cuerpo: { token } })).status, 400);
     assert.equal((await pedir('/api/auth/primer-acceso', { metodo: 'POST', cuerpo: { token, newPassword: CONTRASENA } })).status, 400);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('AC7: la sesión del estreno nace después del corte aunque el reloj no haya avanzado (reloj parado)', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    const { token, datos } = AuthService.enlaceSinGuardar(1, { invitacion: true });
+    await db.user.update({ where: { id: e.cuenta.id }, data: datos });
+    // Con el reloj de verdad, la sesión salía en el mismo milisegundo que el
+    // corte solo a veces (una base rápida). Parado, sale siempre: `Date.now`
+    // no avanza hasta que vence un temporizador, y entonces avanza lo que
+    // ese temporizador esperaba. Sin la espera de `estrenar`, falla siempre.
+    let ahora = Date.now();
+    const temporizador = globalThis.setTimeout;
+    const reloj = mock.method(Date, 'now', () => ahora);
+    const esperas = mock.method(globalThis, 'setTimeout', ((fn: (...a: unknown[]) => void, ms?: number, ...args: unknown[]) =>
+      temporizador(() => { ahora += Math.max(1, Number(ms) || 0); fn(...args); }, ms)) as typeof setTimeout);
+    let sesion: string;
+    try {
+      sesion = (await PrimerAccesoService.estrenar(token, CONTRASENA, false)).token;
+    } finally {
+      esperas.mock.restore();
+      reloj.mock.restore();
+    }
+    const emitida = verifyToken(sesion, 'session');
+    const { tokenValidAfter } = await db.user.findUniqueOrThrow({ where: { id: e.cuenta.id }, select: { tokenValidAfter: true } });
+    assert.ok(emitida?.emitidoMs !== undefined, 'la sesión lleva su milisegundo');
+    assert.ok(emitida.emitidoMs >= tokenValidAfter.getTime(), `emitida (${emitida.emitidoMs}) después del corte (${tokenValidAfter.getTime()})`);
   } finally {
     await e.recoger();
   }
