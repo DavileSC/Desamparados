@@ -352,7 +352,7 @@ test('NG8: un pedido cobrado y entregado se anula: vuelven las existencias y que
     await TiendaService.entregar(numero, {});
     assert.equal((await db.producto.findUniqueOrThrow({ where: { id: e.medalla.id } })).existencias, 1);
 
-    assert.match((await TiendaService.anular(numero, {})).message, /reembolso/);
+    assert.match((await TiendaService.anular(numero, {}, { puedeReembolsar: true })).message, /reembolso/);
     const pedido = await TiendaService.pedidoPublico(r.token);
     assert.equal(pedido.estado, 'CANCELADO');
     assert.equal((await db.producto.findUniqueOrThrow({ where: { id: e.medalla.id } })).existencias, 2, 'la medalla vuelve');
@@ -367,9 +367,48 @@ test('NG8: un pedido cobrado y entregado se anula: vuelven las existencias y que
     assert.equal(await db.transaccion.count({ where: { concepto: `Tienda: pedido n.º ${numero}` } }), 1);
     await assert.rejects(TransaccionService.remove(fila.reembolsoId!), (err: unknown) => err instanceof HttpError && err.status === 409);
 
-    await assert.rejects(TiendaService.anular(numero, {}), (err: unknown) => err instanceof HttpError && err.status === 409);
+    await assert.rejects(TiendaService.anular(numero, {}, { puedeReembolsar: true }), (err: unknown) => err instanceof HttpError && err.status === 409);
   } finally {
     delete process.env.PAGO_EN_LINEA;
+    await e.recoger();
+  }
+});
+
+test('R5: anular un pedido cobrado (deja un reembolso en Contabilidad) es de Tesorería; uno sin cobrar, de quien lleva la tienda', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  process.env.PAGO_EN_LINEA = 'simulado';
+  const e = await escenario();
+  const secretaria = await crearUsuarioPrueba(Role.SECRETARIA);
+  const tesorero = await crearUsuarioPrueba(Role.TESORERIA);
+  const anular = (id: number, quien: { id: number }, rol: Role) => fetch(`${baseUrl}/api/tienda/admin/pedidos/${id}/anular`, {
+    method: 'POST', headers: { Cookie: `${COOKIE_CMS}=${generateToken(quien.id, rol)}` },
+  });
+  try {
+    const { token } = await TiendaService.comprar(e.compra([{ productoId: e.medalla.id, cantidad: 1 }]), {});
+    const cobrado = await TiendaService.pedidoPublico(token);
+    const res = await anular(cobrado.numero, secretaria, Role.SECRETARIA);
+    assert.equal(res.status, 403);
+    const cuerpo = await res.json() as { error: string; soloTesoreria?: boolean };
+    assert.equal(cuerpo.soloTesoreria, true);
+    assert.match(cuerpo.error, /Tesorería/);
+    const intacto = await db.pedidoTienda.findUniqueOrThrow({ where: { id: cobrado.numero } });
+    assert.equal(intacto.estado, 'PAGADO', 'no se anula');
+    assert.equal(intacto.reembolsoId, null, 'ni se apunta el reembolso');
+    assert.equal((await db.producto.findUniqueOrThrow({ where: { id: e.medalla.id } })).existencias, 1);
+
+    assert.equal((await anular(cobrado.numero, tesorero, Role.TESORERIA)).status, 200);
+    assert.equal((await TiendaService.pedidoPublico(token)).estado, 'CANCELADO');
+
+    // Sin cobrar no hay reembolso: lo sigue pudiendo anular Secretaría.
+    process.env.PAGO_EN_LINEA = 'redsys';
+    const sinCobrar = await TiendaService.comprar(e.compra([{ productoId: e.estampa.id, cantidad: 1 }]), {});
+    const numero = (await TiendaService.pedidoPublico(sinCobrar.token)).numero;
+    assert.equal((await anular(numero, secretaria, Role.SECRETARIA)).status, 200);
+    assert.equal((await TiendaService.pedidoPublico(sinCobrar.token)).estado, 'CANCELADO');
+  } finally {
+    delete process.env.PAGO_EN_LINEA;
+    await borrarUsuarioPrueba(secretaria.id);
+    await borrarUsuarioPrueba(tesorero.id);
     await e.recoger();
   }
 });

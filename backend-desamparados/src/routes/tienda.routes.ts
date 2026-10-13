@@ -35,6 +35,7 @@ admin.put('/categorias/:id', validate(productoIdSchema), validate(categoriaSchem
 admin.delete('/categorias/:id', validate(productoIdSchema), TiendaController.borrarCategoria);
 admin.get('/pedidos', validate(pedidosQuerySchema), TiendaController.pedidos);
 admin.post('/pedidos/:id/entregar', validate(productoIdSchema), TiendaController.entregar);
+// El cobrado (deja un reembolso en Contabilidad) solo lo anula Tesorería: lo decide el servicio, que sabe si se cobró.
 admin.post('/pedidos/:id/anular', validate(productoIdSchema), TiendaController.anular);
 // La venta en mano: lo que se lleva alguien en Secretaría, y el efectivo
 // que después se ingresa en el banco. Sin caja que abrir ni cerrar.

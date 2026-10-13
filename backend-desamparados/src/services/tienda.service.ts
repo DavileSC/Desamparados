@@ -227,14 +227,20 @@ registrarOrigenDePago(OrigenPago.TIENDA, {
   aplicar: aplicarPago,
   correo: async (id) => (await db.pedidoTienda.findUnique({ where: { id }, select: { email: true } }))?.email ?? null,
   cancelar: async (id) => { await db.pedidoTienda.updateMany({ where: { id, estado: EstadoPedido.PENDIENTE_PAGO }, data: { estado: EstadoPedido.CANCELADO } }); },
-  anular: async (id, meta) => { await TiendaService.anular(id, meta); },
+  // Resolver una incidencia ya es solo de Tesorería (y el pedido está sin cobrar).
+  anular: async (id, meta) => { await TiendaService.anular(id, meta, { puedeReembolsar: true }); },
 });
 
-/** Los pedidos cuyo pago cobró el banco y quedó como incidencia sin resolver: el dinero está, el pedido no. */
-async function conPagoEnIncidencia(ids: number[]): Promise<Set<number>> {
-  if (ids.length === 0) return new Set();
+/**
+ * Los pedidos cuyo pago cobró el banco y quedó como incidencia sin resolver:
+ * el dinero está, el pedido no. Sin `ids`, todos: se parte de los pagos
+ * (pocos, e indexados por estado) y no de los pedidos PENDIENTE_PAGO, que
+ * crecen con cada carrito que se abandona en la página del banco.
+ */
+async function conPagoEnIncidencia(ids?: number[]): Promise<Set<number>> {
+  if (ids?.length === 0) return new Set();
   const pagos = await db.pagoEnLinea.findMany({
-    where: { origen: OrigenPago.TIENDA, referenciaId: { in: ids }, estado: EstadoPagoEnLinea.INCIDENCIA, resueltaEl: null },
+    where: { origen: OrigenPago.TIENDA, referenciaId: ids ? { in: ids } : { not: null }, estado: EstadoPagoEnLinea.INCIDENCIA, resueltaEl: null },
     select: { referenciaId: true },
   });
   return new Set(pagos.map((p) => p.referenciaId!));
@@ -405,9 +411,7 @@ export class TiendaService {
   static async pedidos(estado?: EstadoPedido) {
     // Sin filtro, los que no se pagaron no salen, salvo los cobrados con
     // incidencia: el banco tiene el dinero y hay que devolverlo o anularlos.
-    const enIncidencia = estado ? [] : [...await conPagoEnIncidencia(
-      (await db.pedidoTienda.findMany({ where: { estado: EstadoPedido.PENDIENTE_PAGO }, select: { id: true } })).map((p) => p.id),
-    )];
+    const enIncidencia = estado ? [] : [...await conPagoEnIncidencia()];
     const lista = await db.pedidoTienda.findMany({
       where: estado ? { estado } : { OR: [{ estado: { not: EstadoPedido.PENDIENTE_PAGO } }, { id: { in: enIncidencia } }] },
       include: { lineas: true },
@@ -431,14 +435,23 @@ export class TiendaService {
    * como gasto: el ingreso se queda, porque el dinero entró y salió (y puede
    * ser de un ejercicio ya cerrado). Devolver el dinero al comprador es cosa
    * del banco o de Secretaría; esto deja la tienda y la contabilidad al día.
+   *
+   * El cobrado solo lo anula quien lleva Contabilidad (`puedeReembolsar`):
+   * el gasto que apunta no se puede tocar después y el pedido CANCELADO no
+   * tiene vuelta atrás, así que Secretaría, que no entra en Contabilidad,
+   * dejaba un reembolso que nadie podía corregir. El no cobrado no apunta
+   * nada y lo sigue anulando cualquiera de la tienda.
    */
-  static async anular(id: number, meta?: MetaDeAuditoria) {
+  static async anular(id: number, meta: MetaDeAuditoria | undefined, { puedeReembolsar }: { puedeReembolsar: boolean }) {
     const categoriaId = await idCategoriaDeRecibos(TipoTransaccion.GASTO, CATEGORIA_REEMBOLSOS_TIENDA);
     const { antes, reembolso } = await transactionWithRetry(async (tx) => {
       const p = await tx.pedidoTienda.findUnique({ where: { id }, include: { lineas: true } });
       if (!p) throw new NotFoundError('Pedido no encontrado.');
       if (p.estado === EstadoPedido.CANCELADO) throw new HttpError('Ese pedido ya estaba anulado.', 409);
       const cobrado = p.estado === EstadoPedido.PAGADO || p.estado === EstadoPedido.ENTREGADO;
+      if (cobrado && !puedeReembolsar) {
+        throw new HttpError('Este pedido ya se cobró: anularlo apunta su reembolso en Contabilidad, y eso solo lo puede hacer Tesorería.', 403, { soloTesoreria: true });
+      }
       let reembolsoId: number | null = null;
       if (cobrado) {
         for (const l of p.lineas) {

@@ -1,4 +1,5 @@
-import type { EstadoPedido } from '@prisma/client';
+import type { EstadoPedido, Role } from '@prisma/client';
+import { ROLES_TESORERIA } from '../routes/roles.js';
 import { manejar } from '../utils/manejar.js';
 import { AuditoriaService } from '../services/auditoria.service.js';
 import { TiendaService, type DatosCompra, type DatosProducto } from '../services/tienda.service.js';
@@ -29,6 +30,7 @@ export class TiendaController {
   });
 
   static anular = manejar('Error anulando el pedido', async (req, res) => {
-    res.json(await TiendaService.anular(Number(req.params.id), AuditoriaService.metaFromReq(req)));
+    const puedeReembolsar = ROLES_TESORERIA.includes(req.user?.role as Role);
+    res.json(await TiendaService.anular(Number(req.params.id), AuditoriaService.metaFromReq(req), { puedeReembolsar }));
   });
 }
