@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
 import TiendaAdminPage from '../../TiendaAdminPage'
+import { useAuthStore, type AuthUser } from '../../../altas/auth/store'
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 
@@ -30,6 +31,10 @@ function servidor(respuestaAnular: () => Response = () => json({ message: 'Pedid
   return llamadas
 }
 
+const cuenta = (role: string): AuthUser => ({ id: 1, email: 'junta@ejemplo.es', role, perfiles: [], origen: 'cms' })
+
+// Anular un cobrado es de Tesorería (R5): las pruebas de siempre, con su rol.
+beforeEach(() => { useAuthStore.setState({ status: 'listo', cms: cuenta('TESORERIA') }) })
 afterEach(() => { vi.unstubAllGlobals() })
 
 describe('TiendaAdminPage · pedidos', () => {
@@ -47,6 +52,45 @@ describe('TiendaAdminPage · pedidos', () => {
     await user.click(within(ventana).getByRole('button', { name: 'Anular pedido' }))
     expect(await screen.findByText(/el reembolso queda apuntado en Contabilidad/i)).toBeInTheDocument()
     expect(llamadas.filter((l) => l.metodo === 'POST').map((l) => l.url)).toEqual([expect.stringMatching(/\/tienda\/admin\/pedidos\/3\/anular$/)])
+  })
+
+  it('tras anular vuelve a pedir los productos: el pedido cobrado devolvió sus existencias', async () => {
+    const user = userEvent.setup()
+    const llamadas = servidor()
+    renderWithProviders(<TiendaAdminPage />, { ruta: '/cms/tienda?vista=pedidos' })
+    const pedidasDeProductos = () => llamadas.filter((l) => l.url.endsWith('/tienda/admin/productos')).length
+
+    await user.click(await screen.findByRole('button', { name: 'Anular el pedido n.º 3' }))
+    await waitFor(() => expect(pedidasDeProductos()).toBe(1))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Anular pedido' }))
+    await waitFor(() => expect(pedidasDeProductos()).toBe(2))
+  })
+
+  it('Secretaría no puede anular un pedido cobrado, pero sí uno cobrado sin completar', async () => {
+    useAuthStore.setState({ cms: cuenta('SECRETARIA') })
+    const user = userEvent.setup()
+    servidor()
+    renderWithProviders(<TiendaAdminPage />, { ruta: '/cms/tienda?vista=pedidos' })
+
+    expect(await screen.findByText('N.º 3 · Ana')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Anular el pedido n.º 3' })).not.toBeInTheDocument()
+    // «Entregado» sigue siendo suyo.
+    expect(screen.getByRole('button', { name: 'Entregado' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('combobox', { name: 'Pedidos' }))
+    await user.click(await screen.findByRole('option', { name: 'Cobrados sin completar' }))
+    expect(await screen.findByRole('button', { name: 'Anular el pedido n.º 5' })).toBeInTheDocument()
+  })
+
+  it('si el servidor responde que es cosa de Tesorería, enseña su motivo', async () => {
+    const user = userEvent.setup()
+    const motivo = 'Este pedido ya se cobró: anularlo apunta su reembolso en Contabilidad, y eso solo lo puede hacer Tesorería.'
+    servidor(() => json({ error: motivo, soloTesoreria: true }, 403))
+    renderWithProviders(<TiendaAdminPage />, { ruta: '/cms/tienda?vista=pedidos' })
+
+    await user.click(await screen.findByRole('button', { name: 'Anular el pedido n.º 3' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Anular pedido' }))
+    expect(await screen.findByText(motivo)).toBeInTheDocument()
   })
 
   it('si el servidor no deja anular, lo dice', async () => {

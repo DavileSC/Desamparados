@@ -14,6 +14,8 @@ import CategoriasDeLaTienda from './tienda/CategoriasDeLaTienda'
 import { nombreConTalla } from '../tienda/cesta'
 import { euros, fechaCorta } from './contabilidad/formato'
 import { site } from '../../config/site'
+import { useAuthStore } from '../altas/auth/store'
+import { rolesPorRutaCms } from '../../app/rolesCms'
 
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
 
@@ -25,6 +27,13 @@ const ESTADOS: Record<EstadoPedido, string> = { PENDIENTE_PAGO: 'Sin pagar', PAG
 type FiltroPedidos = EstadoPedido | '' | 'INCIDENCIA'
 
 type PedidoDeLista = Awaited<ReturnType<typeof pedidosDelCms>>[number]
+
+/**
+ * Anular un pedido cobrado apunta su reembolso en Contabilidad, y eso es de
+ * Tesorería: el servidor responde 403 a los demás roles de la tienda
+ * (Secretaría). Uno sin cobrar lo sigue anulando cualquiera de ellos.
+ */
+const cobrado = (p: PedidoDeLista) => p.estado === 'PAGADO' || p.estado === 'ENTREGADO'
 
 /** Qué pasa al anular, según hubo cobro aplicado o el pago se quedó en incidencia. */
 function explicarAnulacion(p: PedidoDeLista): string {
@@ -43,6 +52,8 @@ function explicarAnulacion(p: PedidoDeLista): string {
  */
 export default function TiendaAdminPage() {
   const cliente = useQueryClient()
+  const role = useAuthStore((state) => state.cms?.role)
+  const esTesoreria = !!role && rolesPorRutaCms.tesoreria.includes(role)
   const [params, setParams] = useSearchParams()
   const vistaPedida = params.get('vista')
   // «caja» era el nombre de antes de la venta en mano: los enlaces viejos siguen valiendo.
@@ -72,7 +83,9 @@ export default function TiendaAdminPage() {
       setAviso((await anularPedido(id)).message)
     } catch (err: unknown) { setError(mensaje(err, 'No se ha podido anular el pedido.')) }
     // También tras un 409 («acaba de cambiar»): lo que hay en pantalla ya no vale.
-    await cliente.invalidateQueries({ queryKey: ['tienda', 'pedidos'] })
+    // La tienda entera, no solo los pedidos: anular un cobrado devuelve sus
+    // existencias, y con la lista de productos de antes, tocar «Quedan» daba 409.
+    await cliente.invalidateQueries({ queryKey: ['tienda'] })
   }
 
   const irA = (v: string) => setParams(v === 'pedidos' || v === 'mano' || v === 'categorias' ? { vista: v } : {})
@@ -129,7 +142,7 @@ export default function TiendaAdminPage() {
                   : <Chip size="small" label={ESTADOS[p.estado]} color={p.estado === 'PAGADO' ? 'warning' : p.estado === 'ENTREGADO' ? 'success' : 'default'} />}
                 {p.estado === 'PAGADO' && <Button size="small" variant="outlined" onClick={() => void entregar(p.id)}>Entregado</Button>}
                 {/* Un PENDIENTE_PAGO sin incidencia es un intento sin pagar: el banco lo cancela solo. */}
-                {(p.estado === 'PAGADO' || p.estado === 'ENTREGADO' || p.pagoConIncidencia) && (
+                {(cobrado(p) ? esTesoreria : p.pagoConIncidencia) && (
                   <Button size="small" color="error" aria-label={`Anular el pedido n.º ${p.id}`} onClick={() => setAnulando(p)}>Anular pedido</Button>
                 )}
               </Paper>
