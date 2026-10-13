@@ -161,7 +161,7 @@ describe('PerfilPage', () => {
     renderWithProviders(<PerfilPage />, { routerDeDatos: true, modulos: ['area-hermanos'] })
 
     expect(await screen.findByText('Ana Pérez Ruiz')).toBeInTheDocument()
-    expect(screen.getAllByRole('tab').map((t) => t.getAttribute('aria-label'))).toEqual(['Datos personales', 'Contacto y domicilio', 'Contraseña'])
+    expect(screen.getAllByRole('tab').map((t) => t.getAttribute('aria-label'))).toEqual(['Datos personales', 'Contacto y domicilio', 'Cuenta y contraseña'])
   })
 
   // Con remesas y sin pago en línea, el IBAN se carga en la domiciliación: el hermano tiene que poder cambiarlo.
@@ -405,7 +405,7 @@ describe('PerfilPage: cambiar la contraseña', () => {
 
   async function rellenar(user: ReturnType<typeof userEvent.setup>, nueva = 'Otra-Clave-2026-Larga', repetida = nueva) {
     await screen.findByText('Ana Pérez Ruiz')
-    await user.click(screen.getByRole('tab', { name: 'Contraseña' }))
+    await user.click(screen.getByRole('tab', { name: 'Cuenta y contraseña' }))
     await user.click(screen.getByRole('button', { name: 'Cambiar' }))
     await user.type(screen.getByLabelText('Contraseña actual'), 'La-De-Antes-2025')
     await user.type(screen.getByLabelText('Contraseña nueva'), nueva)
@@ -453,7 +453,7 @@ describe('PerfilPage: cambiar la contraseña', () => {
     simular(() => conCuerpo({ message: 'ok' }))
     renderWithProviders(<PerfilPage />, { routerDeDatos: true })
     await screen.findByText('Ana Pérez Ruiz')
-    await user.click(screen.getByRole('tab', { name: 'Contraseña' }))
+    await user.click(screen.getByRole('tab', { name: 'Cuenta y contraseña' }))
     await user.click(screen.getByRole('button', { name: 'Cambiar' }))
     // Basta con uno de los tres campos: la repetición sola también es trabajo.
     await user.type(screen.getByLabelText('Repite la contraseña nueva'), 'Otra')
@@ -463,7 +463,7 @@ describe('PerfilPage: cambiar la contraseña', () => {
     await user.click(screen.getByRole('button', { name: 'Seguir editando' }))
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(screen.getByLabelText('Repite la contraseña nueva')).toHaveValue('Otra')
-    expect(screen.getByRole('tab', { name: 'Contraseña' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: 'Cuenta y contraseña' })).toHaveAttribute('aria-selected', 'true')
   })
 
   it('con la contraseña abierta pero vacía, o ya cambiada, cambiar de pestaña no pregunta', async () => {
@@ -471,7 +471,7 @@ describe('PerfilPage: cambiar la contraseña', () => {
     simular(() => conCuerpo({ message: 'Contraseña cambiada.' }))
     renderWithProviders(<PerfilPage />, { routerDeDatos: true })
     await screen.findByText('Ana Pérez Ruiz')
-    await user.click(screen.getByRole('tab', { name: 'Contraseña' }))
+    await user.click(screen.getByRole('tab', { name: 'Cuenta y contraseña' }))
     await user.click(screen.getByRole('button', { name: 'Cambiar' }))
     await user.click(screen.getByRole('tab', { name: 'Datos personales' }))
     expect(screen.getByRole('tab', { name: 'Datos personales' })).toHaveAttribute('aria-selected', 'true')
