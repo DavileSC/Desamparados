@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { ArkErrors } from 'arktype';
 import { sinBom } from '../../../shared/datos-entidad.mjs';
 import db from '../config/db.js';
-import { esSlugContenido, mezclarConDefectos, porDefecto, SLUGS_CONTENIDO, type SlugContenido } from './contenido.js';
+import { CLAVES_RETIRADAS, esSlugContenido, mezclarConDefectos, porDefecto, SLUGS_CONTENIDO, type SlugContenido } from './contenido.js';
 import { esquemaDeSlug } from '../schemas/contenido.schema.js';
 import { sanearBloques } from '../utils/sanear-html.js';
 
@@ -69,7 +69,11 @@ function loQueSePerderia(defecto: unknown, semilla: unknown, ruta: string): stri
   const problemas: string[] = [];
   for (const [clave, valor] of Object.entries(semilla)) {
     const aqui = `${ruta}.${clave}`;
-    if (!(clave in defecto)) { problemas.push(`${aqui}: no existe en el contenido de partida`); continue; }
+    if (!(clave in defecto)) {
+      // Una retirada se tira al mezclar, como al leer lo guardado: no es una errata.
+      if (!CLAVES_RETIRADAS.has(aqui)) problemas.push(`${aqui}: no existe en el contenido de partida`);
+      continue;
+    }
     const base = defecto[clave];
     if (clave === 'teselas' && Array.isArray(base) && Array.isArray(valor)) {
       // Las teselas se casan por `clave`: una que no esté en el de partida no se pinta.
