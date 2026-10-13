@@ -12,6 +12,11 @@
 #     la advocación, la localidad y el dominio (www.…). De ahí salen la web, los
 #     correos, los PDF y nginx. Si no existe, este guion lo crea copiando
 #     shared/datos-entidad.ejemplo.json y para hasta que se rellene.
+#   - Si los tiene, lo demás de la corporación, también en instalacion/: la
+#     marca (marca/), las fotos fijas (imagenes/), el mapa del barrio
+#     (mapas/barrio.json) y su contenido de partida (contenido-inicial.json).
+#     Nada es obligatorio, pero el contenido solo cuenta en el primer arranque:
+#     el guion dice qué encuentra antes de arrancar.
 #   - El dominio apuntando ya a este servidor, con los puertos 80 y 443 libres:
 #     Let's Encrypt lo comprueba al pedir el certificado.
 #
@@ -21,7 +26,8 @@
 #      Si ya existe, no lo toca: tendría las contraseñas con que se creó la base.
 #   3. Las carpetas de las subidas con sus permisos.
 #   4. El certificado, antes del primer arranque (nginx no arranca sin él).
-#   5. Levanta todo: base, migraciones, API, web y antivirus.
+#   5. Levanta todo: base, migraciones, API, web y antivirus, y comprueba que
+#      la web ha escrito sus datos al arrancar.
 #   6. La siembra (el administrador, cuya contraseña sale UNA vez por pantalla)
 #      y el cifrado de los secretos del doble factor.
 #
@@ -40,7 +46,7 @@ CERTIFICADO=1
 for arg in "$@"; do
   case "$arg" in
     --sin-certificado) CERTIFICADO=0 ;;
-    -h|--help) sed -n '2,29p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,34p' "$0"; exit 0 ;;
     -*) fallo "Opción desconocida: $arg" ;;
     *) CORREO="$arg" ;;
   esac
@@ -116,6 +122,14 @@ install -d -o "$USUARIO" -g "$USUARIO" -m 750 "$B/storage/private"
 # La pública la lee el nginx del contenedor, que corre con su propio usuario:
 # con 750 no podría y cada foto subida daría 403. Lo que hay ahí es público.
 install -d -o "$USUARIO" -g "$USUARIO" -m 755 "$B/storage" "$B/storage/public"
+# nginx, con su propio usuario, sirve del montaje la marca, las fotos y el
+# mapa: sin lectura para los demás, cada uno da 403. El resto de instalacion/
+# lo lee la API con el uid del dueño, y el arranque de la web, como root.
+chmod 755 instalacion
+for d in instalacion/marca instalacion/imagenes instalacion/mapas; do
+  [[ -d "$d" ]] || continue
+  find "$d" \( -type d -exec chmod 755 {} + \) -o \( -type f -exec chmod 644 {} + \)
+done
 # Git se niega a trabajar en un repositorio de otro usuario sin esto.
 git config --system --get-all safe.directory 2>/dev/null | grep -qxF "$PROYECTO_DIR" \
   || git config --system --add safe.directory "$PROYECTO_DIR"
@@ -135,6 +149,17 @@ else
 fi
 
 # --- 5. Arranque ---
+# Lo opcional, dicho antes del primer arranque: la semilla del contenido solo
+# crea las páginas que aún no existen, y después de este arranque existen todas.
+hay() { [[ -e "instalacion/$1" ]] && echo "sí" || echo "no: $2"; }
+log "Lo propio de la corporación en instalacion/:"
+echo "    marca/                  $(hay marca 'escudo e iconos genéricos de partida')"
+echo "    imagenes/               $(hay imagenes 'la web pinta su fondo donde irían las fotos')"
+echo "    mapas/barrio.json       $(hay mapas/barrio.json 'el recorrido, en lista, sin mapa')"
+echo "    contenido-inicial.json  $(hay contenido-inicial.json 'las páginas nacen con el texto neutro')"
+echo "    Para añadir contenido-inicial.json, ahora (Ctrl+C y volver a lanzar): luego ya no cuenta."
+echo "    Lo demás se puede añadir cuando se quiera (docs/despliegue.md, «Una instalación por corporación»)."
+
 log "Construyendo y levantando (la primera vez tarda: imágenes y firmas del antivirus)…"
 compose up -d --build
 
@@ -152,6 +177,21 @@ for _ in $(seq 1 60); do
   sleep 5
 done
 compose ps
+
+# La web escribe sus datos al arrancar (/instalacion.js, index.html…) y, con un
+# dato o una imagen de la marca que no sirven, sale y el compose la reintenta
+# en bucle sin que nada lo diga. Sin certificado, nginx no arranca: no se mira.
+if [[ "$CERTIFICADO" -eq 1 ]]; then
+  WEB=0
+  for _ in $(seq 1 15); do
+    if compose exec -T web test -s /var/www/desamparados/dist/instalacion.js 2>/dev/null; then WEB=1; break; fi
+    sleep 2
+  done
+  if [[ "$WEB" -ne 1 ]]; then
+    compose logs --no-color --tail 40 web >&2 || true
+    fallo "La web no ha arrancado (mira el registro de arriba: ¿un dato de $DATOS o una imagen de instalacion/marca/ mal puestos?). Corrígelo y vuelve a lanzar el guion."
+  fi
+fi
 
 cat <<EOF
 

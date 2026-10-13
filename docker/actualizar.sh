@@ -17,7 +17,8 @@
 #   4. Construye las imágenes con la web aún en marcha: así la parada se queda
 #      en lo que tarda en cambiar de contenedor, y no en toda la compilación.
 #   5. Levanta: el compose aplica las migraciones y, si fallan, no arranca la API.
-#   6. Espera a que la API diga que está sana y avisa si no lo consigue.
+#   6. Espera a que la API diga que está sana y a que la web haya escrito sus
+#      datos al arrancar, y avisa si no lo consigue.
 #
 # No vuelve atrás solo: con la base ya migrada, volver al código anterior la
 # dejaría con un esquema que ese código no conoce. Si falla, dice qué hacer.
@@ -57,6 +58,17 @@ if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
 fi
 
 ANTES="$(git rev-parse --short HEAD)"
+
+# nginx, con su propio usuario, sirve del montaje la marca, las fotos y el
+# mapa: un fichero subido sin lectura para los demás da 403. Se arregla aquí
+# si son de este usuario; si no, se avisa (docs/despliegue.md, «Permisos»).
+permisos_ok=1
+chmod 755 instalacion 2>/dev/null || permisos_ok=0
+for d in instalacion/marca instalacion/imagenes instalacion/mapas; do
+  [[ -d "$d" ]] || continue
+  find "$d" \( -type d -exec chmod 755 {} + \) -o \( -type f -exec chmod 644 {} + \) 2>/dev/null || permisos_ok=0
+done
+[[ "$permisos_ok" -eq 1 ]] || log "AVISO: no he podido dejar instalacion/ y sus marca/, imagenes/ y mapas/ en 755/644 (¿de otro usuario?). Lo que nginx no pueda leer dará 403."
 
 # --- 2. La copia de seguridad ---
 if [[ "$SIN_COPIA" -eq 1 ]]; then
@@ -109,11 +121,26 @@ log "Esperando a que la API esté sana…"
 for _ in $(seq 1 60); do
   estado="$(docker inspect -f '{{.State.Health.Status}}' "$(compose ps -q api)" 2>/dev/null || echo desconocido)"
   if [[ "$estado" == "healthy" ]]; then
-    log "Hecho: $DESPUES en marcha."
-    exit 0
+    break
   fi
   sleep 5
 done
+
+if [[ "$estado" == "healthy" ]]; then
+  # La web escribe sus datos al arrancar (/instalacion.js, index.html…) y, con
+  # un dato o una imagen de la marca que no sirven, sale y el compose la
+  # reintenta en bucle sin que nada lo diga.
+  log "Comprobando la web…"
+  for _ in $(seq 1 15); do
+    if compose exec -T web test -s /var/www/desamparados/dist/instalacion.js 2>/dev/null; then
+      log "Hecho: $DESPUES en marcha."
+      exit 0
+    fi
+    sleep 2
+  done
+  compose logs --no-color --tail 40 web >&2 || true
+  fallo "La API está sana, pero la web no arranca (mira el registro de arriba: ¿un dato de instalacion/datos-entidad.json o una imagen de instalacion/marca/ mal puestos?). Corrígelo y «docker compose restart web»: la base no tiene nada que ver."
+fi
 
 compose ps >&2
 compose logs --no-color --tail 60 api >&2 || true

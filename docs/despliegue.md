@@ -1213,9 +1213,19 @@ cd /srv/desamparados
 sudo ./docker/instalar.sh secretaria@corporacion.es
 ```
 
+Antes de lanzarlo, si los tiene, se dejan en `instalacion/` lo demás de la
+corporación: `marca/`, `imagenes/`, `mapas/barrio.json` y
+`contenido-inicial.json` (cada uno en su apartado de arriba). Ninguno es
+obligatorio, pero **`contenido-inicial.json` solo cuenta en el primer
+arranque**: después ya existen todas las páginas. Por eso el guion, justo antes
+de arrancar, dice qué ha encontrado y qué pasa con lo que falta.
+
 Hace en orden lo de «El usuario del sistema…» y «Orden de una puesta en
 producción»: crea el usuario, genera el `.env` con secretos nuevos, prepara
-`storage/`, pide el certificado, levanta todo, siembra y cifra los secretos
+`storage/` y los permisos de `instalacion/` (755 la carpeta; `marca/`,
+`imagenes/` y `mapas/` en 755/644, que nginx los lee con su propio usuario),
+pide el certificado, levanta todo, comprueba que la web ha escrito sus datos
+al arrancar (si no, enseña su registro y para), siembra y cifra los secretos
 del doble factor. Si se corta, se vuelve a lanzar: no pisa un `.env` que ya
 exista ni repite el certificado. **La contraseña del administrador sale una
 sola vez por pantalla.** Lo que no puede adivinar (correo saliente, copias,
@@ -1234,9 +1244,12 @@ sudo -u desamparados ./docker/actualizar.sh v1.4.0    # a una versión concreta
 
 Hace la copia de seguridad **antes** de tocar nada (lee
 `/etc/desamparados/copia.env`; sin ella se niega, salvo con `--sin-copia`),
-trae el código solo por avance rápido, construye las imágenes con la web aún en
-marcha, levanta (las migraciones se aplican solas) y espera a que la API esté
-sana. No vuelve atrás solo: con la base ya migrada, el código anterior no la
+deja `instalacion/` en los permisos de arriba (si no puede, avisa: lo que
+nginx no lea da 403), trae el código solo por avance rápido, construye las
+imágenes con la web aún en marcha, levanta (las migraciones se aplican solas),
+espera a que la API esté sana y comprueba que la web ha arrancado: con un dato
+o una imagen de la marca mal puestos, la web sale y el compose la reintenta en
+bucle sin decir nada; el guion enseña su registro. No vuelve atrás solo: con la base ya migrada, el código anterior no la
 entendería. Si algo falla, dice cómo restaurar.
 
 ### Actualizar todas
