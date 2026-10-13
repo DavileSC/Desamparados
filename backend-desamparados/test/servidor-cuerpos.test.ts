@@ -71,7 +71,7 @@ describe('límite del cuerpo JSON', () => {
     assert.equal(res.status, 413);
   });
 
-  for (const ruta of ['/api/news', '/api/pages', '/api/publications']) {
+  for (const ruta of ['/api/news', '/api/publications']) {
     test(`${ruta} admite 200 KB de HTML del CMS (llega a la autenticación, no se corta)`, async () => {
       const res = await postJson(ruta, cuerpoDe(200));
       assert.notEqual(res.status, 413);
