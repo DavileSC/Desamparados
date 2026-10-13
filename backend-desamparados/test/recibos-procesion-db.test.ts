@@ -942,11 +942,18 @@ test('la devolución lleva el día en que la hizo el banco, no el del clic (NG4)
   try {
     const hermano = await e.hermano();
     const cobrado = await ReciboService.emitirRecibo({ hermanoId: hermano.id, year: YEAR, concepto: 'Cuota de diciembre', importe: 20, tipo: 'CUOTA_HERMANO' }, e.meta);
-    await ReciboService.adminMarcarComoPagado(cobrado.id, MetodoPago.TRANSFERENCIA, e.meta);
+    // Cobrado en diciembre de 2025 (el banco lo cargó entonces).
+    await ReciboService.adminMarcarComoPagado(cobrado.id, MetodoPago.TRANSFERENCIA, e.meta, inicioDiaMadrid('2025-12-10'));
     // Un día que no existe o que aún no ha llegado no vale; tampoco sin devolver.
     const manana = sumarDias(diaMadrid(new Date()), 1);
     await assert.rejects(ReciboService.adminUpdateDetalles(cobrado.id, { estado: 'DEVUELTO', fechaDevolucion: manana }, e.meta), (err: unknown) => err instanceof HttpError && err.status === 400);
     await assert.rejects(ReciboService.adminUpdateDetalles(cobrado.id, { estado: 'ANULADO', fechaDevolucion: '2025-12-30' }, e.meta), (err: unknown) => err instanceof HttpError && err.status === 400);
+    // NG14: ni anterior al cobro, que dejaría el reverso en un ejercicio sin su ingreso.
+    await assert.rejects(
+      ReciboService.adminUpdateDetalles(cobrado.id, { estado: 'DEVUELTO', fechaDevolucion: '2024-12-30' }, e.meta),
+      (err: unknown) => err instanceof HttpError && err.status === 400 && /anterior al del cobro/.test(err.message),
+    );
+    assert.equal((await db.recibo.findUniqueOrThrow({ where: { id: cobrado.id } })).estado, EstadoPago.PAGADO, 'sigue cobrado');
 
     await ReciboService.adminUpdateDetalles(cobrado.id, { estado: 'DEVUELTO', comision: 2, fechaDevolucion: '2025-12-30' }, e.meta);
     const gastos = (await apuntes(cobrado.id)).filter((a) => a.tipo === TipoTransaccion.GASTO);

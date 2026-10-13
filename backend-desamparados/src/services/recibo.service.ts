@@ -17,7 +17,7 @@ import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditor
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { anulaPapeleta, estadosCobrablesCon, MENSAJE_REMESADO_EN_MANO, puedeCobrarse, puedeTransicionar, requiereReverso } from '../domain/recibo-estados.js';
-import { instanteDelApunte } from '../domain/contabilidad.js';
+import { diaMadrid, instanteDelApunte } from '../domain/contabilidad.js';
 import { enmascararEmail } from '../utils/log-privacidad.js';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { agruparImpagos } from '../domain/impagos.js';
@@ -447,6 +447,16 @@ export class ReciboService {
       // poder probarlo sin base de datos.
       if (cambiaEstado && !puedeTransicionar(actual.estado, destino, actual)) {
         throw new HttpError(`No se puede cambiar un recibo de ${actual.estado} a ${destino}.`);
+      }
+      // El día que dice Tesorería no puede ser anterior al ingreso: el
+      // reverso caería en otro ejercicio sin nada que deshacer (un año mal
+      // puesto). La devolución de un extracto lleva el día del banco y no pasa por aquí.
+      if (cambiaEstado && data.fechaDevolucion !== undefined && requiereReverso(actual.estado, destino)) {
+        const ingreso = await tx.transaccion.findFirst({ where: { reciboId, tipo: TipoTransaccion.INGRESO }, orderBy: { fecha: 'asc' }, select: { fecha: true } });
+        const diaDelCobro = ingreso ? diaMadrid(ingreso.fecha) : actual.fechaPago ? diaMadrid(actual.fechaPago) : null;
+        if (diaDelCobro !== null && data.fechaDevolucion < diaDelCobro) {
+          throw new HttpError(`El día de la devolución no puede ser anterior al del cobro (${diaDelCobro.split('-').reverse().join('/')}).`);
+        }
       }
       // Un recibo que ya estaba devuelto no genera otra comisión.
       if (data.comision !== undefined && !cambiaEstado) {
