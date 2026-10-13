@@ -2,12 +2,13 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
+import { QueryClient } from '@tanstack/react-query'
 import IncidenciasDePago from '../IncidenciasDePago'
 
 const json = (cuerpo: unknown) => new Response(JSON.stringify(cuerpo), { status: 200, headers: { 'Content-Type': 'application/json' } })
 const INCIDENCIA = { id: 7, pedido: '00000042AB7Z', fecha: '2026-10-02T10:00:00.000Z', importe: 30, metodo: 'TARJETA', autorizacion: '654321', motivo: 'No se pudo aplicar el pago: «Cuota 2026» no está pendiente de pago.', correo: 'hermano@example.com', origen: 'AREA_HERMANOS', anulable: false }
 
-afterEach(() => { vi.unstubAllGlobals() })
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
 describe('IncidenciasDePago', () => {
   it('sin incidencias no enseña nada', async () => {
@@ -35,6 +36,31 @@ describe('IncidenciasDePago', () => {
     expect(fetch.mock.calls.some(([url, init]) => String(url).includes('/incidencias/7/resolver') && (init as RequestInit).method === 'POST')).toBe(true)
     // «Devuelto» a secas no anula nada: va sin cuerpo, como siempre.
     expect(fetch.mock.calls.find(([, init]) => (init as RequestInit).method === 'POST')?.[1]?.body).toBeUndefined()
+  })
+
+  it('«Devuelto» a secas en un pago de la tienda refresca la Tienda; en una cuota, no', async () => {
+    const user = userEvent.setup()
+    const invalidar = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+    let pendientes = [{ ...INCIDENCIA, origen: 'TIENDA', anulable: true }, { ...INCIDENCIA, id: 8, pedido: '00000043AB7Z' }]
+    const fetch = vi.fn().mockImplementation((url: string, init: RequestInit = {}) => {
+      if (init.method === 'POST') {
+        const id = Number(/incidencias\/(\d+)\//.exec(String(url))?.[1])
+        pendientes = pendientes.filter((i) => i.id !== id)
+        return Promise.resolve(json({ message: 'ok' }))
+      }
+      return Promise.resolve(json(pendientes))
+    })
+    vi.stubGlobal('fetch', fetch)
+    renderWithProviders(<IncidenciasDePago />)
+
+    expect(await screen.findByText('2 pagos en línea por devolver')).toBeInTheDocument()
+    // La cuota del área de hermanos no toca la Tienda.
+    await user.click(screen.getAllByRole('button', { name: 'Devuelto' })[1])
+    expect(await screen.findByText('Un pago en línea por devolver')).toBeInTheDocument()
+    expect(invalidar).not.toHaveBeenCalledWith({ queryKey: ['tienda'] })
+    // El pedido de la tienda deja de ser «Cobrado sin completar».
+    await user.click(screen.getByRole('button', { name: 'Devuelto' }))
+    await waitFor(() => expect(invalidar).toHaveBeenCalledWith({ queryKey: ['tienda'] }))
   })
 
   it('se puede resolver anulando el pedido, tras confirmarlo', async () => {

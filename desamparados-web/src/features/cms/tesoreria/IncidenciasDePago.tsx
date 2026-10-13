@@ -33,13 +33,16 @@ export default function IncidenciasDePago() {
     return () => { cancelado = true }
   }, [])
 
-  const resolver = async (id: number, anular = false) => {
+  const resolver = async ({ id, origen }: IncidenciaDePago, anular = false) => {
     setResolviendo(id)
     setError(null); setAviso(null)
     try {
       const { message } = await resolverIncidenciaDePago(id, { anular })
-      // El pedido anulado deja de estar donde estaba en la lista de la Tienda.
-      if (anular) { setAviso(message); void cliente.invalidateQueries({ queryKey: ['tienda', 'pedidos'] }) }
+      if (anular) setAviso(message)
+      // Resuelta, el pedido deja de ser «Cobrado sin completar» (y, anulado, de
+      // estar donde estaba): sin esto, la Tienda lo seguía enseñando igual hasta
+      // que caducara su caché.
+      if (anular || origen === 'TIENDA') void cliente.invalidateQueries({ queryKey: ['tienda'] })
       await cargar()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se ha podido marcar como resuelta.')
@@ -71,7 +74,7 @@ export default function IncidenciasDePago() {
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              <Button size="small" variant="outlined" color="inherit" disabled={resolviendo === i.id} onClick={() => void resolver(i.id)}>
+              <Button size="small" variant="outlined" color="inherit" disabled={resolviendo === i.id} onClick={() => void resolver(i)}>
                 Devuelto
               </Button>
               {/* Un pedido de la tienda cobrado y sin completar no tiene otra salida.
@@ -94,7 +97,7 @@ export default function IncidenciasDePago() {
       textoConfirmar="Devuelto y anular"
       textoCancelar="Volver"
       peligro
-      onConfirmar={() => { if (anulando) { const id = anulando.id; setAnulando(null); void resolver(id, true) } }}
+      onConfirmar={() => { if (anulando) { const incidencia = anulando; setAnulando(null); void resolver(incidencia, true) } }}
       onCancelar={() => setAnulando(null)}
     />
   </>)
