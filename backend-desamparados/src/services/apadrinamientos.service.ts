@@ -166,10 +166,15 @@ export class ApadrinamientosService {
   static async campanas() {
     const lista = await db.campanaApadrinamiento.findMany({ orderBy: [{ activa: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }], select: { id: true } });
     const campanas = await Promise.all(lista.map(({ id }) => campanaCompleta(id, true)));
-    return campanas.map((c) => ({
+    // Lo cobrado, como en Contabilidad, y no el precio actual de cada pieza:
+    // si cambió con un pago en curso, las dos cifras no casaban.
+    const cobrado = await Promise.all(lista.map(({ id }) => db.apadrinamiento.aggregate({
+      where: { estado: { in: PAGADOS }, pieza: { campanaId: id } }, _sum: { importe: true },
+    })));
+    return campanas.map((c, i) => ({
       id: c.id, titulo: c.titulo, foto: c.foto, activa: c.activa, piezas: c.piezas.length,
       apadrinadas: c.piezas.filter((p) => p.apadrinada).length,
-      recaudado: c.piezas.filter((p) => p.apadrinada).reduce((s, p) => s + p.precio, 0),
+      recaudado: Number(cobrado[i]._sum.importe ?? 0),
     }));
   }
 

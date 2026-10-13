@@ -132,6 +132,24 @@ test('con Redsys, dos a por la misma pieza: se la lleva el primer aviso y el otr
   }
 });
 
+test('NG20: lo recaudado es lo cobrado, aunque el precio de la pieza cambiara con el pago en curso', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  process.env.PAGO_EN_LINEA = 'redsys';
+  const e = await escenario();
+  try {
+    const a = await ApadrinamientosService.apadrinar({ ...e.persona('Ana', true), piezaId: e.vela1.id }, {});
+    if (a.tipo !== 'banco') throw new Error('se esperaba ir al banco');
+    // Aún sin pagar, el precio se puede cambiar; el banco cobra lo de antes.
+    await ApadrinamientosService.cambiarPieza(e.c.id, e.vela1.id, { nombre: 'Vela 1', precio: 30, x: 10.5, y: 40 });
+    assert.ok(await PagoEnLineaService.avisoDelBanco(aviso({ Ds_Order: a.pedido, Ds_Amount: '2000', Ds_Response: '0000' }), {}));
+    const resumen = (await ApadrinamientosService.campanas()).find((x) => x.id === e.c.id)!;
+    assert.deepEqual([resumen.apadrinadas, resumen.recaudado], [1, 20], 'lo que apuntó Contabilidad, no el precio nuevo');
+  } finally {
+    delete process.env.PAGO_EN_LINEA;
+    await e.recoger();
+  }
+});
+
 test('lo público sin sesión, la gestión solo con la del CMS', async (t) => {
   assert.equal((await fetch(`${baseUrl}/api/apadrinamientos/admin/campanas`)).status, 401);
   if (!dbDisponible) { t.skip(SIN_DB); return; }

@@ -229,6 +229,32 @@ test('abrir exige días de reparto; al abrir se avisa y queda un borrador de not
   }
 });
 
+test('NG20: dos «Abrir» a la vez abren una vez (un solo borrador y una tanda de avisos), y la cuenta de nadie no se avisa', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  // Una cuenta de custodia del censo importado, con una ficha activa.
+  const custodia = await crearUsuarioPrueba(Role.USER);
+  const direccionDeNadie = `custodia-${Date.now()}@censo.invalido`;
+  await db.user.update({ where: { id: custodia.id }, data: { email: direccionDeNadie } });
+  const ficha = await db.hermano.create({ data: { userId: custodia.id, nombre: 'Sin', apellidos: 'Correo', fechaNacimiento: new Date(Date.UTC(1950, 0, 1)), activo: true } });
+  try {
+    assert.equal((await PlazoPapeletasService.destinatarios()).some((d) => d.email === direccionDeNadie), false);
+
+    await fijarPlazo(false);
+    await e.turno(30);
+    const pasion = await salida(PASION);
+    const [a, b] = await Promise.all([1, 2].map(() => PlazoPapeletasService.cambiar(true, { borradorNoticia: true }, pasion, { userId: e.admin.id })));
+    const borradores = [a.noticiaId, b.noticiaId].filter((n): n is number => n !== null);
+    e.noticias.push(...borradores);
+    assert.equal(borradores.length, 1, 'un solo borrador de noticia');
+    assert.equal(await PlazoPapeletasService.estaAbierto(pasion), true);
+  } finally {
+    await db.hermano.delete({ where: { id: ficha.id } });
+    await borrarUsuarioPrueba(custodia.id);
+    await e.recoger();
+  }
+});
+
 test('una salida con fecha a mano no abre su plazo sin fecha, y sin salida o con una que no existe es un 400', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
