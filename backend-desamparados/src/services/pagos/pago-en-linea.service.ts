@@ -181,7 +181,7 @@ export class PagoEnLineaService {
     const incidencia = async (motivo: string) => {
       // Si otro aviso del mismo pedido ya lo cobró, no es incidencia: es el repetido.
       if (await db.operacionMesa.findUnique({ where: { clave: claveDelCobro(aviso.pedido) }, select: { clave: true } })) {
-        await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.PAGADO, ...banco } });
+        await PagoEnLineaService.marcarPagado(pago.id, banco);
         return;
       }
       await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.INCIDENCIA, motivo, ...banco } });
@@ -212,19 +212,35 @@ export class PagoEnLineaService {
       try {
         await db.operacionMesa.create({ data: { clave, tipo: 'aviso-del-banco' } });
       } catch (e) {
-        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') return true;
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+          // Si el otro aviso llegó a aplicarlo (y solo falló marcar el pago), este lo cierra.
+          const reserva = await db.operacionMesa.findUnique({ where: { clave }, select: { resultado: true } });
+          if ((reserva?.resultado as { aplicado?: boolean } | null)?.aplicado) await PagoEnLineaService.marcarPagado(pago.id, banco);
+          return true;
+        }
         throw e;
       }
+      let aplicado = false;
       try {
         if (!aplicar || pago.referenciaId === null) throw new HttpError('El pago no dice qué se pagaba.');
         await aplicar(pago.referenciaId, pago.metodo as MetodoEnLinea, { ...meta });
-        await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.PAGADO, ...banco } });
+        aplicado = true;
+        await db.operacionMesa.update({ where: { clave }, data: { resultado: { aplicado: true } } });
+        await PagoEnLineaService.marcarPagado(pago.id, banco);
       } catch (e) {
-        // Sin aplicar, la reserva sobra: con ella, `incidencia` lo tomaría por
-        // cobrado, y un fallo de verdad tiene que poder reintentarse.
+        // Aplicado ya (falló solo marcar el pago), la reserva es la prueba de
+        // que se cobró: borrarla hacía que un aviso repetido lo diera por
+        // incidencia, y Tesorería devolvía el dinero de un pedido entregado.
+        if (aplicado) throw e;
+        // Sin aplicar, la reserva sobra: con ella, `incidencia` lo tomaría por cobrado.
         await db.operacionMesa.deleteMany({ where: { clave } });
+        // Cualquier fallo es incidencia, no solo los esperados: el banco ha
+        // cobrado, y un pedido que se queda «sin pagar» sin rastro no lo ve
+        // nadie. Los choques entre transacciones ya los reintenta el aplicador.
+        await incidencia(e instanceof HttpError
+          ? `No se pudo aplicar el pago: ${e.message}`
+          : 'No se pudo aplicar el pago por un error del servidor: revísalo antes de devolverlo.');
         if (!(e instanceof HttpError)) throw e;
-        await incidencia(`No se pudo aplicar el pago: ${e.message}`);
       }
       return true;
     }
@@ -246,13 +262,21 @@ export class PagoEnLineaService {
         { hermanoId: ahora.hermanoId, reciboIds, solicitudes: solicitudIds.map((solicitudId) => ({ solicitudId })), metodoPago: pago.metodo as MetodoEnLinea },
         claveDelCobro(aviso.pedido), { ...meta, userId }, ACCIONES_AUDITORIA.PAGO_EN_LINEA,
       );
-      await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.PAGADO, ...banco } });
+      await PagoEnLineaService.marcarPagado(pago.id, banco);
     } catch (e) {
       // Lo que ya no se puede cobrar (pagado en Secretaría, solicitud anulada…) es incidencia; lo demás, un fallo de verdad.
       if (!(e instanceof HttpError)) throw e;
       await incidencia(`No se pudo aplicar el pago: ${e.message}`);
     }
     return true;
+  }
+
+  /**
+   * El último paso de un aviso cobrado: el pago, a PAGADO. Aparte y público
+   * para que las pruebas puedan hacerlo fallar y ver que la reserva se queda.
+   */
+  static async marcarPagado(id: number, banco: { respuesta: string | null; autorizacion: string | null }) {
+    await db.pagoEnLinea.updateMany({ where: { id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.PAGADO, ...banco } });
   }
 
   /** Cómo va un pago propio, para la vuelta del banco (el aviso puede llegar después). */

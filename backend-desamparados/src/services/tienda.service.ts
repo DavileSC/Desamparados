@@ -12,6 +12,7 @@ import crypto from 'node:crypto';
 import { EstadoPedido, MetodoPago, OrigenPago, Prisma, TipoTransaccion } from '@prisma/client';
 import db from '../config/db';
 import { HttpError, NotFoundError } from '../utils/error.handle';
+import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
 import { PagoEnLineaService, registrarOrigenDePago, type MetodoEnLinea } from './pagos/pago-en-linea.service.js';
 import { idCategoriaDeRecibos } from './recibos/comunes.js';
@@ -177,12 +178,19 @@ function correoDePedido(p: { nombre: string; id: number; total: Prisma.Decimal; 
  */
 async function aplicarPago(pedidoId: number, metodo: MetodoEnLinea, meta: MetaDeAuditoria) {
   const categoriaId = await idCategoriaDeRecibos(TipoTransaccion.INGRESO, CATEGORIA_TIENDA);
-  const pedido = await db.$transaction(async (tx) => {
+  // Serializable y con reintento: dos avisos casi a la vez del mismo producto
+  // chocan (1020/1213) al descontar, y sin reintento el segundo se quedaba
+  // «sin pagar» con el dinero cobrado.
+  const pedido = await transactionWithRetry(async (tx) => {
     const p = await tx.pedidoTienda.findUnique({ where: { id: pedidoId }, include: { lineas: true } });
     if (!p) throw new HttpError('El pedido ya no existe.');
     if (p.estado !== EstadoPedido.PENDIENTE_PAGO) throw new HttpError('El pedido ya no estaba pendiente de pago.');
     for (const l of p.lineas) {
       if (l.productoId === null) continue;
+      // La talla se borró con el pedido en el banco: sin ella, el descuento
+      // caía sobre el producto (sin límite cuando cuenta por tallas) y se
+      // cobraba sin comprobar nada.
+      if (l.tallaId === null && l.nombreTalla !== null) throw new HttpError(`La talla ${l.nombreTalla} de «${l.nombre}» ya no está a la venta.`);
       // Condicionado: con dos pedidos del último que queda, solo uno se lo
       // lleva. Con talla, se descuenta de la talla. Sin límite no se
       // descuenta: `decrement` sobre null deja null.
@@ -204,7 +212,7 @@ async function aplicarPago(pedidoId: number, metodo: MetodoEnLinea, meta: MetaDe
       data: { estado: EstadoPedido.PAGADO, metodo: metodo as MetodoPago, pagadoEl: new Date(), transaccionId: apunte.id },
       include: { lineas: true },
     });
-  });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   await AuditoriaService.log(ACCIONES_AUDITORIA.TIENDA_PEDIDO_PAGADO, meta, 'pedido', pedidoId, { despues: { total: pedido.total.toString(), metodo } });
   void correoDePedido(pedido).then(({ asunto, html, uso }) => enviarCorreo(pedido.email, asunto, html, { uso })).catch(console.error);
 }

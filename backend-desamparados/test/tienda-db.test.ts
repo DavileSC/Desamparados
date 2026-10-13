@@ -4,7 +4,7 @@
 // gestión desde el CMS. Cada prueba crea sus productos y los recoge.
 
 import assert from 'node:assert/strict';
-import { after, before, test } from 'node:test';
+import { after, before, mock, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import { Role } from '@prisma/client';
@@ -138,6 +138,75 @@ test('con Redsys, solo el aviso firmado lo da por pagado; sin existencias, queda
     assert.equal((await TiendaService.pedidoPublico(doble.token)).estado, 'PAGADO');
     const numeroDoble = (await TiendaService.pedidoPublico(doble.token)).numero;
     assert.equal(await db.transaccion.count({ where: { concepto: `Tienda: pedido n.º ${numeroDoble}` } }), 1);
+  } finally {
+    delete process.env.PAGO_EN_LINEA;
+    await e.recoger();
+  }
+});
+
+test('NG2: dos avisos a la vez de pedidos del mismo producto se aplican los dos (el choque se reintenta)', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  process.env.PAGO_EN_LINEA = 'redsys';
+  const e = await escenario();
+  try {
+    await db.producto.update({ where: { id: e.medalla.id }, data: { existencias: 5 } });
+    const pedidos = await Promise.all([1, 2, 3].map(() => TiendaService.comprar(e.compra([{ productoId: e.medalla.id, cantidad: 1 }]), {})));
+    await Promise.all(pedidos.map((p, i) => p.tipo === 'banco'
+      ? PagoEnLineaService.avisoDelBanco(aviso({ Ds_Order: p.pedido, Ds_Amount: '1500', Ds_Response: '0000', Ds_AuthorisationCode: `44444${i}` }), {})
+      : null));
+    for (const p of pedidos) {
+      assert.equal((await TiendaService.pedidoPublico(p.token)).estado, 'PAGADO');
+      if (p.tipo === 'banco') assert.equal((await db.pagoEnLinea.findUniqueOrThrow({ where: { pedido: p.pedido } })).estado, 'PAGADO');
+    }
+    assert.equal((await db.producto.findUniqueOrThrow({ where: { id: e.medalla.id } })).existencias, 2);
+  } finally {
+    delete process.env.PAGO_EN_LINEA;
+    await e.recoger();
+  }
+});
+
+test('NG17: si falla solo marcar el pago, la reserva se queda y el aviso repetido lo cierra sin incidencia', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  process.env.PAGO_EN_LINEA = 'redsys';
+  const e = await escenario();
+  try {
+    const r = await TiendaService.comprar(e.compra([{ productoId: e.medalla.id, cantidad: 1 }]), {});
+    if (r.tipo !== 'banco') return assert.fail('esperaba ir al banco');
+    const avisoPagado = aviso({ Ds_Order: r.pedido, Ds_Amount: '1500', Ds_Response: '0000', Ds_AuthorisationCode: '555555' });
+    const falla = mock.method(PagoEnLineaService, 'marcarPagado', async () => { throw new Error('se cayó la conexión'); });
+    try {
+      await assert.rejects(PagoEnLineaService.avisoDelBanco(avisoPagado, {}), /se cayó la conexión/);
+    } finally {
+      falla.mock.restore();
+    }
+    assert.equal((await TiendaService.pedidoPublico(r.token)).estado, 'PAGADO');
+
+    assert.ok(await PagoEnLineaService.avisoDelBanco(avisoPagado, {}));
+    const pago = await db.pagoEnLinea.findUniqueOrThrow({ where: { pedido: r.pedido } });
+    assert.equal(pago.estado, 'PAGADO', 'sin incidencia falsa');
+    assert.equal(await db.transaccion.count({ where: { concepto: `Tienda: pedido n.º ${(await TiendaService.pedidoPublico(r.token)).numero}` } }), 1);
+  } finally {
+    delete process.env.PAGO_EN_LINEA;
+    await e.recoger();
+  }
+});
+
+test('NG18: si se borra la talla con el pedido en el banco, el aviso queda como incidencia', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  process.env.PAGO_EN_LINEA = 'redsys';
+  const e = await escenario();
+  try {
+    await TiendaService.actualizarProducto(e.medalla.id, { nombre: e.medalla.nombre, descripcion: '', precio: 15, foto: null, existencias: null, activo: true, orden: 0, tallas: [{ nombre: 'M', existencias: 3 }] });
+    const m = await db.tallaProducto.findFirstOrThrow({ where: { productoId: e.medalla.id } });
+    const r = await TiendaService.comprar(e.compra([{ productoId: e.medalla.id, tallaId: m.id, cantidad: 1 }]), {});
+    if (r.tipo !== 'banco') return assert.fail('esperaba ir al banco');
+    await TiendaService.actualizarProducto(e.medalla.id, { nombre: e.medalla.nombre, descripcion: '', precio: 15, foto: null, existencias: null, activo: true, orden: 0, tallas: [{ nombre: 'L', existencias: 3 }] });
+
+    assert.ok(await PagoEnLineaService.avisoDelBanco(aviso({ Ds_Order: r.pedido, Ds_Amount: '1500', Ds_Response: '0000', Ds_AuthorisationCode: '666666' }), {}));
+    assert.equal((await TiendaService.pedidoPublico(r.token)).estado, 'PENDIENTE_PAGO');
+    const pago = await db.pagoEnLinea.findUniqueOrThrow({ where: { pedido: r.pedido } });
+    assert.equal(pago.estado, 'INCIDENCIA');
+    assert.match(pago.motivo ?? '', /talla M .* ya no está a la venta/);
   } finally {
     delete process.env.PAGO_EN_LINEA;
     await e.recoger();

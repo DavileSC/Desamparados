@@ -77,7 +77,10 @@ function correoDeApadrinamiento(a: { nombre: string; importe: Prisma.Decimal; de
 
 async function aplicarPago(apadrinamientoId: number, metodo: MetodoEnLinea, meta: MetaDeAuditoria) {
   const categoriaId = await idCategoriaDeRecibos(TipoTransaccion.INGRESO, CATEGORIA_APADRINAMIENTOS);
-  const hecho = await db.$transaction(async (tx) => {
+  // Con reintento: dos padrinos de la misma pieza acaban en interbloqueo
+  // (1213), y el que pierde tiene que llegar a «la apadrinó otra persona»
+  // (incidencia) en vez de quedarse pendiente sin rastro.
+  const hecho = await transactionWithRetry(async (tx) => {
     const a = await tx.apadrinamiento.findUnique({ where: { id: apadrinamientoId }, include: { pieza: { include: { campana: true } } } });
     if (!a) throw new HttpError('El apadrinamiento ya no existe.');
     if (a.estado !== EstadoPedido.PENDIENTE_PAGO) throw new HttpError('El apadrinamiento ya no estaba pendiente de pago.');
