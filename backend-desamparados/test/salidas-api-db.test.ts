@@ -17,6 +17,7 @@ import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { PASION } from './fixtures/salidas.js';
 import { SalidasService } from '../src/services/procesion/salidas.service.js';
+import { TurnosService } from '../src/services/procesion/turnos.service.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 
 let dbDisponible = false;
@@ -509,5 +510,33 @@ test('la próxima salida: la de fecha a mano, con la hora de Madrid de su acto, 
   } finally {
     await db.salida.deleteMany({ where: { slug } });
     await db.evento.deleteMany({ where: { id: acto.id } });
+  }
+});
+
+// NG5: el reparto de diciembre para una salida a mano de enero sale en el
+// panel de Secretaría; el de la temporada anterior, no.
+test('a mano, el panel lista los repartos desde la salida anterior, también los del año natural anterior', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const y = new Date().getFullYear();
+  const nombre = `Traslado NG5 ${Date.now()}`;
+  const viejo = await db.evento.create({ data: { title: nombre, type: 'PROCESION', startDate: new Date(`${y + 1}-01-06T11:00:00Z`) } });
+  const acto = await db.evento.create({ data: { title: nombre, type: 'PROCESION', startDate: new Date(`${y + 2}-01-06T11:00:00Z`) } });
+  const salida = await db.salida.create({
+    data: { slug: `prueba-ng5-${Date.now()}`, nombre, fecha: 'MANUAL', eventoId: acto.id, puestos: [], activa: false },
+  });
+  const turno = (dia: string) => db.turno.create({
+    data: { salidaId: salida.id, fecha: new Date(`${dia}T00:00:00Z`), horaInicio: new Date(`${dia}T17:00:00Z`), horaFin: new Date(`${dia}T20:00:00Z`) },
+  });
+  try {
+    const deDiciembre = await turno(`${y + 1}-12-15`);
+    const deLaAnterior = await turno(`${y}-12-15`);
+    const lista = await TurnosService.getTodosLosTurnos(await db.salida.findUniqueOrThrow({ where: { id: salida.id }, include: { acto: true } }));
+    const ids = lista.map((x) => x.id);
+    assert.ok(ids.includes(deDiciembre.id), 'el de diciembre del año anterior a la salida sale');
+    assert.ok(!ids.includes(deLaAnterior.id), 'el de antes de la salida anterior, no');
+  } finally {
+    await db.turno.deleteMany({ where: { salidaId: salida.id } });
+    await db.salida.delete({ where: { id: salida.id } });
+    await db.evento.deleteMany({ where: { id: { in: [viejo.id, acto.id] } } });
   }
 });

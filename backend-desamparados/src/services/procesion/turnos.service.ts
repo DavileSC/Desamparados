@@ -53,7 +53,11 @@ export class TurnosService {
    * Secretaría: los que quedan y los que ya pasaron. Los de otros años no
    * salen (se guardan: sus citas son el histórico de los hermanos). Con la
    * Pascua, son los que caen después de la salida del año anterior y hasta
-   * la de este, aunque sean del otoño anterior; a mano, los del año natural.
+   * la de este, aunque sean del otoño anterior. A mano, igual: desde el día
+   * siguiente al acto anterior de la salida (el que quedó en la Agenda al
+   * pasar al año siguiente), que puede ser también del año natural anterior;
+   * con el 1 de enero, un reparto de diciembre para una salida de enero no
+   * salía en el panel aunque los hermanos ya lo eligieran.
    *
    * `citas` cuenta todas las que no se anularon: al venir, la cita pasa de
    * reservada a atendida, y contar solo las reservadas dejaba a 0 los días
@@ -62,11 +66,12 @@ export class TurnosService {
   static async getTodosLosTurnos(salida: SalidaConActo) {
     const year = PlazoPapeletasService.anioDeLaProcesion(salida);
     const regla = reglaDe(salida);
-    const anterior = regla.fecha === 'PASCUA' ? fechaDeSalida(regla, year - 1) : null;
-    const desde = anterior ? sumarDias(anterior, 1) : `${year}-01-01`;
-    const hasta = sumarDias(fechaDeSalida(regla, year) ?? `${year}-12-31`, 1);
+    const fechaDelAnio = fechaDeSalida(regla, year);
+    const anterior = regla.fecha === 'PASCUA' ? fechaDeSalida(regla, year - 1) : await TurnosService.actoAnterior(salida, fechaDelAnio);
+    const desde = anterior ? sumarDias(anterior, 1) : null;
+    const hasta = sumarDias(fechaDelAnio ?? `${year}-12-31`, 1);
     const turnos = await db.turno.findMany({
-      where: { salidaId: salida.id, fecha: { gte: new Date(`${desde}T00:00:00Z`), lt: new Date(`${hasta}T00:00:00Z`) } },
+      where: { salidaId: salida.id, fecha: { ...(desde && { gte: new Date(`${desde}T00:00:00Z`) }), lt: new Date(`${hasta}T00:00:00Z`) } },
       orderBy: { fecha: 'desc' },
     });
     const cuentas = await db.cita.groupBy({
@@ -78,6 +83,35 @@ export class TurnosService {
       .filter((c) => c.turnoId === turnoId && (!estado || c.estado === estado))
       .reduce((s, c) => s + c._count._all, 0);
     return turnos.map((t) => ({ ...t, citas: cuantas(t.id), vinieron: cuantas(t.id, EstadoCita.ATENDIDA) }));
+  }
+
+  /**
+   * El día del acto de la salida anterior de una salida a mano, o `null` si no
+   * hubo ninguno (es la primera: ningún reparto es de otra temporada). Con
+   * fecha este año, el último antes de ella; sin fecha, el último que ya
+   * pasó, aunque sea el enlazado. El acto viejo queda en la Agenda con el
+   * nombre de la salida y tipo PROCESION (`fijarFecha`); por el título de
+   * ahora o el del acto enlazado, por si se renombró la salida.
+   */
+  private static async actoAnterior(salida: SalidaConActo, fechaDelAnio: string | null): Promise<string | null> {
+    const titulos = [...new Set([salida.nombre, salida.acto?.title].filter((t): t is string => !!t))];
+    // Por día de Madrid, no por instante: un acto a las 00:30 del día de la
+    // salida es de ese día, aunque en UTC sea del anterior.
+    const hoy = diaMadrid(new Date());
+    const tope = fechaDelAnio ?? sumarDias(hoy, 1);
+    const candidatos = await db.evento.findMany({
+      where: {
+        type: TipoEvento.PROCESION,
+        title: { in: titulos },
+        startDate: { lt: new Date(`${sumarDias(tope, 1)}T00:00:00Z`) },
+        ...(fechaDelAnio && salida.eventoId && { id: { not: salida.eventoId } }),
+      },
+      orderBy: { startDate: 'desc' },
+      take: 5,
+      select: { startDate: true },
+    });
+    const previo = candidatos.map((e) => diaMadrid(e.startDate)).find((dia) => (fechaDelAnio ? dia < fechaDelAnio : dia < tope));
+    return previo ?? null;
   }
 
   /**
