@@ -1045,6 +1045,42 @@ test('NG1: un donativo posterior del mismo año no tapa al devuelto; su reemisi�
   }
 });
 
+test('R1: con la cuota ya emitida a mano y sin enlazar, «Reemitir» la devuelta la enlaza (el enlace explícito manda)', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const hermano = await e.hermano();
+    const anio = new Date().getFullYear() - 1;
+    const devuelta = await ReciboService.emitirRecibo({ hermanoId: hermano.id, year: anio, concepto: `Cuota anual ${anio}`, importe: 30, tipo: 'CUOTA_HERMANO' }, e.meta);
+    await ReciboService.adminMarcarComoPagado(devuelta.id, MetodoPago.EFECTIVO, e.meta);
+    await ReciboService.adminUpdateDetalles(devuelta.id, { estado: 'DEVUELTO' }, e.meta);
+    // Lo que deja una base de antes del enlace: Tesorería volvió a emitir la
+    // cuota con otro concepto, sin «(reemisión)», el hermano la pagó y el
+    // relleno de la migración no la reconoce como reemisión.
+    await db.recibo.create({ data: { hermanoId: hermano.id, year: anio, concepto: `Cuota ${anio}`, importe: '30', tipo: 'CUOTA_HERMANO', estado: EstadoPago.PAGADO, metodoPago: MetodoPago.EFECTIVO, fechaPago: new Date() } });
+    const pendientes = async () => (await devueltosPendientes({ hermanoId: hermano.id })).total;
+    assert.equal(await pendientes(), 1, 'la devuelta suelta sale como deuda');
+
+    // Sin enlace, la cuota pagada sigue impidiendo otra.
+    await assert.rejects(
+      ReciboService.emitirRecibo({ hermanoId: hermano.id, year: anio, concepto: `Cuota ${anio} (bis)`, importe: 30, tipo: 'CUOTA_HERMANO' }, e.meta),
+      (err: unknown) => err instanceof HttpError && err.status === 409 && /ya tiene su cuota/.test(err.message)
+    );
+
+    // Con el enlace explícito, se emite y la devuelta deja de deberse; la
+    // nueva, que sobra, Tesorería la anula.
+    const enlace = await ReciboService.emitirRecibo(
+      { hermanoId: hermano.id, year: anio, concepto: `Cuota anual ${anio} (reemisión)`, importe: 30, tipo: 'CUOTA_HERMANO', reemisionDeId: devuelta.id }, e.meta
+    );
+    assert.equal(enlace.reemisionDeId, devuelta.id);
+    assert.equal(await pendientes(), 0);
+    await ReciboService.adminUpdateDetalles(enlace.id, { estado: 'ANULADO' }, e.meta);
+    assert.equal(await pendientes(), 0, 'anulada la que sobraba, la devuelta sigue saldada');
+  } finally {
+    await e.recoger();
+  }
+});
+
 test('NG1: la papeleta de otra salida del mismo año no reemite la devuelta; la de la misma salida, sí', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();

@@ -238,7 +238,15 @@ export class ReciboService {
       // hermano pagaba dos veces. Solo cuenta la cuota viva (por cobrar,
       // remesada o cobrada): tras una devuelta o anulada, emitir otra es
       // justo la reemisión que este extremo existe para permitir.
-      if (dto.tipo === TipoRecibo.CUOTA_HERMANO) {
+      //
+      // Con `reemisionDeId` no se mira: el enlace explícito manda, y ya está
+      // acotado (un devuelto del mismo año y tipo, sin otra reemisión). Es lo
+      // que cierra el devuelto que el relleno de la migración
+      // 20261119200000_reemision_de dejó suelto porque su reemisión se emitió
+      // a mano sin «(reemisión)»: DEVUELTO es final y Tesorería no puede
+      // anularlo (lo contrario de lo que dice el comentario de esa migración),
+      // así que se reemite enlazado y se anula la nueva, que sobra.
+      if (dto.tipo === TipoRecibo.CUOTA_HERMANO && dto.reemisionDeId === undefined) {
         const cuotaViva = await tx.recibo.findFirst({
           where: { hermanoId: dto.hermanoId, year: dto.year, tipo: TipoRecibo.CUOTA_HERMANO, estado: { in: [...ESTADOS_CUOTA_VIVA] } },
           select: { concepto: true, estado: true }
