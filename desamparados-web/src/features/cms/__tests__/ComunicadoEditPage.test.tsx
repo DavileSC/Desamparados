@@ -65,11 +65,29 @@ describe('ComunicadoEditPage', () => {
 
     await user.click(screen.getByRole('combobox', { name: 'Papeleta' }))
     const opciones = within(await screen.findByRole('listbox')).getAllByRole('option').map((o) => o.textContent)
-    expect(opciones).toEqual(['Da igual', 'Con papeleta del Sábado de Pasión', 'Con papeleta del Rosario vespertino'])
+    expect(opciones).toEqual([
+      'Da igual',
+      'Con papeleta del Sábado de Pasión', 'Apuntados al Sábado de Pasión',
+      'Con papeleta del Rosario vespertino', 'Apuntados al Rosario vespertino',
+    ])
     await user.click(screen.getByRole('option', { name: 'Con papeleta del Rosario vespertino' }))
     await waitFor(() => {
       const ultima = fetch.mock.calls.filter(([url]) => String(url).endsWith('/destinatarios')).at(-1)!
       expect(JSON.parse(String((ultima[1] as RequestInit).body)).segmento.conPapeleta).toBe(2)
+    })
+  })
+
+  it('«apuntados a» una salida filtra por su id, quita el «con papeleta» y dice qué es', async () => {
+    const user = userEvent.setup()
+    const fetch = montar({ ...BORRADOR, segmento: { ...BORRADOR.segmento, conPapeleta: 1 } })
+    await screen.findByText(/Llegará a 10 direcciones/)
+
+    await user.click(screen.getByRole('combobox', { name: 'Papeleta' }))
+    await user.click(await screen.findByRole('option', { name: 'Apuntados al Sábado de Pasión' }))
+    expect(screen.getByText('Con su papeleta de este año, o pedida y aún sin recoger.')).toBeInTheDocument()
+    await waitFor(() => {
+      const ultima = fetch.mock.calls.filter(([url]) => String(url).endsWith('/destinatarios')).at(-1)!
+      expect(JSON.parse(String((ultima[1] as RequestInit).body)).segmento).toMatchObject({ apuntadosA: 1, conPapeleta: null })
     })
   })
 

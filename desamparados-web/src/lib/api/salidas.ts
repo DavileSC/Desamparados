@@ -44,9 +44,14 @@ export interface Salida {
    * año aún sin recoger. Con ellas, la ficha avisa al cambiar la fecha o el cobro.
    */
   solicitudesPendientes?: number
+  /**
+   * Solo en la lista del CMS: las papeletas ya sacadas para su año. Un cambio
+   * de fecha o de cobro también les afecta, y tampoco se les avisa solo.
+   */
+  papeletasDelAnio?: number
 }
 
-export type DatosSalida = Omit<Salida, 'id' | 'eventoId' | 'plazoAbierto' | 'cortejo' | 'anio' | 'fechaDelAnio' | 'acto' | 'solicitudesPendientes'>
+export type DatosSalida = Omit<Salida, 'id' | 'eventoId' | 'plazoAbierto' | 'cortejo' | 'anio' | 'fechaDelAnio' | 'acto' | 'solicitudesPendientes' | 'papeletasDelAnio'>
 
 export const CLAVE_SALIDAS = ['salidas'] as const
 
@@ -65,5 +70,13 @@ export const proximaSalidaWeb = () => llamarApi<{ proxima: ProximaSalidaWeb | nu
 export const salidasDelCms = () => llamarApi<Salida[]>('/cms/salidas')
 export const crearSalida = (datos: DatosSalida) => llamarApi<Salida>('/cms/salidas', { method: 'POST', json: datos })
 export const editarSalida = (id: number, datos: Partial<DatosSalida>) => llamarApi<Salida>(`/cms/salidas/${id}`, { method: 'PUT', json: datos })
-export const fijarFechaDeSalida = (id: number, datos: { inicio: string; lugar?: string | null }) =>
+/**
+ * Fija el día de una salida a mano (crea o mueve su acto de la Agenda). Con
+ * `aMano`, una salida por la Pascua pasa a «a mano» en la misma operación: en
+ * dos pasos, el primero la dejaba sin fecha con el plazo abierto (409) o, si
+ * fallaba el segundo, a medias. Responde 409 si la salida es por la Pascua
+ * sin `aMano` o si, con el plazo abierto, el día no es del año que se
+ * prepara; 400 si el día ya ha pasado (salvo corregirlo dentro de su año).
+ */
+export const fijarFechaDeSalida = (id: number, datos: { inicio: string; lugar?: string | null; aMano?: boolean }) =>
   llamarApi<Salida>(`/cms/salidas/${id}/fecha`, { method: 'PUT', json: datos })

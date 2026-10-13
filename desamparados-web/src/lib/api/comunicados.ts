@@ -7,6 +7,12 @@ type EstadoComunicado = 'BORRADOR' | 'ENVIANDO' | 'ENVIADO'
 export interface Segmento {
   /** El id de la salida. */
   conPapeleta?: number | null
+  /**
+   * El id de la salida: quien tiene su papeleta del año o la ha pedido y aún
+   * no la ha recogido (la solicitud PENDIENTE). Para avisar de un cambio de
+   * fecha o de cobro a todos los que cuentan con ella.
+   */
+  apuntadosA?: number | null
   conDeuda?: boolean
   edad?: 'MAYORES' | 'MENORES' | null
   poblacion?: string | null

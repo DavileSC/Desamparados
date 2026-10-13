@@ -15,7 +15,7 @@ import EditorTexto from './EditorTexto'
 import { plantillasLibres } from '../../lib/api/emails'
 import { site } from '../../config/site'
 import { useSalidas } from '../procesion/useSalidas'
-import { deArticulo } from '../../domain/articulos'
+import { aArticulo, deArticulo } from '../../domain/articulos'
 import { useModulos } from '../../hooks/useModulos'
 
 const LISTADO = '/cms/comunicados'
@@ -24,7 +24,7 @@ const plural = (n: number, uno: string, varios: string) => (n === 1 ? `1 ${uno}`
 
 const aDatos = (c: ComunicadoCompleto): DatosComunicado => ({
   tipo: c.tipo, asunto: c.asunto, cuerpo: c.cuerpo,
-  segmento: { conPapeleta: c.segmento.conPapeleta ?? null, conDeuda: c.segmento.conDeuda ?? false, edad: c.segmento.edad ?? null, poblacion: c.segmento.poblacion ?? '' },
+  segmento: { conPapeleta: c.segmento.conPapeleta ?? null, apuntadosA: c.segmento.apuntadosA ?? null, conDeuda: c.segmento.conDeuda ?? false, edad: c.segmento.edad ?? null, poblacion: c.segmento.poblacion ?? '' },
 })
 
 /**
@@ -213,9 +213,23 @@ export default function ComunicadoEditPage() {
           </Typography>
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'repeat(3, minmax(0, 1fr))' } }}>
             {activo('procesion') && (
-              <TextField select size="small" label="Papeleta" slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }} value={form.segmento.conPapeleta ?? ''} onChange={(e) => segmento({ conPapeleta: e.target.value === '' ? null : Number(e.target.value) })}>
+              // Un solo desplegable para los dos filtros de una salida: «apuntados»
+              // ya incluye a quien tiene la papeleta, y juntos no dirían nada más.
+              <TextField
+                select size="small" label="Papeleta"
+                slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }}
+                value={form.segmento.apuntadosA ? `apuntados-${form.segmento.apuntadosA}` : form.segmento.conPapeleta ? `papeleta-${form.segmento.conPapeleta}` : ''}
+                onChange={(e) => {
+                  const [filtro, salida] = e.target.value.split('-')
+                  segmento({ conPapeleta: filtro === 'papeleta' ? Number(salida) : null, apuntadosA: filtro === 'apuntados' ? Number(salida) : null })
+                }}
+                helperText={form.segmento.apuntadosA ? 'Con su papeleta de este año, o pedida y aún sin recoger.' : undefined}
+              >
                 <MenuItem value="">Da igual</MenuItem>
-                {salidas.map((s) => <MenuItem key={s.id} value={s.id}>{`Con papeleta ${deArticulo(s.articulo, s.nombre)}`}</MenuItem>)}
+                {salidas.flatMap((s) => [
+                  <MenuItem key={`papeleta-${s.id}`} value={`papeleta-${s.id}`}>{`Con papeleta ${deArticulo(s.articulo, s.nombre)}`}</MenuItem>,
+                  <MenuItem key={`apuntados-${s.id}`} value={`apuntados-${s.id}`}>{`Apuntados ${aArticulo(s.articulo, s.nombre)}`}</MenuItem>,
+                ])}
               </TextField>
             )}
             <TextField select size="small" label="Edad" slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }} value={form.segmento.edad ?? ''} onChange={(e) => segmento({ edad: (e.target.value || null) as Segmento['edad'] })}>
