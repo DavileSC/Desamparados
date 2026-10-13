@@ -65,6 +65,37 @@ test('un donativo en línea cuenta en el año en que se cobró, no en el que se 
   }
 });
 
+test('NG16: la reemisión de un donativo de salida hereda su origen y no entra en el 182', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const familia = await crearUsuarioPrueba(Role.USER);
+  const dni = dniNuevo();
+  const hermano = await db.hermano.create({
+    data: { userId: familia.id, esTitular: true, nombre: 'Ana', apellidos: 'Reemitida Sol', dni, fechaNacimiento: new Date('1975-01-01T00:00:00Z'), codigoPostal: '29006' },
+  });
+  try {
+    const recibo = (concepto: string, estado: EstadoPago, reemisionDeId: number | null = null) => db.recibo.create({
+      data: { hermanoId: hermano.id, year: EJERCICIO, concepto, importe: '40', tipo: TipoRecibo.DONATIVO, estado, reemisionDeId, fechaPago: new Date(`${EJERCICIO}-04-04T10:00:00Z`), metodoPago: MetodoPago.EFECTIVO },
+    });
+    // El donativo del Rosario, pagado antes de recoger y devuelto por el banco.
+    const devuelto = await recibo('Donativo Rosario 2091', EstadoPago.DEVUELTO);
+    await db.solicitud.create({ data: { hermanoId: hermano.id, salidaId: await idDeSalida(ROSARIO), year: EJERCICIO, puesto: 'Vela', origen: 'MESA', estado: 'CANCELADA', reciboId: devuelto.id } });
+    // Su reemisión desde Tesorería, también devuelta, y la reemisión de esta, pagada.
+    const primera = await recibo('Donativo Rosario 2091 (reemisión)', EstadoPago.DEVUELTO, devuelto.id);
+    await recibo('Donativo Rosario 2091 (reemisión 2)', EstadoPago.PAGADO, primera.id);
+    // Y un donativo de verdad, que sí se declara.
+    await recibo('Donativo flores', EstadoPago.PAGADO);
+
+    const r = await Modelo182Service.resumen(EJERCICIO);
+    assert.equal(r.declarados.find((d) => d.nif === dni)?.centimos, 40_00, 'solo el donativo de las flores');
+  } finally {
+    await db.solicitud.deleteMany({ where: { hermanoId: hermano.id } });
+    await db.recibo.updateMany({ where: { hermanoId: hermano.id }, data: { reemisionDeId: null } });
+    await db.recibo.deleteMany({ where: { hermanoId: hermano.id } });
+    await db.hermano.delete({ where: { id: hermano.id } });
+    await borrarUsuarioPrueba(familia.id);
+  }
+});
+
 test('el resumen, el fichero y los certificados del ejercicio', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const tesorero = await crearUsuarioPrueba(Role.TESORERIA);

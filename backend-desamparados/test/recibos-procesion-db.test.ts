@@ -25,7 +25,7 @@ import { ACCIONES_AUDITORIA } from '../src/services/auditoria.service.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { diaMadrid, inicioDiaMadrid } from '../src/domain/contabilidad.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
-import { conceptoDe, PASION, salida } from './fixtures/salidas.js';
+import { conceptoDe, PASION, ROSARIO, salida } from './fixtures/salidas.js';
 import { reglaDe } from '../src/services/procesion/salidas.service.js';
 import { leerDatosEvento } from '../src/services/recibos/comunes.js';
 import { proximaFecha, sumarDias } from '../src/domain/fecha-salida.js';
@@ -65,6 +65,12 @@ const YEAR = await salida(PASION).then(anioDeLaMesa).catch(() => new Date().getF
 async function diaDeReparto() {
   return sumarDias(proximaFecha(reglaDe(await salida(PASION)), diaMadrid(new Date()))!, -1);
 }
+
+/**
+ * Un recibo «en el banco». A REMESADO solo lo lleva una remesa (NG15), y
+ * generarla pide mandato e IBAN: estas pruebas solo necesitan el estado.
+ */
+const enElBanco = (id: number) => db.recibo.update({ where: { id }, data: { estado: EstadoPago.REMESADO } });
 
 /** Cambia la fila de la Pasión mientras dura `fn` y la deja como estaba. */
 async function conLaPasion(cambios: Prisma.SalidaUpdateInput, fn: () => Promise<void>) {
@@ -247,7 +253,7 @@ test('D3: se emite un recibo suelto, se remesa y se cobra con su ingreso', async
       (err: unknown) => err instanceof HttpError && err.status === 409
     );
 
-    await ReciboService.adminUpdateDetalles(recibo.id, { estado: 'REMESADO' }, e.meta);
+    await enElBanco(recibo.id);
     const cobrado = await ReciboService.adminMarcarComoPagado(recibo.id, undefined, e.meta);
     assert.equal(cobrado.estado, EstadoPago.PAGADO);
     // Un remesado lo cobra el banco: sin método explícito, domiciliación.
@@ -692,7 +698,7 @@ test('D3: no se emite una segunda cuota viva del mismo año aunque cambie el con
       (err: unknown) => err instanceof HttpError && err.status === 409 && /ya tiene su cuota/.test(err.message)
     );
     // Remesada o cobrada sigue viva igual.
-    await ReciboService.adminUpdateDetalles(primera.id, { estado: 'REMESADO' }, e.meta);
+    await enElBanco(primera.id);
     await assert.rejects(
       ReciboService.emitirRecibo({ hermanoId: hermano.id, year: YEAR, concepto: `Cuota ${YEAR}`, importe: 25, tipo: 'CUOTA_HERMANO' }, e.meta),
       (err: unknown) => err instanceof HttpError && err.status === 409
@@ -907,7 +913,7 @@ test('un recibo que el banco devuelve apunta su comisión; uno cobrado, además,
     const hermano = await e.hermano();
     // Remesado y devuelto: nunca entró dinero, solo sale la comisión.
     const remesado = await ReciboService.emitirRecibo({ hermanoId: hermano.id, year: YEAR, concepto: 'Cuota remesada', importe: 30, tipo: 'CUOTA_HERMANO' }, e.meta);
-    await ReciboService.adminUpdateDetalles(remesado.id, { estado: 'REMESADO' }, e.meta);
+    await enElBanco(remesado.id);
     await ReciboService.adminUpdateDetalles(remesado.id, { estado: 'DEVUELTO', comision: 3.5 }, e.meta);
     const delRemesado = await apuntes(remesado.id);
     assert.deepEqual(delRemesado.map((a) => [a.tipo, String(a.importe)]), [[TipoTransaccion.GASTO, '3.5']]);
@@ -961,7 +967,7 @@ test('la comisión solo va con una devolución nueva: ni sin devolver ni dos vec
       ReciboService.adminUpdateDetalles(recibo.id, { estado: 'ANULADO', comision: 3 }, e.meta),
       (err: unknown) => err instanceof HttpError && err.status === 400,
     );
-    await ReciboService.adminUpdateDetalles(recibo.id, { estado: 'REMESADO' }, e.meta);
+    await enElBanco(recibo.id);
     await ReciboService.adminUpdateDetalles(recibo.id, { estado: 'DEVUELTO', comision: 3 }, e.meta);
     await assert.rejects(
       ReciboService.adminUpdateDetalles(recibo.id, { estado: 'DEVUELTO', comision: 3 }, e.meta),
@@ -1000,6 +1006,66 @@ test('por HTTP, Contabilidad filtra los apuntes de un recibo y Tesorería trae e
   }
 });
 
+test('NG1: un donativo posterior del mismo año no tapa al devuelto; su reemisión explícita, sí', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const hermano = await e.hermano();
+    const anio = new Date().getFullYear() - 1;
+    const devuelto = await ReciboService.emitirRecibo({ hermanoId: hermano.id, year: anio, concepto: 'Donativo flores', importe: 40, tipo: 'DONATIVO' }, e.meta);
+    await ReciboService.adminMarcarComoPagado(devuelto.id, MetodoPago.EFECTIVO, e.meta);
+    await ReciboService.adminUpdateDetalles(devuelto.id, { estado: 'DEVUELTO' }, e.meta);
+    const pendientes = async () => (await devueltosPendientes({ hermanoId: hermano.id })).total;
+    assert.equal(await pendientes(), 1);
+
+    // Otro donativo del mismo año, que no es su reemisión: antes lo tapaba.
+    await ReciboService.emitirRecibo({ hermanoId: hermano.id, year: anio, concepto: 'Donativo cera', importe: 10, tipo: 'DONATIVO' }, e.meta);
+    assert.equal(await pendientes(), 1, 'el devuelto se sigue debiendo');
+
+    const reemision = await ReciboService.emitirRecibo(
+      { hermanoId: hermano.id, year: anio, concepto: 'Donativo flores (reemisión)', importe: 40, tipo: 'DONATIVO', reemisionDeId: devuelto.id }, e.meta
+    );
+    assert.equal(reemision.reemisionDeId, devuelto.id);
+    assert.equal(await pendientes(), 0);
+
+    // Una segunda reemisión del mismo devuelto cobraría dos veces la deuda.
+    await assert.rejects(
+      ReciboService.emitirRecibo({ hermanoId: hermano.id, year: anio, concepto: 'Donativo flores (reemisión 2)', importe: 40, tipo: 'DONATIVO', reemisionDeId: devuelto.id }, e.meta),
+      (err: unknown) => err instanceof HttpError && err.status === 409
+    );
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('NG1: la papeleta de otra salida del mismo año no reemite la devuelta; la de la misma salida, sí', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  // El Rosario cobra como la Pasión mientras dura: así los dos recibos son del mismo tipo.
+  const rosario = await salida(ROSARIO);
+  await db.salida.update({ where: { id: rosario.id }, data: { cobro: 'CUOTA', importeCuota: 30 } });
+  try {
+    const hermano = await e.hermano();
+    const { recibo } = await e.apuntarYCobrar(hermano.id);
+    await ReciboService.adminUpdateDetalles(recibo.id, { estado: 'DEVUELTO' }, e.meta);
+    const pendientes = async () => (await devueltosPendientes({ hermanoId: hermano.id })).total;
+    assert.equal(await pendientes(), 1);
+
+    const otra = await db.solicitud.create({ data: { hermanoId: hermano.id, salidaId: rosario.id, year: recibo.year, puesto: 'Cirio', origen: 'MESA' } });
+    const deOtra = await db.$transaction((tx) => PapeletasService.reciboDeSalidaEnTransaccion(tx, otra, 30, MetodoPago.EFECTIVO));
+    assert.equal(deOtra.tipo, recibo.tipo);
+    assert.equal(deOtra.reemisionDeId, null);
+    assert.equal(await pendientes(), 1, 'la papeleta del Rosario no salda la de la Pasión');
+
+    const deNuevo = await e.apuntarYCobrar(hermano.id);
+    assert.equal(deNuevo.recibo.reemisionDeId, recibo.id);
+    assert.equal(await pendientes(), 0);
+  } finally {
+    await db.salida.update({ where: { id: rosario.id }, data: { cobro: rosario.cobro, importeCuota: rosario.importeCuota } });
+    await e.recoger();
+  }
+});
+
 test('una cuota devuelta y reemitida se debe una vez: en impagos, en el panel y en el listado', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
@@ -1008,7 +1074,7 @@ test('una cuota devuelta y reemitida se debe una vez: en impagos, en el panel y 
     // Una cuota del año natural pasado, no del de la mesa.
     const anio = new Date().getFullYear() - 1;
     const devuelta = await ReciboService.emitirRecibo({ hermanoId: hermano.id, year: anio, concepto: 'Cuota devuelta', importe: 30, tipo: 'CUOTA_HERMANO' }, e.meta);
-    await ReciboService.adminUpdateDetalles(devuelta.id, { estado: 'REMESADO' }, e.meta);
+    await enElBanco(devuelta.id);
     await ReciboService.adminUpdateDetalles(devuelta.id, { estado: 'DEVUELTO' }, e.meta);
 
     const deudaDe = async () => (await ReciboService.impagos({ minimo: '1', limit: '100' })).data.find((f) => f.hermano.id === hermano.id);

@@ -526,6 +526,13 @@ model Recibo {
   /// La remesa que lo mandó al banco, si se cobró (o se intentó) por domiciliación.
   remesaId  Int?
   remesa    Remesa?        @relation(fields: [remesaId], references: [id], onDelete: SetNull)
+  /// El devuelto que este recibo vuelve a cobrar (o perdona). Único: un
+  /// devuelto se reemite una sola vez. Se enlaza a mano y no por «mismo
+  /// hermano, año y tipo», que confundía con la reemisión cualquier recibo
+  /// posterior, como la papeleta de otra salida del mismo año.
+  reemisionDeId Int?    @unique
+  reemisionDe   Recibo? @relation("Reemision", fields: [reemisionDeId], references: [id], onDelete: SetNull)
+  reemision     Recibo? @relation("Reemision")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

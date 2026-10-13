@@ -25,7 +25,7 @@ import { diaDeHoy } from '../domain/fechas-hermano.js';
 import { ORDENES_RECIBOS, ordenDe } from '../domain/ordenacion.js';
 import {
   ESTADOS_CUOTA_VIVA, MENSAJE_ESTADO_CAMBIADO, apuntarComisionEnTransaccion, devolverCobroEnTransaccion, fotoRecibo,
-  idCategoriaComisiones, idCategoriaDevoluciones, idCategoriaIngresos, leerDatosEvento, reemitidosDe, retirarPapeletaEnTransaccion,
+  idCategoriaComisiones, idCategoriaDevoluciones, idCategoriaIngresos, exigirSinReemision, leerDatosEvento, reemitidosDe, retirarPapeletaEnTransaccion,
   whereRecibosAdmin, type ConsultaRecibos,
 } from './recibos/comunes.js';
 
@@ -58,7 +58,7 @@ export class ReciboService {
     ]);
 
     // Un devuelto ya reemitido no pide nada: la pantalla deja de ofrecer reemitirlo.
-    const reemitidos = await reemitidosDe(data.filter((r) => r.estado === EstadoPago.DEVUELTO).map((r) => ({ ...r, hermanoId: r.hermano.id })));
+    const reemitidos = await reemitidosDe(data.filter((r) => r.estado === EstadoPago.DEVUELTO));
     return respuestaPaginada(data.map((r) => ({ ...r, reemitido: reemitidos.has(r.id) })), total, paginacion);
   }
 
@@ -105,7 +105,7 @@ export class ReciboService {
       },
     });
     // Una cuota devuelta y ya reemitida no se debe dos veces: cuenta su reemisión.
-    const reemitidas = await reemitidosDe(leidos.filter((r) => r.estado === EstadoPago.DEVUELTO).map((r) => ({ ...r, hermanoId: r.hermano.id, tipo: TipoRecibo.CUOTA_HERMANO })));
+    const reemitidas = await reemitidosDe(leidos.filter((r) => r.estado === EstadoPago.DEVUELTO));
     const recibos = leidos.filter((r) => !reemitidas.has(r.id));
     const filas = agruparImpagos(recibos, Number(query.minimo ?? 1));
     const paginacion = sanearPaginacion(query);
@@ -245,10 +245,36 @@ export class ReciboService {
         }
       }
 
+      // Una cuota nueva con la de ese año devuelta y sin reemitir es su
+      // reemisión aunque no se diga: solo hay una cuota por año, y si no se
+      // enlazara la deuda contaría dos veces.
+      let reemisionDeId = dto.reemisionDeId;
+      if (reemisionDeId === undefined && dto.tipo === TipoRecibo.CUOTA_HERMANO) {
+        const devuelta = await tx.recibo.findFirst({
+          where: { hermanoId: dto.hermanoId, year: dto.year, tipo: TipoRecibo.CUOTA_HERMANO, estado: EstadoPago.DEVUELTO, reemision: { is: null } },
+          orderBy: { id: 'desc' },
+          select: { id: true },
+        });
+        reemisionDeId = devuelta?.id;
+      }
+
+      // Una reemisión es del mismo hermano, año y tipo que su devuelto, y
+      // solo una por devuelto (exigirSinReemision).
+      if (reemisionDeId !== undefined) {
+        const devuelto = await tx.recibo.findUnique({ where: { id: reemisionDeId } });
+        if (!devuelto || devuelto.hermanoId !== dto.hermanoId) throw new NotFoundError('No se encontró el recibo devuelto que se quiere reemitir.');
+        if (devuelto.estado !== EstadoPago.DEVUELTO) throw new HttpError(`«${devuelto.concepto}» no está devuelto: solo se reemite un recibo devuelto.`, 409);
+        if (devuelto.year !== dto.year || devuelto.tipo !== dto.tipo) {
+          throw new HttpError(`La reemisión de «${devuelto.concepto}» tiene que ser del mismo año y tipo que él.`, 400);
+        }
+        await exigirSinReemision(tx, devuelto);
+      }
+
       return tx.recibo.create({
         data: {
           hermanoId: dto.hermanoId,
           year: dto.year,
+          reemisionDeId: reemisionDeId ?? null,
           concepto,
           importe: new Prisma.Decimal(dto.importe),
           tipo: dto.tipo as TipoRecibo,
@@ -259,7 +285,7 @@ export class ReciboService {
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     await AuditoriaService.log(ACCIONES_AUDITORIA.RECIBO_EMITIR, meta ?? {}, 'recibo', recibo.id, {
-      despues: { hermanoId: recibo.hermanoId, year: recibo.year, concepto: recibo.concepto, tipo: recibo.tipo, ...fotoRecibo(recibo) }
+      despues: { hermanoId: recibo.hermanoId, year: recibo.year, concepto: recibo.concepto, tipo: recibo.tipo, reemisionDeId: recibo.reemisionDeId, ...fotoRecibo(recibo) }
     });
 
     return recibo;
@@ -419,7 +445,7 @@ export class ReciboService {
 
       // El grafo de transiciones vive en src/domain/recibo-estados.ts para
       // poder probarlo sin base de datos.
-      if (cambiaEstado && !puedeTransicionar(actual.estado, destino)) {
+      if (cambiaEstado && !puedeTransicionar(actual.estado, destino, actual)) {
         throw new HttpError(`No se puede cambiar un recibo de ${actual.estado} a ${destino}.`);
       }
       // Un recibo que ya estaba devuelto no genera otra comisión.

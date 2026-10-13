@@ -129,12 +129,25 @@ export class PapeletasService {
     const salida = await tx.salida.findUniqueOrThrow({ where: { id: solicitud.salidaId }, select: { nombre: true, cobro: true } });
     const conceptos = (await tx.recibo.findMany({ where: { hermanoId: solicitud.hermanoId, year: solicitud.year }, select: { concepto: true } })).map((r) => r.concepto);
     const pagado = importe > 0;
+    const tipo = tipoReciboDe(salida.cobro);
+    // Si el banco le devolvió lo de esta misma salida (su papeleta se retiró
+    // al devolverlo), este recibo es su reemisión. Solo de la misma salida: la
+    // papeleta de otra salida del mismo año no salda esa deuda.
+    const devuelto = await tx.recibo.findFirst({
+      where: {
+        hermanoId: solicitud.hermanoId, year: solicitud.year, tipo, estado: EstadoPago.DEVUELTO,
+        solicitud: { salidaId: solicitud.salidaId }, reemision: { is: null },
+      },
+      orderBy: { id: 'desc' },
+      select: { id: true },
+    });
     const recibo = await tx.recibo.create({
       data: {
+        reemisionDeId: devuelto?.id ?? null,
         year: solicitud.year,
         concepto: conceptoDeSalida(salida, solicitud.year, conceptos),
         importe: new Prisma.Decimal(importe),
-        tipo: tipoReciboDe(salida.cobro),
+        tipo,
         estado: pagado ? EstadoPago.PAGADO : EstadoPago.EXENTO,
         metodoPago: pagado ? metodoPago : null,
         fechaPago: pagado ? new Date() : null,

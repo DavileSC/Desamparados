@@ -10,12 +10,20 @@ import { EstadoPago, MetodoPago } from '@prisma/client';
  *
  * El grafo es deliberadamente estrecho:
  *
- *   PENDIENTE ─┬─> REMESADO ─┬─> DEVUELTO   (impagado por el banco)
- *              │             └─> ANULADO
- *              ├─> ANULADO                  (se retira antes de cobrar)
+ *   PENDIENTE ─┬─> ANULADO                  (se retira antes de cobrar)
  *              └─> EXENTO                   (el hermano no paga esta vez)
+ *   REMESADO ──┬─> DEVUELTO                 (impagado por el banco)
+ *              ├─> ANULADO
+ *              └─> PENDIENTE                (solo sin remesa: ver abajo)
  *   PAGADO ─────────────────┬──> DEVUELTO     (el banco echa atrás un cobro)
  *                           └──> REEMBOLSADO  (se le devuelve al hermano)
+ *
+ * A REMESADO solo se llega generando una remesa (`RemesaService.generar`),
+ * que es lo que lo manda al banco. Pasarlo a mano dejaba un recibo «en el
+ * banco» sin remesa: ninguna remesa lo recogía (solo toman PENDIENTE), el
+ * extracto no lo veía (exige la remesa) y la mesa no lo cobraba. Los que
+ * quedaron así pueden volver a PENDIENTE; uno con remesa, no: está en un
+ * fichero que el banco ya tiene.
  *
  * DEVUELTO, ANULADO, EXENTO y REEMBOLSADO son finales: para volver a cobrar se
  * emite un recibo nuevo, de modo que la contabilidad conserva el rastro completo.
@@ -39,7 +47,7 @@ import { EstadoPago, MetodoPago } from '@prisma/client';
  *   REMESADO ──┘
  */
 const TRANSICIONES: Record<EstadoPago, readonly EstadoPago[]> = {
-  [EstadoPago.PENDIENTE]: [EstadoPago.REMESADO, EstadoPago.ANULADO, EstadoPago.EXENTO],
+  [EstadoPago.PENDIENTE]: [EstadoPago.ANULADO, EstadoPago.EXENTO],
   [EstadoPago.REMESADO]: [EstadoPago.DEVUELTO, EstadoPago.ANULADO],
   [EstadoPago.PAGADO]: [EstadoPago.DEVUELTO, EstadoPago.REEMBOLSADO],
   [EstadoPago.DEVUELTO]: [],
@@ -56,14 +64,19 @@ export const ESTADOS_FINALES: readonly EstadoPago[] = [
   EstadoPago.REEMBOLSADO,
 ];
 
-/** Estados a los que se puede pasar desde `origen`. Vacío si es final. */
-export function transicionesDesde(origen: EstadoPago): readonly EstadoPago[] {
-  return TRANSICIONES[origen] ?? [];
+/**
+ * Estados a los que se puede pasar desde `origen`. Vacío si es final.
+ * Con `recibo`, mira su remesa: un REMESADO sin ella puede volver a PENDIENTE
+ * (ver el grafo). Sin decirlo, se supone que la tiene.
+ */
+export function transicionesDesde(origen: EstadoPago, recibo?: { remesaId: number | null }): readonly EstadoPago[] {
+  const transiciones = TRANSICIONES[origen] ?? [];
+  return origen === EstadoPago.REMESADO && recibo?.remesaId === null ? [...transiciones, EstadoPago.PENDIENTE] : transiciones;
 }
 
-/** `true` si el cambio de estado está permitido. */
-export function puedeTransicionar(origen: EstadoPago, destino: EstadoPago): boolean {
-  return transicionesDesde(origen).includes(destino);
+/** `true` si el cambio de estado está permitido (ver `transicionesDesde`). */
+export function puedeTransicionar(origen: EstadoPago, destino: EstadoPago, recibo?: { remesaId: number | null }): boolean {
+  return transicionesDesde(origen, recibo).includes(destino);
 }
 
 /**

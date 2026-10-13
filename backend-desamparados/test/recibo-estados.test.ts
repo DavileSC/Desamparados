@@ -18,8 +18,7 @@ import {
 const TODOS = Object.values(EstadoPago);
 
 describe('máquina de estados de recibos', () => {
-  test('un recibo pendiente puede remesarse, anularse o quedar exento', () => {
-    assert.ok(puedeTransicionar(EstadoPago.PENDIENTE, EstadoPago.REMESADO));
+  test('un recibo pendiente puede anularse o quedar exento', () => {
     assert.ok(puedeTransicionar(EstadoPago.PENDIENTE, EstadoPago.ANULADO));
     assert.ok(puedeTransicionar(EstadoPago.PENDIENTE, EstadoPago.EXENTO));
   });
@@ -41,6 +40,17 @@ describe('máquina de estados de recibos', () => {
     assert.ok(requiereReverso(EstadoPago.PAGADO, EstadoPago.REEMBOLSADO));
     assert.ok(anulaPapeleta(EstadoPago.REEMBOLSADO));
     assert.deepEqual(transicionesDesde(EstadoPago.REEMBOLSADO), [], 'un reembolso es final');
+  });
+
+  test('a remesado no se pasa a mano: solo lo pone la remesa (NG15)', () => {
+    // Sin remesa, el recibo quedaba «en el banco» sin llegar a ningún fichero.
+    assert.equal(puedeTransicionar(EstadoPago.PENDIENTE, EstadoPago.REMESADO), false);
+    assert.equal(puedeTransicionar(EstadoPago.PENDIENTE, EstadoPago.REMESADO, { remesaId: null }), false);
+  });
+
+  test('un remesado sin remesa puede volver a pendiente; con remesa, no', () => {
+    assert.ok(puedeTransicionar(EstadoPago.REMESADO, EstadoPago.PENDIENTE, { remesaId: null }));
+    assert.equal(puedeTransicionar(EstadoPago.REMESADO, EstadoPago.PENDIENTE, { remesaId: 7 }), false);
   });
 
   test('un recibo remesado puede acabar devuelto o anulado, pero no exento', () => {
@@ -70,10 +80,11 @@ describe('máquina de estados de recibos', () => {
 
   test('no se puede volver atrás a pendiente', () => {
     // Reabrir un recibo cerrado como si nunca hubiera pasado nada borraría el
-    // rastro del intento de cobro.
+    // rastro del intento de cobro. (La única excepción, el remesado sin
+    // remesa, tiene su propia prueba.)
     for (const origen of TODOS) {
       assert.equal(
-        puedeTransicionar(origen, EstadoPago.PENDIENTE),
+        puedeTransicionar(origen, EstadoPago.PENDIENTE, { remesaId: 1 }),
         false,
         `${origen} -> PENDIENTE borraría el histórico`
       );
