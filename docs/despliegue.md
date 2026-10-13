@@ -1237,7 +1237,13 @@ sola vez por pantalla.** Lo demás que no puede adivinar (copias, Redsys,
 SEPA) lo dice al terminar.
 
 Con `--sin-certificado` se salta el paso 4, para probar antes de tener el
-dominio.
+dominio, y el `.env` nace sin el perfil `tls`. Al volver a lanzarlo sin la
+opción, saca el certificado y añade `tls` a `COMPOSE_PROFILES`: sin él no
+arranca `certbot`, que es quien lo renueva.
+
+Si falta `contenido-inicial.json` y la API no ha arrancado nunca, pregunta
+antes de levantar nada si se sigue sin él (solo con alguien delante: lanzado
+sin terminal, sigue).
 
 ### Actualizar una
 

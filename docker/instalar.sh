@@ -117,6 +117,18 @@ else
     docker/.env.example > .env
   [[ "$CERTIFICADO" -eq 1 ]] || sed -i 's|^COMPOSE_PROFILES=.*|COMPOSE_PROFILES=antivirus|' .env
 fi
+# Relanzar sin --sin-certificado una instalación que empezó con él (el camino
+# natural cuando llega el DNS) sacaría el certificado, pero sin el perfil tls
+# no arranca certbot, el único que lo renueva: a los 90 días caería la web.
+if [[ "$CERTIFICADO" -eq 1 ]]; then
+  PERFILES="$(sed -n 's/^COMPOSE_PROFILES=//p' .env | tail -n 1 | tr -d "\"'[:space:]")"
+  if [[ ",$PERFILES," != *",tls,"* ]]; then
+    PERFILES="${PERFILES:+$PERFILES,}tls"
+    if grep -q '^COMPOSE_PROFILES=' .env; then sed -i "s|^COMPOSE_PROFILES=.*|COMPOSE_PROFILES=$PERFILES|" .env
+    else echo "COMPOSE_PROFILES=$PERFILES" >> .env; fi
+    log "Añadido el perfil tls al .env (COMPOSE_PROFILES=$PERFILES): renueva el certificado."
+  fi
+fi
 chown "$USUARIO:$USUARIO" .env
 chmod 600 .env
 # En producción la API no arranca sin correo saliente: se descubriría tras
@@ -169,8 +181,15 @@ echo "    marca/                  $(hay marca 'escudo e iconos genéricos de par
 echo "    imagenes/               $(hay imagenes 'la web pinta su fondo donde irían las fotos')"
 echo "    mapas/barrio.json       $(hay mapas/barrio.json 'el recorrido, en lista, sin mapa')"
 echo "    contenido-inicial.json  $(hay contenido-inicial.json 'las páginas nacen con el texto neutro')"
-echo "    Para añadir contenido-inicial.json, ahora (Ctrl+C y volver a lanzar): luego ya no cuenta."
 echo "    Lo demás se puede añadir cuando se quiera (docs/despliegue.md, «Una instalación por corporación»)."
+# Sin pausa, en un segundo lanzamiento (imágenes ya construidas) la API crea
+# las páginas neutras en segundos y no da tiempo a echarse atrás. Se pregunta
+# solo si la API no ha arrancado nunca (después ya no cuenta) y hay alguien
+# delante: lanzado desde otro guion, sigue.
+if [[ ! -e instalacion/contenido-inicial.json && -t 0 && -z "$(compose ps -aq api 2>/dev/null)" ]]; then
+  read -rp "    ¿Seguir sin contenido-inicial.json? Luego ya no cuenta. [s/N] " RESPUESTA
+  [[ "$RESPUESTA" =~ ^[sS]$ ]] || fallo "Parado: pon instalacion/contenido-inicial.json (en 644) y vuelve a lanzar este guion."
+fi
 
 log "Construyendo y levantando (la primera vez tarda: imágenes y firmas del antivirus)…"
 # Si la API no arranca, `up` solo dice «dependency failed»: el porqué está en

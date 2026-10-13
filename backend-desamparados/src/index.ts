@@ -1,9 +1,6 @@
 import 'dotenv/config'; // Carga las variables de entorno del archivo .env
 import type { Server } from 'node:http';
-import { comprobarEntorno, hostDeEscucha, puertoDeEscucha } from './config/entorno';
 import { describirErrorParaLog } from './utils/log-privacidad';
-import { resolverClaveTotp } from './utils/cifrado-totp';
-import { deLaCorporacion } from './domain/articulos.js';
 
 /**
  * Punto de entrada del servidor.
@@ -13,9 +10,16 @@ import { deLaCorporacion } from './domain/articulos.js';
  * ahí daría un error suelto en vez de la lista de todo lo que falta. Por eso
  * `app` se importa de forma dinámica, después de la comprobación. Los tests
  * importan `app` directamente y no pasan por aquí.
+ *
+ * Lo mismo con `instalacion/datos-entidad.json`, que se lee al importar
+ * `domain/datos-entidad` (y lo importa hasta `config/entorno`, por la
+ * validación del IBAN): importado de forma estática, un fichero ausente o roto
+ * saldría como la traza de la importación y no con su mensaje.
  */
 let contenidoInicial: import('./domain/contenido-inicial.js').ContenidoInicial | undefined;
 try {
+  const { comprobarEntorno } = await import('./config/entorno');
+  const { resolverClaveTotp } = await import('./utils/cifrado-totp');
   comprobarEntorno();
   // La clave del doble factor se resuelve de forma perezosa, en el primer uso
   // del 2FA. En producción se fuerza aquí para que una TOTP_ENC_KEY ausente o
@@ -35,6 +39,8 @@ try {
   process.exit(1);
 }
 
+const { hostDeEscucha, puertoDeEscucha } = await import('./config/entorno');
+const { deLaCorporacion } = await import('./domain/articulos.js');
 const { default: app } = await import('./app');
 const { default: db } = await import('./config/db');
 
