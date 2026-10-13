@@ -124,8 +124,9 @@ test('el aviso va a todos los activos del segmento, y los filtros se suman', asy
     await db.recibo.create({ data: { hermanoId: conDeuda.id, year: 2099, concepto: 'Cuota 2099', importe: '30', tipo: TipoRecibo.CUOTA_HERMANO } });
     // Ni un donativo pendiente ni una cuota devuelta que ya se reemitió (y pagó) son cuotas por cobrar.
     await db.recibo.create({ data: { hermanoId: pepe.id, year: 2099, concepto: 'Donativo', importe: '10', tipo: TipoRecibo.DONATIVO } });
-    await db.recibo.create({ data: { hermanoId: pepe.id, year: 2098, concepto: 'Cuota 2098', importe: '30', tipo: TipoRecibo.CUOTA_HERMANO, estado: EstadoPago.DEVUELTO } });
-    await db.recibo.create({ data: { hermanoId: pepe.id, year: 2098, concepto: 'Cuota 2098 (reemisión)', importe: '30', tipo: TipoRecibo.CUOTA_HERMANO, estado: EstadoPago.PAGADO } });
+    const devuelta = await db.recibo.create({ data: { hermanoId: pepe.id, year: 2098, concepto: 'Cuota 2098', importe: '30', tipo: TipoRecibo.CUOTA_HERMANO, estado: EstadoPago.DEVUELTO } });
+    // La reemisión apunta a su devuelta (NG1): es el enlace lo que la da por reemitida.
+    await db.recibo.create({ data: { hermanoId: pepe.id, year: 2098, concepto: 'Cuota 2098 (reemisión)', importe: '30', tipo: TipoRecibo.CUOTA_HERMANO, estado: EstadoPago.PAGADO, reemisionDeId: devuelta.id } });
 
     assert.equal((await ComunicadosService.destinatarios('AVISO', { poblacion: e.pueblo })).correos, 3);
     assert.equal((await ComunicadosService.destinatarios('AVISO', { poblacion: e.pueblo, edad: 'MAYORES' })).correos, 2);
