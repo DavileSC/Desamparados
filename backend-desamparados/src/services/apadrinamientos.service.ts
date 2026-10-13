@@ -75,7 +75,7 @@ function correoDeApadrinamiento(a: { nombre: string; importe: Prisma.Decimal; de
   });
 }
 
-async function aplicarPago(apadrinamientoId: number, metodo: MetodoEnLinea, meta: MetaDeAuditoria) {
+async function aplicarPago(apadrinamientoId: number, metodo: MetodoEnLinea, meta: MetaDeAuditoria, alAplicar?: (tx: Prisma.TransactionClient) => Promise<void>) {
   const categoriaId = await idCategoriaDeRecibos(TipoTransaccion.INGRESO, CATEGORIA_APADRINAMIENTOS);
   // Con reintento: dos padrinos de la misma pieza acaban en interbloqueo
   // (1213), y el que pierde tiene que llegar a «la apadrinó otra persona»
@@ -93,6 +93,8 @@ async function aplicarPago(apadrinamientoId: number, metodo: MetodoEnLinea, meta
       },
     });
     // Guarda su apunte: así la contabilidad sabe que no es manual.
+    // El aviso del banco cierra aquí su pago: lo aplicado y el pago, a la vez.
+    await alAplicar?.(tx);
     return tx.apadrinamiento.update({
       where: { id: apadrinamientoId },
       data: { estado: EstadoPedido.PAGADO, metodo: metodo as MetodoPago, pagadoEl: new Date(), transaccionId: apunte.id },

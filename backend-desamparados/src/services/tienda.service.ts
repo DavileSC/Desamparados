@@ -178,7 +178,7 @@ function correoDePedido(p: { nombre: string; id: number; total: Prisma.Decimal; 
  * Aplica el pago de un pedido: existencias, contabilidad y estado, todo o
  * nada. Lanza HttpError si ya no se puede (y el pago queda como incidencia).
  */
-async function aplicarPago(pedidoId: number, metodo: MetodoEnLinea, meta: MetaDeAuditoria) {
+async function aplicarPago(pedidoId: number, metodo: MetodoEnLinea, meta: MetaDeAuditoria, alAplicar?: (tx: Prisma.TransactionClient) => Promise<void>) {
   const categoriaId = await idCategoriaDeRecibos(TipoTransaccion.INGRESO, CATEGORIA_TIENDA);
   // Serializable y con reintento: dos avisos casi a la vez del mismo producto
   // chocan (1020/1213) al descontar, y sin reintento el segundo se quedaba
@@ -211,6 +211,8 @@ async function aplicarPago(pedidoId: number, metodo: MetodoEnLinea, meta: MetaDe
       },
     });
     // El pedido guarda su apunte: así la contabilidad sabe que no es manual.
+    // El aviso del banco cierra aquí su pago: lo aplicado y el pago, a la vez.
+    await alAplicar?.(tx);
     return tx.pedidoTienda.update({
       where: { id: pedidoId },
       data: { estado: EstadoPedido.PAGADO, metodo: metodo as MetodoPago, pagadoEl: new Date(), transaccionId: apunte.id },

@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { after, before, mock, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
@@ -168,7 +168,112 @@ test('NG2: dos avisos a la vez de pedidos del mismo producto se aplican los dos 
   }
 });
 
-test('NG17: si falla solo marcar el pago, la reserva se queda y el aviso repetido lo cierra sin incidencia', async (t) => {
+/** Un error de Prisma con su código, como los que llegan de la base. */
+const errorDePrisma = (code: string) => new Prisma.PrismaClientKnownRequestError(`fallo ${code} provocado por la prueba`, { code, clientVersion: 'prueba' });
+
+/**
+ * Hace fallar las `veces` primeras transacciones Serializable (las de los
+ * aplicadores) con `error`; las demás van a la base de verdad. Así el choque
+ * entre dos avisos se provoca siempre, en vez de esperar a que dos avisos en
+ * paralelo choquen o no según la máquina.
+ */
+function forzarFallos(veces: number, error: () => Error) {
+  const real = db.$transaction.bind(db) as (...a: unknown[]) => Promise<unknown>;
+  let quedan = veces;
+  const llamadas = { serializables: 0 };
+  // `$transaction` sale del proxy del cliente, no de su prototipo, y
+  // `mock.method` no lo encuentra: se cambia a mano y se devuelve igual.
+  const cliente = db as unknown as { $transaction: unknown };
+  const original = cliente.$transaction;
+  cliente.$transaction = (...args: unknown[]) => {
+    const opciones = args[1] as { isolationLevel?: string } | undefined;
+    if (typeof args[0] === 'function' && opciones?.isolationLevel === Prisma.TransactionIsolationLevel.Serializable) {
+      llamadas.serializables += 1;
+      if (quedan > 0) { quedan -= 1; return Promise.reject(error()); }
+    }
+    return real(...args);
+  };
+  return { llamadas, restaurar: () => { cliente.$transaction = original; } };
+}
+
+test('NG2: el choque al aplicar el pago se reintenta (forzado: la primera transacción choca)', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  process.env.PAGO_EN_LINEA = 'redsys';
+  const e = await escenario();
+  try {
+    const r = await TiendaService.comprar(e.compra([{ productoId: e.medalla.id, cantidad: 1 }]), {});
+    if (r.tipo !== 'banco') return assert.fail('esperaba ir al banco');
+    const choque = forzarFallos(1, () => errorDePrisma('P2034'));
+    try {
+      assert.ok(await PagoEnLineaService.avisoDelBanco(aviso({ Ds_Order: r.pedido, Ds_Amount: '1500', Ds_Response: '0000', Ds_AuthorisationCode: '454545' }), {}));
+    } finally {
+      choque.restaurar();
+    }
+    assert.equal(choque.llamadas.serializables, 2, 'el primer intento chocó y el segundo lo aplicó');
+    assert.equal((await TiendaService.pedidoPublico(r.token)).estado, 'PAGADO');
+    assert.equal((await db.pagoEnLinea.findUniqueOrThrow({ where: { pedido: r.pedido } })).estado, 'PAGADO');
+    assert.equal((await db.producto.findUniqueOrThrow({ where: { id: e.medalla.id } })).existencias, 1);
+  } finally {
+    delete process.env.PAGO_EN_LINEA;
+    await e.recoger();
+  }
+});
+
+test('R2: un choque que agota los reintentos o la base caída dejan el pago pendiente, y el reenvío del banco lo aplica', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  process.env.PAGO_EN_LINEA = 'redsys';
+  const e = await escenario();
+  try {
+    for (const [i, codigo] of ['P2034', 'P1001'].entries()) {
+      const r = await TiendaService.comprar(e.compra([{ productoId: e.medalla.id, cantidad: 1 }]), {});
+      if (r.tipo !== 'banco') return assert.fail('esperaba ir al banco');
+      const avisoPagado = aviso({ Ds_Order: r.pedido, Ds_Amount: '1500', Ds_Response: '0000', Ds_AuthorisationCode: `46464${i}` });
+      const caida = forzarFallos(Infinity, () => errorDePrisma(codigo));
+      try {
+        await assert.rejects(PagoEnLineaService.avisoDelBanco(avisoPagado, {}), (err: unknown) => err instanceof Prisma.PrismaClientKnownRequestError && err.code === codigo);
+      } finally {
+        caida.restaurar();
+      }
+      assert.equal((await db.pagoEnLinea.findUniqueOrThrow({ where: { pedido: r.pedido } })).estado, 'PENDIENTE', `${codigo}: sin incidencia`);
+      assert.equal((await TiendaService.pedidoPublico(r.token)).estado, 'PENDIENTE_PAGO');
+
+      assert.ok(await PagoEnLineaService.avisoDelBanco(avisoPagado, {}));
+      assert.equal((await db.pagoEnLinea.findUniqueOrThrow({ where: { pedido: r.pedido } })).estado, 'PAGADO', `${codigo}: el reenvío lo aplica`);
+      assert.equal((await TiendaService.pedidoPublico(r.token)).estado, 'PAGADO');
+    }
+    assert.equal((await db.producto.findUniqueOrThrow({ where: { id: e.medalla.id } })).existencias, 0);
+  } finally {
+    delete process.env.PAGO_EN_LINEA;
+    await e.recoger();
+  }
+});
+
+test('R2: cualquier otro error al aplicar queda como incidencia y se responde al banco sin error', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  process.env.PAGO_EN_LINEA = 'redsys';
+  const e = await escenario();
+  const errores = mock.method(console, 'error', () => {});
+  try {
+    const r = await TiendaService.comprar(e.compra([{ productoId: e.medalla.id, cantidad: 1 }]), {});
+    if (r.tipo !== 'banco') return assert.fail('esperaba ir al banco');
+    const raro = forzarFallos(1, () => new TypeError('algo que no se esperaba'));
+    try {
+      assert.equal(await PagoEnLineaService.avisoDelBanco(aviso({ Ds_Order: r.pedido, Ds_Amount: '1500', Ds_Response: '0000', Ds_AuthorisationCode: '474747' }), {}), true);
+    } finally {
+      raro.restaurar();
+    }
+    const pago = await db.pagoEnLinea.findUniqueOrThrow({ where: { pedido: r.pedido } });
+    assert.equal(pago.estado, 'INCIDENCIA');
+    assert.match(pago.motivo ?? '', /error del servidor/);
+    assert.equal((await TiendaService.pedidoPublico(r.token)).estado, 'PENDIENTE_PAGO');
+  } finally {
+    errores.mock.restore();
+    delete process.env.PAGO_EN_LINEA;
+    await e.recoger();
+  }
+});
+
+test('R3: el pago se cierra en la misma transacción que el pedido: si falla cerrarlo, no queda nada a medias y el reenvío lo aplica', async (t) => {
   if (!dbDisponible) { t.skip(SIN_DB); return; }
   process.env.PAGO_EN_LINEA = 'redsys';
   const e = await escenario();
@@ -176,17 +281,21 @@ test('NG17: si falla solo marcar el pago, la reserva se queda y el aviso repetid
     const r = await TiendaService.comprar(e.compra([{ productoId: e.medalla.id, cantidad: 1 }]), {});
     if (r.tipo !== 'banco') return assert.fail('esperaba ir al banco');
     const avisoPagado = aviso({ Ds_Order: r.pedido, Ds_Amount: '1500', Ds_Response: '0000', Ds_AuthorisationCode: '555555' });
-    const falla = mock.method(PagoEnLineaService, 'marcarPagado', async () => { throw new Error('se cayó la conexión'); });
+    // La base se corta justo al cerrar el pago: antes, el pedido ya estaba
+    // pagado y el pago se quedaba PENDIENTE para siempre.
+    const falla = mock.method(PagoEnLineaService, 'marcarPagado', async () => { throw errorDePrisma('P1017'); });
     try {
-      await assert.rejects(PagoEnLineaService.avisoDelBanco(avisoPagado, {}), /se cayó la conexión/);
+      await assert.rejects(PagoEnLineaService.avisoDelBanco(avisoPagado, {}), /P1017/);
     } finally {
       falla.mock.restore();
     }
-    assert.equal((await TiendaService.pedidoPublico(r.token)).estado, 'PAGADO');
+    assert.equal((await TiendaService.pedidoPublico(r.token)).estado, 'PENDIENTE_PAGO', 'nada a medias');
+    assert.equal((await db.producto.findUniqueOrThrow({ where: { id: e.medalla.id } })).existencias, 2);
+    assert.equal((await db.pagoEnLinea.findUniqueOrThrow({ where: { pedido: r.pedido } })).estado, 'PENDIENTE');
 
     assert.ok(await PagoEnLineaService.avisoDelBanco(avisoPagado, {}));
-    const pago = await db.pagoEnLinea.findUniqueOrThrow({ where: { pedido: r.pedido } });
-    assert.equal(pago.estado, 'PAGADO', 'sin incidencia falsa');
+    assert.equal((await db.pagoEnLinea.findUniqueOrThrow({ where: { pedido: r.pedido } })).estado, 'PAGADO', 'sin incidencia falsa');
+    assert.equal((await TiendaService.pedidoPublico(r.token)).estado, 'PAGADO');
     assert.equal(await db.transaccion.count({ where: { concepto: `Tienda: pedido n.º ${(await TiendaService.pedidoPublico(r.token)).numero}` } }), 1);
   } finally {
     delete process.env.PAGO_EN_LINEA;

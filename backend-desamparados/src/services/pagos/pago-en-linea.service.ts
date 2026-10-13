@@ -11,7 +11,7 @@
  */
 import { EstadoPago, EstadoPagoEnLinea, EstadoSolicitud, OrigenPago, Prisma, TipoPagoEnLinea } from '@prisma/client';
 import db from '../../config/db.js';
-import { HttpError, NotFoundError } from '../../utils/error.handle.js';
+import { HttpError, NotFoundError, esFalloPasajero } from '../../utils/error.handle.js';
 import { pendienteDeLaSalida } from '../../domain/salidas.js';
 import { configuracionRedsys, formularioDePago, leerAviso, modoDePago, numeroDePedido } from '../../domain/redsys.js';
 import { urlDeLaWeb } from '../correos/plantilla.js';
@@ -35,7 +35,14 @@ interface LoQueSePaga {
  * así la pasarela no importa a la tienda, y la tienda sí a la pasarela.
  * Si no se puede aplicar, lanza un HttpError y el pago queda como incidencia.
  */
-type Aplicador = (referenciaId: number, metodo: MetodoEnLinea, meta: MetaDeAuditoria) => Promise<void>;
+type Aplicador = (
+  referenciaId: number, metodo: MetodoEnLinea, meta: MetaDeAuditoria,
+  /**
+   * Lo último que se hace dentro de su transacción: el aviso del banco marca
+   * ahí el pago, para que «aplicado» y «pago cerrado» se escriban a la vez.
+   */
+  alAplicar?: (tx: Prisma.TransactionClient) => Promise<void>,
+) => Promise<void>;
 interface OrigenDePago {
   aplicar: Aplicador;
   /** El correo de quien pagó sin cuenta, para las incidencias. */
@@ -233,35 +240,35 @@ export class PagoEnLineaService {
       try {
         await db.operacionMesa.create({ data: { clave, tipo: 'aviso-del-banco' } });
       } catch (e) {
-        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-          // Si el otro aviso llegó a aplicarlo (y solo falló marcar el pago), este lo cierra.
-          const reserva = await db.operacionMesa.findUnique({ where: { clave }, select: { resultado: true } });
-          if ((reserva?.resultado as { aplicado?: boolean } | null)?.aplicado) await PagoEnLineaService.marcarPagado(pago.id, banco);
-          return true;
-        }
+        // El otro aviso lo está aplicando o ya lo aplicó (y entonces cerró el
+        // pago en la misma transacción): no hay nada más que hacer.
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') return true;
         throw e;
       }
-      let aplicado = false;
       try {
         if (!aplicar || pago.referenciaId === null) throw new HttpError('El pago no dice qué se pagaba.');
-        await aplicar(pago.referenciaId, pago.metodo as MetodoEnLinea, { ...meta });
-        aplicado = true;
-        await db.operacionMesa.update({ where: { clave }, data: { resultado: { aplicado: true } } });
-        await PagoEnLineaService.marcarPagado(pago.id, banco);
+        // El pago se marca dentro de la transacción del aplicador: antes se
+        // marcaba después, y si la base se cortaba entre medias el pedido
+        // quedaba pagado y el pago PENDIENTE para siempre, sin incidencia
+        // que lo dijera ni aviso repetido que lo cerrara.
+        await aplicar(pago.referenciaId, pago.metodo as MetodoEnLinea, { ...meta }, (tx) => PagoEnLineaService.marcarPagado(pago.id, banco, tx));
       } catch (e) {
-        // Aplicado ya (falló solo marcar el pago), la reserva es la prueba de
-        // que se cobró: borrarla hacía que un aviso repetido lo diera por
-        // incidencia, y Tesorería devolvía el dinero de un pedido entregado.
-        if (aplicado) throw e;
-        // Sin aplicar, la reserva sobra: con ella, `incidencia` lo tomaría por cobrado.
+        // No se aplicó nada (todo o nada): la reserva sobra, y con ella
+        // `incidencia` lo tomaría por cobrado y un reenvío por el repetido.
         await db.operacionMesa.deleteMany({ where: { clave } });
-        // Cualquier fallo es incidencia, no solo los esperados: el banco ha
-        // cobrado, y un pedido que se queda «sin pagar» sin rastro no lo ve
-        // nadie. Los choques entre transacciones ya los reintenta el aplicador.
+        // Un choque que agotó los reintentos o la base caída no dicen nada del
+        // pedido: el pago se queda PENDIENTE y el error sube (el banco no
+        // recibe su 200 y reenvía el aviso, que entonces lo aplica). Con
+        // INCIDENCIA, el reenvío se paraba en «ya no está pendiente» y había
+        // que devolver el dinero de un pedido que se podía servir.
+        if (esFalloPasajero(e)) throw e;
+        // Lo demás es incidencia, no solo lo esperado: el banco ha cobrado, y
+        // un pedido «sin pagar» sin rastro no lo ve nadie. Ya está apuntada,
+        // así que se responde que sí: un 500 no lo arreglaría el reenvío.
+        if (!(e instanceof HttpError)) console.error(`[Pagos] Error al aplicar el pedido ${aviso.pedido}:`, e);
         await incidencia(e instanceof HttpError
           ? `No se pudo aplicar el pago: ${e.message}`
           : 'No se pudo aplicar el pago por un error del servidor: revísalo antes de devolverlo.');
-        if (!(e instanceof HttpError)) throw e;
       }
       return true;
     }
@@ -293,11 +300,12 @@ export class PagoEnLineaService {
   }
 
   /**
-   * El último paso de un aviso cobrado: el pago, a PAGADO. Aparte y público
-   * para que las pruebas puedan hacerlo fallar y ver que la reserva se queda.
+   * El último paso de un aviso cobrado: el pago, a PAGADO, dentro de la
+   * transacción de lo que se aplica si la hay (`tx`). Aparte y público para
+   * que las pruebas puedan hacerlo fallar.
    */
-  static async marcarPagado(id: number, banco: { respuesta: string | null; autorizacion: string | null }) {
-    await db.pagoEnLinea.updateMany({ where: { id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.PAGADO, ...banco } });
+  static async marcarPagado(id: number, banco: { respuesta: string | null; autorizacion: string | null }, tx?: Prisma.TransactionClient) {
+    await (tx ?? db).pagoEnLinea.updateMany({ where: { id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.PAGADO, ...banco } });
   }
 
   /** Cómo va un pago propio, para la vuelta del banco (el aviso puede llegar después). */

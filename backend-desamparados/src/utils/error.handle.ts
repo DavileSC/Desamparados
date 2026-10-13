@@ -114,6 +114,24 @@ export function esConflictoDeConcurrencia(error: unknown): boolean {
   return codigo === 1020 || codigo === 1213;
 }
 
+/** Los códigos de Prisma de «no hay base»: no se llega, se cortó o no queda conexión libre. */
+const SIN_CONEXION = new Set(['P1001', 'P1002', 'P1008', 'P1017', 'P2024']);
+const SIN_CONEXION_ADAPTADOR = new Set(['DatabaseNotReachable', 'ConnectionClosed', 'SocketTimeout', 'TooManyConnections', 'TransactionAlreadyClosed']);
+
+/**
+ * Un fallo que no dice nada de lo que se pedía: un choque entre transacciones
+ * que agotó sus reintentos o la base que no responde. Repetir lo mismo más
+ * tarde puede salir bien, así que quien recibe un aviso de fuera (el banco)
+ * no lo da por perdido: lo deja como estaba para que el reenvío lo aplique.
+ */
+export function esFalloPasajero(error: unknown): boolean {
+  if (esConflictoDeConcurrencia(error)) return true;
+  if (error instanceof Prisma.PrismaClientKnownRequestError && SIN_CONEXION.has(error.code)) return true;
+  if (error instanceof Prisma.PrismaClientInitializationError) return true;
+  const causa = causaDelAdaptador(error);
+  return !!causa && SIN_CONEXION_ADAPTADOR.has(String(causa.kind));
+}
+
 /**
  * Traduce los errores de Prisma (y de su adaptador de MariaDB) que se deben a
  * la petición y no a un fallo del servidor. Antes salían como 500 en toda la
