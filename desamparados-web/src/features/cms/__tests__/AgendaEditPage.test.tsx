@@ -192,4 +192,31 @@ describe('AgendaEditPage', () => {
     await usuario.type(await screen.findByLabelText('Día'), '2001-01-01')
     expect(screen.getByText('Ese día ya ha pasado: el acto no saldrá en la web.')).toBeInTheDocument()
   })
+
+  it('el acto de una salida, abierto desde el listado: la fecha, el título y el tipo no se tocan aquí', async () => {
+    const usuario = userEvent.setup()
+    const simulado = montar({ pathname: '/cms/agenda/3/editar', state: { salidaEnlazada: { id: 7, nombre: 'Rosario de la Aurora' } } })
+    expect(await screen.findByDisplayValue('Besapiés')).toBeDisabled()
+    expect(screen.getByText(/Es la fecha de la salida «Rosario de la Aurora»/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'la ficha de la salida' })).toHaveAttribute('href', '/cms/procesion/salidas/7/editar')
+    expect(screen.getByLabelText('Día')).toBeDisabled()
+    expect(screen.getByLabelText('Hora')).toBeDisabled()
+    expect(screen.getByRole('combobox', { name: 'Tipo' })).toHaveAttribute('aria-disabled', 'true')
+
+    // El lugar sí: el servidor lo guarda como siempre.
+    await usuario.clear(screen.getByLabelText('Lugar'))
+    await usuario.type(screen.getByLabelText('Lugar'), 'Santa Iglesia Catedral')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await waitFor(() => expect(guardado(simulado)?.cuerpo).toMatchObject({ location: 'Santa Iglesia Catedral', title: 'Besapiés' }))
+  })
+
+  it('entrando por la dirección, el 409 del servidor dice dónde se cambia', async () => {
+    const usuario = userEvent.setup()
+    const simulado = montar('/cms/agenda/3/editar')
+    await usuario.type(await screen.findByLabelText('Título'), ' solemne')
+    simulado.mockImplementationOnce(() => Promise.resolve(json({ error: 'Este acto es la fecha de la salida «Rosario de la Aurora»: su día, su título y su tipo se cambian desde la ficha de la salida, no desde la Agenda.' }, 409)))
+    await usuario.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(await screen.findByText(/se cambian desde la ficha de la salida, no desde la Agenda/)).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Listado de la agenda' })).not.toBeInTheDocument()
+  })
 })

@@ -26,7 +26,10 @@ export default function AccionesActo({ evento, volver, onBorrar }: { evento: Api
       startIcon={<EditOutlinedIcon />}
       component={Link}
       to={`/cms/agenda/${evento.id}/editar`}
-      state={{ volver }}
+      // La ficha del acto no sabe de qué salida es (la API no lo dice al
+      // cargar uno): se lo cuenta el listado, para bloquear antes de guardar
+      // lo que el servidor rechazaría con un 409.
+      state={{ volver, salidaEnlazada: evento.salidaEnlazada ?? null }}
       aria-label={`Editar ${evento.title}`}
       sx={{ whiteSpace: 'nowrap', borderColor: 'divider' }}
     >
