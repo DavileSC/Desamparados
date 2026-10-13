@@ -52,6 +52,18 @@ export function normalizarTelefono(valor: string): string {
   return valor.replace(/[\s.-]/g, '').replace(/^(\+34|0034)/, '')
 }
 
+/**
+ * El teléfono de Secretaría con su prefijo internacional, para los datos
+ * estructurados. El servidor lo guarda sin el de España, pero uno extranjero
+ * conserva el suyo («+351…» o «00351…»): antes se le anteponía otro +34.
+ */
+export function telefonoInternacional(valor: string): string {
+  const limpio = valor.trim()
+  if (limpio.startsWith('+')) return limpio
+  if (limpio.startsWith('00')) return `+${limpio.slice(2)}`
+  return `+34 ${limpio}`
+}
+
 export function esTelefonoValido(valor: string): boolean {
   return /^[0-9]{9}$/.test(normalizarTelefono(valor))
 }

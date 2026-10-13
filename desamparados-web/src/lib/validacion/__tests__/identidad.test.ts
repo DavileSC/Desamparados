@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import {
   normalizarDni, esDniValido,
-  normalizarTelefono, esTelefonoValido,
+  normalizarTelefono, esTelefonoValido, telefonoInternacional,
   esCodigoPostalValido, esTextoValido,
   normalizarIban, esIbanValido,
 } from '../identidad'
@@ -53,5 +53,15 @@ describe('reglas de identidad', () => {
 
   it.each(casos.texto)('texto $valor', ({ valor, valido }) => {
     expect(esTextoValido(valor)).toBe(valido)
+  })
+})
+
+describe('telefonoInternacional', () => {
+  it('antepone el +34 a uno de España, que se guarda sin él', () => {
+    expect(telefonoInternacional('952 00 00 00')).toBe('+34 952 00 00 00')
+  })
+  it('respeta el prefijo de uno extranjero, con + o con 00', () => {
+    expect(telefonoInternacional('+351 212 345 678')).toBe('+351 212 345 678')
+    expect(telefonoInternacional('00351 212 345 678')).toBe('+351 212 345 678')
   })
 })
