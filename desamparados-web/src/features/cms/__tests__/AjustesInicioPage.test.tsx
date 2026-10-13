@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { Link } from 'react-router-dom'
 import { renderWithProviders } from '../../../test/test-utils'
 import AjustesInicioPage from '../AjustesInicioPage'
 
@@ -34,10 +35,27 @@ function servidor(ajustes: Record<string, unknown> = AJUSTES) {
 }
 
 describe('Ajustes del Inicio', () => {
+  it('con el punto movido sin guardar, salir a otra pantalla o cerrar la pestaña pregunta antes', async () => {
+    servidor()
+    const usuario = userEvent.setup()
+    renderWithProviders(<><AjustesInicioPage /><Link to="/cms/paginas">Páginas</Link></>, { routerDeDatos: true })
+    const punto = await screen.findByRole('slider', { name: 'Punto de la foto que no se recorta' })
+    punto.focus()
+    await usuario.keyboard('{ArrowRight}')
+
+    const cierre = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(cierre)
+    expect(cierre.defaultPrevented).toBe(true)
+
+    await usuario.click(screen.getByRole('link', { name: 'Páginas' }))
+    const aviso = await screen.findByRole('dialog', { name: 'Hay cambios sin guardar' })
+    expect(within(aviso).getByText(/los ajustes del Inicio/)).toBeInTheDocument()
+  })
+
   it('una foto que no carga no deja el icono roto: queda el hueco y el punto se sigue pudiendo poner', async () => {
     // La de partida es una fija de la instalación; en la que no la tiene, 404.
     servidor()
-    renderWithProviders(<AjustesInicioPage />)
+    renderWithProviders(<AjustesInicioPage />, { routerDeDatos: true })
 
     const foto = await screen.findByRole('img', { name: 'Foto del retablo' })
     fireEvent.error(foto)
@@ -49,7 +67,7 @@ describe('Ajustes del Inicio', () => {
   it('enseña la foto guardada con su punto y la guarda al moverlo con las flechas', async () => {
     const enviado = servidor()
     const usuario = userEvent.setup()
-    renderWithProviders(<AjustesInicioPage />)
+    renderWithProviders(<AjustesInicioPage />, { routerDeDatos: true })
 
     const punto = await screen.findByRole('slider', { name: 'Punto de la foto que no se recorta' })
     expect(screen.getByRole('img', { name: 'Foto del retablo' })).toHaveAttribute('src', '/storage/public/abc.webp')
@@ -69,7 +87,7 @@ describe('Ajustes del Inicio', () => {
   it('la cuenta atrás: dice cuál es la próxima salida y se cambia a un acto de la Agenda', async () => {
     const enviado = servidor()
     const usuario = userEvent.setup()
-    renderWithProviders(<AjustesInicioPage />)
+    renderWithProviders(<AjustesInicioPage />, { routerDeDatos: true })
     expect(await screen.findByText(/^Ahora: Rosario vespertino/)).toBeInTheDocument()
     expect(screen.getAllByText('para el Rosario vespertino').length).toBeGreaterThan(0)
 
@@ -81,7 +99,7 @@ describe('Ajustes del Inicio', () => {
 
   it('sin Procesión no se ofrecen las salidas', async () => {
     servidor({ ...AJUSTES, cuenta: { tipo: 'ninguna' }, opciones: { ...OPCIONES, proxima: null, salidas: null } })
-    renderWithProviders(<AjustesInicioPage />)
+    renderWithProviders(<AjustesInicioPage />, { routerDeDatos: true })
     expect(await screen.findByRole('radio', { name: /La próxima salida/ })).toBeDisabled()
     expect(screen.getByRole('radio', { name: /Una salida concreta/ })).toBeDisabled()
     expect(screen.getAllByText('Procesión está apagada.').length).toBe(2)
@@ -90,7 +108,7 @@ describe('Ajustes del Inicio', () => {
   it('un tiempo nuevo no se guarda sin foto, y se puede quitar', async () => {
     servidor()
     const usuario = userEvent.setup()
-    renderWithProviders(<AjustesInicioPage />)
+    renderWithProviders(<AjustesInicioPage />, { routerDeDatos: true })
     await usuario.click(await screen.findByRole('button', { name: 'Añadir un tiempo' }))
     await usuario.click(screen.getByRole('menuitem', { name: 'Navidad' }))
     expect(screen.getByText('Este tiempo aún no tiene foto.')).toBeInTheDocument()
@@ -113,14 +131,14 @@ describe('Ajustes del Inicio', () => {
     const dia = String(hoy.getDate()).padStart(2, '0')
     const deHoy = { tiempo: 'a-mano', nombre: 'Hoy mismo', desde: `${mes}-${dia}`, hasta: `${mes}-${dia}`, foto: '/storage/public/def.webp', x: 50, y: 30 }
     servidor({ ...AJUSTES, tiempos: [deHoy] })
-    renderWithProviders(<AjustesInicioPage />)
+    renderWithProviders(<AjustesInicioPage />, { routerDeDatos: true })
     const fila = await screen.findByRole('button', { name: 'Hoy mismo: cambiar su foto o su encuadre' })
     expect(fila).toHaveTextContent('En uso hoy')
   })
 
   it('«Volver a la de siempre» quita la foto y deja el encuadre de siempre', async () => {
     servidor({ ...AJUSTES, y: 60 })
-    renderWithProviders(<AjustesInicioPage />)
+    renderWithProviders(<AjustesInicioPage />, { routerDeDatos: true })
     await userEvent.setup().click(await screen.findByRole('button', { name: 'Volver a la de siempre' }))
     expect(screen.getByRole('img', { name: 'Foto del retablo' })).toHaveAttribute('src', '/images/hero-960.webp')
     expect(screen.getByRole('slider')).toHaveAttribute('aria-valuetext', '50 % desde la izquierda, 30 % desde arriba')

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { Link } from 'react-router-dom'
 import { renderWithProviders } from '../../../test/test-utils'
 import { useContacto } from '../../../hooks/useContacto'
 import DatosCorporacionPage from '../DatosCorporacionPage'
@@ -34,10 +35,28 @@ function TelefonoPublico() {
 }
 
 describe('Datos de la corporación', () => {
+  it('con cambios sin guardar, salir a otra pantalla o cerrar la pestaña pregunta antes', async () => {
+    servidor()
+    const usuario = userEvent.setup()
+    renderWithProviders(<><DatosCorporacionPage /><Link to="/cms/paginas">Páginas</Link></>, { routerDeDatos: true })
+    const horario = await screen.findByRole('textbox', { name: 'Horario' }, { timeout: 5000 })
+    await usuario.type(horario, ' y sábados')
+
+    const cierre = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(cierre)
+    expect(cierre.defaultPrevented).toBe(true)
+
+    await usuario.click(screen.getByRole('link', { name: 'Páginas' }))
+    const aviso = await screen.findByRole('dialog', { name: 'Hay cambios sin guardar' })
+    await usuario.click(within(aviso).getByRole('button', { name: 'Seguir editando' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.getByRole('textbox', { name: 'Horario' })).toHaveValue('Martes, de 19:00 a 21:00 y sábados')
+  })
+
   it('carga los datos, guarda lo cambiado con los vacíos como null y la web lo enseña sin recargar', async () => {
     const enviado = servidor()
     const usuario = userEvent.setup()
-    renderWithProviders(<><DatosCorporacionPage /><TelefonoPublico /></>)
+    renderWithProviders(<><DatosCorporacionPage /><TelefonoPublico /></>, { routerDeDatos: true })
 
     const telefono = await screen.findByRole('textbox', { name: 'Teléfono' }, { timeout: 5000 })
     expect(telefono).toHaveValue('952 000 000')
@@ -59,7 +78,7 @@ describe('Datos de la corporación', () => {
   it('no deja guardar una red que no empiece por https:// ni un correo mal escrito', async () => {
     const enviado = servidor()
     const usuario = userEvent.setup()
-    renderWithProviders(<DatosCorporacionPage />)
+    renderWithProviders(<DatosCorporacionPage />, { routerDeDatos: true })
 
     const instagram = await screen.findByRole('textbox', { name: 'Instagram' }, { timeout: 5000 })
     await usuario.type(instagram, 'instagram.com/ejemplo')
@@ -73,7 +92,7 @@ describe('Datos de la corporación', () => {
   it('el error del servidor sale en su campo', async () => {
     servidor(json({ status: 'error', message: 'Error de validación', errors: [{ field: 'sede.codigoPostal', message: 'demasiado largo' }] }, 400))
     const usuario = userEvent.setup()
-    renderWithProviders(<DatosCorporacionPage />)
+    renderWithProviders(<DatosCorporacionPage />, { routerDeDatos: true })
 
     const cp = await screen.findByRole('textbox', { name: 'Código postal' }, { timeout: 5000 })
     await usuario.clear(cp)
