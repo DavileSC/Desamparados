@@ -122,6 +122,9 @@ test('con Redsys, solo el aviso firmado lo da por pagado; sin existencias, queda
     assert.match(pago.motivo ?? '', /se agotó mientras se pagaba/);
     const incidencia = (await PagoEnLineaService.incidencias()).find((i) => i.pedido === r.pedido);
     assert.equal(incidencia?.correo, 'comprador@ejemplo.test');
+    // De la tienda, y se puede anular al resolverla.
+    assert.equal(incidencia?.origen, 'TIENDA');
+    assert.equal(incidencia?.anulable, true);
 
     // Un aviso repetido del pedido pagado no cobra dos veces.
     assert.ok(await PagoEnLineaService.avisoDelBanco(aviso({ Ds_Order: otro.pedido, Ds_Amount: '3000', Ds_Response: '0000' }), {}));

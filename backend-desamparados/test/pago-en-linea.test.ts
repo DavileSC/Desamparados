@@ -223,6 +223,8 @@ test('denegado: no se paga nada; si ya no cuadra, incidencia para Tesorería', a
     assert.equal(incidencias.length, 2);
     assert.match(incidencias.find((x) => x.pedido === i2.pedido)!.motivo!, /no está pendiente de pago/);
     assert.match(incidencias.find((x) => x.pedido === i3.pedido)!.motivo!, /cobró 29,99|cobró 29.99/);
+    // Las del área de hermanos no se anulan desde aquí: la web no lo ofrece.
+    assert.deepEqual(incidencias.map((x) => [x.origen, x.anulable]), [['AREA_HERMANOS', false], ['AREA_HERMANOS', false]]);
 
     const pago = await db.pagoEnLinea.findUniqueOrThrow({ where: { pedido: i2.pedido } });
     await PagoEnLineaService.resolver(pago.id, { userId: e.usuario.id });

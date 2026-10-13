@@ -321,9 +321,12 @@ export class PagoEnLineaService {
     const sinCuenta = await Promise.all(filas.map((f) => (f.userId === null && f.referenciaId !== null ? ORIGENES[f.origen]?.correo(f.referenciaId) ?? null : null)));
     const deQuien = (f: (typeof filas)[number], i: number) =>
       (f.userId !== null ? correo.get(f.userId) : (f.donativo as { email?: string | null } | null)?.email ?? sinCuenta[i]) ?? null;
+    // `origen` y `anulable`, para que Tesorería vea de dónde viene y la web
+    // solo ofrezca «Resolver y anular» donde `resolver({ anular })` lo admite.
     return filas.map((f, i) => ({
       id: f.id, pedido: f.pedido, fecha: f.createdAt, importe: Number(f.importe), metodo: f.metodo,
       autorizacion: f.autorizacion, motivo: f.motivo, correo: deQuien(f, i), donativo: f.tipo === TipoPagoEnLinea.DONATIVO,
+      origen: f.origen, anulable: !!ORIGENES[f.origen]?.anular && f.referenciaId !== null,
     }));
   }
 
