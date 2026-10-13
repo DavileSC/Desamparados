@@ -267,7 +267,7 @@ test('desactivar una salida la quita de /api/salidas, pero no de /api/cms/salida
   }
 });
 
-test('la lista del CMS cuenta las solicitudes de su año aún sin recoger; la de la web no las da', async (t) => {
+test('la lista del CMS cuenta las solicitudes de su año aún sin recoger y las papeletas recogidas; la de la web no las da', async (t) => {
   if (!dbDisponible) { t.skip(SIN_DB); return; }
   const staff = await crearUsuarioPrueba(Role.SECRETARIA);
   const usuario = await crearUsuarioPrueba(Role.USER);
@@ -287,13 +287,23 @@ test('la lista del CMS cuenta las solicitudes de su año aún sin recoger; la de
     await solicitud(anio, EstadoSolicitud.RECOGIDA);
     await solicitud(anio, EstadoSolicitud.CANCELADA);
     await solicitud(anio - 1, EstadoSolicitud.PENDIENTE);
+    // Y las papeletas ya recogidas de su año (llevan la fecha impresa); la de otro año, no.
+    const papeleta = async (year: number) => {
+      const recibo = await db.recibo.create({ data: { hermanoId: hermano.id, year, concepto: 'Papeleta', importe: '0', tipo: 'PAPELETA_SITIO', estado: 'PAGADO' } });
+      await db.papeletaSitio.create({ data: { hermanoId: hermano.id, salidaId: id, year, puesto: 'Acompañante', reciboId: recibo.id } });
+    };
+    await papeleta(anio);
+    await papeleta(anio - 1);
 
     const cms = await (await fetch(`${baseUrl}/api/cms/salidas`, { headers: cookieDe(staff.id, Role.SECRETARIA) })).json();
     assert.equal(cms.find((s: { slug: string }) => s.slug === slug).solicitudesPendientes, 2);
+    assert.equal(cms.find((s: { slug: string }) => s.slug === slug).papeletasDelAnio, 1);
     const web = await (await fetch(`${baseUrl}/api/salidas`, { headers: cookieDe(staff.id, Role.SECRETARIA) })).json();
     assert.ok(!('solicitudesPendientes' in web.find((s: { slug: string }) => s.slug === slug)));
   } finally {
     await db.solicitud.deleteMany({ where: { hermanoId: hermano.id } });
+    await db.papeletaSitio.deleteMany({ where: { hermanoId: hermano.id } });
+    await db.recibo.deleteMany({ where: { hermanoId: hermano.id } });
     await db.hermano.deleteMany({ where: { id: hermano.id } });
     await db.salida.deleteMany({ where: { slug } });
     await borrarUsuarioPrueba(usuario.id);

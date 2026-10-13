@@ -82,4 +82,6 @@ export interface SalidaWeb {
 export interface SalidaCms extends SalidaWeb {
   /** Solicitudes de su año (`anio`) aún sin recoger: con ellas, cambiar la fecha o el cobro pide avisar a esos hermanos. */
   solicitudesPendientes: number;
+  /** Papeletas ya recogidas de su año: llevan impresa la fecha, así que también hay que avisarles si cambia. */
+  papeletasDelAnio: number;
 }

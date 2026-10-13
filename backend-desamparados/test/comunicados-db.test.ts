@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
-import { EstadoPago, Role, TipoRecibo } from '@prisma/client';
+import { EstadoPago, EstadoSolicitud, OrigenSolicitud, Role, TipoRecibo } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
@@ -20,6 +20,9 @@ import { tokenDeBaja } from '../src/domain/comunicados.js';
 import { ModulosService } from '../src/services/modulos.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { SIN_DB } from './fixtures/sin-db.js';
+import { encenderModulos } from './fixtures/modulos.js';
+import { PASION, aLaSalida, literal, salida as salidaDePrueba } from './fixtures/salidas.js';
+import { anioDeLaMesa } from '../src/services/procesion/zonas.service.js';
 
 let dbDisponible = false;
 let server: Server;
@@ -169,6 +172,39 @@ test('los fallidos se reintentan, y la prueba llega a quien la pide', async (t) 
     assert.deepEqual((await ComunicadosService.listar()).find((x) => x.id === c.id)!.envios, { enviados: 1, fallidos: 0, pendientes: 0 });
   } finally {
     await e.recoger();
+  }
+});
+
+// NG12: «apuntados a…» llega a quien pidió la papeleta y a quien ya la recogió.
+test('«apuntados a» una salida: con la solicitud pendiente o con la papeleta de su año', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const restaurar = await encenderModulos(['agenda', 'procesion']);
+  const e = await escenario();
+  try {
+    const pasion = await salidaDePrueba(PASION);
+    const year = anioDeLaMesa(pasion);
+    const pide = await e.ficha({ nombre: 'Pide', email: 'pide.apuntados@ejemplo.test' });
+    const tiene = await e.ficha({ nombre: 'Tiene', email: 'tiene.apuntados@ejemplo.test' });
+    const cancelo = await e.ficha({ nombre: 'Cancela', email: 'cancela.apuntados@ejemplo.test' });
+    const otroAnio = await e.ficha({ nombre: 'Antes', email: 'antes.apuntados@ejemplo.test' });
+    await e.ficha({ nombre: 'Nada', email: 'nada.apuntados@ejemplo.test' });
+    const solicitud = (hermanoId: number, estado: EstadoSolicitud, y = year) =>
+      db.solicitud.create({ data: { hermanoId, salidaId: pasion.id, year: y, puesto: 'Nazareno', origen: OrigenSolicitud.WEB, estado } });
+    await solicitud(pide.id, EstadoSolicitud.PENDIENTE);
+    await solicitud(cancelo.id, EstadoSolicitud.CANCELADA);
+    await solicitud(otroAnio.id, EstadoSolicitud.PENDIENTE, year - 1);
+    const recibo = await db.recibo.create({ data: { hermanoId: tiene.id, year, concepto: 'Papeleta', importe: '0', tipo: TipoRecibo.PAPELETA_SITIO, estado: EstadoPago.PAGADO } });
+    await db.papeletaSitio.create({ data: { hermanoId: tiene.id, salidaId: pasion.id, year, puesto: 'Nazareno', reciboId: recibo.id } });
+
+    const r = await ComunicadosService.destinatarios('AVISO', { poblacion: e.pueblo, apuntadosA: pasion.id });
+    assert.equal(r.fichas, 2);
+    const c = await e.crear('AVISO', { apuntadosA: pasion.id });
+    assert.match(c.para, literal(`apuntados ${await aLaSalida(PASION)}`));
+  } finally {
+    await db.solicitud.deleteMany({ where: { hermano: { poblacion: e.pueblo } } });
+    await db.papeletaSitio.deleteMany({ where: { hermano: { poblacion: e.pueblo } } });
+    await e.recoger();
+    await restaurar();
   }
 });
 

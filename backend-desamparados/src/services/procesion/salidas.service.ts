@@ -222,18 +222,22 @@ export class SalidasService {
 
   /**
    * La lista del CMS: lo de la web y, por salida, las solicitudes de su año
-   * aún sin recoger. Con ellas, la ficha avisa antes de cambiar la fecha o el
-   * cobro, que esos hermanos pidieron con lo de antes y nadie les avisa solo.
+   * aún sin recoger y las papeletas ya recogidas. Con ellas, la ficha avisa
+   * antes de cambiar la fecha o el cobro: unos pidieron con lo de antes y los
+   * otros llevan la fecha impresa, y nadie les avisa solo (el segmento
+   * «apuntados a…» de Boletín y avisos llega a los dos).
    */
   static async paraElCms(salidas: SalidaConActo[], hoy = diaMadrid(new Date())): Promise<SalidaCms[]> {
     const web = salidas.map((s) => SalidasService.paraLaWeb(s, hoy));
     if (web.length === 0) return [];
-    const cuentas = await db.solicitud.groupBy({
-      by: ['salidaId', 'year'],
-      where: { estado: 'PENDIENTE', OR: web.map((s) => ({ salidaId: s.id, year: s.anio })) },
-      _count: { _all: true },
-    });
-    return web.map((s) => ({ ...s, solicitudesPendientes: cuentas.find((c) => c.salidaId === s.id && c.year === s.anio)?._count._all ?? 0 }));
+    const deSuAnio = web.map((s) => ({ salidaId: s.id, year: s.anio }));
+    const [solicitudes, papeletas] = await Promise.all([
+      db.solicitud.groupBy({ by: ['salidaId', 'year'], where: { estado: 'PENDIENTE', OR: deSuAnio }, _count: { _all: true } }),
+      db.papeletaSitio.groupBy({ by: ['salidaId', 'year'], where: { OR: deSuAnio }, _count: { _all: true } }),
+    ]);
+    const de = (cuentas: { salidaId: number; year: number; _count: { _all: number } }[], s: SalidaWeb) =>
+      cuentas.find((c) => c.salidaId === s.id && c.year === s.anio)?._count._all ?? 0;
+    return web.map((s) => ({ ...s, solicitudesPendientes: de(solicitudes, s), papeletasDelAnio: de(papeletas, s) }));
   }
 
   /** El acto de la Agenda de una salida a mano, si ya tiene fecha. */

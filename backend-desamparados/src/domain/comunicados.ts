@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { deArticulo, type Articulo } from './articulos.js';
+import { aArticulo, deArticulo, type Articulo } from './articulos.js';
 import { esDireccionDeNadie } from './cuenta-de-custodia.js';
 
 /**
@@ -18,6 +18,13 @@ export interface SalidaDelSegmento { nombre: string; articulo: Articulo }
 export interface Segmento {
   /** Solo quien tiene papeleta de esa salida (su id) este año. */
   conPapeleta?: number | null;
+  /**
+   * Solo quien está apuntado a esa salida (su id) este año: con la solicitud
+   * pendiente o con la papeleta ya recogida. Es a quien hay que avisar si la
+   * salida cambia de fecha: unos la pidieron con la de antes y los otros la
+   * tienen impresa.
+   */
+  apuntadosA?: number | null;
   /** Solo quien debe cuotas (pendientes o devueltas). */
   conDeuda?: boolean;
   edad?: 'MAYORES' | 'MENORES' | null;
@@ -35,6 +42,10 @@ export function describirSegmento(tipo: TipoComunicado, s: Segmento, salidas: Re
   if (s.conPapeleta) {
     const salida = salidas.get(s.conPapeleta);
     partes.push(salida ? `con papeleta ${deArticulo(salida.articulo, salida.nombre)}` : 'con papeleta de la salida');
+  }
+  if (s.apuntadosA) {
+    const salida = salidas.get(s.apuntadosA);
+    partes.push(salida ? `apuntados ${aArticulo(salida.articulo, salida.nombre)}` : 'apuntados a la salida');
   }
   if (s.conDeuda) partes.push('con cuotas pendientes');
   if (s.edad) partes.push(s.edad === 'MAYORES' ? 'mayores de edad' : 'menores de edad');

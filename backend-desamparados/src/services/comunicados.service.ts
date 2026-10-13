@@ -8,7 +8,7 @@
  * boletín a cuatrocientos hermanos tarda unos minutos, pero llega. Si el
  * servidor se reinicia a medias, al arrancar sigue por donde iba.
  */
-import { EstadoComunicado, EstadoEnvio, EstadoPago, Prisma, TipoComunicado, TipoRecibo } from '@prisma/client';
+import { EstadoComunicado, EstadoEnvio, EstadoPago, EstadoSolicitud, Prisma, TipoComunicado, TipoRecibo } from '@prisma/client';
 import db from '../config/db';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearContenidoCms, extractoPlano } from '../utils/sanear-html.js';
@@ -46,19 +46,20 @@ const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
 function segmentoLimpio(s: Segmento): Segmento {
   return {
     conPapeleta: Number.isInteger(s.conPapeleta) && (s.conPapeleta ?? 0) > 0 ? s.conPapeleta : null,
+    apuntadosA: Number.isInteger(s.apuntadosA) && (s.apuntadosA ?? 0) > 0 ? s.apuntadosA : null,
     conDeuda: s.conDeuda === true,
     edad: s.edad === 'MAYORES' || s.edad === 'MENORES' ? s.edad : null,
     poblacion: s.poblacion?.trim().slice(0, 100) || null,
   };
 }
 /**
- * El segmento que se aplica de verdad: «con papeleta de…» es de Procesión y,
+ * El segmento que se aplica de verdad: «con papeleta de…» y «apuntados a…» son de Procesión y,
  * apagada, el filtro no existe. Se guarda igual (vuelve al reencender), pero
  * ni se consulta ni se describe: el «a quién va» no debe prometer un filtro
  * que no se aplica.
  */
 async function segmentoAplicable(s: Segmento): Promise<Segmento> {
-  return s.conPapeleta && !(await ModulosService.activo('procesion')) ? { ...s, conPapeleta: null } : s;
+  return (s.conPapeleta || s.apuntadosA) && !(await ModulosService.activo('procesion')) ? { ...s, conPapeleta: null, apuntadosA: null } : s;
 }
 
 
@@ -82,11 +83,13 @@ async function idsConCuotasPendientes(): Promise<number[]> {
 async function fichasDelSegmento(tipo: TipoComunicado, s: Segmento) {
   const hoy = diaDeHoy();
   const hace18 = new Date(`${Number(hoy.slice(0, 4)) - 18}${hoy.slice(4)}T00:00:00Z`);
-  const { conPapeleta } = await segmentoAplicable(s);
+  const { conPapeleta, apuntadosA } = await segmentoAplicable(s);
+  const apuntados = apuntadosA ? { salidaId: apuntadosA, year: anioDeLaMesa(await SalidasService.porId(apuntadosA)) } : null;
   const where: Prisma.HermanoWhereInput = {
     activo: true,
     ...(tipo === TipoComunicado.BOLETIN ? { boletin: true } : {}),
     ...(conPapeleta ? { papeletas: { some: { salidaId: conPapeleta, year: anioDeLaMesa(await SalidasService.porId(conPapeleta)) } } } : {}),
+    ...(apuntados ? { OR: [{ papeletas: { some: apuntados } }, { solicitudes: { some: { ...apuntados, estado: EstadoSolicitud.PENDIENTE } } }] } : {}),
     ...(s.conDeuda ? { id: { in: await idsConCuotasPendientes() } } : {}),
     ...(s.edad === 'MAYORES' ? { fechaNacimiento: { lte: hace18 } } : s.edad === 'MENORES' ? { fechaNacimiento: { gt: hace18 } } : {}),
     ...(s.poblacion ? { poblacion: s.poblacion } : {}),
