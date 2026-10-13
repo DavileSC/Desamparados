@@ -3,6 +3,7 @@ import db from '../config/db';
 import { HttpError, NotFoundError } from '../utils/error.handle.js';
 import { fechaLimite, puedeDarPorHecho } from '../domain/avisos.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from './auditoria.service.js';
+import { ROLES_CENSO } from '../routes/roles.js';
 
 /** Un aviso tal y como lo pinta el Inicio. */
 interface AvisoDelPanel {
@@ -43,9 +44,21 @@ const aPanel = (a: {
 });
 
 export class AvisoService {
-  /** Los que siguen sin hacer, del más antiguo al más nuevo. */
-  static async pendientes(): Promise<AvisoDelPanel[]> {
-    const avisos = await db.avisoJunta.findMany({ where: { hechoAt: null }, orderBy: { createdAt: 'asc' } });
+  /**
+   * Los que siguen sin hacer, del más antiguo al más nuevo.
+   *
+   * Los que tratan de una ficha (`hermanoId`: hoy, el automático de «no es de
+   * mi familia», con el número y los nombres) solo para quien ve el censo. El
+   * Inicio lo ve toda la junta, y Redes o Tesorería no tienen por qué leer de
+   * qué familia es cada hermano. Los que escribe la junta a mano los ven todos,
+   * como siempre: el `para` dice quién lo lleva, no quién puede leerlo.
+   */
+  static async pendientes(rol: Role): Promise<AvisoDelPanel[]> {
+    const veElCenso = ROLES_CENSO.includes(rol);
+    const avisos = await db.avisoJunta.findMany({
+      where: { hechoAt: null, ...(veElCenso ? {} : { hermanoId: null }) },
+      orderBy: { createdAt: 'asc' },
+    });
     return avisos.map(aPanel);
   }
 
