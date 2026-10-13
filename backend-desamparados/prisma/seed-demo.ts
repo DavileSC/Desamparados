@@ -141,7 +141,9 @@ export async function sembrarDemostracion(): Promise<void> {
 
   // --- RECIBOS ---
   const anio = new Date().getFullYear();
-  const recibos = generarRecibos(hermanos, anio);
+  // Las papeletas de la demostración son todas de la Pasión, la salida con ropero.
+  const pasion = await db.salida.findUniqueOrThrow({ where: { slug: 'sabado-de-pasion' } });
+  const recibos = generarRecibos(hermanos, anio, pasion.nombre);
   await db.recibo.createMany({
     data: recibos.map((r) => ({
       hermanoId: idPorDni.get(r.dniHermano)!,
@@ -196,8 +198,6 @@ export async function sembrarDemostracion(): Promise<void> {
   const papeletasSinCingulo = generarPapeletas(hermanos, recibos);
   const prendas = generarPrendas(papeletasSinCingulo);
   const papeletas = conCingulosSinDevolver(papeletasSinCingulo, prendas);
-  // Las de la demostración son todas de la Pasión, la salida con ropero.
-  const pasion = await db.salida.findUniqueOrThrow({ where: { slug: 'sabado-de-pasion' } });
   await db.papeletaSitio.createMany({
     data: papeletas.map((p) => ({
       salidaId: pasion.id,

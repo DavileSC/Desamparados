@@ -22,6 +22,7 @@ import { CATEGORIAS, PRENDAS } from '../prisma/seed-contenido.js';
 import { demostracionDesactivada } from '../prisma/seed-demo.js';
 
 const ANIO = 2026;
+const SALIDA = 'Estación de penitencia';
 
 describe('hermanos de demostración', () => {
   test('genera los que se le piden', () => {
@@ -117,10 +118,10 @@ describe('hermanos de demostración', () => {
 
 describe('recibos de demostración', () => {
   const hermanos = generarHermanos(300, ANIO);
-  const recibos = generarRecibos(hermanos, ANIO);
+  const recibos = generarRecibos(hermanos, ANIO, SALIDA);
 
   test('es determinista', () => {
-    assert.deepEqual(generarRecibos(hermanos, ANIO), generarRecibos(hermanos, ANIO));
+    assert.deepEqual(generarRecibos(hermanos, ANIO, SALIDA), generarRecibos(hermanos, ANIO, SALIDA));
   });
 
   test('respeta la unicidad de hermano, año y concepto que exige el esquema', () => {
@@ -188,7 +189,7 @@ describe('recibos de demostración', () => {
 
 describe('contabilidad de demostración', () => {
   const hermanos = generarHermanos(300, ANIO);
-  const recibos = generarRecibos(hermanos, ANIO);
+  const recibos = generarRecibos(hermanos, ANIO, SALIDA);
   const movimientos = generarTransacciones(recibos, ANIO);
 
   test('es determinista', () => {
@@ -267,7 +268,7 @@ describe('contabilidad de demostración', () => {
 
 describe('procesión de demostración', () => {
   const hermanos = generarHermanos(300, ANIO);
-  const recibos = generarRecibos(hermanos, ANIO);
+  const recibos = generarRecibos(hermanos, ANIO, SALIDA);
   const papeletas = generarPapeletas(hermanos, recibos);
 
   test('es determinista', () => {
@@ -319,7 +320,7 @@ describe('procesión de demostración', () => {
 describe('reparto y albacería de demostración', () => {
   const hermanos = generarHermanos(300, ANIO);
   const { turnos, citas } = generarReparto(hermanos, ANIO);
-  const papeletasSinCingulo = generarPapeletas(hermanos, generarRecibos(hermanos, ANIO));
+  const papeletasSinCingulo = generarPapeletas(hermanos, generarRecibos(hermanos, ANIO, SALIDA));
   const prendas = generarPrendas(papeletasSinCingulo);
   const papeletas = conCingulosSinDevolver(papeletasSinCingulo, prendas);
 

@@ -91,7 +91,7 @@ function historiaABloques(viejo: Record<string, never>): Documento {
       foto: fondo,
       // El fondo es decorativo y la web no lee esta descripción, pero la
       // cabecera la exige en cuanto hay foto.
-      fotoAlt: fondo ? 'Nuestra Señora de los Desamparados, muy velada al fondo de la página' : '',
+      fotoAlt: fondo ? 'La imagen titular, muy velada al fondo de la página' : '',
     },
     bloques,
   };

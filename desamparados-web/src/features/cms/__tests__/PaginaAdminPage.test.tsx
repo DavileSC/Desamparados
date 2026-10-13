@@ -288,7 +288,10 @@ describe('PaginaAdminPage: los bloques de la segunda fase', () => {
     expect(within(galeria).getByText('Irá al final de la página.')).toBeInTheDocument()
     // Cada tipo es un botón «Nombre: para qué sirve»; se cuentan por el nombre.
     const botones = within(galeria).getAllByRole('button').filter((b) => b.getAttribute('aria-label')?.includes(':'))
-    expect(botones).toHaveLength(TIPOS.tipos.length)
+    // Menos el Dibujo, que es de las páginas propias (apagadas en el ejemplo).
+    const deModulo = TIPOS.modulo as Record<string, unknown>
+    expect(botones).toHaveLength(TIPOS.tipos.filter((t) => deModulo[t] !== 'paginas-propias').length)
+    expect(within(galeria).queryByRole('button', { name: /^Dibujo con texto:/ })).not.toBeInTheDocument()
   })
 
   it('una galería recién añadida avisa de que está vacía, y no se manda', async () => {

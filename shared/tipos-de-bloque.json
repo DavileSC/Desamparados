@@ -82,7 +82,7 @@
     "listado": { "porFuente": { "noticias-recientes": "noticias", "noticias": "noticias", "agenda-proxima": "agenda", "agenda": "agenda", "publicaciones": "publicaciones", "boletines": "publicaciones", "dossier": "publicaciones" } },
     "contacto": "nucleo", "fotoTexto": "nucleo", "cita": "nucleo", "video": "nucleo", "botones": "nucleo",
     "preguntas": "nucleo", "descargas": "nucleo", "mapa": "nucleo", "cuentaAtras": "nucleo", "espacio": "nucleo",
-    "fotoFija": "nucleo", "horario": "nucleo", "dibujo": "nucleo", "anillos": "nucleo", "puertas": "nucleo",
+    "fotoFija": "nucleo", "horario": "nucleo", "dibujo": "paginas-propias", "anillos": "nucleo", "puertas": "nucleo",
     "programa": "nucleo", "relacion": "nucleo", "carrusel": "nucleo", "donativo": "donativos"
   }
 }

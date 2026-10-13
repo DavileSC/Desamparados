@@ -14,6 +14,8 @@
 // donde no debe y el sistema intentara escribir a estos hermanos, no saldría un
 // solo correo hacia nadie real.
 
+import { conceptoDeSalida } from '../../src/domain/salidas.js';
+
 /** Los cinco ejercicios que cubre la demostración, el más antiguo primero. */
 export const EJERCICIOS_DEMO = (anio: number): number[] => [anio - 4, anio - 3, anio - 2, anio - 1, anio];
 
@@ -300,7 +302,12 @@ function ejerciciosDelHermano(hermano: HermanoDemo, anio: number): number[] {
   return anios;
 }
 
-export function generarRecibos(hermanos: HermanoDemo[], anio: number, momento: Date = new Date()): ReciboDemo[] {
+/**
+ * `salida` es el nombre de la salida de las papeletas tal como está en la base
+ * (en una base nueva no se llama como la de Desamparados): el concepto sale de
+ * él como en la mesa.
+ */
+export function generarRecibos(hermanos: HermanoDemo[], anio: number, salida: string, momento: Date = new Date()): ReciboDemo[] {
   const azar = generadorAleatorio(SEMILLAS.recibos);
   const hoy = inicioDelDia(momento);
   const recibos: ReciboDemo[] = [];
@@ -343,9 +350,10 @@ export function generarRecibos(hermanos: HermanoDemo[], anio: number, momento: D
               {
                 dniHermano: hermano.dni,
                 year: ejercicio,
-                // El mismo concepto que pone la mesa (domain/salidas.ts): si no, el
-                // libro de caja mezcla dos formas del mismo concepto.
-                concepto: `Papeleta Sábado de Pasión ${ejercicio}`,
+                // El mismo concepto que pone la mesa: si no, el libro de caja
+                // mezcla dos formas del mismo concepto. Es una papeleta de
+                // sitio, así que de cuota aunque la salida cobre otra cosa.
+                concepto: conceptoDeSalida({ nombre: salida, cobro: 'CUOTA' }, ejercicio, []),
                 importe: precio,
                 tipo: 'PAPELETA_SITIO',
                 fechaEmision: emisionPapeleta,

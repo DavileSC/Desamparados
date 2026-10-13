@@ -97,7 +97,7 @@ export const FICHA_DE_BLOQUE: Record<string, FichaDeBloque> = {
   programa: { nombre: 'Programa', grupo: 'Automáticos', descripcion: 'Los cultos del año mes a mes, con el próximo marcado solo y su fecha de la Agenda.' },
   puertas: { nombre: 'Dos puertas', grupo: 'Composición', descripcion: 'Dos paneles para dos lectores, como «Necesito ayuda» y «Quiero ayudar», con sus datos y un botón.' },
   anillos: { nombre: 'Tres fines', grupo: 'Composición', descripcion: 'Tres fines que van juntos: en anillos entrelazados, o en foco, una palabra nítida y las otras dos desenfocadas.' },
-  dibujo: { nombre: 'Dibujo con texto', grupo: 'Imagen y vídeo', descripcion: 'El templo o el signo pasionista, que se dibujan al bajar, con un texto al lado.' },
+  dibujo: { nombre: 'Dibujo con texto', grupo: 'Imagen y vídeo', descripcion: 'Un dibujo de líneas que se traza al bajar, con un texto al lado.' },
   cuentaAtras: { nombre: 'Cuenta atrás', grupo: 'Información', descripcion: 'Días, horas y minutos que faltan para una fecha.' },
   listado: { nombre: 'Listado', grupo: 'Automáticos', descripcion: 'Noticias, actos o publicaciones, que salen solos de otras pantallas.' },
   contacto: { nombre: 'Formulario de contacto', grupo: 'Automáticos', descripcion: 'El formulario que llega por correo, con los datos al lado.' },

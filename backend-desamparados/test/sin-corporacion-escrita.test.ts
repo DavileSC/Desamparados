@@ -189,7 +189,7 @@ test('ni el código ni las plantillas escriben la corporación ni la salida a ma
 // Con mayúscula y como palabra suelta a propósito: el proyecto se llama así y
 // aparece en rutas e imports (`desamparados-web`) y en identificadores
 // (`DesamparadosPage`, `sabadoDePasion`), que no son texto visible.
-const NOMBRES_PROPIOS = /\b(?:Desamparados|Goretti|Málaga|Sábado de Pasión)\b/;
+const NOMBRES_PROPIOS = /\b(?:Desamparados|Goretti|Málaga|Sábado de Pasión|[Pp]asionistas?)\b/;
 
 // Las páginas propias de esta corporación (su Titular, su salida, su rosario)
 // sí la nombran: son su contenido, y van en un módulo que otra instalación no
@@ -199,6 +199,9 @@ const PAGINAS_PROPIAS = [
   'desamparados-web/src/features/titular/',
   'desamparados-web/src/features/corporacion/sabado-pasion/',
   'desamparados-web/src/features/corporacion/rosario/',
+  // Sus dibujos (el templo de su parroquia y el signo pasionista): el bloque
+  // Dibujo es del mismo módulo en shared/tipos-de-bloque.json.
+  'desamparados-web/src/components/bloques/BloqueDibujo.tsx',
 ];
 
 /** Lo que sí puede nombrarla, con su porqué. Fichero relativo a la raíz y un trozo de la línea. */
@@ -213,11 +216,33 @@ const EXCEPCIONES_NOMBRES: { fichero: string; contiene: string; motivo: string }
     contiene: `label: '${rotulo}'`,
     motivo: 'Menú del módulo paginas-propias: el rótulo de una página propia, que solo se ve con el módulo encendido.',
   })),
+  {
+    fichero: 'desamparados-web/src/features/cms/bloques/formularios/nuevos.tsx',
+    contiene: "nombre: 'El signo pasionista'",
+    motivo: 'Dibujo del bloque Dibujo, que es del módulo paginas-propias (shared/tipos-de-bloque.json): otra instalación no lo ve.',
+  },
+  {
+    fichero: 'backend-desamparados/src/domain/password-debil.ts',
+    contiene: "'pasionistas',",
+    motivo: 'Palabra que se busca dentro de una contraseña para rechazarla; nunca se enseña.',
+  },
+  {
+    fichero: 'desamparados-web/src/routes/index.tsx',
+    contiene: "path: 'parroquia-pasionistas'",
+    motivo: 'Dirección antigua que redirige a /parroquia: no es texto visible, y en otra instalación no la pide nadie.',
+  },
+  {
+    fichero: 'backend-desamparados/prisma/demo/generar.ts',
+    contiene: "nombre: 'Málaga'",
+    motivo: 'Domicilios inventados de la demostración, que solo se siembra fuera de producción.',
+  },
 ];
 
 test('el código de núcleo no nombra a esta corporación, su templo, su ciudad ni su salida', () => {
   const hallazgos: string[] = [];
-  for (const dir of ['backend-desamparados/src', 'desamparados-web/src']) {
+  // prisma/ y scripts/ también: la siembra y los pasos de despliegue escriben
+  // en la base de todas las instalaciones.
+  for (const dir of ['backend-desamparados/src', 'backend-desamparados/prisma', 'backend-desamparados/scripts', 'desamparados-web/src']) {
     for (const f of ficheros(join(RAIZ, dir))) {
       const rel = relative(RAIZ, f).replace(/\\/g, '/');
       if (PAGINAS_PROPIAS.some((carpeta) => rel.startsWith(carpeta))) continue;

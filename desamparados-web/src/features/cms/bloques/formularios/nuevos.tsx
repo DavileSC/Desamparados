@@ -127,7 +127,7 @@ export function FormularioMapa({ bloque, onCambio }: Props<BloqueMapa>) {
   return (
     <Stack spacing={2}>
       <CampoTexto etiqueta="Nombre del lugar" valor={bloque.lugar} onCambio={(lugar) => onCambio({ lugar })}
-        ayuda="Opcional, como «Parroquia de los Padres Pasionistas»." maxLength={topes.titulo} />
+        ayuda="Opcional, como «Parroquia de San Juan»." maxLength={topes.titulo} />
       <CampoTexto etiqueta="Dirección" valor={bloque.direccion} onCambio={(direccion) => onCambio({ direccion })}
         ayuda="Lo que buscarías en Google Maps: calle, número y ciudad." maxLength={topes.lugar} />
       <CampoTexto etiqueta="Indicaciones" valor={bloque.indicaciones ?? ''} onCambio={(indicaciones) => onCambio({ indicaciones })} multilinea

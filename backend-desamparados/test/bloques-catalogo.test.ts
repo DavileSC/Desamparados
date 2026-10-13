@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { TIPOS_BLOQUE, esTipoBloque } from '../src/domain/bloques.js';
 import catalogo from '../../shared/tipos-de-bloque.json' with { type: 'json' };
-import { esClaveDeModulo } from '../src/domain/modulos.js';
+import { esClaveDeModulo, esClaveEncendible } from '../src/domain/modulos.js';
 import { FUENTES_LISTADO } from '../src/schemas/bloques.schema.js';
 
 describe('catálogo de tipos de bloque', () => {
@@ -28,7 +28,8 @@ describe('catálogo de tipos de bloque', () => {
     const modulo = catalogo.modulo as Record<string, string | { porFuente: Record<string, string> }>;
     assert.deepEqual(Object.keys(modulo).sort(), [...TIPOS_BLOQUE].sort());
     for (const [tipo, m] of Object.entries(modulo)) {
-      if (typeof m === 'string') assert.ok(m === 'nucleo' || esClaveDeModulo(m), `${tipo}: «${m}»`);
+      // Un tipo puede ser de un módulo de instalación: el Dibujo, de paginas-propias.
+      if (typeof m === 'string') assert.ok(m === 'nucleo' || esClaveEncendible(m), `${tipo}: «${m}»`);
       else {
         assert.deepEqual(Object.keys(m.porFuente).sort(), [...FUENTES_LISTADO].sort(), `${tipo}: una entrada por fuente`);
         for (const [fuente, clave] of Object.entries(m.porFuente)) assert.ok(esClaveDeModulo(clave), `${tipo}/${fuente}: «${clave}»`);
