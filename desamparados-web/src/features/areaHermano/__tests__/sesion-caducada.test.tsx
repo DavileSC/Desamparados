@@ -35,12 +35,12 @@ beforeEach(() => {
 })
 afterEach(() => { vi.unstubAllGlobals() })
 
-function montar() {
+function montar(quienEntra: AuthUser = ana) {
   let sesionViva = true
   const simulado = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
     const u = String(url)
     if (u.includes('/auth/me')) return Promise.resolve(json({ cms: null, hermano: sesionViva ? ana : null }))
-    if (u.includes('/auth/login')) { sesionViva = true; return Promise.resolve(json({ status: 'OK', user: ana })) }
+    if (u.includes('/auth/login')) { sesionViva = true; return Promise.resolve(json({ status: 'OK', user: quienEntra })) }
     if (init?.method === 'PUT') {
       return Promise.resolve(sesionViva ? json({ message: 'ok', data: { ...ficha, ...JSON.parse(String(init.body)) } }) : json({ error: 'Token expirado' }, 401))
     }
@@ -95,6 +95,39 @@ describe('la sesión del área de hermanos caduca con Mi perfil a medias', () =>
     const ventana = await screen.findByRole('dialog', { name: 'Tu sesión ha caducado' })
     await user.click(within(ventana).getByRole('button', { name: 'Salir del área' }))
     expect(await screen.findByText('pantalla de acceso')).toBeInTheDocument()
+  })
+
+  it('si entra otra cuenta, se carga su área desde cero sin preguntar por lo que dejó la anterior', async () => {
+    // jsdom no navega: basta con ver adónde se manda.
+    const assign = vi.fn()
+    vi.stubGlobal('location', { ...window.location, assign })
+    const user = userEvent.setup()
+    const luis: AuthUser = { ...ana, id: 6, email: 'luis@ejemplo.test' }
+    const { caducar } = montar(luis)
+    await screen.findByText('Ana Pérez Ruiz')
+    await user.click(screen.getByRole('button', { name: /editar contacto y domicilio/i }))
+    await user.type(screen.getByLabelText('Teléfono fijo'), '952 12 34 56')
+    caducar()
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    const ventana = await screen.findByRole('dialog', { name: 'Tu sesión ha caducado' })
+    // Con lo de Ana a medias, el navegador preguntaría antes de salir.
+    const antes = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(antes)
+    expect(antes.defaultPrevented).toBe(true)
+
+    await user.clear(within(ventana).getByLabelText(/email/i))
+    await user.type(within(ventana).getByLabelText(/email/i), 'luis@ejemplo.test')
+    await user.type(within(ventana).getByLabelText(/contraseña/i, { selector: 'input' }), 'Desamparados2026')
+    await user.click(within(ventana).getByRole('button', { name: 'Entrar' }))
+
+    await waitFor(() => expect(assign).toHaveBeenCalledWith('/area-hermano'))
+    expect(useAuthStore.getState().hermano?.id).toBe(6)
+    // Y la recarga ya no pregunta: no hay «Quedarse» que deje el formulario
+    // de Ana en pantalla con la sesión de Luis.
+    const despues = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(despues)
+    expect(despues.defaultPrevented).toBe(false)
   })
 
   it('quien entra sin sesión sigue yendo directo al acceso, sin ventana', async () => {

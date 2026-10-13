@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore, type AuthUser } from '../features/altas/auth/store'
 import FormularioAccesoCms from '../features/altas/auth/FormularioAccesoCms'
 import FormularioAccesoHermano from '../features/altas/auth/FormularioAccesoHermano'
+import { irSinAviso } from '../hooks/useAvisoAlCerrarLaPestana'
 
 /**
  * La ventana que sale cuando la sesión del CMS o la del área de hermanos
@@ -29,10 +30,11 @@ export default function VentanaSesionCaducada({ area = 'cms' }: { area?: 'cms' |
   const alEntrar = (user: AuthUser) => {
     // Otra cuenta en el área de hermanos: lo que hay en pantalla (sus datos,
     // lo que escribía) es de la anterior y no se le puede guardar a esta.
-    // Se empieza de cero en su área.
+    // Se empieza de cero en su área, y sin el aviso de cambios sin guardar:
+    // con él, «Quedarse» dejaba lo de una cuenta junto a la sesión de la otra.
     if (!deCms && anterior && anterior.id !== user.id) {
       entrarSesion(area, user)
-      window.location.assign('/area-hermano')
+      irSinAviso('/area-hermano')
       return
     }
     entrarSesion(area, user)
