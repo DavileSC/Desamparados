@@ -154,8 +154,8 @@ export class AuthController {
 
   static resetPassword = manejar('Error al restablecer contraseña', async (req, res) => {
     const { token, newPassword } = req.body;
-    const result = await AuthService.resetPassword(token, newPassword);
-    res.status(200).json(result);
+    const { message } = await AuthService.resetPassword(token, newPassword);
+    res.status(200).json({ message });
   });
 
   static requestPasswordReset = manejar('Error al solicitar recuperación', async (req, res) => {

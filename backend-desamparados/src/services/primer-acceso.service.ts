@@ -236,7 +236,11 @@ export class PrimerAccesoService {
     if (!cuenta) throw new HttpError(ENLACE_NO_VALIDO, 400);
     // Gasta el enlace en una sola sentencia (dos pestañas no lo usan las dos),
     // corta las sesiones de antes y quita los bloqueos de la entrada.
-    await AuthService.resetPassword(token, contrasena);
+    const { corte } = await AuthService.resetPassword(token, contrasena);
+    // Como en `cambiarContrasena`: el corte va 1 ms por delante, y con una base
+    // rápida la sesión salía con `emitidoMs` anterior a él. La web decía
+    // «dentro» y la siguiente petición respondía 401.
+    while (Date.now() < corte.getTime()) await new Promise((r) => setTimeout(r, 1));
     return { userId: cuenta.id, role: cuenta.role, token: generateToken(cuenta.id, cuenta.role, recordarme, 'hermanos') };
   }
 

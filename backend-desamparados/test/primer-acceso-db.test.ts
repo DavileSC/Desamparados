@@ -14,7 +14,7 @@ import type { Server } from 'node:http';
 import { Prisma, Role } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
-import { generateToken } from '../src/utils/jwt.handle.js';
+import { generateToken, verifyToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS, COOKIE_HERMANO } from '../src/utils/cookies.js';
 import { ponerTransporte } from '../src/services/correos/envio.js';
 import { PrimerAccesoService } from '../src/services/primer-acceso.service.js';
@@ -121,6 +121,11 @@ test('la invitación sale por correo y su enlace pone la contraseña y abre la s
     assert.ok(cookie, 'deja abierta la sesión del área de hermanos');
     const me = await pedir('/api/auth/me', { cookie: cookie.split(';')[0] });
     assert.equal((await me.json() as { hermano: { id: number } | null }).hermano?.id, e.cuenta.id);
+    // La sesión nace después del corte que acaba de poner la contraseña, no en
+    // el mismo milisegundo: con una base rápida, si no, nacía ya cortada.
+    const emitida = verifyToken(decodeURIComponent(cookie.split(';')[0].split('=')[1]), 'session');
+    const { tokenValidAfter } = await db.user.findUniqueOrThrow({ where: { id: e.cuenta.id }, select: { tokenValidAfter: true } });
+    assert.ok(emitida?.emitidoMs !== undefined && emitida.emitidoMs >= tokenValidAfter.getTime(), 'emitida después del corte');
 
     // Ya gastado: ni saluda ni vuelve a abrir nada.
     assert.equal((await pedir('/api/auth/primer-acceso/datos', { metodo: 'POST', cuerpo: { token } })).status, 400);
@@ -378,6 +383,15 @@ test('«no es de mi familia» devuelve la ficha a la custodia y avisa a Secretar
     assert.equal(aviso.hermanoId, e.hija.id);
     const panel = await (await pedir('/api/panel', { cookie: e.sesionStaff })).json() as { avisos: { id: number; hermanoId: number | null }[] };
     assert.equal(panel.avisos.find((a) => a.id === aviso.id)?.hermanoId, e.hija.id);
+    // Lleva nombres de una familia: Redes, que no ve el censo, no lo recibe.
+    const redes = await crearUsuarioPrueba(Role.REDES);
+    try {
+      const suyo = await (await pedir('/api/panel', { cookie: `${COOKIE_CMS}=${generateToken(redes.id, Role.REDES, false, 'cms')}` })).json() as { avisos: { id: number }[] };
+      assert.ok(Array.isArray(suyo.avisos), 'el panel de Redes responde con sus avisos');
+      assert.equal(suyo.avisos.some((a) => a.id === aviso.id), false);
+    } finally {
+      await borrarUsuarioPrueba(redes.id);
+    }
 
     // Sin fichas a cargo, ya puede confirmar.
     assert.equal((await pedir('/api/hermanos/primer-acceso/confirmar', { metodo: 'POST', cookie: e.sesionHermano })).status, 200);
