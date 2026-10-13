@@ -32,7 +32,7 @@ escribir código: primero el contrato (esquema arktype y tipo de `lib/api/`).
 | | Tipos | Pruebas |
 |---|---|---|
 | Backend | `npm run comprobar-tipos` (no `tsc --noEmit`) | `npm test` (necesita MariaDB) |
-| Frontend | `npx tsc -b` (no `tsc --noEmit`) | `npx vitest run --testTimeout=20000` |
+| Frontend | `npx tsc -b` (no `tsc --noEmit`) | `npx vitest run` (el tope de 30 s ya está en `vitest.config.ts`) |
 
 Después de un `git pull`, `npx prisma generate` en el backend. Los datos de la
 corporación están fuera de git, en `instalacion/datos-entidad.json`: sin él no
