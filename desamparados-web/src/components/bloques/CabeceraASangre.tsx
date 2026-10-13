@@ -31,6 +31,19 @@ const textoSx = { width: '100%', pt: 12, pb: { xs: 4, md: 6 }, [ESCRITORIO]: { p
 const cejaSx = { ...estiloCeja, color: GOLD, m: 0, mb: { xs: 1.5, md: 2 }, fontSize: { xs: 11, md: 12 }, fontWeight: 600, textShadow: '0 1px 10px rgba(0,0,0,0.9)' } as const
 const TITULO = 'clamp(38px, 10.5vw, 60px)'
 const TITULO_ESCRITORIO = 'clamp(64px, 7.2vw, 112px)'
+const tituloSx = {
+  fontFamily: SERIF,
+  fontWeight: 500,
+  fontSize: TITULO,
+  [ESCRITORIO]: { fontSize: TITULO_ESCRITORIO },
+  lineHeight: 1.02,
+  letterSpacing: '-0.02em',
+  textWrap: 'balance',
+  overflowWrap: 'break-word',
+  hyphens: 'auto',
+  maxWidth: '16ch',
+  textShadow: '0 2px 28px rgba(0,0,0,0.45)',
+} as const
 
 interface Props {
   titulo: string
@@ -167,19 +180,7 @@ export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encu
           <Typography
             component="h1"
             lang="es"
-            sx={{
-              fontFamily: SERIF,
-              fontWeight: 500,
-              fontSize: TITULO,
-              [ESCRITORIO]: { fontSize: TITULO_ESCRITORIO },
-              lineHeight: 1.02,
-              letterSpacing: '-0.02em',
-              textWrap: 'balance',
-              overflowWrap: 'break-word',
-              hyphens: 'auto',
-              maxWidth: '16ch',
-              textShadow: '0 2px 28px rgba(0,0,0,0.45)',
-            }}
+            sx={tituloSx}
           >
             {titulo}
           </Typography>
@@ -210,16 +211,24 @@ export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encu
  * La cabecera mientras llega la página: la banda con su alto de siempre y el
  * brillo de lado a lado donde irá la foto; la ceja, que sale del menú y no del
  * servidor, ya escrita, y el título y el subtítulo en huesos.
+ *
+ * Con `titulo` (el del catálogo, cuando la página no ha podido cargarse), el
+ * título va escrito en su `h1`: sin él, la página se quedaba sin encabezado
+ * para el lector de pantalla y sin decir dónde se está.
  */
-export function CabeceraASangreEsqueleto({ ceja }: { ceja: string[] }) {
+export function CabeceraASangreEsqueleto({ ceja, titulo }: { ceja: string[]; titulo?: string }) {
   return (
     <Box component="header" sx={{ ...bandaSx, backgroundColor: '#161416' }}>
       <Hueso sx={{ position: 'absolute', inset: 0, zIndex: -1, borderRadius: 0 }} />
       <ContenedorDePagina sx={textoSx}>
         {ceja.length > 0 && <Typography component="p" sx={cejaSx}>{ceja.join(' · ')}</Typography>}
-        <Box sx={{ height: `calc(${TITULO} * 1.02)`, [ESCRITORIO]: { height: `calc(${TITULO_ESCRITORIO} * 1.02)` }, display: 'flex', alignItems: 'center' }}>
-          <Hueso sx={{ width: 'min(64%, 560px)', height: '64%' }} />
-        </Box>
+        {titulo
+          ? <Typography component="h1" lang="es" sx={tituloSx}>{titulo}</Typography>
+          : (
+            <Box sx={{ height: `calc(${TITULO} * 1.02)`, [ESCRITORIO]: { height: `calc(${TITULO_ESCRITORIO} * 1.02)` }, display: 'flex', alignItems: 'center' }}>
+              <Hueso sx={{ width: 'min(64%, 560px)', height: '64%' }} />
+            </Box>
+          )}
         <Box sx={{ mt: { xs: 2, md: 2.5 } }}>
           <Lineas anchos={['min(92%, 470px)', 'min(52%, 270px)']} linea={{ xs: 25.5, md: 30 }} grosor={{ xs: 10, md: 12 }} />
         </Box>
