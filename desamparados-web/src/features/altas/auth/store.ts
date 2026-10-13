@@ -55,6 +55,13 @@ interface AuthState {
    * que se pinta, no un permiso.
    */
   cmsCaducada: boolean
+  /**
+   * Lo mismo en el área de hermanos (su sesión dura 4 h sin «Recuérdame»):
+   * `hermano` se conserva para que `ExigeSesion` no cambie Mi perfil o la
+   * revisión del primer acceso por el acceso con lo escrito dentro, y el
+   * marco del área abre la ventana para volver a entrar.
+   */
+  hermanoCaducada: boolean
   entrarSesion: (area: AreaSesion, user: AuthUser) => void
   salirSesion: (area?: AreaSesion) => void
   /**
@@ -72,15 +79,16 @@ export const useAuthStore = create<AuthState>()((set) => ({
   cms: null,
   hermano: null,
   cmsCaducada: false,
+  hermanoCaducada: false,
   entrarSesion: (area, user) =>
-    set(area === 'cms' ? { status: 'listo', cms: user, cmsCaducada: false } : { status: 'listo', hermano: user }),
+    set(area === 'cms' ? { status: 'listo', cms: user, cmsCaducada: false } : { status: 'listo', hermano: user, hermanoCaducada: false }),
   salirSesion: (area) =>
     set(
       area === 'cms' ? { status: 'listo', cms: null, cmsCaducada: false }
-      : area === 'hermanos' ? { status: 'listo', hermano: null }
-      : { status: 'listo', cms: null, hermano: null, cmsCaducada: false },
+      : area === 'hermanos' ? { status: 'listo', hermano: null, hermanoCaducada: false }
+      : { status: 'listo', cms: null, hermano: null, cmsCaducada: false, hermanoCaducada: false },
     ),
-  ponerSesiones: ({ cms, hermano }) => set({ status: 'listo', cms, hermano, cmsCaducada: false }),
+  ponerSesiones: ({ cms, hermano }) => set({ status: 'listo', cms, hermano, cmsCaducada: false, hermanoCaducada: false }),
 }))
 
 /** Roles con acceso al CMS/Secretaría (el resto son hermanos rasos: USER) */

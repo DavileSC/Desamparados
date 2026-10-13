@@ -22,6 +22,7 @@ import PasoTusDatos from './PasoTusDatos'
 import PasoFamilia from './PasoFamilia'
 import { enUnaFrase, faltanDeLaCuota, faltanDeTusDatos, faltanDelFamiliar } from './obligatorios'
 import { MARCA, alfa } from '../../../theme/marca'
+import VentanaSesionCaducada from '../../../app/VentanaSesionCaducada'
 
 type ClavePaso = 'datos' | 'cuota' | 'familia' | 'confirmar'
 
@@ -300,6 +301,8 @@ export default function RevisarFichaPage() {
   return (
     <>
       <Helmet><title>{`Revisa tu ficha | ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
+      {/* Si la sesión caduca a media revisión, se vuelve a entrar sin perder lo escrito. */}
+      <VentanaSesionCaducada area="hermanos" />
       <DialogoConfirmacion
         abierto={porDevolver !== null}
         titulo="¿No es de tu familia?"
