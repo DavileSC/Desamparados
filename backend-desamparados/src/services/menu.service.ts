@@ -8,6 +8,9 @@ const DESCRIPCION = 'Nombres de las páginas en el menú público (CMS → Pági
 
 let enMemoria: NombresEnMenu | null = null;
 let cargando: Promise<NombresEnMenu> | null = null;
+// Los cambios de un nombre, de uno en uno: dos a la vez leerían lo mismo y el
+// segundo borraría el del primero.
+let cola: Promise<unknown> = Promise.resolve();
 
 /**
  * El nombre de cada página en el menú público, cuando no es el de siempre
@@ -49,6 +52,16 @@ export class MenuService {
     enMemoria = nombres;
     await AuditoriaService.log(ACCIONES_AUDITORIA.MENU_NOMBRES_ACTUALIZAR, meta, 'config', CLAVE, { antes, despues: nombres });
     return nombres;
+  }
+
+  /** Cambia un nombre sobre lo guardado; vacío, vuelve el de siempre. */
+  static cambiarUno(ruta: string, nombre: string, meta: MetaDeAuditoria): Promise<NombresEnMenu> {
+    const turno = cola.then(async () => {
+      const { [ruta]: _anterior, ...resto } = await MenuService.leer();
+      return MenuService.guardar(depurarNombres({ ...resto, [ruta]: nombre }), meta);
+    });
+    cola = turno.catch(() => {});
+    return turno;
   }
 
   /** Para las pruebas: que la próxima lectura vuelva a la base. */

@@ -1196,7 +1196,7 @@ con su contenido de siempre, y el arranque no las toca. La de Desamparados
 (el contenido de partida tal como era antes de la etapa 6) está guardada en
 `instalacion/contenido-inicial.json` del PC A; sirve para montar una base
 nueva de Desamparados (otra web de pruebas, una restauración sin copia) con su
-contenido. Para eso se sube como `datos-entidad.json`, en `644`, **antes del
+contenido. Para eso se sube como `contenido-inicial.json`, en `644`, **antes del
 primer arranque** contra esa base.
 
 En las pruebas no se lee la de la máquina; una prueba que quiera una la pide
@@ -1332,6 +1332,9 @@ un contenedor crece hasta llenar el disco.
    línea de órdenes, donde cualquier usuario del servidor las vería con `ps`.
 2. Empaquetado del volcado junto con `storage/` (fotos y PDF, públicos y
    privados): una base restaurada sin sus archivos apunta a ficheros que no hay.
+   Y `instalacion/` (datos de la corporación, marca, fotos fijas, mapa), que
+   no está en git ni en la imagen: sin ella la web no arranca. El `.env` no va
+   en la copia: lleva `TOTP_ENC_KEY`, y la copia no debe ir con su llave.
 3. Cifrado con [`age`](https://age-encryption.org) para una clave **pública**.
    La clave privada no está en el servidor: quien se lleve el disco o las
    copias no puede leerlas.
@@ -1448,7 +1451,7 @@ rclone copy copias:grupo-parroquial/desamparados/desamparados_20260911T040000Z.t
 mkdir restauracion
 age -d -i clave-copias-desamparados.txt desamparados_20260911T040000Z.tar.gz.age \
   | tar -xzf - -C restauracion
-# restauracion/db.sql y restauracion/storage/
+# restauracion/db.sql, restauracion/storage/ y restauracion/instalacion/
 
 # 2. La base de datos, primero en una de prueba. `mariadb` como root dentro
 #    del contenedor, con la clave de su propio entorno (como backup-vps.sh):
@@ -1467,6 +1470,10 @@ root -e "SELECT COUNT(*) FROM desamparados_prueba.User"
 #    sudo rsync -a --delete restauracion/storage/ \
 #      /srv/desamparados/backend-desamparados/storage/
 #    sudo chown -R desamparados:desamparados /srv/desamparados/backend-desamparados/storage
+#    Lo mismo con instalacion/, que nginx lee con su usuario: 755/644.
+#    sudo rsync -a --delete restauracion/instalacion/ /srv/desamparados/instalacion/
+#    sudo chown -R desamparados:desamparados /srv/desamparados/instalacion
+#    sudo find /srv/desamparados/instalacion -type d -exec chmod 755 {} + -o -type f -exec chmod 644 {} +
 #    docker compose start api web
 
 # 4. Borrar lo descifrado al terminar: lleva el censo entero en claro

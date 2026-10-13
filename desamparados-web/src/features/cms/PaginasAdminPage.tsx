@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
-import { Box, ButtonBase, Collapse, Paper, Typography } from '@mui/material'
+import { Alert, Box, Button, ButtonBase, Collapse, Paper, Typography } from '@mui/material'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline'
@@ -8,18 +8,21 @@ import { Link } from 'react-router-dom'
 import CabeceraSeccion from './CabeceraSeccion'
 import { PAGINAS_PUBLICAS, paginasPublicasActivas, type PaginaPublica } from '../../app/cmsNavegacion'
 import { useModulos } from '../../hooks/useModulos'
-import { useNombresEnMenu } from '../../hooks/useNombresEnMenu'
+import { useQuery } from '@tanstack/react-query'
+import { CLAVE_NOMBRES_EN_MENU, NOMBRE_DE_SIEMPRE, nombresEnMenu, type NombresEnMenu } from '../../lib/api/menu'
 import { site } from '../../config/site'
 import { enlacesDelMenu, menuPublico, menuVisible } from '../../config/navegacion'
-import { NOMBRE_DE_SIEMPRE } from '../../lib/api/menu'
 import DialogoNombreEnMenu, { type EntradaARenombrar } from './DialogoNombreEnMenu'
 
 /**
  * El nombre de cada página en el menú público y cómo cambiarlo, al alcance de
  * cada fila sin pasarlo de mano en mano por las secciones.
  */
-const NombresDelMenu = createContext<{ nombres: Readonly<Record<string, string>>; renombrar: (e: EntradaARenombrar) => void }>({
+const SIN_NOMBRES: NombresEnMenu = {}
+
+const NombresDelMenu = createContext<{ nombres: Readonly<Record<string, string>>; listos: boolean; renombrar: (e: EntradaARenombrar) => void }>({
   nombres: {},
+  listos: false,
   renombrar: () => {},
 })
 
@@ -43,7 +46,11 @@ const NombresDelMenu = createContext<{ nombres: Readonly<Record<string, string>>
  */
 export default function PaginasAdminPage() {
   const { activos } = useModulos()
-  const nombres = useNombresEnMenu()
+  // Con el estado y no con useNombresEnMenu: aquí «ninguno» porque aún no han
+  // llegado (o fallaron) no es lo mismo que «ninguno guardado». El diálogo
+  // parte del nombre actual, y abrirlo vacío por error lo borraría al guardar.
+  const consultaNombres = useQuery({ queryKey: CLAVE_NOMBRES_EN_MENU, queryFn: nombresEnMenu, staleTime: 10 * 60_000 })
+  const nombres = consultaNombres.data ?? SIN_NOMBRES
   const [renombrando, setRenombrando] = useState<EntradaARenombrar | null>(null)
   // Mientras no llega la lista, solo las del núcleo: mejor eso que enseñar
   // un momento las de un módulo apagado y quitarlas.
@@ -62,7 +69,13 @@ export default function PaginasAdminPage() {
         cambios se ven en la web en cuanto se guardan.
       </Typography>
 
-      <NombresDelMenu.Provider value={{ nombres, renombrar: setRenombrando }}>
+      {consultaNombres.isError && (
+        <Alert severity="warning" sx={{ maxWidth: 820, mb: 2 }}
+          action={<Button color="inherit" size="small" onClick={() => void consultaNombres.refetch()}>Reintentar</Button>}>
+          No se han podido cargar los nombres del menú. Hasta que lleguen no se pueden cambiar.
+        </Alert>
+      )}
+      <NombresDelMenu.Provider value={{ nombres, listos: consultaNombres.isSuccess, renombrar: setRenombrando }}>
         <Paper variant="outlined" sx={{ maxWidth: 820, p: { xs: 0.5, sm: 0.75 } }}>
           {grupos.map(([grupo, paginas], i) => (
             <Box key={grupo} sx={i > 0 ? { borderTop: 1, borderColor: 'divider', mt: 0.5, pt: 0.5 } : undefined}>
@@ -104,9 +117,9 @@ const RUTAS_DE_PAGINAS = new Set(PAGINAS_PUBLICAS.map((p) => p.ruta))
  * la web, y con las mismas reglas para aparecer.
  */
 function BotonRenombrar({ ruta, pagina }: { ruta: string; pagina: string }) {
-  const { renombrar } = useContext(NombresDelMenu)
+  const { renombrar, listos } = useContext(NombresDelMenu)
   const deSiempre = NOMBRE_DE_SIEMPRE.get(ruta)
-  if (!deSiempre) return null
+  if (!deSiempre || !listos) return null
   return (
     <ButtonBase
       className="icono-de-fila"

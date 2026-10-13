@@ -8,6 +8,7 @@ import CampoImagen from './CampoImagen'
 import CampoVideo from './CampoVideo'
 import SeccionPlegable from './contenido/SeccionPlegable'
 import CampoTexto from './contenido/CampoTexto'
+import CampoEnlace from './contenido/CampoEnlace'
 import VistaPreviaPortada from './contenido/VistaPreviaPortada'
 import Hero from '../inicio/Hero'
 import NoticiasDestacadas from '../inicio/NoticiasDestacadas'
@@ -339,7 +340,13 @@ export default function PortadaAdminPage() {
             valor={textos.sabadoDePasion.enlace}
             onCambio={(enlace) => cambiarSabado({ enlace })}
             maxLength={60}
-            ayuda="El enlace del final del bloque. Sigue llevando a la página de la salida procesional."
+            ayuda="El texto del enlace del final del bloque."
+          />
+          <CampoEnlace
+            etiqueta="Destino del enlace"
+            valor={textos.sabadoDePasion.destino}
+            onCambio={(destino) => cambiarSabado({ destino })}
+            ayuda="La página a la que lleva. Si es de una sección apagada, el enlace no sale."
           />
           {/*
             Se puede quitar: el contenido de partida es neutro y no trae foto

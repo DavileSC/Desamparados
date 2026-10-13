@@ -88,6 +88,28 @@ describe('EscenaProcesion', () => {
     expect(foto).not.toHaveAttribute('srcset')
   })
 
+  it('el enlace lleva al destino elegido en el CMS', async () => {
+    const textos = textosDePrueba()
+    textos.sabadoDePasion.destino = '/historia'
+    responderPortada(textos)
+
+    renderWithProviders(<EscenaProcesion />)
+
+    expect(await screen.findByRole('link', { name: new RegExp(textos.sabadoDePasion.enlace) })).toHaveAttribute('href', '/historia')
+  })
+
+  it('sin las páginas propias, la página de la salida no existe: la escena va sin enlace', async () => {
+    const textos = textosDePrueba()
+    textos.sabadoDePasion.titulo = 'Sin enlace'
+    textos.sabadoDePasion.destino = '/sabado-de-pasion'
+    responderPortada(textos)
+
+    renderWithProviders(<EscenaProcesion />, { modulos: [] })
+
+    expect(await screen.findByRole('heading', { name: 'Sin enlace' })).toBeInTheDocument()
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+  })
+
   it('mientras llegan los textos, sus huesos y no los de partida', async () => {
     let responder!: () => void
     const textos = textosDePrueba()

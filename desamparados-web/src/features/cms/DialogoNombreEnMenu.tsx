@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography } from '@mui/material'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { CLAVE_NOMBRES_EN_MENU, TOPE_NOMBRE_EN_MENU, guardarNombresEnMenu, type NombresEnMenu } from '../../lib/api/menu'
+import { CLAVE_NOMBRES_EN_MENU, TOPE_NOMBRE_EN_MENU, cambiarNombreEnMenu, type NombresEnMenu } from '../../lib/api/menu'
 
 /** Qué entrada del menú se está cambiando: su ruta, su nombre de siempre y el que tiene ahora. */
 export interface EntradaARenombrar {
@@ -13,8 +13,8 @@ export interface EntradaARenombrar {
 
 /**
  * «Nombre en el menú» de una página: un campo con el de siempre como
- * marcador. Vacío vuelve el de siempre. Se guardan todos de una vez (es lo que
- * pide la API), partiendo de los que ya hay, y la barra de la web los recoge
+ * marcador. Vacío vuelve el de siempre. Se manda solo este (la API lo mezcla
+ * con lo guardado) y la barra de la web recoge los que devuelve
  * sin recargar: el resultado se pone en la misma caché que lee el menú.
  *
  * Un diálogo y no un campo en la fila: la fila entera es el enlace al editor
@@ -32,10 +32,7 @@ export default function DialogoNombreEnMenu({ entrada, nombres, alCerrar }: {
   const recortado = valor.trim()
   const conEtiquetas = /[<>]/.test(recortado)
   const guardar = useMutation({
-    mutationFn: () => {
-      const { [entrada.ruta]: _anterior, ...resto } = nombres
-      return guardarNombresEnMenu(recortado ? { ...resto, [entrada.ruta]: recortado } : resto)
-    },
+    mutationFn: () => cambiarNombreEnMenu(entrada.ruta, recortado),
     onSuccess: (guardados) => {
       queryClient.setQueryData(CLAVE_NOMBRES_EN_MENU, guardados)
       alCerrar()

@@ -7,6 +7,9 @@
 #      bloquear la web) y comprueba que el volcado está entero.
 #   2. Empaqueta el volcado junto con `storage/` (fotos y PDF del CMS, públicos
 #      y privados): sin ellos, una base restaurada apunta a archivos que no hay.
+#      Y con `instalacion/` (datos de la corporación, marca, fotos fijas, mapa):
+#      vive fuera de git y de la imagen, y sin ella la web no arranca. El .env
+#      se queda fuera: lleva TOTP_ENC_KEY y la copia no debe ir con su llave.
 #   3. Lo cifra con `age` para la clave PÚBLICA indicada. La privada NO debe
 #      estar en el servidor: quien se lleve el disco o las copias no puede
 #      leerlas. El volcado sin cifrar solo existe unos segundos, en una carpeta
@@ -59,6 +62,7 @@ BACKUP_RCLONE_MESES="${BACKUP_RCLONE_MESES:-12}"
 [[ "$BACKUP_RCLONE_MESES" =~ ^[0-9]+$ ]] || fallo "BACKUP_RCLONE_MESES debe ser un número de meses."
 [[ -f "$PROYECTO_DIR/compose.yaml" ]] || fallo "No se encuentra $PROYECTO_DIR/compose.yaml."
 [[ -d "$APP_DIR/storage" ]] || fallo "No se encuentra $APP_DIR/storage."
+[[ -f "$PROYECTO_DIR/instalacion/datos-entidad.json" ]] || fallo "No se encuentra $PROYECTO_DIR/instalacion/datos-entidad.json: sin instalacion/ la copia no serviría para levantar la web."
 
 # --- La orden del compose, una sola vez ---
 compose() { docker compose -f "$PROYECTO_DIR/compose.yaml" "$@"; }
@@ -123,7 +127,7 @@ DESTINO="$BACKUP_DIR/$NOMBRE"
 log "Empaquetando volcado + storage/ y cifrando en $NOMBRE..."
 # Se escribe con otro nombre y se renombra al final: una copia a medias nunca
 # lleva el nombre de una buena.
-tar -C "$TMP" -cf - db.sql -C "$APP_DIR" storage | gzip -c | age "${AGE_ARGS[@]}" -o "$TMP/$NOMBRE"
+tar -C "$TMP" -cf - db.sql -C "$APP_DIR" storage -C "$PROYECTO_DIR" instalacion | gzip -c | age "${AGE_ARGS[@]}" -o "$TMP/$NOMBRE"
 [[ -s "$TMP/$NOMBRE" ]] || fallo "La copia cifrada ha salido vacía."
 mv "$TMP/$NOMBRE" "$DESTINO"
 # El umask 077 la deja solo para su dueño. Con un grupo lector, la puede bajar

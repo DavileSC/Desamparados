@@ -11,6 +11,7 @@ import { usePortadaEnCarga, useTextosPortada } from './useContenidoPortada'
 import TextoDePortada from './TextoDePortada'
 import { propsDeFoto } from '../../lib/fotoSubida'
 import { useFotoQueFalla } from '../../hooks/useFotoQueFalla'
+import { useEnlaceVivo } from '../../hooks/useEnlaceVivo'
 
 // La foto entra posándose desde este zoom, y tarda esto en quedarse quieta.
 const ZOOM_DE_ENTRADA = 1.06
@@ -27,6 +28,7 @@ export default function EscenaProcesion() {
   const distance = mobile ? 20 : 56
   const imageY = useTransform(scrollYProgress, [0, 1], [-distance, distance])
   const { sabadoDePasion } = useTextosPortada()
+  const enlaceVivo = useEnlaceVivo()
   // Mientras llegan los textos, sus huesos, como los demás bloques de la portada.
   const enCarga = usePortadaEnCarga()
   // Sin foto (vacía en el contenido, o una fija que esta instalación no tiene)
@@ -70,11 +72,16 @@ export default function EscenaProcesion() {
         {enCarga
           ? <p className="procession-scene-parrafo"><TextoDePortada anchos={['24em', '20em']}>{null}</TextoDePortada></p>
           : <ParrafoQueSeEnciende texto={sabadoDePasion.parrafo} className="procession-scene-parrafo" />}
-        <Revela orden={3}>
-          <Link to="/sabado-de-pasion" className="procession-scene-link">
-            <TextoDePortada anchos={['10em']}>{sabadoDePasion.enlace}</TextoDePortada> <ArrowForwardIcon fontSize="small" />
-          </Link>
-        </Revela>
+        {/* Su página puede ser de un módulo apagado (la de la salida es de
+            paginas-propias): mejor sin enlace que con uno a la 404. Mientras
+            carga, su hueso, como el resto de la escena. */}
+        {(enCarga || enlaceVivo(sabadoDePasion.destino)) && (
+          <Revela orden={3}>
+            <Link to={sabadoDePasion.destino} className="procession-scene-link">
+              <TextoDePortada anchos={['10em']}>{sabadoDePasion.enlace}</TextoDePortada> <ArrowForwardIcon fontSize="small" />
+            </Link>
+          </Revela>
+        )}
       </div>
     </section>
   )

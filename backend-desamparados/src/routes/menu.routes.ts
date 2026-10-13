@@ -5,7 +5,7 @@ import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { cachePublica } from '../middleware/cache-publica.js';
 import { validate } from '../config/validate.js';
-import { guardarNombresEnMenuSchema } from '../schemas/menu.schema.js';
+import { cambiarNombreEnMenuSchema, guardarNombresEnMenuSchema } from '../schemas/menu.schema.js';
 
 /** Los nombres del menú público: la web los pide sin sesión, como el contenido. */
 const menuRouter = Router();
@@ -20,5 +20,6 @@ const menuCmsRouter = Router();
 menuCmsRouter.use(authenticateToken);
 menuCmsRouter.use(checkRole([Role.ADMIN, Role.REDES, Role.HERMANO_MAYOR]));
 menuCmsRouter.put('/', validate(guardarNombresEnMenuSchema), MenuController.guardar);
+menuCmsRouter.patch('/', validate(cambiarNombreEnMenuSchema), MenuController.cambiar);
 
 export { menuRouter as menuRoutes, menuCmsRouter as menuCmsRoutes };

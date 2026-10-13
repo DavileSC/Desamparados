@@ -2,7 +2,7 @@ import { type } from 'arktype';
 import topes from '../../../shared/topes-contenido.json' with { type: 'json' };
 import { rutaImagenPublica } from './portada.schema.js';
 import type { SlugContenido } from '../domain/contenido.js';
-import { cabeceraSchema, problemaDeBloque } from './bloques.schema.js';
+import { cabeceraSchema, enlaceInterno, problemaDeBloque } from './bloques.schema.js';
 import { anclaDe } from '../domain/presentacion.js';
 import { VIDEO_PROPIO } from '../utils/rutas-propias.js';
 
@@ -61,6 +61,9 @@ const portadaSchema = type({
   },
   sabadoDePasion: {
     ceja: ETIQUETA, titulo: TITULO, parrafo: PARRAFO, enlace: ETIQUETA,
+    // A dónde lleva el enlace. Antes iba fijo a la página de la salida, que es
+    // del módulo paginas-propias: en otra corporación era un enlace roto.
+    destino: enlaceInterno,
     // Vacía desde la etapa 6 de la Fase 8: el contenido de partida es neutro y
     // no trae foto de nadie. Exigirla dejaría a una corporación nueva sin poder
     // guardar ningún texto de la portada hasta subir esta foto; sin ella, la

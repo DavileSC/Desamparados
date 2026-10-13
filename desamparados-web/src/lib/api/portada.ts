@@ -36,7 +36,7 @@ export interface TextosPortada {
     placa: { ceja: string; titulo: string; texto: string; boton: string }
     teselas: { clave: string; titulo: string; descripcion: string }[]
   }
-  sabadoDePasion: { ceja: string; titulo: string; parrafo: string; enlace: string; imagenUrl: string; imagenAlt: string }
+  sabadoDePasion: { ceja: string; titulo: string; parrafo: string; enlace: string; destino: string; imagenUrl: string; imagenAlt: string }
   publicaciones: { boton: string; marcaDeAgua: string }
 }
 

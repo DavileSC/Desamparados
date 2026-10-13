@@ -21,3 +21,20 @@ const nombres = type('Record<string, string>')
   .pipe((valor) => depurarNombres(valor));
 
 export const guardarNombresEnMenuSchema = type({ body: { nombres } });
+
+/**
+ * Un solo nombre: lo que manda el CMS. La mezcla con los demás la hace el
+ * servidor, sobre lo que hay guardado; si la hiciera la web, con una copia
+ * vacía (la lista aún no había llegado) o vieja (otra persona guardó después),
+ * borraba los demás nombres sin que nadie lo pidiera.
+ */
+const cambio = type({ ruta: 'string', nombre: 'string' })
+  .narrow((valor, ctx) => {
+    if (!NOMBRES_DE_SIEMPRE.has(valor.ruta)) return ctx.reject({ path: ['body', 'ruta'], problem: 'no es una entrada del menú' });
+    const recortado = valor.nombre.trim();
+    if (recortado.length > TOPE_NOMBRE_EN_MENU) return ctx.reject({ path: ['body', 'nombre'], problem: `debe tener ${TOPE_NOMBRE_EN_MENU} caracteres como mucho` });
+    if (SIN_ETIQUETAS.test(recortado)) return ctx.reject({ path: ['body', 'nombre'], problem: 'no puede llevar los signos < ni >' });
+    return true;
+  });
+
+export const cambiarNombreEnMenuSchema = type({ body: cambio });

@@ -34,6 +34,14 @@ test('el texto no puede llevar etiquetas HTML', () => {
   assert.ok(!valida('portada', datos));
 });
 
+test('el enlace de la escena de la salida lleva a una página que exista', () => {
+  const datos = porDefecto('portada') as any;
+  datos.sabadoDePasion.destino = '/historia';
+  assert.ok(valida('portada', datos));
+  datos.sabadoDePasion.destino = '/una-que-no-existe';
+  assert.ok(!valida('portada', datos), 'sería un enlace a la 404 en la portada');
+});
+
 test('la foto tiene que ser una ruta del propio sitio', () => {
   const datos = porDefecto('portada') as any;
   datos.sabadoDePasion.imagenUrl = 'https://otro-sitio.example/foto.jpg';

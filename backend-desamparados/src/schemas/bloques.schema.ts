@@ -25,7 +25,7 @@ const sinEnlace = type('string').matching(/^$/);
  * la web (ver domain/destinos.ts). Con que empezara por una barra se colaban
  * rutas inventadas, y la tarjeta llevaba a «página no encontrada».
  */
-const enlaceInterno = type('string <= 200')
+export const enlaceInterno = type('string <= 200')
   .narrow((enlace) => esDestinoValido(enlace))
   .describe('una página que exista en la web: elígela de la lista');
 

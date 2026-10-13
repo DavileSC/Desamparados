@@ -686,12 +686,13 @@ $copia = Get-ChildItem "$env:USERPROFILE\Copias Desamparados\desamparados_*.age"
 $r = "$env:TEMP\restauracion"; New-Item -ItemType Directory -Force $r | Out-Null
 age -d -i "$env:USERPROFILE\clave-copias-desamparados.txt" -o "$r\copia.tar.gz" $copia.FullName
 tar -xzf "$r\copia.tar.gz" -C $r
-Get-Content "$r\db.sql" -Tail 1; (Get-ChildItem "$r\storage" -Recurse -File).Count
+Get-Content "$r\db.sql" -Tail 1; (Get-ChildItem "$r\storage" -Recurse -File).Count; Test-Path "$r\instalacion\datos-entidad.json"
 Remove-Item -Recurse -Force $r    # lleva el censo en claro
 ```
 
-La última línea del volcado tiene que ser «Dump completed» y `storage` traer
-las fotos. Para volcarla en una base, `despliegue.md`, «Restaurar».
+La última línea del volcado tiene que ser «Dump completed», `storage` traer
+las fotos e `instalacion` sus datos (las copias anteriores al 13-10-2026 no la
+llevan). Para volcarla en una base, `despliegue.md`, «Restaurar».
 
 ## El día de la presentación
 

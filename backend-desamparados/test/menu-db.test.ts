@@ -129,6 +129,24 @@ describe('los nombres del menú', () => {
     assert.deepEqual((await pedir('/menu')).cuerpo, antes);
   });
 
+  test('cambiar uno solo lo mezcla con lo guardado, también con dos a la vez', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const cambiar = (ruta: string, nombre: string) => pedir('/cms/menu', { rol: 'REDES', metodo: 'PATCH', cuerpo: { ruta, nombre } });
+    assert.equal((await guardar('ADMIN', { '/parroquia': 'Parroquia · Pasionistas' })).status, 200);
+    const [a, b] = await Promise.all([cambiar('/agenda', ' Calendario '), cambiar('/cultos', 'Culto y oración')]);
+    assert.equal(a.status, 200);
+    assert.equal(b.status, 200);
+    const esperado = { '/parroquia': 'Parroquia · Pasionistas', '/agenda': 'Calendario', '/cultos': 'Culto y oración' };
+    assert.deepEqual((await pedir('/menu')).cuerpo, { nombres: esperado });
+    // Vacío, vuelve el de siempre y los demás se quedan.
+    assert.deepEqual((await cambiar('/agenda', '')).cuerpo, { nombres: { '/parroquia': 'Parroquia · Pasionistas', '/cultos': 'Culto y oración' } });
+    const malo = await cambiar('/no-existe', 'Nada');
+    assert.equal(malo.status, 400);
+    assert.equal(malo.cuerpo.errors[0].field, 'ruta');
+    assert.equal((await cambiar('/ajuar', '<i>Ajuar</i>')).status, 400);
+    assert.equal((await pedir('/cms/menu', { rol: 'TESORERIA', metodo: 'PATCH', cuerpo: { ruta: '/agenda', nombre: 'x' } })).status, 403);
+  });
+
   test('una fila rota no deja la web sin menú: salen los de siempre', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     await db.configuracion.update({ where: { key: CLAVE }, data: { value: '{roto' } });

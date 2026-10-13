@@ -16,8 +16,9 @@ const seccionesPlegables = () => [...new Set(PAGINAS_PUBLICAS.map((p) => p.grupo
   .filter((grupo) => { const suyas = PAGINAS_PUBLICAS.filter((p) => p.grupo === grupo); return !(suyas.length === 1 && suyas[0].nombre === grupo) })
 
 /** Con todas las páginas encendidas, salvo que se pidan otros módulos. */
-function montar(modulos: readonly string[] = TODOS_CON_PAGINAS_PROPIAS, nombresEnMenu?: Record<string, string>) {
+function montar(modulos: readonly string[] = TODOS_CON_PAGINAS_PROPIAS, nombresEnMenu?: Record<string, string>, sinNombres = false) {
   const queryClient = crearQueryClientDePruebas(modulos, nombresEnMenu)
+  if (sinNombres) queryClient.removeQueries({ queryKey: ['menu', 'nombres'] })
   render(
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
@@ -160,11 +161,12 @@ describe('PaginasAdminPage', () => {
     expect(within(cultos).queryByText(/En el menú/)).not.toBeInTheDocument()
   })
 
-  it('cambiar el nombre en el menú guarda todos los nombres y la web lo recoge sin recargar', async () => {
+  it('cambiar el nombre en el menú manda solo ese y la web recoge todos sin recargar', async () => {
     const user = userEvent.setup()
+    // El servidor mezcla con lo que tiene guardado (aquí, «/agenda»).
     const fetchSimulado = vi.fn(async (_url: string, init?: RequestInit) => {
-      const { nombres } = JSON.parse(String(init?.body)) as { nombres: Record<string, string> }
-      return new Response(JSON.stringify({ nombres }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+      const { ruta, nombre } = JSON.parse(String(init?.body)) as { ruta: string; nombre: string }
+      return new Response(JSON.stringify({ nombres: { '/agenda': 'Calendario', [ruta]: nombre.trim() } }), { status: 200, headers: { 'Content-Type': 'application/json' } })
     })
     vi.stubGlobal('fetch', fetchSimulado)
     const queryClient = montar(TODOS_CON_PAGINAS_PROPIAS, { '/agenda': 'Calendario' })
@@ -182,17 +184,17 @@ describe('PaginasAdminPage', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     const [url, init] = fetchSimulado.mock.calls[0]
     expect(url).toMatch(/\/api\/cms\/menu$/)
-    expect(init?.method).toBe('PUT')
-    // Los que ya había siguen: se guardan todos de una vez.
-    expect(JSON.parse(String(init?.body))).toEqual({ nombres: { '/agenda': 'Calendario', '/parroquia': 'Parroquia · Pasionistas' } })
+    expect(init?.method).toBe('PATCH')
+    // Solo el que cambia: mezclar aquí, con una copia vacía o vieja, borraba los demás.
+    expect(JSON.parse(String(init?.body))).toEqual({ ruta: '/parroquia', nombre: 'Parroquia · Pasionistas' })
     expect(queryClient.getQueryData(['menu', 'nombres'])).toEqual({ '/agenda': 'Calendario', '/parroquia': 'Parroquia · Pasionistas' })
     expect(screen.getByText('En el menú: Parroquia · Pasionistas')).toBeInTheDocument()
   })
 
   it('dejar el nombre vacío vuelve al de siempre', async () => {
     const user = userEvent.setup()
-    const fetchSimulado = vi.fn(async (_url: string, init?: RequestInit) =>
-      new Response(String(init?.body), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    const fetchSimulado = vi.fn(async () =>
+      new Response(JSON.stringify({ nombres: {} }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
     vi.stubGlobal('fetch', fetchSimulado)
     montar(TODOS_CON_PAGINAS_PROPIAS, { '/parroquia': 'Parroquia · Pasionistas' })
     await user.click(screen.getByRole('button', { name: /Corporación/ }))
@@ -202,9 +204,18 @@ describe('PaginasAdminPage', () => {
     await user.clear(campo)
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Guardar' }))
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-    expect(JSON.parse(String(fetchSimulado.mock.calls[0][1]?.body))).toEqual({ nombres: {} })
+    expect(JSON.parse(String(fetchSimulado.mock.calls[0][1]?.body))).toEqual({ ruta: '/parroquia', nombre: '' })
     const parroquia = screen.getByRole('link', { name: 'Parroquia' }).closest('li')!
     expect(within(parroquia).queryByText(/En el menú/)).not.toBeInTheDocument()
+  })
+
+  it('sin los nombres guardados no se puede renombrar: abrirlo vacío los borraría al guardar', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 500, headers: { 'Content-Type': 'application/json' } })))
+    montar(TODOS_CON_PAGINAS_PROPIAS, undefined, true)
+    expect(await screen.findByText(/No se han podido cargar los nombres del menú/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Corporación/ }))
+    expect(screen.queryByRole('button', { name: /Cambiar el nombre en el menú/ })).not.toBeInTheDocument()
   })
 
   it('las entradas del menú que no son páginas de bloques se renombran al final', async () => {
