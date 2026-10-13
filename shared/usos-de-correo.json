@@ -16,33 +16,27 @@
     },
     {
       "clave": "la_corporacion",
-      "ayuda": "La corporación con su artículo",
-      "ejemplo": "el Grupo Parroquial"
+      "ayuda": "La corporación con su artículo"
     },
     {
       "clave": "de_la_corporacion",
-      "ayuda": "«de» y la corporación con su artículo, contraído si toca",
-      "ejemplo": "del Grupo Parroquial"
+      "ayuda": "«de» y la corporación con su artículo, contraído si toca"
     },
     {
       "clave": "a_la_corporacion",
-      "ayuda": "«a» y la corporación con su artículo, contraído si toca",
-      "ejemplo": "al Grupo Parroquial"
+      "ayuda": "«a» y la corporación con su artículo, contraído si toca"
     },
     {
       "clave": "nuestra_corporacion",
-      "ayuda": "La corporación con «nuestro», «nuestra», «nuestros» o «nuestras»",
-      "ejemplo": "nuestro Grupo Parroquial"
+      "ayuda": "La corporación con «nuestro», «nuestra», «nuestros» o «nuestras»"
     },
     {
       "clave": "la_corporacion_corto",
-      "ayuda": "La corporación en corto, con su artículo",
-      "ejemplo": "el Grupo"
+      "ayuda": "La corporación en corto, con su artículo"
     },
     {
       "clave": "de_la_corporacion_corto",
-      "ayuda": "«de» y la corporación en corto, con su artículo, contraído si toca",
-      "ejemplo": "del Grupo"
+      "ayuda": "«de» y la corporación en corto, con su artículo, contraído si toca"
     }
   ],
   "usos": [
@@ -456,7 +450,7 @@
         {
           "clave": "salida",
           "ayuda": "El nombre de la salida",
-          "ejemplo": "Rosario vespertino"
+          "ejemplo": "Procesión de Gloria"
         },
         {
           "clave": "anio",
@@ -471,12 +465,12 @@
         {
           "clave": "de_la_salida",
           "ayuda": "«de» y la salida con su artículo, contraído si toca",
-          "ejemplo": "del Rosario vespertino"
+          "ejemplo": "de la Procesión de Gloria"
         },
         {
           "clave": "la_salida",
           "ayuda": "La salida con su artículo",
-          "ejemplo": "el Rosario vespertino"
+          "ejemplo": "la Procesión de Gloria"
         }
       ],
       "bloques": [
@@ -529,7 +523,7 @@
         {
           "clave": "salida",
           "ayuda": "El nombre de la salida",
-          "ejemplo": "Rosario vespertino"
+          "ejemplo": "Procesión de Gloria"
         },
         {
           "clave": "anio",
@@ -559,12 +553,12 @@
         {
           "clave": "de_la_salida",
           "ayuda": "«de» y la salida con su artículo, contraído si toca",
-          "ejemplo": "del Rosario vespertino"
+          "ejemplo": "de la Procesión de Gloria"
         },
         {
           "clave": "la_salida",
           "ayuda": "La salida con su artículo",
-          "ejemplo": "el Rosario vespertino"
+          "ejemplo": "la Procesión de Gloria"
         }
       ],
       "bloques": [
@@ -614,7 +608,7 @@
         {
           "clave": "salida",
           "ayuda": "El nombre de la salida",
-          "ejemplo": "Rosario vespertino"
+          "ejemplo": "Procesión de Gloria"
         },
         {
           "clave": "fecha_cita",
@@ -624,12 +618,12 @@
         {
           "clave": "de_la_salida",
           "ayuda": "«de» y la salida con su artículo, contraído si toca",
-          "ejemplo": "del Rosario vespertino"
+          "ejemplo": "de la Procesión de Gloria"
         },
         {
           "clave": "la_salida",
           "ayuda": "La salida con su artículo",
-          "ejemplo": "el Rosario vespertino"
+          "ejemplo": "la Procesión de Gloria"
         }
       ],
       "bloques": [

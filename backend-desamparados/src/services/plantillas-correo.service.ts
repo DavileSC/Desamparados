@@ -85,8 +85,11 @@ export class PlantillasCorreoService {
   /** Todos los usos con sus plantillas, para la sección Emails. */
   static async listar() {
     const plantillas = await db.plantillaCorreo.findMany({ orderBy: [{ uso: 'asc' }, { nombre: 'asc' }, { id: 'asc' }] });
+    const valoresComunes = comunes();
     return {
-      comunes: CAMPOS_COMUNES,
+      // El ejemplo de cada campo común, el de esta instalación: escrito en el
+      // catálogo, otra corporación veía de ayuda «al Grupo Parroquial».
+      comunes: CAMPOS_COMUNES.map((c) => ({ ...c, ejemplo: valoresComunes[c.clave as keyof typeof valoresComunes] })),
       usos: USOS.map((u) => ({
         clave: u.clave, grupo: u.grupo, nombre: u.nombre, descripcion: u.descripcion, libre: Boolean(u.libre),
         campos: u.campos, bloques: u.bloques, original: u.porDefecto,

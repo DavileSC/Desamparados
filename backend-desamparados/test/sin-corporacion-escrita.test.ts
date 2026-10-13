@@ -52,19 +52,9 @@ const SALIDA_EN_PLANTILLA = /\b(?:del|al|el|El)\s+\{\{\s*salida\s*\}\}/;
 // La denominación jurídica de `config/site.ts` ya no está aquí: desde la etapa
 // 1 de la Fase 8 sale de instalacion/datos-entidad.json, y la excepción no
 // protegía nada.
-const EXCEPCIONES: { fichero: string; contiene: string; motivo: string }[] = [
-  // El catálogo "comunes" de usos-de-correo.json documenta, para quien edite una
-  // plantilla desde el CMS, lo que hoy escriben los campos {{la_corporacion}}…
-  // (domain/articulos.ts) con la identidad de esta instalación: un "ejemplo" de
-  // ayuda, no una plantilla con la corporación escrita a mano. Cambia solo si
-  // cambia instalacion/datos-entidad.json, igual que la denominación jurídica de arriba.
-  ...(['el Grupo Parroquial', 'del Grupo Parroquial', 'al Grupo Parroquial', 'nuestro Grupo Parroquial', 'el Grupo', 'del Grupo'] as const)
-    .map((ejemplo) => ({
-      fichero: 'shared/usos-de-correo.json',
-      contiene: `"ejemplo": "${ejemplo}"`,
-      motivo: 'Ejemplo de ayuda del catálogo "comunes": lo que hoy produce domain/articulos.ts para esta instalación.',
-    })),
-];
+// Ni los ejemplos de los campos comunes de usos-de-correo.json: la API los da
+// con la identidad de cada instalación (PlantillasCorreoService.listar).
+const EXCEPCIONES: { fichero: string; contiene: string; motivo: string }[] = [];
 
 // `desamparados-web/src/test/` son las ayudas de las pruebas (setup, datos de
 // prueba): como `__tests__`, no llegan a ninguna pantalla.

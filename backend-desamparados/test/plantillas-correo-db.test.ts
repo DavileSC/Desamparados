@@ -93,3 +93,14 @@ test('crear, poner en uso, componer con ella, no borrar la que está en uso y vo
     await borrarUsuarioPrueba(tesorero.id);
   }
 });
+
+test('los ejemplos de los campos comunes son los de esta instalación, no los escritos en el catálogo', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  // Las pruebas corren con la instalación de ejemplo: «la Hermandad…».
+  const { comunes } = await PlantillasCorreoService.listar();
+  const ejemplo = (clave: string) => comunes.find((c) => c.clave === clave)?.ejemplo;
+  assert.equal(ejemplo('grupo'), identidad.nombre);
+  assert.equal(ejemplo('de_la_corporacion'), `de la ${identidad.tipo}`);
+  assert.equal(ejemplo('nuestra_corporacion'), `nuestra ${identidad.tipo}`);
+  assert.ok(comunes.every((c) => !/Grupo Parroquial/.test(c.ejemplo ?? '')));
+});
