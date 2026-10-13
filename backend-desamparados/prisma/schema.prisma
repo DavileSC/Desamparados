@@ -480,15 +480,17 @@ model Transaccion {
   recibo    Recibo?  @relation(fields: [reciboId], references: [id])
 
   /// Si es la liquidación de un talonario de lotería, o la compra de sus décimos.
-  talonarioLoteria TalonarioLoteria?
-  compraDeLoteria  SorteoLoteria?
+  talonarioLoteria  TalonarioLoteria?
+  compraDeLoteria   SorteoLoteria?
   /// Si es una venta de la caja de la tienda: se corrige desde la caja, no a mano.
-  ventaDeCaja      CajaVenta?
+  ventaDeCaja       CajaVenta?
   /// Si es el cobro de un pedido de la tienda, de un apadrinamiento o de un
   /// donativo en línea: lo apuntó el banco al cobrar, y tampoco se toca a mano.
-  pedidoTienda     PedidoTienda?
-  apadrinamiento   Apadrinamiento?
-  pagoEnLinea      PagoEnLinea?
+  pedidoTienda      PedidoTienda?     @relation("IngresoDelPedido")
+  /// El reembolso de un pedido de la tienda anulado: se corrige desde la tienda, no a mano.
+  reembolsoDePedido PedidoTienda?     @relation("ReembolsoDelPedido")
+  apadrinamiento    Apadrinamiento?
+  pagoEnLinea       PagoEnLinea?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -520,19 +522,19 @@ model Recibo {
   recibos   Transaccion[] // Un recibo puede tener varias transacciones (Ej: Papeleta + Donativo)
 
   // Relación opcional: Si es papeleta, se rellena.
-  papeleta  PapeletaSitio?
+  papeleta      PapeletaSitio?
   /// Lo pagado por una solicitud antes de recogerla.
-  solicitud Solicitud?
+  solicitud     Solicitud?
   /// La remesa que lo mandó al banco, si se cobró (o se intentó) por domiciliación.
-  remesaId  Int?
-  remesa    Remesa?        @relation(fields: [remesaId], references: [id], onDelete: SetNull)
+  remesaId      Int?
+  remesa        Remesa?        @relation(fields: [remesaId], references: [id], onDelete: SetNull)
   /// El devuelto que este recibo vuelve a cobrar (o perdona). Único: un
   /// devuelto se reemite una sola vez. Se enlaza a mano y no por «mismo
   /// hermano, año y tipo», que confundía con la reemisión cualquier recibo
   /// posterior, como la papeleta de otra salida del mismo año.
-  reemisionDeId Int?    @unique
-  reemisionDe   Recibo? @relation("Reemision", fields: [reemisionDeId], references: [id], onDelete: SetNull)
-  reemision     Recibo? @relation("Reemision")
+  reemisionDeId Int?           @unique
+  reemisionDe   Recibo?        @relation("Reemision", fields: [reemisionDeId], references: [id], onDelete: SetNull)
+  reemision     Recibo?        @relation("Reemision")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1418,7 +1420,12 @@ model PedidoTienda {
   entregadoEl   DateTime?
   /// El ingreso del pedido, al cobrarse: se corrige desde la tienda, no a mano.
   transaccionId Int?                @unique
-  transaccion   Transaccion?        @relation(fields: [transaccionId], references: [id], onDelete: SetNull)
+  transaccion   Transaccion?        @relation("IngresoDelPedido", fields: [transaccionId], references: [id], onDelete: SetNull)
+  /// Anulado (CANCELADO por Tesorería): cuándo, y el gasto que devuelve lo
+  /// cobrado si llegó a cobrarse. El ingreso se queda: el dinero entró y salió.
+  canceladoEl   DateTime?
+  reembolsoId   Int?                @unique
+  reembolso     Transaccion?        @relation("ReembolsoDelPedido", fields: [reembolsoId], references: [id], onDelete: SetNull)
   lineas        PedidoTiendaLinea[]
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt

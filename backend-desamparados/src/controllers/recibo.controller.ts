@@ -39,8 +39,9 @@ export class ReciboController {
   });
 
   static resolverIncidencia = manejar('Error resolviendo la incidencia', async (req, res) => {
-    await PagoEnLineaService.resolver(Number(req.params.id), AuditoriaService.metaFromReq(req));
-    res.json({ message: 'Incidencia resuelta' });
+    const anular = (req.body as { anular?: boolean } | undefined)?.anular === true;
+    await PagoEnLineaService.resolver(Number(req.params.id), AuditoriaService.metaFromReq(req), { anular });
+    res.json({ message: anular ? 'Incidencia resuelta y pedido anulado' : 'Incidencia resuelta' });
   });
 
   // =================================================================

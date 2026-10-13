@@ -35,6 +35,7 @@ admin.put('/categorias/:id', validate(productoIdSchema), validate(categoriaSchem
 admin.delete('/categorias/:id', validate(productoIdSchema), TiendaController.borrarCategoria);
 admin.get('/pedidos', validate(pedidosQuerySchema), TiendaController.pedidos);
 admin.post('/pedidos/:id/entregar', validate(productoIdSchema), TiendaController.entregar);
+admin.post('/pedidos/:id/anular', validate(productoIdSchema), TiendaController.anular);
 // La venta en mano: lo que se lleva alguien en Secretaría, y el efectivo
 // que después se ingresa en el banco. Sin caja que abrir ni cerrar.
 admin.get('/caja', CajaController.estado);

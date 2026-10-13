@@ -327,13 +327,25 @@ export class PagoEnLineaService {
     }));
   }
 
-  /** Tesorería devolvió el dinero (o lo aplicó a mano): la incidencia deja de salir. */
-  static async resolver(id: number, meta: MetaDeAuditoria) {
+  /**
+   * Tesorería devolvió el dinero (o lo aplicó a mano): la incidencia deja de
+   * salir. Con `anular`, además se anula lo que se pagaba (un pedido de la
+   * tienda agotado), si su origen lo admite: antes el pedido se quedaba
+   * «sin pagar» para siempre.
+   */
+  static async resolver(id: number, meta: MetaDeAuditoria, { anular = false } = {}) {
+    if (anular) {
+      const pago = await db.pagoEnLinea.findUnique({ where: { id }, select: { estado: true, resueltaEl: true, origen: true, referenciaId: true } });
+      if (!pago || pago.estado !== EstadoPagoEnLinea.INCIDENCIA || pago.resueltaEl) throw new NotFoundError('Esa incidencia no existe o ya está resuelta.');
+      const deshacer = ORIGENES[pago.origen]?.anular;
+      if (!deshacer || pago.referenciaId === null) throw new HttpError('Lo que se pagaba con esta incidencia no se puede anular desde aquí.', 409);
+      await deshacer(pago.referenciaId, meta);
+    }
     const { count } = await db.pagoEnLinea.updateMany({
       where: { id, estado: EstadoPagoEnLinea.INCIDENCIA, resueltaEl: null },
       data: { resueltaEl: new Date(), resueltaPor: meta.userId ?? null },
     });
     if (count !== 1) throw new NotFoundError('Esa incidencia no existe o ya está resuelta.');
-    await AuditoriaService.log(ACCIONES_AUDITORIA.PAGO_EN_LINEA_RESOLVER, meta, 'PagoEnLinea', id);
+    await AuditoriaService.log(ACCIONES_AUDITORIA.PAGO_EN_LINEA_RESOLVER, meta, 'PagoEnLinea', id, { anulado: anular });
   }
 }

@@ -27,4 +27,8 @@ export class TiendaController {
   static entregar = manejar('Error entregando el pedido', async (req, res) => {
     res.json(await TiendaService.entregar(Number(req.params.id), AuditoriaService.metaFromReq(req)));
   });
+
+  static anular = manejar('Error anulando el pedido', async (req, res) => {
+    res.json(await TiendaService.anular(Number(req.params.id), AuditoriaService.metaFromReq(req)));
+  });
 }

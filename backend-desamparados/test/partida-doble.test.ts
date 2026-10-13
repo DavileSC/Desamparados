@@ -19,6 +19,8 @@ describe('la cuenta de cada categoría', () => {
     assert.equal(cuentaPropuesta('Caridad', 'GASTO'), '650');
     assert.equal(cuentaPropuesta('Mantenimiento de enseres', 'GASTO'), '622');
     assert.equal(cuentaPropuesta('Devoluciones de recibos', 'GASTO'), '720');
+    // El reembolso de un pedido anulado minora las ventas, no las compras (600).
+    assert.equal(cuentaPropuesta('Reembolsos de la tienda', 'GASTO'), '700');
   });
 
   test('lo que no casa va a la genérica de su lado', () => {

@@ -58,7 +58,7 @@ async function escenario() {
   const recoger = async () => {
     const pedidos = await db.pedidoTienda.findMany({ where: { nombre: marca }, select: { id: true } });
     const ids = pedidos.map((p) => p.id);
-    await db.transaccion.deleteMany({ where: { concepto: { in: ids.map((id) => `Tienda: pedido n.º ${id}`) } } });
+    await db.transaccion.deleteMany({ where: { concepto: { in: ids.flatMap((id) => [`Tienda: pedido n.º ${id}`, `Tienda: reembolso del pedido n.º ${id}`]) } } });
     await db.pagoEnLinea.deleteMany({ where: { origen: 'TIENDA', referenciaId: { in: ids } } });
     await db.auditLog.deleteMany({ where: { OR: [{ entityType: 'pedido', entityId: { in: ids.map(String) } }, { action: 'EMAIL_FALLIDO', createdAt: { gte: new Date(Date.now() - 120_000) } }] } });
     await db.pedidoTienda.deleteMany({ where: { id: { in: ids } } });
@@ -230,6 +230,69 @@ test('NG9: si el banco no lo cobra, el pedido se cancela y ya no ata al producto
   }
 });
 
+test('NG8: un pedido cobrado y entregado se anula: vuelven las existencias y queda el reembolso', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  process.env.PAGO_EN_LINEA = 'simulado';
+  const e = await escenario();
+  try {
+    const r = await TiendaService.comprar(e.compra([{ productoId: e.medalla.id, cantidad: 1 }, { productoId: e.estampa.id, cantidad: 2 }]), {});
+    const { numero } = await TiendaService.pedidoPublico(r.token);
+    await TiendaService.entregar(numero, {});
+    assert.equal((await db.producto.findUniqueOrThrow({ where: { id: e.medalla.id } })).existencias, 1);
+
+    assert.match((await TiendaService.anular(numero, {})).message, /reembolso/);
+    const pedido = await TiendaService.pedidoPublico(r.token);
+    assert.equal(pedido.estado, 'CANCELADO');
+    assert.equal((await db.producto.findUniqueOrThrow({ where: { id: e.medalla.id } })).existencias, 2, 'la medalla vuelve');
+    assert.equal((await db.producto.findUniqueOrThrow({ where: { id: e.estampa.id } })).existencias, null, 'sin límite sigue sin límite');
+
+    // El ingreso se queda y el reembolso es un gasto enlazado, que no se toca a mano.
+    const fila = await db.pedidoTienda.findUniqueOrThrow({ where: { id: numero }, include: { reembolso: { include: { categoria: true } } } });
+    assert.ok(fila.canceladoEl);
+    assert.equal(fila.reembolso?.tipo, 'GASTO');
+    assert.equal(Number(fila.reembolso?.importe), 18);
+    assert.equal(fila.reembolso?.categoria.nombre, 'Reembolsos de la tienda');
+    assert.equal(await db.transaccion.count({ where: { concepto: `Tienda: pedido n.º ${numero}` } }), 1);
+    await assert.rejects(TransaccionService.remove(fila.reembolsoId!), (err: unknown) => err instanceof HttpError && err.status === 409);
+
+    await assert.rejects(TiendaService.anular(numero, {}), (err: unknown) => err instanceof HttpError && err.status === 409);
+  } finally {
+    delete process.env.PAGO_EN_LINEA;
+    await e.recoger();
+  }
+});
+
+test('NG8: el pedido cobrado con incidencia lo dice, sale en la lista y se anula al resolverla', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  process.env.PAGO_EN_LINEA = 'redsys';
+  const e = await escenario();
+  try {
+    await db.producto.update({ where: { id: e.medalla.id }, data: { existencias: 1 } });
+    const r = await TiendaService.comprar(e.compra([{ productoId: e.medalla.id, cantidad: 1 }]), {});
+    if (r.tipo !== 'banco') return assert.fail('esperaba ir al banco');
+    assert.equal((await TiendaService.pedidoPublico(r.token)).pagoConIncidencia, false);
+    // Se vende la última en Secretaría antes de que llegue el aviso.
+    await db.producto.update({ where: { id: e.medalla.id }, data: { existencias: 0 } });
+    assert.ok(await PagoEnLineaService.avisoDelBanco(aviso({ Ds_Order: r.pedido, Ds_Amount: '1500', Ds_Response: '0000', Ds_AuthorisationCode: '777777' }), {}));
+
+    const pedido = await TiendaService.pedidoPublico(r.token);
+    assert.deepEqual([pedido.estado, pedido.pagoConIncidencia], ['PENDIENTE_PAGO', true]);
+    const enLista = (await TiendaService.pedidos()).find((p) => p.id === pedido.numero);
+    assert.equal(enLista?.pagoConIncidencia, true, 'sale en la lista aunque no se pagó');
+
+    const pago = await db.pagoEnLinea.findUniqueOrThrow({ where: { pedido: r.pedido } });
+    await PagoEnLineaService.resolver(pago.id, {}, { anular: true });
+    const anulado = await TiendaService.pedidoPublico(r.token);
+    assert.deepEqual([anulado.estado, anulado.pagoConIncidencia], ['CANCELADO', false]);
+    assert.equal((await db.pedidoTienda.findUniqueOrThrow({ where: { id: anulado.numero } })).reembolsoId, null, 'nunca entró en Contabilidad: sin reembolso');
+    assert.equal((await db.producto.findUniqueOrThrow({ where: { id: e.medalla.id } })).existencias, 0, 'no se descontó, no vuelve');
+    assert.ok((await db.pagoEnLinea.findUniqueOrThrow({ where: { id: pago.id } })).resueltaEl);
+  } finally {
+    delete process.env.PAGO_EN_LINEA;
+    await e.recoger();
+  }
+});
+
 test('la tienda pública sin sesión, la gestión solo con la del CMS', async (t) => {
   if (!dbDisponible) { t.skip(SIN_DB); return; }
   process.env.PAGO_EN_LINEA = 'simulado';
@@ -248,6 +311,7 @@ test('la tienda pública sin sesión, la gestión solo con la del CMS', async (t
     assert.equal(pedido.email, undefined, 'el enlace del pedido no enseña el correo');
 
     assert.equal((await fetch(`${baseUrl}/api/tienda/admin/pedidos`)).status, 401);
+    assert.equal((await fetch(`${baseUrl}/api/tienda/admin/pedidos/1/anular`, { method: 'POST' })).status, 401, 'anular pide sesión del CMS');
     const cookie = { Cookie: `${COOKIE_CMS}=${generateToken(tesorero.id, Role.TESORERIA)}` };
     const pedidos = await (await fetch(`${baseUrl}/api/tienda/admin/pedidos`, { headers: cookie })).json() as { email: string; nombre: string }[];
     assert.ok(pedidos.some((p) => p.nombre === e.marca && p.email === 'comprador@ejemplo.test'));
