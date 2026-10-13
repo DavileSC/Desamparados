@@ -9,11 +9,16 @@
     "una ruta que no existe y acabar en «página no encontrada».",
     "",
     "Cada ruta tiene que existir en desamparados-web/src/routes/index.tsx: lo",
-    "comprueba destinos-de-enlace.test.ts."
+    "comprueba destinos-de-enlace.test.ts.",
+    "",
+    "«modulo», en la que es de un módulo (la misma clave que exige su ruta en",
+    "la web): con él apagado no se ofrece en el selector, como una página de",
+    "paginas-publicas.json con su «modulo». Un enlace ya guardado a ella se",
+    "sigue aceptando al guardar."
   ],
   "otros": [
     { "ruta": "/", "nombre": "Inicio (portada)", "grupo": "General" },
-    { "ruta": "/hazte-hermano", "nombre": "Hazte hermano", "grupo": "Hermanos" },
+    { "ruta": "/hazte-hermano", "nombre": "Hazte hermano", "grupo": "Hermanos", "modulo": "alta-web" },
     { "ruta": "/acceso", "nombre": "Acceso de hermanos", "grupo": "Hermanos" },
     { "ruta": "/aviso-legal", "nombre": "Aviso legal", "grupo": "Legal" },
     { "ruta": "/politica-privacidad", "nombre": "Política de privacidad", "grupo": "Legal" },

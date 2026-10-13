@@ -1,5 +1,6 @@
 import destinos from '../../../shared/destinos-de-enlace.json' with { type: 'json' };
 import paginas from '../../../shared/paginas-publicas.json' with { type: 'json' };
+import { esClaveEncendible, type ClaveEncendible } from './modulos.js';
 
 /**
  * Las rutas fijas a las que puede llevar un enlace escrito en el CMS: las
@@ -9,6 +10,23 @@ export const RUTAS_DESTINO: ReadonlySet<string> = new Set([
   ...paginas.paginas.map((p) => p.ruta),
   ...destinos.otros.map((d) => d.ruta),
 ]);
+
+/**
+ * El módulo de cada destino que es de uno (`modulo` en los dos JSON): con él
+ * apagado la ruta responde «no encontrada», así que no se ofrece. Igual que
+ * `MODULO_DE_PAGINA`, una clave que no es de ningún módulo para el arranque:
+ * si no, el destino quedaría siempre apagado sin que nadie supiera por qué.
+ */
+const MODULO_DE_DESTINO: ReadonlyMap<string, ClaveEncendible> = new Map(
+  [...(paginas.paginas as { ruta: string; modulo?: string }[]), ...(destinos.otros as { ruta: string; modulo?: string }[])].flatMap(({ ruta, modulo }) => {
+    if (modulo === undefined) return [];
+    if (!esClaveEncendible(modulo)) throw new Error(`shared: el destino «${ruta}» depende de «${modulo}», que no es ningún módulo`);
+    return [[ruta, modulo] as const];
+  }),
+);
+
+/** De qué módulo es el destino, o `undefined` si es del núcleo (o no es un destino fijo). */
+export const moduloDeDestino = (ruta: string): ClaveEncendible | undefined => MODULO_DE_DESTINO.get(ruta);
 
 /**
  * Las que cambiaron de dirección (`antiguas`): la web las redirige a la

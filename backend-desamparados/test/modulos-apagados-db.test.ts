@@ -24,9 +24,9 @@ let admin: { id: number; cookie: string };
 
 /** Una ruta de cada módulo. Con el módulo encendido puede responder lo que sea (200, 400, un 404 natural): lo que no puede es decir MODULO_NO_ACTIVADO. */
 const RUTAS: Record<ClaveModulo, { method?: string; ruta: string }[]> = {
-  noticias: [{ ruta: '/api/news' }],
-  publicaciones: [{ ruta: '/api/publications' }],
-  agenda: [{ ruta: '/api/events' }],
+  noticias: [{ ruta: '/api/news' }, { ruta: '/api/contenido/noticias' }],
+  publicaciones: [{ ruta: '/api/publications' }, { ruta: '/api/contenido/publicaciones' }, { ruta: '/api/contenido/dossier-prensa' }],
+  agenda: [{ ruta: '/api/events' }, { ruta: '/api/contenido/agenda' }],
   comunicados: [{ ruta: '/api/comunicados' }],
   'alta-web': [{ method: 'POST', ruta: '/api/auth/register' }, { method: 'POST', ruta: '/api/auth/reactivacion' }],
   'area-hermanos': [], // se prueba en modulos-area-hermanos-db.test.ts
