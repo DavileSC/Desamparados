@@ -416,7 +416,8 @@ export class ReciboService {
   }
 
   // Cambiar el estado de un recibo y los datos de su papeleta (puesto, tramo)
-  static async adminUpdateDetalles(reciboId: number, data: UpdateReciboDto, meta?: MetaDeAuditoria) {
+  // `delExtracto`: la devolución la trae un extracto Norma 43 (ver más abajo).
+  static async adminUpdateDetalles(reciboId: number, data: UpdateReciboDto, meta?: MetaDeAuditoria, { delExtracto = false } = {}) {
     const tocaPapeleta = data.puesto !== undefined || data.tramo !== undefined || data.observaciones !== undefined;
     // Solo una devolución puede necesitar el reverso; la categoría se resuelve
     // antes de abrir la transacción (ver idCategoriaDeRecibos).
@@ -448,14 +449,17 @@ export class ReciboService {
       if (cambiaEstado && !puedeTransicionar(actual.estado, destino, actual)) {
         throw new HttpError(`No se puede cambiar un recibo de ${actual.estado} a ${destino}.`);
       }
-      // El día que dice Tesorería no puede ser anterior al ingreso: el
-      // reverso caería en otro ejercicio sin nada que deshacer (un año mal
-      // puesto). La devolución de un extracto lleva el día del banco y no pasa por aquí.
+      // El día de la devolución no puede ser anterior al ingreso: el reverso
+      // caería en otro ejercicio sin nada que deshacer (un año mal puesto).
+      // El de un extracto es el del banco y no es un error: si la remesa se
+      // dio por cobrada a mano días después, el reverso va al día del cobro.
+      let fechaReverso = fechaDevolucion;
       if (cambiaEstado && data.fechaDevolucion !== undefined && requiereReverso(actual.estado, destino)) {
         const ingreso = await tx.transaccion.findFirst({ where: { reciboId, tipo: TipoTransaccion.INGRESO }, orderBy: { fecha: 'asc' }, select: { fecha: true } });
         const diaDelCobro = ingreso ? diaMadrid(ingreso.fecha) : actual.fechaPago ? diaMadrid(actual.fechaPago) : null;
         if (diaDelCobro !== null && data.fechaDevolucion < diaDelCobro) {
-          throw new HttpError(`El día de la devolución no puede ser anterior al del cobro (${diaDelCobro.split('-').reverse().join('/')}).`);
+          if (!delExtracto) throw new HttpError(`El día de la devolución no puede ser anterior al del cobro (${diaDelCobro.split('-').reverse().join('/')}).`);
+          fechaReverso = instanteDelApunte(diaDelCobro);
         }
       }
       // Un recibo que ya estaba devuelto no genera otra comisión.
@@ -471,7 +475,7 @@ export class ReciboService {
           if (categoriaDevolucionesId === null) throw new Error('Falta la categoría de devoluciones.');
           await devolverCobroEnTransaccion(tx, actual, categoriaDevolucionesId, {
             destino: destino as typeof EstadoPago.DEVUELTO | typeof EstadoPago.REEMBOLSADO,
-            fecha: fechaDevolucion,
+            fecha: fechaReverso,
           });
         } else {
           // Condicionado al estado que se validó: si entre la lectura y la
@@ -485,7 +489,7 @@ export class ReciboService {
         }
 
         if (categoriaComisionesId !== null && data.comision !== undefined) {
-          await apuntarComisionEnTransaccion(tx, actual, data.comision, categoriaComisionesId, fechaDevolucion);
+          await apuntarComisionEnTransaccion(tx, actual, data.comision, categoriaComisionesId, fechaReverso);
         }
 
         // Coherencia con la mesa de reparto: un recibo de papeleta devuelto o

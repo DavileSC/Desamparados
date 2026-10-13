@@ -189,7 +189,13 @@ interface RemesaSinCobrar {
   id: number;
   mensajeId: string;
   fechaCobro: string;
+  /** El total del fichero, que es lo que abona el banco. */
   centimos: number;
+  /**
+   * Lo que suman sus recibos que siguen siendo de la remesa (en el banco,
+   * cobrados o devueltos): sin los que se anularon después de generarla.
+   */
+  centimosVivos: number;
 }
 
 interface Casado {
@@ -208,21 +214,40 @@ const diasEntre = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:0
  *
  * - Una devolución es un cargo que nombra un recibo remesado (por su
  *   EndToEndId) y con su mismo importe; si solo nombra el mandato, vale cuando
- *   ese hermano tiene un único recibo remesado con ese importe.
+ *   ese hermano tiene un único recibo remesado con ese importe. Si nombra un
+ *   recibo que no está entre los remesados (`fueraDeLaLista`: anulado, de una
+ *   remesa antigua…), va a dudosos: buscarlo por el mandato devolvía otro
+ *   recibo del hermano con el mismo importe, como la cuota pagada del año
+ *   anterior.
+ * - Un cobro cuyo abono no coincide con lo que suman los recibos que siguen en
+ *   la remesa (se anuló alguno después de generarla) va a dudosos con la
+ *   diferencia: darla por cobrada apuntaría menos de lo que entró en el banco.
  * - El cobro de una remesa es un abono que nombra su identificador o que, sin
  *   nombrarlo, trae su total exacto entre la fecha de cobro y diez días
  *   después. Si el importe casara con dos remesas, no se elige ninguna.
  * - El resto de movimientos (recibos de luz, donativos por transferencia…) no
  *   son de ninguna remesa y no se tocan.
  */
-export function casarMovimientos(movimientos: MovimientoN43[], recibos: ReciboEnElBanco[], remesas: RemesaSinCobrar[]): Casado {
+export function casarMovimientos(
+  movimientos: MovimientoN43[],
+  recibos: ReciboEnElBanco[],
+  remesas: RemesaSinCobrar[],
+  /** Los recibos nombrados que no están en `recibos`, con por qué: «está ANULADO». */
+  fueraDeLaLista: ReadonlyMap<number, string> = new Map(),
+): Casado {
   const casado: Casado = { devoluciones: [], cobros: [], dudosos: [] };
   const porId = new Map(recibos.map((r) => [r.id, r]));
   const usados = new Set<number>();
 
   for (const m of movimientos) {
     if (m.signo === 'CARGO') {
-      const nombrados = recibosNombrados(m).filter((id) => porId.has(id));
+      const todos = recibosNombrados(m);
+      const nombrados = todos.filter((id) => porId.has(id));
+      if (nombrados.length === 0 && todos.length > 0) {
+        const motivos = todos.map((id) => `el ${id}, que ${fueraDeLaLista.get(id) ?? 'no existe'}`);
+        casado.dudosos.push({ movimiento: m, motivo: `Nombra ${todos.length === 1 ? 'el recibo' : 'los recibos'} ${motivos.join('; ').replace(/^el /, '')}: revísalo a mano.` });
+        continue;
+      }
       if (nombrados.length === 1) {
         const recibo = porId.get(nombrados[0])!;
         if (recibo.centimos !== m.centimos) casado.dudosos.push({ movimiento: m, motivo: `Nombra el recibo ${recibo.id}, pero el importe no coincide.` });
@@ -248,7 +273,16 @@ export function casarMovimientos(movimientos: MovimientoN43[], recibos: ReciboEn
     });
     const candidatas = porNombre.length > 0 ? porNombre : porImporte;
     if (candidatas.length === 1 && !casado.cobros.some((c) => c.remesaId === candidatas[0].id)) {
-      casado.cobros.push({ movimiento: m, remesaId: candidatas[0].id });
+      const remesa = candidatas[0];
+      if (remesa.centimosVivos !== m.centimos) {
+        const diferencia = ((m.centimos - remesa.centimosVivos) / 100).toFixed(2).replace('.', ',');
+        casado.dudosos.push({
+          movimiento: m,
+          motivo: `Es el cobro de ${remesa.mensajeId}, pero sus recibos suman otra cifra (diferencia: ${diferencia} €): se anuló alguno después de generarla. Revísalo y dala por cobrada a mano.`,
+        });
+        continue;
+      }
+      casado.cobros.push({ movimiento: m, remesaId: remesa.id });
     } else if (candidatas.length > 1) {
       casado.dudosos.push({ movimiento: m, motivo: 'El importe coincide con varias remesas: dala por cobrada a mano.' });
     }

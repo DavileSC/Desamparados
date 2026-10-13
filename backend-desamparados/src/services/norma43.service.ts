@@ -14,7 +14,7 @@ import { HttpError } from '../utils/error.handle';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
 import { ReciboService } from './recibo.service.js';
 import { RemesaService } from './remesa.service.js';
-import { casarMovimientos, leerNorma43, type MovimientoN43 } from '../domain/norma43.js';
+import { casarMovimientos, leerNorma43, recibosNombrados, type MovimientoN43 } from '../domain/norma43.js';
 import { aCentimos } from '../domain/sepa.js';
 
 /** Hasta dónde se mira atrás: una devolución SEPA CORE llega, como mucho, a los 13 meses. */
@@ -24,6 +24,22 @@ const MESES_ATRAS = 14;
 const centimosAEuros = (centimos: number) => centimos / 100;
 const cuentaEnmascarada = (cuenta: string) => `••••${cuenta.slice(-4)}`;
 const textoMovimiento = (m: MovimientoN43) => [m.referencia1, m.referencia2, ...m.conceptos].filter(Boolean).join(' · ');
+
+/**
+ * Los recibos que nombran las devoluciones del extracto y no están entre los
+ * remesados, con el porqué, para que vayan a dudosos con él.
+ */
+async function fueraDeLaLista(movimientos: MovimientoN43[], candidatos: Set<number>): Promise<Map<number, string>> {
+  const ids = [...new Set(movimientos.filter((m) => m.signo === 'CARGO').flatMap(recibosNombrados))].filter((id) => !candidatos.has(id));
+  if (ids.length === 0) return new Map();
+  const leidos = await db.recibo.findMany({ where: { id: { in: ids } }, select: { id: true, estado: true, remesaId: true } });
+  const vivos: EstadoPago[] = [EstadoPago.REMESADO, EstadoPago.PAGADO, EstadoPago.DEVUELTO];
+  return new Map(leidos.map((r) => [r.id,
+    !vivos.includes(r.estado) ? `está ${r.estado}`
+      : r.remesaId === null ? 'no se mandó al banco en ninguna remesa'
+        : `es de una remesa de hace más de ${MESES_ATRAS} meses`,
+  ]));
+}
 
 async function analizar(contenido: string) {
   const extracto = leerNorma43(contenido);
@@ -49,10 +65,24 @@ async function analizar(contenido: string) {
     }),
   ]);
 
+  // Lo que siguen sumando los recibos de cada remesa: sin los anulados (o
+  // vueltos a pendiente) después de generarla, que el banco cobra igual (ver
+  // casarMovimientos). Un reembolsado sí cuenta: el banco lo cobró.
+  const vivos = await db.recibo.groupBy({
+    by: ['remesaId'],
+    where: { remesaId: { in: remesas.map((r) => r.id) }, estado: { notIn: [EstadoPago.ANULADO, EstadoPago.EXENTO, EstadoPago.PENDIENTE] } },
+    _sum: { importe: true },
+  });
+  const vivosPorRemesa = new Map(vivos.map((v) => [v.remesaId!, v._sum.importe ? aCentimos(v._sum.importe) : 0]));
+
   const casado = casarMovimientos(
     movimientos,
     recibos.map((r) => ({ id: r.id, hermanoId: r.hermano.id, centimos: aCentimos(r.importe), remesaId: r.remesaId! })),
-    remesas.map((r) => ({ id: r.id, mensajeId: r.mensajeId, fechaCobro: r.fechaCobro.toISOString().slice(0, 10), centimos: aCentimos(r.total) })),
+    remesas.map((r) => ({
+      id: r.id, mensajeId: r.mensajeId, fechaCobro: r.fechaCobro.toISOString().slice(0, 10), centimos: aCentimos(r.total),
+      centimosVivos: vivosPorRemesa.get(r.id) ?? 0,
+    })),
+    await fueraDeLaLista(movimientos, new Set(recibos.map((r) => r.id))),
   );
   const reciboPorId = new Map(recibos.map((r) => [r.id, r]));
   const remesaPorId = new Map(remesas.map((r) => [r.id, r]));
@@ -107,7 +137,7 @@ export class Norma43Service {
     for (const d of analisis.devoluciones.filter((x) => !x.yaAplicado)) {
       try {
         // Con la fecha valor del movimiento: es el día en que el banco lo devolvió.
-        await ReciboService.adminUpdateDetalles(d.reciboId, { estado: EstadoPago.DEVUELTO, fechaDevolucion: d.fecha }, meta);
+        await ReciboService.adminUpdateDetalles(d.reciboId, { estado: EstadoPago.DEVUELTO, fechaDevolucion: d.fecha }, meta, { delExtracto: true });
         devueltos += 1;
       } catch (error) {
         if (!(error instanceof HttpError)) throw error;

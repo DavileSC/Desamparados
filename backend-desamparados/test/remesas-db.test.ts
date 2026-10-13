@@ -17,6 +17,7 @@ import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { EmailService } from '../src/services/email.service.js';
 import { RemesaService } from '../src/services/remesa.service.js';
+import { ReciboService } from '../src/services/recibo.service.js';
 import { ACCIONES_AUDITORIA } from '../src/services/auditoria.service.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { diaDeHoy } from '../src/domain/fechas-hermano.js';
@@ -307,6 +308,38 @@ test('el extracto Norma 43 devuelve lo que el banco devolvió y cobra la remesa,
     assert.equal(await db.transaccion.count({ where: { reciboId: ra.id } }), 1);
 
     await assert.rejects(Norma43Service.aplicar('esto no es un extracto', e.meta), (err: unknown) => err instanceof HttpError && err.status === 400);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('NG3 y NG7: con un recibo anulado después de generar la remesa, ni su devolución ni el abono se aplican solos', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    const a = await e.hermano();
+    const b = await e.hermano();
+    const ra = await e.recibo(a.id, '30.00');
+    const rb = await e.recibo(b.id, '12.50');
+    const remesa = await RemesaService.generar({ fechaCobro: fechaCobro(), year: YEAR }, e.meta);
+    await db.remesa.update({ where: { id: remesa.id }, data: { fechaCobro: new Date('2026-09-01T00:00:00Z') } });
+    // Ya en el banco, Tesorería anula uno; el banco lo cobra igual y luego se devuelve.
+    await ReciboService.adminUpdateDetalles(rb.id, { estado: 'ANULADO' }, e.meta);
+
+    const fichero = extracto([
+      { fecha: '260902', signo: 2, centimos: 4250, conceptos: ['ABONO ADEUDOS SEPA', remesa.mensajeId] },
+      { fecha: '260908', signo: 1, centimos: 1250, conceptos: [`DEVOLUCION REC-${rb.id}`, `HERMANO-${String(b.id).padStart(6, '0')}-20260901`] },
+    ]);
+    const previa = await Norma43Service.previa(fichero);
+    assert.deepEqual(previa.cobros, []);
+    assert.deepEqual(previa.devoluciones, []);
+    assert.equal(previa.dudosos.length, 2);
+    assert.match(previa.dudosos[0].motivo, /diferencia: 12,50 €/);
+    assert.match(previa.dudosos[1].motivo, new RegExp(`recibo ${rb.id}, que está ANULADO`));
+
+    const aplicado = await Norma43Service.aplicar(fichero, e.meta);
+    assert.deepEqual([aplicado.devueltos, aplicado.cobradas], [0, 0]);
+    assert.equal((await db.recibo.findUniqueOrThrow({ where: { id: ra.id } })).estado, EstadoPago.REMESADO, 'se da por cobrada a mano');
   } finally {
     await e.recoger();
   }

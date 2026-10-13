@@ -53,8 +53,8 @@ describe('casar el extracto con las remesas', () => {
     { id: 43, hermanoId: 8, centimos: 1800, remesaId: 3 },
   ];
   const remesas = [
-    { id: 3, mensajeId: 'REMESA-000003-20261002', fechaCobro: '2026-10-02', centimos: 9000 },
-    { id: 4, mensajeId: 'REMESA-000004-20261016', fechaCobro: '2026-10-16', centimos: 5000 },
+    { id: 3, mensajeId: 'REMESA-000003-20261002', fechaCobro: '2026-10-02', centimos: 9000, centimosVivos: 9000 },
+    { id: 4, mensajeId: 'REMESA-000004-20261016', fechaCobro: '2026-10-16', centimos: 5000, centimosVivos: 5000 },
   ];
 
   test('la devolución se reconoce por el recibo que nombra y su importe', () => {
@@ -80,14 +80,33 @@ describe('casar el extracto con las remesas', () => {
   });
 
   test('el cobro de la remesa, por su nombre o por su total en los días siguientes', () => {
-    assert.deepEqual(casarMovimientos([mov('ABONO', 1, ['ABONO REMESA-000004-20261016'])], recibos, remesas).cobros.map((c) => c.remesaId), [4]);
+    assert.deepEqual(casarMovimientos([mov('ABONO', 5000, ['ABONO REMESA-000004-20261016'])], recibos, remesas).cobros.map((c) => c.remesaId), [4]);
     assert.deepEqual(casarMovimientos([mov('ABONO', 9000, ['ABONO ADEUDOS'], '2026-10-03')], recibos, remesas).cobros.map((c) => c.remesaId), [3]);
     // Mismo importe, pero antes de la fecha de cobro o mucho después: no es ella.
     assert.deepEqual(casarMovimientos([mov('ABONO', 9000, [], '2026-10-01'), mov('ABONO', 9000, [], '2026-10-20')], recibos, remesas).cobros, []);
   });
 
+  test('NG3: un recibo nombrado que no está entre los remesados va a dudosos, sin buscar por el mandato', () => {
+    // El 50 (cuota de este año) se anuló; el hermano 8 tiene otro de 18 € que sí casaría por el mandato.
+    const c = casarMovimientos(
+      [mov('CARGO', 1800, ['DEVOLUCION REC-50 HERMANO-000008-20200315'])], recibos, remesas, new Map([[50, 'está ANULADO']]),
+    );
+    assert.deepEqual(c.devoluciones, []);
+    assert.deepEqual(c.dudosos.map((d) => d.motivo), ['Nombra el recibo 50, que está ANULADO: revísalo a mano.']);
+    assert.match(casarMovimientos([mov('CARGO', 1800, ['DEVOLUCION REC-99'])], recibos, remesas).dudosos[0].motivo, /recibo 99, que no existe/);
+  });
+
+  test('NG7: el abono no cuadra con lo que queda en la remesa (se anuló un recibo): a dudosos con la diferencia', () => {
+    const conAnulado = [{ ...remesas[0], centimosVivos: 5400 }];
+    for (const m of [mov('ABONO', 9000, ['ABONO REMESA-000003-20261002']), mov('ABONO', 9000, [], '2026-10-03')]) {
+      const c = casarMovimientos([m], recibos, conAnulado);
+      assert.deepEqual(c.cobros, []);
+      assert.match(c.dudosos[0].motivo, /REMESA-000003-20261002.*diferencia: 36,00 €/);
+    }
+  });
+
   test('si el importe casa con dos remesas, no elige ninguna', () => {
-    const iguales = [...remesas, { id: 5, mensajeId: 'REMESA-000005-20261002', fechaCobro: '2026-10-02', centimos: 9000 }];
+    const iguales = [...remesas, { id: 5, mensajeId: 'REMESA-000005-20261002', fechaCobro: '2026-10-02', centimos: 9000, centimosVivos: 9000 }];
     const c = casarMovimientos([mov('ABONO', 9000, [], '2026-10-03')], recibos, iguales);
     assert.deepEqual(c.cobros, []);
     assert.equal(c.dudosos.length, 1);
