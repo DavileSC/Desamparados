@@ -41,6 +41,15 @@ async function apadrinarLaVela(user: ReturnType<typeof userEvent.setup>) {
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
 describe('ApadrinaPage', () => {
+  it('la foto de la campaña se pide en las copias del ancho que se pinta, no en la original de 1920 px', async () => {
+    const hex = '0123456789abcdef0123456789abcdef'
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(json({ ...CAMPANAS, campanas: [{ ...CAMPANAS.campanas[0], foto: `/storage/public/${hex}.webp` }] }))))
+    renderWithProviders(<ApadrinaPage />)
+    const foto = await screen.findByRole('img', { name: 'Velas del paso' })
+    expect(foto).toHaveAttribute('srcset', expect.stringContaining(`${hex}-1280.webp 1280w`))
+    expect(foto).toHaveAttribute('sizes', '(min-width: 900px) 900px, 100vw')
+  })
+
   it('«Pagar» dice qué falta en vez de quedarse en gris, y manda el teléfono con nueve cifras', async () => {
     const user = userEvent.setup()
     const llamadas = servidor()

@@ -6,7 +6,7 @@ import { Helmet } from 'react-helmet-async'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import ListaDeAgenda from '../inicio/ListaDeAgenda'
-import CartelDeCulto from '../actualidad/agenda/CartelDeCulto'
+import VentanaDelActo from '../actualidad/agenda/VentanaDelActo'
 import CampoImagen from './CampoImagen'
 import { PAPEL } from '../inicio/estilos'
 import temaPublico from '../../theme'
@@ -295,10 +295,11 @@ export default function AgendaEditPage() {
         {form.cartel && (
           <Box sx={{ mt: 2.5 }}>
             <Panel titulo="Así sale en la Agenda">
-              {/* El cartel de verdad, con el tema de la web, sin poder pulsarlo. */}
+              {/* La ventana de verdad que abre el acto en la Agenda, con el tema
+                  de la web, sin poder pulsarla (inert: tampoco se enfoca su «Cerrar»). */}
               <ThemeProvider theme={temaPublico}>
-                <Box inert data-testid="vista-previa-cartel" sx={{ fontFamily: temaPublico.typography.fontFamily, pointerEvents: 'none', backgroundColor: '#0c0b0d', p: { xs: 1.5, md: 3 } }}>
-                  <CartelDeCulto sinHora={!inicio} evento={{
+                <Box inert data-testid="vista-previa-cartel" sx={{ fontFamily: temaPublico.typography.fontFamily, pointerEvents: 'none', backgroundColor: PAPEL, p: { xs: 1.5, md: 3 }, display: 'flex', justifyContent: 'center' }}>
+                  <VentanaDelActo origen={null} quieto esDialogo={false} onCerrar={() => {}} sinHora={!inicio} evento={{
                     id: 0,
                     title: form.title.trim() || 'Título del acto',
                     description: form.description || null,

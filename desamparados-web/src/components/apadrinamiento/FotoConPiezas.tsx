@@ -3,6 +3,7 @@ import { Box, ButtonBase, Tooltip } from '@mui/material'
 import type { Pieza } from '../../lib/api/apadrinamientos'
 import { euros } from '../../lib/euros'
 import { MARCA, alfa } from '../../theme/marca'
+import { propsDeFoto } from '../../lib/fotoSubida'
 
 interface Props {
   foto: string
@@ -35,7 +36,8 @@ export default function FotoConPiezas({ foto, titulo, piezas, elegida = null, on
 
   return (
     <Box onClick={pulsarFoto} sx={{ position: 'relative', lineHeight: 0, cursor: onPulsarFoto ? 'crosshair' : 'default', borderRadius: 1, overflow: 'hidden' }}>
-      <Box component="img" src={foto} alt={titulo} sx={{ width: '100%', height: 'auto', display: 'block' }} />
+      {/* Con sus copias de 640 y 1280: las dos pantallas que la pintan la dejan en 900 px como mucho. */}
+      <Box component="img" alt={titulo} {...propsDeFoto(foto, '(min-width: 900px) 900px, 100vw')} sx={{ width: '100%', height: 'auto', display: 'block' }} />
       {piezas.map((p) => {
         const texto = p.apadrinada
           ? `${p.nombre}: apadrinada${p.padrino ? ` por ${p.padrino}` : ''}`

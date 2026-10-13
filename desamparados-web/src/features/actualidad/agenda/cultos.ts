@@ -45,7 +45,7 @@ export const hora = (evento: ApiEvent) =>
   new Date(evento.startDate).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
 
 /** Lo que dice el cartel sobre el título: qué clase de acto es. */
-export function claseDelCartel(evento: ApiEvent) {
+function claseDelCartel(evento: ApiEvent) {
   if (evento.type === 'CULTO') return 'Culto solemne'
   if (evento.type === 'PROCESION') return 'Salida procesional'
   return TIPOS[evento.type].nombre
