@@ -65,8 +65,8 @@ describe('sin mapa del barrio', () => {
   it('el itinerario «sobre el mapa» se queda en la línea, con todas sus paradas', async () => {
     renderWithProviders(<BloqueItinerario bloque={ITINERARIO} />)
     // El mapa llega a montarse (no se sabe que no hay barrio hasta pedirlo) y se retira.
-    const mapa = await screen.findByRole('img', { name: /Mapa del recorrido/ }, { timeout: 5000 })
-    await waitForElementToBeRemoved(mapa, { timeout: 5000 })
+    const mapa = await screen.findByRole('img', { name: /Mapa del recorrido/ }, { timeout: 15000 })
+    await waitForElementToBeRemoved(mapa, { timeout: 15000 })
     const lista = screen.getByRole('list')
     expect(lista.textContent).toContain('Salida del templo')
     expect(lista.textContent).toContain('Regreso al templo')
@@ -74,14 +74,16 @@ describe('sin mapa del barrio', () => {
 
   it('el editor del CMS dice que esta instalación no tiene mapa, sin romperse', async () => {
     renderWithProviders(<EditorDeRecorrido recorrido={undefined} paradas={ITINERARIO.paradas} onRecorrido={() => {}} onParadas={() => {}} />)
-    expect(await screen.findByText(/no tiene mapa del barrio/, {}, { timeout: 5000 })).toBeInTheDocument()
+    expect(await screen.findByText(/no tiene mapa del barrio/, {}, { timeout: 15000 })).toBeInTheDocument()
   })
 
   it('la 404 se queda con el texto: el mapa se retira en cuanto se sabe que no hay barrio', async () => {
     // El recorrido es de las páginas propias: sin ellas, la 404 ni lo pide.
     renderWithProviders(<NoEncontradaPage />, { ruta: '/esta-no-existe', modulos: ['paginas-propias'] })
-    const mapa = await screen.findByRole('img', { name: /Mapa del recorrido/ }, { timeout: 5000 })
-    await waitForElementToBeRemoved(mapa, { timeout: 5000 })
+    // Con margen: el mapa espera al navegador libre y baja su trozo aparte antes
+    // de pedir el barrio; con la suite entera en la verificación pasó de 5 s (13-10-2026).
+    const mapa = await screen.findByRole('img', { name: /Mapa del recorrido/ }, { timeout: 15000 })
+    await waitForElementToBeRemoved(mapa, { timeout: 15000 })
     expect(screen.getByRole('heading', { level: 1, name: 'Esta calle no está en el recorrido' })).toBeInTheDocument()
   })
 })
