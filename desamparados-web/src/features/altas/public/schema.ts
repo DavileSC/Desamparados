@@ -20,7 +20,7 @@ const textoOpcional = (etiqueta: string) =>
  * Los tres caminos del alta. Lo primero que se pregunta, porque ordena todo lo
  * demás: qué campos se piden y en qué pasos.
  */
-export const CAMINOS = ['HERMANO', 'HERMANO_Y_MENORES', 'SOLO_MENORES'] as const
+const CAMINOS = ['HERMANO', 'HERMANO_Y_MENORES', 'SOLO_MENORES'] as const
 export type Camino = (typeof CAMINOS)[number]
 
 /** Si el camino trae menores a cargo, hay un paso más para apuntarlos. */

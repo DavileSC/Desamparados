@@ -50,7 +50,7 @@ const CAPITULOS: Capitulo[] = [
 const ROMANOS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']
 
 /** Los capítulos con estos módulos, renumerados como los numera el PDF (sin huecos). */
-export function capitulosVisibles(activos: ReadonlySet<string>): Capitulo[] {
+function capitulosVisibles(activos: ReadonlySet<string>): Capitulo[] {
   let n = 0
   return CAPITULOS.filter((c) => cumple(c.modulo, activos)).map((c) => (c.numero && c.numero !== '—' ? { ...c, numero: ROMANOS[n++] } : c))
 }
