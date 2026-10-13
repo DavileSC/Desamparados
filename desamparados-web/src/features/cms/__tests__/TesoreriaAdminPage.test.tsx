@@ -255,6 +255,36 @@ describe('TesoreriaAdminPage', () => {
     expect(screen.getByText(/se reemite en la mesa de reparto/i)).toBeInTheDocument()
   })
 
+  // Sin el enlace, un donativo reemitido no tapaba a su devuelto (seguía
+  // contando como deuda) y la reemisión de un donativo de salida entraba en el 182.
+  it('«Reemitir» manda qué devuelto se reemite y, si el servidor lo rechaza, lo dice en la ventana', async () => {
+    const user = userEvent.setup({ delay: null })
+    const devuelto = { ...recibo(7, 'DEVUELTO', 'Donativo de la salida'), tipo: 'DONATIVO' }
+    let respuesta: () => Promise<Response> = () => json({ message: '«Donativo de la salida» ya se volvió a emitir: no se reemite dos veces.' }, 409)
+    const base = servidor([devuelto])
+    const simulado = vi.fn().mockImplementation((url: string, init?: RequestInit) =>
+      init?.method === 'POST' && /\/recibos\/admin$/.test(String(url)) ? respuesta() : base(url, init))
+    vi.stubGlobal('fetch', simulado)
+    renderWithProviders(<TesoreriaAdminPage />)
+
+    await user.click(await screen.findByRole('button', { name: /reemitir donativo de la salida/i }))
+    const ventana = screen.getByRole('dialog', { name: /nuevo recibo/i })
+    expect(within(ventana).getByText(/reemite el recibo #7/i)).toBeInTheDocument()
+    await user.click(within(ventana).getByRole('button', { name: /emitir recibo/i }))
+
+    expect(await within(ventana).findByText(/ya se volvió a emitir/i)).toBeInTheDocument()
+    const [, init] = llamadas(simulado, (ruta, i) => i?.method === 'POST' && /\/recibos\/admin$/.test(ruta))[0]
+    expect(JSON.parse(String((init as RequestInit).body))).toMatchObject({ tipo: 'DONATIVO', reemisionDeId: 7 })
+
+    // Un recibo nuevo de cero no arrastra el enlace de la reemisión anterior.
+    respuesta = () => json({ message: 'Recibo emitido.', reciboId: 91, estado: 'PENDIENTE' }, 201)
+    await user.click(within(ventana).getByRole('button', { name: 'Cancelar' }))
+    await user.click(await screen.findByRole('button', { name: 'Descartar' }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /nuevo recibo/i })).not.toBeInTheDocument())
+    await user.click(await screen.findByRole('button', { name: /^nuevo recibo$/i }))
+    expect(within(screen.getByRole('dialog', { name: /nuevo recibo/i })).queryByText(/reemite el recibo/i)).not.toBeInTheDocument()
+  })
+
   it('un remesado que el banco devuelve se marca desde su menú, con la comisión y el día del banco', async () => {
     const user = userEvent.setup({ delay: null })
     const simulado = servidor([recibo(7, 'REMESADO', 'Cuota anual')])
@@ -282,6 +312,51 @@ describe('TesoreriaAdminPage', () => {
     const [url, init] = llamadas(simulado, (_, i) => i?.method === 'PUT').at(-1)!
     expect(String(url)).toContain('/recibos/admin/7')
     expect(JSON.parse(String((init as RequestInit).body))).toEqual({ estado: 'DEVUELTO', comision: 3.5, fechaDevolucion: '2025-12-30' })
+  })
+
+  // El fichero de la remesa ya salió: anular aquí no lo saca del banco.
+  it('anular un remesado avisa de que el banco lo cargará igual y pide confirmarlo aparte', async () => {
+    const user = userEvent.setup({ delay: null })
+    const simulado = servidor([recibo(7, 'REMESADO', 'Cuota anual')])
+    vi.stubGlobal('fetch', simulado)
+    renderWithProviders(<TesoreriaAdminPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Más acciones de Cuota anual de Ana Pérez Ruiz' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Anular' }))
+    const ventana = screen.getByRole('dialog')
+    expect(within(ventana).getByText(/el banco lo cargará igual/i)).toBeInTheDocument()
+    const anular = within(ventana).getByRole('button', { name: 'Anular' })
+    expect(anular).toBeDisabled()
+    await user.click(within(ventana).getByRole('checkbox', { name: /el banco lo cargará/i }))
+    await user.click(anular)
+
+    await waitFor(() => expect(llamadas(simulado, (_, i) => i?.method === 'PUT')).toHaveLength(1))
+    expect(JSON.parse(String((llamadas(simulado, (_, i) => i?.method === 'PUT')[0][1] as RequestInit).body))).toEqual({ estado: 'ANULADO' })
+  })
+
+  it('la devolución de un cobrado no puede ser de antes del cobro, y el rechazo del servidor se ve en la ventana', async () => {
+    const user = userEvent.setup({ delay: null })
+    const cobrado = { ...recibo(8, 'PAGADO', 'Cuota anual'), fechaPago: '2026-01-08T10:00:00.000Z', metodoPago: 'DOMICILIACION' }
+    const base = servidor([cobrado])
+    const simulado = vi.fn().mockImplementation((url: string, init?: RequestInit) =>
+      init?.method === 'PUT' ? json({ message: 'El día de la devolución no puede ser anterior al del cobro (08/01/2026).' }, 400) : base(url, init))
+    vi.stubGlobal('fetch', simulado)
+    renderWithProviders(<TesoreriaAdminPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Más acciones de Cuota anual de Ana Pérez Ruiz' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Devuelto por el banco' }))
+    const ventana = screen.getByRole('dialog')
+    const dia = within(ventana).getByLabelText(/día de la devolución/i)
+    expect(dia).toHaveAttribute('min', '2026-01-08')
+    fireEvent.change(dia, { target: { value: '2026-01-07' } })
+    expect(within(ventana).getByText(/no puede ser anterior al cobro, el 08\/01\/2026/i)).toBeInTheDocument()
+    expect(within(ventana).getByRole('button', { name: 'Devuelto por el banco' })).toBeDisabled()
+
+    // El servidor manda: si aun así lo rechaza, el porqué sale junto al día.
+    fireEvent.change(dia, { target: { value: '2026-01-08' } })
+    await user.click(within(ventana).getByRole('button', { name: 'Devuelto por el banco' }))
+    expect(await within(ventana).findByText(/no puede ser anterior al del cobro \(08\/01\/2026\)/i)).toBeInTheDocument()
+    expect(dia).toHaveAttribute('aria-invalid', 'true')
   })
 
   it('un cobrado se puede reembolsar avisando del gasto, y lleva a sus apuntes de Contabilidad', async () => {

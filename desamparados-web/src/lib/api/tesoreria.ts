@@ -36,6 +36,12 @@ interface DatosDeRecibo {
   concepto: string
   importe: number
   tipo: EmittableReceiptType
+  /**
+   * El DEVUELTO que este recibo vuelve a cobrar. El servidor lo enlaza con él:
+   * así el devuelto deja de contar como deuda y la reemisión hereda su origen
+   * (la de un donativo de salida no entra en el 182).
+   */
+  reemisionDeId?: number
 }
 
 /** `true` si el texto es un año de cuatro cifras, que es lo único que acepta el servidor como filtro. */
