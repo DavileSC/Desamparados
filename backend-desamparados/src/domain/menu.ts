@@ -2,11 +2,14 @@ import catalogo from '../../../shared/entradas-del-menu.json' with { type: 'json
 
 /**
  * Las entradas del menú público que pueden cambiar de nombre, con el de
- * siempre (`shared/entradas-del-menu.json`). El servidor no ve el menú de la
- * web (`navegacion.ts`): este catálogo es su copia, y una prueba de la web
- * vigila que coincidan.
+ * siempre (`shared/entradas-del-menu.json`): las páginas por su ruta y los
+ * títulos de primer nivel por `seccion:` y su ruta. El servidor no ve el menú
+ * de la web (`navegacion.ts`): este catálogo es su copia, y una prueba de la
+ * web vigila que coincidan.
  */
-export const NOMBRES_DE_SIEMPRE: ReadonlyMap<string, string> = new Map(catalogo.entradas.map((e) => [e.ruta, e.nombre]));
+export const NOMBRES_DE_SIEMPRE: ReadonlyMap<string, string> = new Map(
+  [...catalogo.entradas, ...catalogo.secciones].map((e) => [e.ruta, e.nombre]),
+);
 
 /** Más largo no cabe en la barra de escritorio. */
 export const TOPE_NOMBRE_EN_MENU = catalogo.tope;

@@ -1,5 +1,8 @@
+import paginas from '../../../shared/paginas-publicas.json' with { type: 'json' };
 import db from '../config/db.js';
+import { esSlugContenido, mezclarConDefectos, moduloDePagina, porDefecto } from '../domain/contenido.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from './auditoria.service.js';
+import { ModulosService } from './modulos.service.js';
 
 /**
  * Una posición que lleva este tiempo sin renovarse ya no se enseña como «en
@@ -10,20 +13,98 @@ export const CADUCA_MS = 10 * 60 * 1000;
 
 export interface PosicionEnviada { lng: number; lat: number; precision: number | null }
 
+type Punto = [number, number];
+
+/** El itinerario por el que va el cortejo: la página que lo enseña, sus paradas y la línea del mapa. */
+export interface RecorridoDelCortejo { ruta: string; paradas: unknown[]; linea: Punto[] }
+
 interface CortejoPublico {
   enDirecto: boolean;
   lng?: number;
   lat?: number;
   actualizadoEl?: string;
+  /**
+   * La página cuyo mapa sigue al cortejo, o `null` si ninguna tiene un
+   * itinerario con mapa. Solo ese mapa pregunta: otro itinerario por el mismo
+   * barrio (el del rosario) no debe pintar el trono «en directo».
+   */
+  ruta: string | null;
 }
 
 interface CortejoParaLaJunta extends CortejoPublico {
   enMarcha: boolean;
   precision: number | null;
   autorNombre: string | null;
+  /** Las paradas, para marcarlas a mano, y la línea, para avisar de «lejos del recorrido». */
+  recorrido: Omit<RecorridoDelCortejo, 'ruta'> | null;
 }
 
 const ID = 1;
+
+/** El primer itinerario con mapa de un documento, esté donde esté (también dentro de otro bloque). */
+export function itinerarioConMapa(documento: unknown): { paradas: unknown[]; linea: Punto[] } | null {
+  if (!documento || typeof documento !== 'object') return null;
+  if (Array.isArray(documento)) {
+    for (const x of documento) {
+      const hallado = itinerarioConMapa(x);
+      if (hallado) return hallado;
+    }
+    return null;
+  }
+  const o = documento as Record<string, unknown>;
+  const linea = (o.recorrido as { linea?: unknown } | undefined)?.linea;
+  if (o.tipo === 'itinerario' && Array.isArray(o.paradas) && Array.isArray(linea) && linea.length > 1) {
+    return { paradas: o.paradas, linea: linea as Punto[] };
+  }
+  return itinerarioConMapa(Object.values(o));
+}
+
+/**
+ * El recorrido del cortejo: el primer itinerario con mapa de las páginas
+ * encendidas, en el orden del catálogo. No va fijo a la página «recorrido»
+ * de Desamparados, que es de su módulo propio: otra corporación pone el suyo
+ * en cualquier página de bloques.
+ */
+async function buscarRecorrido(): Promise<RecorridoDelCortejo | null> {
+  const candidatas = [];
+  for (const { slug, ruta } of paginas.paginas) {
+    if (!esSlugContenido(slug)) continue;
+    const modulo = moduloDePagina(slug);
+    if (modulo && !(await ModulosService.activo(modulo))) continue;
+    candidatas.push({ slug, ruta });
+  }
+  const filas = await db.contenidoPagina.findMany({ where: { slug: { in: candidatas.map((c) => c.slug) } }, select: { slug: true, datos: true } });
+  const guardado = new Map(filas.map((f) => [f.slug, f.datos]));
+  for (const { slug, ruta } of candidatas) {
+    const hallado = itinerarioConMapa(guardado.has(slug) ? mezclarConDefectos(slug, guardado.get(slug)) : porDefecto(slug));
+    if (hallado) return { ruta, ...hallado };
+  }
+  return null;
+}
+
+/**
+ * Guardado un minuto: la web pregunta cada pocos segundos por cada visitante
+ * del mapa, y el itinerario no cambia en plena salida. Un cambio en el CMS
+ * tarda como mucho eso en notarse.
+ */
+const GUARDA_RECORRIDO_MS = 60_000;
+let recorridoGuardado: { valor: Promise<RecorridoDelCortejo | null>; hasta: number } | null = null;
+
+function recorrido(): Promise<RecorridoDelCortejo | null> {
+  const ahora = Date.now();
+  if (!recorridoGuardado || recorridoGuardado.hasta <= ahora) {
+    const valor = buscarRecorrido();
+    recorridoGuardado = { valor, hasta: ahora + GUARDA_RECORRIDO_MS };
+    // Un fallo de la base no se queda guardado un minuto.
+    valor.catch(() => { if (recorridoGuardado?.valor === valor) recorridoGuardado = null; });
+  }
+  return recorridoGuardado.valor;
+}
+
+/** Para las pruebas, que cambian páginas y módulos entre una petición y otra. */
+export function olvidarRecorrido(): void {
+  recorridoGuardado = null;
+}
 
 const leer = () => db.cortejoEnDirecto.findUnique({ where: { id: ID } });
 
@@ -34,16 +115,19 @@ function vigente(fila: NonNullable<Awaited<ReturnType<typeof leer>>>, ahora: Dat
 export class CortejoDirectoService {
   /** Lo que ve la web: la posición solo si está en marcha y es reciente; nunca quién la manda. */
   static async publico(ahora = new Date()): Promise<CortejoPublico> {
-    const fila = await leer();
-    if (!fila || !vigente(fila, ahora)) return { enDirecto: false };
-    return { enDirecto: true, lng: Number(fila.lng), lat: Number(fila.lat), actualizadoEl: fila.actualizadoEl.toISOString() };
+    const [fila, r] = await Promise.all([leer(), recorrido()]);
+    const ruta = r?.ruta ?? null;
+    if (!fila || !vigente(fila, ahora)) return { enDirecto: false, ruta };
+    return { enDirecto: true, lng: Number(fila.lng), lat: Number(fila.lat), actualizadoEl: fila.actualizadoEl.toISOString(), ruta };
   }
 
   /** Lo que ve la Junta en el CMS: además, si se quedó en marcha sin renovarse y quién la mandaba. */
   static async paraLaJunta(ahora = new Date()): Promise<CortejoParaLaJunta> {
-    const fila = await leer();
-    if (!fila) return { enDirecto: false, enMarcha: false, precision: null, autorNombre: null };
+    const [fila, r] = await Promise.all([leer(), recorrido()]);
+    const deLaRuta = { ruta: r?.ruta ?? null, recorrido: r ? { paradas: r.paradas, linea: r.linea } : null };
+    if (!fila) return { enDirecto: false, enMarcha: false, precision: null, autorNombre: null, ...deLaRuta };
     return {
+      ...deLaRuta,
       enDirecto: vigente(fila, ahora),
       enMarcha: fila.enMarcha,
       lng: Number(fila.lng),

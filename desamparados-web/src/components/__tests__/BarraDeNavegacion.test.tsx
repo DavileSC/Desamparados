@@ -193,6 +193,17 @@ describe('BarraDeNavegacion en móvil', () => {
     expect(screen.getByRole('button', { name: 'Corporación' })).toHaveAttribute('aria-expanded', 'true')
   })
 
+  it('el botón del acceso y los títulos de sección llevan también el nombre del CMS', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<BarraDeNavegacion />, { nombresEnMenu: { '/acceso': 'Área de hermanos', 'seccion:/sagrada-titular': 'Sagrados titulares' } })
+    expect(within(navEscritorio()).getByRole('button', { name: 'Sagrados titulares', hidden: true })).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: 'Área de hermanos', hidden: true }).length).toBeGreaterThan(0)
+    expect(screen.queryByRole('link', { name: 'Acceso hermanos', hidden: true })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
+    expect(screen.getByRole('button', { name: 'Sagrados titulares' })).toBeInTheDocument()
+    expect(screen.queryByText('Acceso hermanos')).not.toBeInTheDocument()
+  })
+
   it('el cajón usa también los nombres puestos en el CMS', async () => {
     const user = userEvent.setup()
     renderWithProviders(<BarraDeNavegacion />, { nombresEnMenu: { '/parroquia': 'Parroquia · Pasionistas' } })

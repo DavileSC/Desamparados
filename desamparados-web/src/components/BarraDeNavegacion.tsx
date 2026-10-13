@@ -10,6 +10,7 @@ import { DESKTOP_NAV_MIN, VELO_ARRIBA, VELO_SCROLL, compactMq, desktopMq, social
 import { site } from '../config/site'
 import { BOTON } from './estiloDeBoton'
 import { useModulos } from '../hooks/useModulos'
+import { useNombreEnMenu } from '../hooks/useNombresEnMenu'
 
 /**
  * La barra de la web pública. Aquí está el armazón —el velo que se va cerrando
@@ -30,6 +31,7 @@ export default function BarraDeNavegacion() {
   const [cajonAbierto, setCajonAbierto] = useState(false)
   const enlacesDeRedes = useEnlacesDeRedes()
   const { activo } = useModulos()
+  const nombreDelAcceso = useNombreEnMenu('/acceso')
 
   const barraRef = useRef<HTMLElement>(null)
 
@@ -230,7 +232,7 @@ export default function BarraDeNavegacion() {
                   [compactMq]: { px: 1.5, fontSize: '13px' },
                 }}
               >
-                Acceso hermanos
+                {nombreDelAcceso}
               </Button>
             )}
           </Box>

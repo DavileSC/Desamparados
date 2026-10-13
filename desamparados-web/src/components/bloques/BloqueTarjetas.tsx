@@ -7,6 +7,7 @@ import { anchoMaximo, valorDe } from './presentacion'
 import type { BloqueTarjetas as Datos, TarjetaEnlace } from '../../lib/api/contenido'
 import { useEnlaceVivo } from '../../hooks/useEnlaceVivo'
 import { propsDeFoto } from '../../lib/fotoSubida'
+import { useFotoQueFalla } from '../../hooks/useFotoQueFalla'
 import { MARCA, alfa } from '../../theme/marca'
 
 type Estilo = 'cristal' | 'papel' | 'contorno' | 'granate' | 'numeradas'
@@ -73,11 +74,13 @@ function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEn
   const enlaceVivo = useEnlaceVivo()
   const icono = tarjeta.icono ? ICONOS[tarjeta.icono] : null
   const foto = tarjeta.foto ?? ''
+  // Si la foto no carga, la tarjeta se queda con su icono (o sin nada), no con el icono roto.
+  const { visible, alFallar } = useFotoQueFalla(foto)
   const oscura = estilo === 'granate'
 
-  const media = foto
+  const media = visible
     ? (
-      <Box component="img" {...propsDeFoto(foto, '(min-width: 900px) 400px, 100vw')} alt={tarjeta.fotoAlt ?? ''} loading="lazy" decoding="async"
+      <Box component="img" {...propsDeFoto(foto, '(min-width: 900px) 400px, 100vw', alFallar)} alt={tarjeta.fotoAlt ?? ''} loading="lazy" decoding="async"
         sx={horizontal
           ? { width: { xs: '100%', sm: '38%' }, aspectRatio: { xs: '16 / 9', sm: 'auto' }, objectFit: 'cover', flexShrink: 0, alignSelf: 'stretch' }
           : { width: '100%', aspectRatio: '16 / 10', objectFit: 'cover', display: 'block' }} />
@@ -93,7 +96,7 @@ function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEn
     )
 
   const textos = (
-    <Box sx={{ p: foto ? { xs: 3, md: 3.5 } : 0, textAlign: centrada ? 'center' : 'left', minWidth: 0 }}>
+    <Box sx={{ p: visible ? { xs: 3, md: 3.5 } : 0, textAlign: centrada ? 'center' : 'left', minWidth: 0 }}>
       <Typography variant="h6" component="h3" sx={{ mb: 1, color: oscura ? '#fff' : estilo === 'papel' ? '#1b1c1a' : 'text.primary' }}>{tarjeta.titulo}</Typography>
       <Typography variant="body2" sx={{ color: oscura ? 'rgba(255,255,255,0.8)' : estilo === 'papel' ? '#4a454a' : 'text.secondary', lineHeight: 1.6 }}>{tarjeta.descripcion}</Typography>
     </Box>
@@ -103,7 +106,7 @@ function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEn
     <Box sx={{
       display: 'flex', height: '100%',
       flexDirection: horizontal ? { xs: 'column', sm: 'row' } : 'column',
-      alignItems: horizontal && !foto ? 'flex-start' : 'stretch', gap: horizontal && !foto ? 2.5 : 0,
+      alignItems: horizontal && !visible ? 'flex-start' : 'stretch', gap: horizontal && !visible ? 2.5 : 0,
     }}>
       {media}
       {textos}
@@ -111,7 +114,7 @@ function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEn
   )
 
   // Con foto, la foto llega al borde de la tarjeta: sin relleno fuera, con relleno en los textos.
-  const relleno = foto ? { p: 0, overflow: 'hidden' } : { p: 4 }
+  const relleno = visible ? { p: 0, overflow: 'hidden' } : { p: 4 }
   const recuadro = (realce: boolean) => estilo === 'cristal'
     ? (
       <TarjetaCristal sx={{ ...relleno, height: '100%', ...(realce && { '&:hover': { transform: 'translateY(-4px)' } }) }}>

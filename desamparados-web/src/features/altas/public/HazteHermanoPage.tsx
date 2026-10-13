@@ -37,6 +37,7 @@ import { CAMPOS_API, VALORES_INICIALES, pasosDe, type Campo } from './pasos'
 import { deLaCorporacion, laCorporacion } from '../../../domain/articulos'
 import { site } from '../../../config/site'
 import { useModulos } from '../../../hooks/useModulos'
+import { useNombreEnMenu } from '../../../hooks/useNombresEnMenu'
 
 // Mismo umbral que el navbar (`DESKTOP_NAV_MIN`): por debajo la barra va en
 // flujo y mide 56 px en móvil y 64 en tableta; desde ahí es fija de 72 px y se
@@ -67,6 +68,8 @@ export default function HazteHermanoPage() {
   // Las salidas son de cada corporación (y sin Procesión no hay ninguna): la
   // frase de entrada las nombra en genérico, o no las nombra.
   const conSalidas = useModulos().activo('procesion')
+  // Como se llame en el menú: el título y la pestaña dicen lo mismo que él.
+  const nombreEnMenu = useNombreEnMenu('/hazte-hermano')
   const [camino, setCamino] = useState<Camino | null>(null)
   const [enviada, setEnviada] = useState<{ nombre: string; email: string; fichas: number; soloMenores: boolean } | null>(null)
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null)
@@ -252,7 +255,7 @@ export default function HazteHermanoPage() {
   return (
     <>
       <MetaDePagina
-        titulo="Hazte hermano"
+        titulo={nombreEnMenu}
         descripcion={`Solicita tu alta como hermano ${deLaCorporacion()} de ${site.titular}. Rellena la solicitud y formaliza el alta en Secretaría.`}
       />
 
@@ -290,7 +293,7 @@ export default function HazteHermanoPage() {
                 component="h1"
                 sx={{ fontFamily: SERIF, fontSize: 'clamp(38px, 4.4vw, 60px)', lineHeight: 1.05, letterSpacing: '-0.02em', mb: { xs: 1.5, md: 2.5 } }}
               >
-                Hazte hermano
+                {nombreEnMenu}
               </Typography>
               <Typography sx={{ display: { xs: 'none', md: 'block' }, fontSize: 17, lineHeight: 1.7, color: 'text.secondary', maxWidth: '44ch' }}>
                 Ser hermano es acompañar a {site.titular} todo el año: en los

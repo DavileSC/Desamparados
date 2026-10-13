@@ -49,7 +49,11 @@ export default function Hero() {
   // de la foto vieja a la nueva. Llamar a las dos no cuesta otra petición:
   // react-query deduplica por la clave, que es la misma.
   const { data, status } = usePortada()
-  const imagenes = status === 'pending' ? null : data && data.imagenes.length > 0 ? data.imagenes : IMAGENES_POR_DEFECTO
+  // Las que no cargan (borradas, o de /images/ y que faltan en la instalación)
+  // salen de la rotación: el fondo, no el icono roto.
+  const [rotas, setRotas] = useState<ReadonlySet<string>>(() => new Set())
+  const imagenes = (status === 'pending' ? null : data && data.imagenes.length > 0 ? data.imagenes : IMAGENES_POR_DEFECTO)
+    ?.filter((imagen) => !rotas.has(imagen.url)) ?? null
   const total = imagenes?.length ?? 0
 
   // El vídeo de fondo, si el CMS ha puesto uno. Lo ve solo quien no ha pedido
@@ -197,7 +201,7 @@ export default function Hero() {
               // A lo ancho de la pantalla; pero en vertical la foto se recorta por
               // los lados para llenar el alto, y lo que manda es ese alto (una
               // foto apaisada necesita ~1,5 veces el alto de ancho).
-              {...propsDeFoto(imagen.url, '(orientation: portrait) 150vh, 100vw')}
+              {...propsDeFoto(imagen.url, '(orientation: portrait) 150vh, 100vw', () => setRotas((r) => new Set(r).add(imagen.url)))}
               alt={imagen.descripcion}
               aria-hidden={activa ? undefined : true}
               fetchPriority={primera ? 'high' : 'low'}

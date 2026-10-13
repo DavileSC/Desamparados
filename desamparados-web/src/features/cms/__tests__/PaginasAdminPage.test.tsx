@@ -38,7 +38,7 @@ describe('PaginasAdminPage', () => {
     const user = userEvent.setup()
     montar()
     for (const grupo of seccionesPlegables()) {
-      await user.click(screen.getByRole('button', { name: new RegExp(grupo) }))
+      await user.click(screen.getByRole('button', { name: new RegExp(`^${grupo}`) }))
     }
     // El índice no lleva su propia lista: sale de shared/paginas-publicas.json,
     // que es el mismo fichero que el servidor comprueba. Convertir una página
@@ -57,7 +57,7 @@ describe('PaginasAdminPage', () => {
     const user = userEvent.setup()
     montar()
     const pagina = PAGINAS_PUBLICAS[0]
-    await user.click(screen.getByRole('button', { name: new RegExp(pagina.grupo) }))
+    await user.click(screen.getByRole('button', { name: new RegExp(`^${pagina.grupo}`) }))
     const ver = screen.getByRole('link', { name: new RegExp(`Ver ${pagina.nombre} en la web`) })
     expect(ver).toHaveAttribute('href', pagina.ruta)
     expect(ver).toHaveAttribute('target', '_blank')
@@ -83,7 +83,7 @@ describe('PaginasAdminPage', () => {
 
     // Plegadas de entrada: así caben todas las secciones en una pantalla.
     const grupo = PAGINAS_PUBLICAS[0].grupo
-    const cabecera = screen.getByRole('button', { name: new RegExp(grupo) })
+    const cabecera = screen.getByRole('button', { name: new RegExp(`^${grupo}`) })
     expect(cabecera).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByRole('link', { name: PAGINAS_PUBLICAS[0].nombre })).not.toBeInTheDocument()
 
@@ -109,17 +109,17 @@ describe('PaginasAdminPage', () => {
     const grupos = seccionesPlegables()
     expect(grupos.length, 'hacen falta al menos dos grupos para que esto pruebe algo').toBeGreaterThan(1)
 
-    await user.click(screen.getByRole('button', { name: new RegExp(grupos[0]) }))
+    await user.click(screen.getByRole('button', { name: new RegExp(`^${grupos[0]}`) }))
 
-    expect(screen.getByRole('button', { name: new RegExp(grupos[0]) })).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('button', { name: new RegExp(grupos[1]) })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('button', { name: new RegExp(`^${grupos[0]}`) })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: new RegExp(`^${grupos[1]}`) })).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('las subpáginas cuelgan de su página, aunque en el catálogo haya otra por medio', async () => {
     const user = userEvent.setup()
     montar()
-    await user.click(screen.getByRole('button', { name: /Sábado de Pasión/ }))
-    await user.click(screen.getByRole('button', { name: /Corporación/ }))
+    await user.click(screen.getByRole('button', { name: /^Sábado de Pasión/ }))
+    await user.click(screen.getByRole('button', { name: /^Corporación/ }))
 
     const madre = screen.getByRole('link', { name: 'Sábado de Pasión' }).closest('li')!
     for (const hija of ['Recorrido', 'Trono', 'Enseres']) {
@@ -143,9 +143,9 @@ describe('PaginasAdminPage', () => {
   it('sin las páginas propias, ni su sección ni sus páginas; el Ajuar sigue', async () => {
     const user = userEvent.setup()
     montar([])
-    expect(screen.queryByRole('button', { name: /Sábado de Pasión/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Sábado de Pasión/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Rosario' })).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /Sagrada titular/ }))
+    await user.click(screen.getByRole('button', { name: /^Sagrada titular/ }))
     expect(screen.getByRole('link', { name: 'Ajuar' })).toHaveAttribute('href', '/cms/paginas/ajuar')
     expect(screen.queryByRole('link', { name: 'Desamparados' })).not.toBeInTheDocument()
   })
@@ -153,7 +153,7 @@ describe('PaginasAdminPage', () => {
   it('una página con otro nombre en el menú lo enseña en su fila', async () => {
     const user = userEvent.setup()
     montar(TODOS_CON_PAGINAS_PROPIAS, { '/parroquia': 'Parroquia · Pasionistas' })
-    await user.click(screen.getByRole('button', { name: /Corporación/ }))
+    await user.click(screen.getByRole('button', { name: /^Corporación/ }))
     const parroquia = screen.getByRole('link', { name: 'Parroquia' }).closest('li')!
     expect(within(parroquia).getByText('En el menú: Parroquia · Pasionistas')).toBeInTheDocument()
     // Las que se llaman igual en el menú no repiten nada.
@@ -170,7 +170,7 @@ describe('PaginasAdminPage', () => {
     })
     vi.stubGlobal('fetch', fetchSimulado)
     const queryClient = montar(TODOS_CON_PAGINAS_PROPIAS, { '/agenda': 'Calendario' })
-    await user.click(screen.getByRole('button', { name: /Corporación/ }))
+    await user.click(screen.getByRole('button', { name: /^Corporación/ }))
     await user.click(screen.getByRole('button', { name: 'Cambiar el nombre en el menú de la página Parroquia' }))
 
     const dialogo = screen.getByRole('dialog')
@@ -193,11 +193,11 @@ describe('PaginasAdminPage', () => {
 
   it('dejar el nombre vacío vuelve al de siempre', async () => {
     const user = userEvent.setup()
-    const fetchSimulado = vi.fn(async () =>
+    const fetchSimulado = vi.fn(async (_url: string, _init?: RequestInit) =>
       new Response(JSON.stringify({ nombres: {} }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
     vi.stubGlobal('fetch', fetchSimulado)
     montar(TODOS_CON_PAGINAS_PROPIAS, { '/parroquia': 'Parroquia · Pasionistas' })
-    await user.click(screen.getByRole('button', { name: /Corporación/ }))
+    await user.click(screen.getByRole('button', { name: /^Corporación/ }))
     await user.click(screen.getByRole('button', { name: 'Cambiar el nombre en el menú de la página Parroquia' }))
     const campo = within(screen.getByRole('dialog')).getByLabelText('Nombre en el menú')
     expect(campo).toHaveValue('Parroquia · Pasionistas')
@@ -214,7 +214,7 @@ describe('PaginasAdminPage', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 500, headers: { 'Content-Type': 'application/json' } })))
     montar(TODOS_CON_PAGINAS_PROPIAS, undefined, true)
     expect(await screen.findByText(/No se han podido cargar los nombres del menú/)).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /Corporación/ }))
+    await user.click(screen.getByRole('button', { name: /^Corporación/ }))
     expect(screen.queryByRole('button', { name: /Cambiar el nombre en el menú/ })).not.toBeInTheDocument()
   })
 
@@ -229,6 +229,17 @@ describe('PaginasAdminPage', () => {
     // Las páginas de bloques no se repiten aquí.
     expect(within(region).queryByText('Contacto')).not.toBeInTheDocument()
     expect(within(region).getByRole('button', { name: 'Cambiar el nombre en el menú de la página Tienda' })).toBeInTheDocument()
+  })
+
+  it('los títulos de primer nivel se renombran desde su grupo, y el que no tiene páginas, entre las otras entradas', async () => {
+    const user = userEvent.setup()
+    montar(TODOS_CON_PAGINAS_PROPIAS, { 'seccion:/sagrada-titular': 'Sagrados titulares' })
+    // El grupo se ve con su nombre en el menú, y el lápiz va fuera del botón que pliega.
+    expect(await screen.findByRole('button', { name: /^Sagrados titulares/ })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('button', { name: 'Cambiar el nombre en el menú de la sección Sagrada titular' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Otras entradas del menú/ }))
+    const region = screen.getByRole('region', { name: /Otras entradas del menú/ })
+    expect(within(region).getByRole('button', { name: 'Cambiar el nombre en el menú de la sección Hermanos' })).toBeInTheDocument()
   })
 
   it('el menú lleva al índice, y el índice y las páginas dejan pasar a los mismos cargos', () => {

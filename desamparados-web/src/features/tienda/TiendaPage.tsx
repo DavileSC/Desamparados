@@ -27,6 +27,7 @@ import CestaDeLaTienda, { type Comprador } from './CestaDeLaTienda'
 import CestaFlotante from './CestaFlotante'
 import { MAX_POR_LINEA, claveDe, euros, guardarCesta, leerCesta, lineasDeLaCesta, quedanDe, topeDe, type Cesta } from './cesta'
 import { MARCA } from '../../theme/marca'
+import { useNombreEnMenu } from '../../hooks/useNombresEnMenu'
 
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
 
@@ -100,6 +101,8 @@ export default function TiendaPage() {
   const navegar = useNavigate()
   const consulta = useQuery({ queryKey: ['tienda', 'catalogo'], queryFn: catalogo })
   const [cesta, setCesta] = useState<Cesta>(leerCesta)
+  // Como se llame en el menú: el título y la pestaña dicen lo mismo que él.
+  const nombreEnMenu = useNombreEnMenu('/tienda')
   const [error, setError] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [cestaAbierta, setCestaAbierta] = useState(false)
@@ -160,7 +163,7 @@ export default function TiendaPage() {
 
   // Una ficha de un producto que ya no está: ni «Tienda» indexable ni canonical a la dirección rota.
   const productoQueNoEsta = Boolean(id) && consulta.isSuccess && !producto
-  const titulo = producto ? producto.nombre : productoQueNoEsta ? 'Producto no disponible' : 'Tienda'
+  const titulo = producto ? producto.nombre : productoQueNoEsta ? 'Producto no disponible' : nombreEnMenu
   const hayCesta = pagoDisponible && lineas.length > 0
   return <>
     <MetaDePagina
@@ -180,7 +183,7 @@ export default function TiendaPage() {
               Recuerdos {deLaCorporacion()}
             </Typography>
             <Typography component="h1" sx={{ mt: 1.25, fontSize: { xs: 38, md: 56 }, fontWeight: 200, lineHeight: 1, letterSpacing: '-0.02em' }}>
-              {nombreCategoria ?? 'Tienda'}
+              {nombreCategoria ?? nombreEnMenu}
               {datos && productos.length > 0 && (
                 <CifrasQueRuedan texto={`(${visibles.length})`} sx={{ ml: 1.5, fontSize: { xs: 20, md: 26 }, fontWeight: 300, color: '#8f8a8d' }} />
               )}

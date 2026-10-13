@@ -7,6 +7,7 @@ import { ENCUADRE_POR_DEFECTO, srcSetDeCabecera } from './cabecera'
 import Hueso, { Lineas } from '../esqueleto/Hueso'
 import { caerALaOriginal, srcsetDeSubida } from '../../lib/fotoSubida'
 import { MARCA } from '../../theme/marca'
+import { useFotoQueFalla } from '../../hooks/useFotoQueFalla'
 
 /** Fondo de la página: la foto se funde a él por abajo. */
 const FONDO = '#121113'
@@ -81,7 +82,10 @@ interface Props {
 export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encuadre, ceja }: Props) {
   const quieta = useModoEdicion() !== null
   const encuadreY = `${Math.min(100, Math.max(0, encuadre ?? ENCUADRE_POR_DEFECTO))}%`
-  const conFoto = foto !== ''
+  // Una foto que no carga (borrada, o de /images/ y que falta en la
+  // instalación) se quita: queda el fondo, no el icono roto con el texto
+  // alternativo encima del título.
+  const { visible: conFoto, alFallar } = useFotoQueFalla(foto)
 
   return (
     <Box
@@ -126,7 +130,7 @@ export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encu
             component="img"
             src={foto}
             srcSet={srcSetDeCabecera(foto) ?? srcsetDeSubida(foto)}
-            onError={(e) => { caerALaOriginal(e.currentTarget) }}
+            onError={(e) => { if (!caerALaOriginal(e.currentTarget)) alFallar() }}
             sizes="100vw"
             alt={fotoAlt}
             decoding="async"

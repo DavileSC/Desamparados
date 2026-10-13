@@ -8,6 +8,7 @@ import { anchoMaximo, valorDe } from './presentacion'
 import { SERIF } from '../../features/inicio/estilos'
 import type { BloqueFotoTexto as Datos } from '../../lib/api/contenido'
 import { propsDeFoto } from '../../lib/fotoSubida'
+import { useFotoQueFalla } from '../../hooks/useFotoQueFalla'
 
 /**
  * Una foto a un lado y un texto con formato al otro, con un botón opcional
@@ -20,6 +21,8 @@ import { propsDeFoto } from '../../lib/fotoSubida'
  */
 export default function BloqueFotoTexto({ bloque }: { bloque: Datos }) {
   const enlaceVivo = useEnlaceVivo()
+  // Una foto que no carga se quita y queda el texto, sin el icono roto.
+  const { visible, alFallar } = useFotoQueFalla(bloque.url)
   if (valorDe(bloque, 'estilo') === 'fundido') return <Fundido bloque={bloque} />
   const derecha = valorDe(bloque, 'lado') === 'derecha'
   const tercio = valorDe(bloque, 'anchoFoto') === 'tercio'
@@ -37,8 +40,8 @@ export default function BloqueFotoTexto({ bloque }: { bloque: Datos }) {
       gridTemplateAreas: { xs: '"foto" "texto"', md: derecha ? '"texto foto"' : '"foto texto"' },
     }}>
       <Box component="figure" sx={{ gridArea: 'foto', m: 0 }}>
-        {bloque.url !== '' && (
-          <Box component="img" {...propsDeFoto(bloque.url, '(min-width: 900px) 50vw, 100vw')} alt={bloque.alt} loading="lazy" decoding="async"
+        {visible && (
+          <Box component="img" {...propsDeFoto(bloque.url, '(min-width: 900px) 50vw, 100vw', alFallar)} alt={bloque.alt} loading="lazy" decoding="async"
             sx={{
               display: 'block', width: '100%', height: 'auto', borderRadius: 2,
               ...(proporcion !== 'original' && { aspectRatio: proporcion.replace(':', ' / '), objectFit: 'cover' }),
@@ -81,6 +84,7 @@ const NOCHE = '#0a090b'
  */
 function Fundido({ bloque }: { bloque: Datos }) {
   const enlaceVivo = useEnlaceVivo()
+  const { visible, alFallar } = useFotoQueFalla(bloque.url)
   const derecha = valorDe(bloque, 'lado') === 'derecha'
   const haciaElTexto = derecha ? '90deg' : '270deg'
   return (
@@ -89,8 +93,8 @@ function Fundido({ bloque }: { bloque: Datos }) {
       mx: 'calc(50% - 50vw)', minHeight: { xs: 520, md: 560 },
       display: 'flex', alignItems: { xs: 'flex-end', md: 'center' },
     }}>
-      {bloque.url !== '' && (
-        <Box component="img" {...propsDeFoto(bloque.url, '(min-width: 900px) 75vw, 800px')} alt={bloque.alt} decoding="async"
+      {visible && (
+        <Box component="img" {...propsDeFoto(bloque.url, '(min-width: 900px) 75vw, 800px', alFallar)} alt={bloque.alt} decoding="async"
           sx={{
             position: 'absolute', top: 0, bottom: 0, zIndex: -2,
             [derecha ? 'right' : 'left']: 0, width: { xs: '100%', md: '75%' }, height: '100%',

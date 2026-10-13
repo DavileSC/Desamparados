@@ -5,6 +5,7 @@ import PauseIcon from '@mui/icons-material/Pause'
 import ReplayIcon from '@mui/icons-material/Replay'
 import { useReducedMotion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
+import { useLocation } from 'react-router-dom'
 import * as maplibregl from 'maplibre-gl'
 import type { GeoJSONSource, Map as Mapa, Marker } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
@@ -81,14 +82,24 @@ export default function RecorridoEnMapa({ bloque, onSinMapa }: {
   const [error, setError] = useState(false)
 
   // El cortejo en la calle: mientras lo esté, el trono va donde diga el móvil
-  // de la Junta y el play se retira. En el constructor no se pregunta.
-  const directo = useQuery({ queryKey: ['cortejo-directo'], queryFn: cortejoEnDirecto, refetchInterval: SONDEO_MS, staleTime: 0, enabled: !enConstructor && activo('cortejo-directo') })
+  // de la Junta y el play se retira. En el constructor no se pregunta. Solo
+  // sigue preguntando el mapa de la página del recorrido (la dice el
+  // servidor): otro itinerario por el mismo barrio no es el del cortejo.
+  const { pathname } = useLocation()
+  const aqui = pathname.replace(/\/+$/, '') || '/'
+  const directo = useQuery({
+    queryKey: ['cortejo-directo'],
+    queryFn: cortejoEnDirecto,
+    refetchInterval: (q) => (q.state.data?.ruta === aqui ? SONDEO_MS : false),
+    staleTime: 0,
+    enabled: !enConstructor && activo('cortejo-directo'),
+  })
   const enCalle = useMemo(() => {
     const d = directo.data
-    if (!d?.enDirecto || d.lng === undefined || d.lat === undefined || !d.actualizadoEl) return null
+    if (!d?.enDirecto || d.ruta !== aqui || d.lng === undefined || d.lat === undefined || !d.actualizadoEl) return null
     const sobre = sobreElRecorrido(linea, [d.lng, d.lat])
     return sobre.distancia <= DISTANCIA_MAXIMA_M ? { fraccion: sobre.fraccion, hora: horaCorta(d.actualizadoEl) } : null
-  }, [directo.data, linea])
+  }, [directo.data, aqui, linea])
   const enCalleRef = useRef(enCalle)
   useEffect(() => { enCalleRef.current = enCalle }, [enCalle])
 

@@ -78,7 +78,8 @@ describe('sin mapa del barrio', () => {
   })
 
   it('la 404 se queda con el texto: el mapa se retira en cuanto se sabe que no hay barrio', async () => {
-    renderWithProviders(<NoEncontradaPage />, { ruta: '/esta-no-existe', modulos: [] })
+    // El recorrido es de las páginas propias: sin ellas, la 404 ni lo pide.
+    renderWithProviders(<NoEncontradaPage />, { ruta: '/esta-no-existe', modulos: ['paginas-propias'] })
     const mapa = await screen.findByRole('img', { name: /Mapa del recorrido/ }, { timeout: 5000 })
     await waitForElementToBeRemoved(mapa, { timeout: 5000 })
     expect(screen.getByRole('heading', { level: 1, name: 'Esta calle no está en el recorrido' })).toBeInTheDocument()

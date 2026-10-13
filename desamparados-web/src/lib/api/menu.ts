@@ -11,7 +11,8 @@ export type NombresEnMenu = Record<string, string>
 
 export const CLAVE_NOMBRES_EN_MENU = ['menu', 'nombres'] as const
 
-export const NOMBRE_DE_SIEMPRE: ReadonlyMap<string, string> = new Map(CATALOGO.entradas.map((e) => [e.ruta, e.nombre]))
+/** Las páginas por su ruta; los títulos de primer nivel, por `claveDeSeccion`. */
+export const NOMBRE_DE_SIEMPRE: ReadonlyMap<string, string> = new Map([...CATALOGO.entradas, ...CATALOGO.secciones].map((e) => [e.ruta, e.nombre]))
 /** Caracteres como mucho: el servidor rechaza uno más largo. */
 export const TOPE_NOMBRE_EN_MENU = CATALOGO.tope
 

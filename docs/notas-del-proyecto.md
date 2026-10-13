@@ -790,6 +790,11 @@ carteles, las copias reducidas, el convenio `-1000` de las cabeceras) están
 todas en `src/config/fotosDeLaInstalacion.ts`, y quien las pinta las quita si
 fallan (`hooks/useFotoQueFalla.ts`): sin eso, el navegador enseña el icono roto
 con el texto alternativo. Lo vigila `backend/test/sin-fotos-escritas.test.ts`.
+**Lo mismo con cualquier foto que pueda ser de `/images/`**, también las del
+contenido: la semilla de una instalación las cita, y si falta una (o tiene
+640) la cabecera a sangre, el hero, Foto, Foto y texto y las tarjetas la
+quitan y dejan el fondo. Una pantalla nueva que pinte fotos del contenido
+pasa `alFallar` a `propsDeFoto` y no pinta el `<img>` si no es `visible`.
 
 **En Vite, sin `public/images`, el estático de Vite daría la portada** (200 con
 HTML) para `/images/…`: el plugin `instalacion-vite.mjs` contesta antes, con la
@@ -829,17 +834,26 @@ son el de siempre). Lo que no se ve:
 **El menú está en dos sitios.** El de verdad es `config/navegacion.ts` de la
 web, y no puede salir de un JSON: la guardiana de módulos lo lee como texto
 (§12). El servidor, que no puede importarlo, valida contra
-`shared/entradas-del-menu.json`: las entradas que llevan a una página (todas
-menos los títulos de primer nivel con subpáginas, que solo despliegan), con su
-nombre de siempre. **Quien añada, quite o renombre una entrada del menú cambia
+`shared/entradas-del-menu.json`: las entradas que llevan a una página
+(`entradas`) y los títulos de primer nivel que solo despliegan (`secciones`,
+con la clave `seccion:/ruta`), con su nombre de siempre. **Quien añada, quite o renombre una entrada del menú cambia
 los dos**; `config/__tests__/navegacion.test.ts` falla si no cuadran. Sin eso,
 una entrada nueva no se podría renombrar (400 «No es una entrada del menú») o
 se aceptaría una que ya no existe.
 
 **`/publicaciones` es a la vez un título y una página.** «Publicaciones»
 (título que despliega) y «Todas las publicaciones» comparten ruta: el nombre
-guardado para `/publicaciones` es el de la página, nunca el del título
-(`ponerNombres` no toca los títulos de primer nivel con hijos).
+guardado para `/publicaciones` es el de la página; el del título va con
+`seccion:/publicaciones` (`claveDeSeccion` en `navegacion.ts`). Los títulos se
+renombran desde el título de su grupo en Páginas (el «grupo» de
+`paginas-publicas.json` es su nombre de siempre); el que no tiene páginas de
+bloques (Hermanos), entre «Otras entradas del menú». Así una corporación con
+un Cristo o con varios titulares cambia «Sagrada titular».
+
+**Lo que nombra una entrada fuera del menú usa `useNombreEnMenu(ruta)`**: el
+botón del acceso de la barra y del cajón, y el título y la pestaña de Hazte
+hermano, Apadrina y la Tienda. Un texto fijo con el nombre de una entrada se
+queda con el de siempre cuando la renombran.
 
 **Una ruta que deja el menú no rompe nada.** Al leer, `depurarNombres` tira lo
 que ya no está en el catálogo; el siguiente guardado lo borra de la fila.

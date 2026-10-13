@@ -121,16 +121,24 @@ export function enlacesDelMenu(entradas: EntradaMenu[]): EntradaMenu[] {
   return entradas.flatMap((e) => (e.hijos?.length ? aplanarMenu(e.hijos) : [e]))
 }
 
+/** Los títulos de primer nivel que solo despliegan: también cambian de nombre, con `claveDeSeccion`. */
+export function seccionesDelMenu(entradas: EntradaMenu[]): EntradaMenu[] {
+  return entradas.filter((e) => Boolean(e.hijos?.length))
+}
+
 /**
- * El menú con los nombres que se pusieron en el CMS (ruta → nombre). Un título
- * de primer nivel que solo despliega no se toca aunque comparta la ruta con
- * una de sus páginas («Publicaciones» y «Todas las publicaciones»).
+ * La clave del nombre de un título de primer nivel. No es su ruta: puede ser
+ * la de una de sus páginas («Publicaciones» despliega y «/publicaciones» es
+ * «Todas las publicaciones»), y cada una tiene su nombre.
  */
+export const claveDeSeccion = (href: string) => `seccion:${href}`
+
+/** El menú con los nombres que se pusieron en el CMS (ruta o `claveDeSeccion` → nombre). */
 export function ponerNombres(entradas: EntradaMenu[], nombres: Readonly<Record<string, string>>, primerNivel = true): EntradaMenu[] {
   if (Object.keys(nombres).length === 0) return entradas
   return entradas.map((e) => {
     const esTitulo = primerNivel && Boolean(e.hijos?.length)
-    const label = esTitulo ? e.label : nombres[e.href] ?? e.label
+    const label = (esTitulo ? nombres[claveDeSeccion(e.href)] : nombres[e.href]) ?? e.label
     return e.hijos ? { ...e, label, hijos: ponerNombres(e.hijos, nombres, false) } : { ...e, label }
   })
 }

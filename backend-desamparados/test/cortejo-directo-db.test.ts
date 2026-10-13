@@ -11,7 +11,7 @@ import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
-import { CADUCA_MS, CortejoDirectoService } from '../src/services/cortejo-directo.service.js';
+import { CADUCA_MS, CortejoDirectoService, itinerarioConMapa } from '../src/services/cortejo-directo.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 
@@ -42,7 +42,9 @@ test('la posición se ve mientras está en marcha y es reciente; al terminar, se
   const hermano = await crearUsuarioPrueba(Role.USER);
   try {
     await db.cortejoEnDirecto.deleteMany({});
-    assert.deepEqual(await (await fetch(`${baseUrl}/api/cortejo-directo`)).json(), { enDirecto: false });
+    const apagado = await (await fetch(`${baseUrl}/api/cortejo-directo`)).json();
+    assert.equal(apagado.enDirecto, false);
+    assert.equal('lng' in apagado, false);
 
     const cuerpo = JSON.stringify({ lng: -4.4461, lat: 36.7282, precision: 12 });
     assert.equal((await fetch(`${baseUrl}/api/cortejo-directo/admin`, { method: 'PUT', body: cuerpo, headers: { 'Content-Type': 'application/json' } })).status, 401);
@@ -68,14 +70,15 @@ test('la posición se ve mientras está en marcha y es reciente; al terminar, se
 
     // Sin renovarse, deja de estar en directo aunque siga en marcha.
     const luego = new Date(Date.now() + CADUCA_MS + 1000);
-    assert.deepEqual(await CortejoDirectoService.publico(luego), { enDirecto: false });
+    assert.equal((await CortejoDirectoService.publico(luego)).enDirecto, false);
+    assert.equal('lng' in (await CortejoDirectoService.publico(luego)), false);
     const vieja = await CortejoDirectoService.paraLaJunta(luego);
     assert.equal(vieja.enMarcha, true);
     assert.equal(vieja.enDirecto, false);
 
     const fin = await fetch(`${baseUrl}/api/cortejo-directo/admin/terminar`, { method: 'POST', headers: cookie(albacea.id, Role.ALBACERIA) });
     assert.equal((await fin.json()).enMarcha, false);
-    assert.deepEqual(await (await fetch(`${baseUrl}/api/cortejo-directo`)).json(), { enDirecto: false });
+    assert.equal((await (await fetch(`${baseUrl}/api/cortejo-directo`)).json()).enDirecto, false);
 
     const acciones = (await db.auditLog.findMany({ where: { userId: albacea.id, entityType: 'cortejoEnDirecto' }, orderBy: { id: 'asc' } })).map((a) => a.action);
     assert.deepEqual(acciones, ['CORTEJO_DIRECTO_EMPEZAR', 'CORTEJO_DIRECTO_TERMINAR']);
@@ -86,4 +89,14 @@ test('la posición se ve mientras está en marcha y es reciente; al terminar, se
     await borrarUsuarioPrueba(albacea.id);
     await borrarUsuarioPrueba(hermano.id);
   }
+});
+
+test('el recorrido del cortejo es el primer itinerario con mapa, también dentro de otro bloque', () => {
+  const linea = [[-4.44, 36.72], [-4.45, 36.73]];
+  const sinMapa = { tipo: 'itinerario', paradas: [{ lugar: 'Salida' }] };
+  const conMapa = { tipo: 'itinerario', paradas: [{ lugar: 'Templo' }], recorrido: { linea } };
+  assert.equal(itinerarioConMapa({ bloques: [sinMapa] }), null);
+  // Una línea de un solo punto no es un mapa.
+  assert.equal(itinerarioConMapa({ bloques: [{ ...conMapa, recorrido: { linea: [linea[0]] } }] }), null);
+  assert.deepEqual(itinerarioConMapa({ bloques: [sinMapa, { tipo: 'combinado', hijos: [conMapa] }] }), { paradas: conMapa.paradas, linea });
 });

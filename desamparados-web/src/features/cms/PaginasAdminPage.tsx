@@ -11,7 +11,7 @@ import { useModulos } from '../../hooks/useModulos'
 import { useQuery } from '@tanstack/react-query'
 import { CLAVE_NOMBRES_EN_MENU, NOMBRE_DE_SIEMPRE, nombresEnMenu, type NombresEnMenu } from '../../lib/api/menu'
 import { site } from '../../config/site'
-import { enlacesDelMenu, menuPublico, menuVisible } from '../../config/navegacion'
+import { claveDeSeccion, enlacesDelMenu, menuPublico, menuVisible, seccionesDelMenu } from '../../config/navegacion'
 import DialogoNombreEnMenu, { type EntradaARenombrar } from './DialogoNombreEnMenu'
 
 /**
@@ -55,8 +55,14 @@ export default function PaginasAdminPage() {
   // Mientras no llega la lista, solo las del núcleo: mejor eso que enseñar
   // un momento las de un módulo apagado y quitarlas.
   const grupos = agruparPorGrupo(paginasPublicasActivas(activos ?? new Set()))
-  const otrasEntradas = enlacesDelMenu(menuVisible(menuPublico, activos ?? new Set()))
-    .filter((e) => !RUTAS_DE_PAGINAS.has(e.href))
+  const visible = menuVisible(menuPublico, activos ?? new Set())
+  // Los títulos de primer nivel se renombran desde su grupo; el que no tiene
+  // páginas de bloques (Hermanos), entre las otras entradas.
+  const conGrupo = new Set(grupos.map(([grupo]) => grupo))
+  const otrasEntradas = [
+    ...seccionesDelMenu(visible).filter((e) => !conGrupo.has(e.label)).map((e) => ({ ...e, href: claveDeSeccion(e.href) })),
+    ...enlacesDelMenu(visible).filter((e) => !RUTAS_DE_PAGINAS.has(e.href)),
+  ]
 
   return (
     <>
@@ -91,7 +97,7 @@ export default function PaginasAdminPage() {
                       <Typography component="span" sx={{ flexGrow: 1, minWidth: 0, fontSize: '0.95rem' }}>
                         {nombres[entrada.href] ?? entrada.label}
                       </Typography>
-                      <BotonRenombrar ruta={entrada.href} pagina={NOMBRE_DE_SIEMPRE.get(entrada.href) ?? entrada.label} />
+                      <BotonRenombrar ruta={entrada.href} pagina={NOMBRE_DE_SIEMPRE.get(entrada.href) ?? entrada.label} seccion={entrada.href.startsWith('seccion:')} />
                     </Box>
                   </li>
                 ))}
@@ -112,11 +118,18 @@ export default function PaginasAdminPage() {
 const RUTAS_DE_PAGINAS = new Set(PAGINAS_PUBLICAS.map((p) => p.ruta))
 
 /**
+ * Grupo del índice → título de primer nivel del menú con su nombre de siempre
+ * (el «grupo» de `shared/paginas-publicas.json` es el del menú). La ruta del
+ * título, para su `claveDeSeccion`.
+ */
+const SECCION_DE_GRUPO: ReadonlyMap<string, string> = new Map(seccionesDelMenu(menuPublico).map((e) => [e.label, e.href]))
+
+/**
  * El icono que abre «Nombre en el menú», en las filas que son una entrada del
  * menú público. Por encima del enlace estirado de la fila, como el de verla en
  * la web, y con las mismas reglas para aparecer.
  */
-function BotonRenombrar({ ruta, pagina }: { ruta: string; pagina: string }) {
+function BotonRenombrar({ ruta, pagina, seccion = false }: { ruta: string; pagina: string; seccion?: boolean }) {
   const { renombrar, listos } = useContext(NombresDelMenu)
   const deSiempre = NOMBRE_DE_SIEMPRE.get(ruta)
   if (!deSiempre || !listos) return null
@@ -125,7 +138,7 @@ function BotonRenombrar({ ruta, pagina }: { ruta: string; pagina: string }) {
       className="icono-de-fila"
       onClick={() => renombrar({ ruta, deSiempre, pagina })}
       title="Nombre en el menú"
-      aria-label={`Cambiar el nombre en el menú de la página ${pagina}`}
+      aria-label={`Cambiar el nombre en el menú de ${seccion ? 'la sección' : 'la página'} ${pagina}`}
       sx={icono}
     >
       <DriveFileRenameOutlineIcon sx={{ fontSize: 17 }} />
@@ -174,8 +187,17 @@ function Seccion({ titulo, paginas }: { titulo: string; paginas: PaginaPublica[]
     )
   }
 
+  // Si el grupo es un título de primer nivel del menú (Corporación, Sagrada
+  // titular…), se renombra desde aquí y se enseña con su nombre en el menú.
+  const clave = claveDeSeccion(SECCION_DE_GRUPO.get(titulo) ?? '')
+  const esSeccion = SECCION_DE_GRUPO.has(titulo)
   return (
-    <SeccionPlegable titulo={titulo} cuantas={paginas.length}>
+    <SeccionPlegable
+      titulo={titulo}
+      cuantas={paginas.length}
+      enMenu={esSeccion ? clave : undefined}
+      accion={esSeccion ? <BotonRenombrar ruta={clave} pagina={titulo} seccion /> : undefined}
+    >
       {arbolDeSeccion(paginas).map(({ madre, hijas }) => (
         <li key={madre.slug}>
           <FilaDePagina pagina={madre} sangria={SANGRIA.pagina} />
@@ -199,7 +221,16 @@ function Seccion({ titulo, paginas }: { titulo: string; paginas: PaginaPublica[]
  * `constructor/ListaDeBloques`): un `Accordion` de MUI mete un `<button>` en el
  * resumen, y dentro de un botón no puede haber enlaces.
  */
-function SeccionPlegable({ titulo, cuantas, children }: { titulo: string; cuantas: number; children: ReactNode }) {
+function SeccionPlegable({ titulo, cuantas, enMenu, accion, children }: {
+  titulo: string
+  cuantas: number
+  /** La clave de su nombre en el menú, si es un título del menú: se enseña ese nombre. */
+  enMenu?: string
+  /** Fuera del botón que pliega (un botón no puede ir dentro de otro): el de renombrar. */
+  accion?: ReactNode
+  children: ReactNode
+}) {
+  const { nombres } = useContext(NombresDelMenu)
   const [abierta, setAbierta] = useState(false)
   const id = titulo.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-')
   const idCabecera = `seccion-${id}-cabecera`
@@ -207,7 +238,7 @@ function SeccionPlegable({ titulo, cuantas, children }: { titulo: string; cuanta
 
   return (
     <Box component="section">
-      <Box component="h2" sx={{ m: 0, display: 'flex' }}>
+      <Box component="h2" sx={{ m: 0, display: 'flex', ...(accion ? conIconos : {}) }}>
         <ButtonBase
           id={idCabecera}
           aria-expanded={abierta}
@@ -223,11 +254,12 @@ function SeccionPlegable({ titulo, cuantas, children }: { titulo: string; cuanta
               transition: (t) => t.transitions.create('transform', { duration: t.transitions.duration.shortest }),
             }}
           />
-          <Typography component="span" sx={{ flexGrow: 1, fontWeight: 600, fontSize: '1rem' }}>{titulo}</Typography>
+          <Typography component="span" sx={{ flexGrow: 1, fontWeight: 600, fontSize: '1rem' }}>{(enMenu && nombres[enMenu]) || titulo}</Typography>
           <Typography component="span" variant="caption" sx={{ color: 'text.secondary', fontVariantNumeric: 'tabular-nums', pr: 1.5 }}>
             {cuantas}
           </Typography>
         </ButtonBase>
+        {accion && <Box sx={{ display: 'flex', alignItems: 'center', pr: 0.5 }}>{accion}</Box>}
       </Box>
 
       <Collapse in={abierta}>

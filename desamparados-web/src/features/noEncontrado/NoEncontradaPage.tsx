@@ -47,7 +47,10 @@ export default function NoEncontradaPage() {
     queryFn: () => getContenido<PaginaDeBloques>('recorrido'),
     staleTime: 5 * 60_000,
     retry: false,
-    enabled: conMapa,
+    // La página del recorrido es del módulo de páginas propias: apagado, la
+    // API responde 404 y la web vuelve a pedir los módulos en cada visita a
+    // una dirección que no existe (bots incluidos).
+    enabled: conMapa && activo('paginas-propias'),
   })
   const linea = conMapa ? lineaDelRecorrido(recorrido.data) : null
   // El mapa espera a que el navegador quede libre: lo primero es el texto.

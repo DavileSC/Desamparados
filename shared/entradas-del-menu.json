@@ -13,7 +13,13 @@
     "tiene que coincidir con sus enlaces, ruta y nombre, y lo comprueba",
     "config/__tests__/navegacion.test.ts. Quien cambie el menú, cambia los dos.",
     "",
-    "«tope»: caracteres como mucho de un nombre; más largo no cabe en la barra."
+    "«tope»: caracteres como mucho de un nombre; más largo no cabe en la barra.",
+    "",
+    "«secciones»: los títulos de primer nivel que solo despliegan (Corporación,",
+    "Sagrada titular…), que también se renombran, desde el título de su grupo",
+    "en Páginas. Su clave es «seccion:» y su ruta, para que no choque con una",
+    "página de la misma ruta: «Publicaciones» despliega y «/publicaciones» es",
+    "«Todas las publicaciones». Con el nombre de siempre de navegacion.ts."
   ],
   "tope": 40,
   "entradas": [
@@ -42,5 +48,12 @@
     { "ruta": "/hazte-hermano", "nombre": "Hazte hermano" },
     { "ruta": "/acceso", "nombre": "Acceso hermanos" },
     { "ruta": "/contacto", "nombre": "Contacto" }
+  ],
+  "secciones": [
+    { "ruta": "seccion:/corporacion", "nombre": "Corporación" },
+    { "ruta": "seccion:/sagrada-titular", "nombre": "Sagrada titular" },
+    { "ruta": "seccion:/actualidad", "nombre": "Actualidad" },
+    { "ruta": "seccion:/publicaciones", "nombre": "Publicaciones" },
+    { "ruta": "seccion:/hermanos", "nombre": "Hermanos" }
   ]
 }

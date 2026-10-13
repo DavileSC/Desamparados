@@ -8,23 +8,23 @@ import { crearTemaCms } from '../../../theme/cms'
 import CortejoDirectoPage from '../CortejoDirectoPage'
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
-const APAGADO = { enDirecto: false, enMarcha: false, precision: null, autorNombre: null }
-// Una recta de unos 200 m con dos paradas: la salida y el final.
-const RECORRIDO = {
-  cabecera: { titulo: 'Recorrido' },
-  bloques: [{ tipo: 'itinerario', titulo: 'Itinerario', paradas: [{ hora: '18:00', lugar: 'Salida del templo' }, { hora: '', lugar: 'Calle Larga' }], recorrido: { esquinas: [], pegado: false, linea: [[-4.45, 36.71], [-4.4478, 36.71]] } }],
+// El itinerario lo busca el servidor entre las páginas encendidas y viene en
+// cada respuesta: una recta de unos 200 m con dos paradas, la salida y el final.
+const DEL_RECORRIDO = {
+  ruta: '/salida/itinerario',
+  recorrido: { paradas: [{ hora: '18:00', lugar: 'Salida del templo' }, { hora: '', lugar: 'Calle Larga' }], linea: [[-4.45, 36.71], [-4.4478, 36.71]] },
 }
+const APAGADO = { enDirecto: false, enMarcha: false, precision: null, autorNombre: null, ...DEL_RECORRIDO }
 
 afterEach(() => { vi.unstubAllGlobals() })
 
 function montar(geolocalizacion?: Partial<Geolocation>, inicial: unknown = APAGADO) {
   const fetch = vi.fn().mockImplementation((url: string, init: RequestInit = {}) => {
     const ruta = String(url)
-    if (ruta.includes('/contenido/recorrido')) return Promise.resolve(json(RECORRIDO))
     if (ruta.endsWith('/terminar')) return Promise.resolve(json({ ...APAGADO, enMarcha: false }))
     if (init.method === 'PUT') {
       const p = JSON.parse(String(init.body))
-      return Promise.resolve(json({ enDirecto: true, enMarcha: true, ...p, actualizadoEl: '2026-10-01T17:05:00.000Z', autorNombre: 'Ana Ruiz' }))
+      return Promise.resolve(json({ enDirecto: true, enMarcha: true, ...p, actualizadoEl: '2026-10-01T17:05:00.000Z', autorNombre: 'Ana Ruiz', ...DEL_RECORRIDO }))
     }
     return Promise.resolve(json(inicial))
   })
@@ -71,8 +71,20 @@ describe('CortejoDirectoPage', () => {
 
   it('avisa si la posición queda tan lejos del recorrido que la web no la enseña', async () => {
     // Un kilómetro al norte de la línea.
-    montar(undefined, { enDirecto: true, enMarcha: true, lng: -4.449, lat: 36.72, precision: 30, actualizadoEl: '2026-10-01T17:05:00.000Z', autorNombre: null })
+    montar(undefined, { enDirecto: true, enMarcha: true, lng: -4.449, lat: 36.72, precision: 30, actualizadoEl: '2026-10-01T17:05:00.000Z', autorNombre: null, ...DEL_RECORRIDO })
     expect(await screen.findByText(/queda a 11[0-9]{2} m del recorrido/)).toBeInTheDocument()
+  })
+
+  it('«Ver el mapa» lleva a la página del itinerario', async () => {
+    montar()
+    expect(await screen.findByRole('link', { name: 'Ver el mapa' })).toHaveAttribute('href', '/salida/itinerario')
+  })
+
+  it('sin ninguna página con itinerario en el mapa, lo dice y no ofrece paradas ni mapa', async () => {
+    montar(undefined, { ...APAGADO, ruta: null, recorrido: null })
+    expect(await screen.findByText(/Ninguna página tiene un itinerario con mapa/)).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Ver el mapa' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Calle Larga' })).not.toBeInTheDocument()
   })
 
   it('si el navegador niega la ubicación, lo dice y ofrece las paradas', async () => {

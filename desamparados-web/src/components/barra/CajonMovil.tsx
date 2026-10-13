@@ -22,6 +22,7 @@ import { esActiva, seccionActiva, tinta } from './estilos'
 import type { EntradaMenu } from '../../config/navegacion'
 import { useMenuPublico } from '../../hooks/useMenuPublico'
 import { useModulos } from '../../hooks/useModulos'
+import { useNombreEnMenu } from '../../hooks/useNombresEnMenu'
 import { site } from '../../config/site'
 import { GOLD, GRANATE, TINTA } from '../../features/inicio/estilos'
 // La serif de la agenda: importarla de ahí trae también sus ficheros de letra.
@@ -103,6 +104,7 @@ function Panel({ alCerrar }: { alCerrar: () => void }) {
   const menu = useMenuPublico()
   const enlacesDeRedes = useEnlacesDeRedes()
   const { activo } = useModulos()
+  const nombreDelAcceso = useNombreEnMenu('/acceso')
   // Mientras sale, las rayas vuelven a su sitio a la vez que se van las capas.
   const presente = useIsPresent()
   const estaActiva = (entrada: EntradaMenu) => seccionActiva(location.pathname, entrada)
@@ -249,7 +251,7 @@ function Panel({ alCerrar }: { alCerrar: () => void }) {
                   py: 1.5,
                 }}
               >
-                Acceso hermanos
+                {nombreDelAcceso}
               </Box>
             ) : <span />}
             <Box sx={{ display: 'flex', gap: 0.5 }}>

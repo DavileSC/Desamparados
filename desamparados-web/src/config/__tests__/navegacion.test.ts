@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { menuPublico, aplanarMenu, menuVisible, enlacesDelMenu, ponerNombres, type EntradaMenu } from '../navegacion'
+import { menuPublico, aplanarMenu, menuVisible, enlacesDelMenu, ponerNombres, seccionesDelMenu, claveDeSeccion, type EntradaMenu } from '../navegacion'
 import CATALOGO from '../../../../shared/entradas-del-menu.json'
 // El fuente del router como texto (`?raw` de Vite): así el test no necesita los
 // tipos de Node, que `tsconfig.app.json` no incluye para `src/`.
@@ -123,10 +123,12 @@ describe('menuPublico', () => {
     expect(CATALOGO.entradas).toEqual(enlacesDelMenu(menuPublico).map((e) => ({ ruta: e.href, nombre: e.label })))
     expect(new Set(CATALOGO.entradas.map((e) => e.ruta)).size, 'una ruta repetida').toBe(CATALOGO.entradas.length)
     for (const e of CATALOGO.entradas) expect(e.nombre.length, e.ruta).toBeLessThanOrEqual(CATALOGO.tope)
+    // Y los títulos de primer nivel, con su clave propia.
+    expect(CATALOGO.secciones).toEqual(seccionesDelMenu(menuPublico).map((e) => ({ ruta: claveDeSeccion(e.href), nombre: e.label })))
   })
 
-  it('ponerNombres cambia el nombre de las páginas, no el de los títulos que solo despliegan', () => {
-    const nombres = { '/parroquia': 'Parroquia · Pasionistas', '/historia': 'Nuestra historia', '/publicaciones': 'Archivo', '/corporacion': 'No vale' }
+  it('ponerNombres cambia el nombre de las páginas, y el de los títulos que despliegan solo por su clave', () => {
+    const nombres = { '/parroquia': 'Parroquia · Pasionistas', '/historia': 'Nuestra historia', '/publicaciones': 'Archivo', '/corporacion': 'No vale', 'seccion:/sagrada-titular': 'Sagrados titulares' }
     const dibujo = dibujar(ponerNombres(menuPublico, nombres)).join('\n')
     expect(dibujo).toContain('  Parroquia · Pasionistas /parroquia')
     // Una subsección con páginas dentro sí es un enlace: cambia.
@@ -134,6 +136,7 @@ describe('menuPublico', () => {
     // «Publicaciones» despliega y comparte ruta con «Todas las publicaciones»: cambia solo la página.
     expect(dibujo).toContain('Publicaciones /publicaciones\n  Archivo /publicaciones')
     expect(dibujo).toContain('Corporación /corporacion')
+    expect(dibujo).toContain('Sagrados titulares /sagrada-titular\n  Desamparados /desamparados')
     expect(ponerNombres(menuPublico, {})).toBe(menuPublico)
   })
 

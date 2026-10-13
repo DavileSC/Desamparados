@@ -16,6 +16,7 @@ import type { MetodoEnLinea } from '../../lib/api/tienda'
 import { irAlBanco } from '../../lib/api/procesion'
 import { site } from '../../config/site'
 import { euros } from '../../lib/euros'
+import { useNombreEnMenu } from '../../hooks/useNombresEnMenu'
 
 const VACIO = { nombre: '', email: '', telefono: '', dedicatoria: '', mostrarNombre: true, metodo: 'TARJETA' as MetodoEnLinea }
 
@@ -26,6 +27,8 @@ const VACIO = { nombre: '', email: '', telefono: '', dedicatoria: '', mostrarNom
 export default function ApadrinaPage() {
   const navegar = useNavigate()
   const [datos, setDatos] = useState<CampanasPublicas | null>(null)
+  // Como se llame en el menú: el título y la pestaña dicen lo mismo que él.
+  const nombreEnMenu = useNombreEnMenu('/apadrina')
   const [error, setError] = useState<string | null>(null)
   const [elegida, setElegida] = useState<Pieza | null>(null)
   const [form, setForm] = useState(VACIO)
@@ -76,8 +79,8 @@ export default function ApadrinaPage() {
   }
 
   return <>
-    <MetaDePagina titulo="Apadrina" descripcion={`Apadrina una vela, una flor o una pieza del ajuar de ${site.titular}.`} />
-    <CabeceraDePagina title="Apadrina" subtitle="Elige sobre la foto la pieza que quieres costear. Las marcadas con ✓ ya tienen padrino." />
+    <MetaDePagina titulo={nombreEnMenu} descripcion={`Apadrina una vela, una flor o una pieza del ajuar de ${site.titular}.`} />
+    <CabeceraDePagina title={nombreEnMenu} subtitle="Elige sobre la foto la pieza que quieres costear. Las marcadas con ✓ ya tienen padrino." />
     <ContenedorDePagina>
       <Box sx={{ py: { xs: 4, md: 6 }, display: 'grid', gap: 6 }}>
         {error && <Alert severity="error">{error}</Alert>}

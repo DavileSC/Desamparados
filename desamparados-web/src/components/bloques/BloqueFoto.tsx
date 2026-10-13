@@ -4,6 +4,7 @@ import { GOLD } from '../../features/inicio/estilos'
 import { anchoMaximo, siDe, valorDe } from './presentacion'
 import type { BloqueFoto as Datos } from '../../lib/api/contenido'
 import { propsDeFoto } from '../../lib/fotoSubida'
+import { useFotoQueFalla } from '../../hooks/useFotoQueFalla'
 import { MARCA, alfa } from '../../theme/marca'
 
 /** Ancho de la foto según su tamaño. `grande` es el de siempre. */
@@ -26,15 +27,18 @@ const MARCOS = {
  */
 export default function BloqueFoto({ bloque }: { bloque: Datos }) {
   // Sin foto todavía (un bloque recién añadido, en la vista previa del CMS),
-  // nada: un <img src=""> vuelve a pedir la página entera.
-  if (bloque.url === '') return null
+  // nada: un <img src=""> vuelve a pedir la página entera. Una que no carga
+  // (borrada, o de /images/ y que falta en la instalación) tampoco deja el
+  // icono roto: el bloque se quita.
+  const { visible, alFallar } = useFotoQueFalla(bloque.url)
+  if (!visible) return null
   const tamano = valorDe(bloque, 'tamano') as keyof typeof TAMANOS
   const completa = tamano === 'completa'
   const proporcion = valorDe(bloque, 'proporcion')
   const marco = MARCOS[valorDe(bloque, 'marco') as keyof typeof MARCOS] ?? MARCOS.ninguno
 
   const imagen = (
-    <Box component="img" {...propsDeFoto(bloque.url, completa ? '100vw' : '(min-width: 1000px) 1000px, 100vw')} alt={bloque.alt} loading="lazy" decoding="async"
+    <Box component="img" {...propsDeFoto(bloque.url, completa ? '100vw' : '(min-width: 1000px) 1000px, 100vw', alFallar)} alt={bloque.alt} loading="lazy" decoding="async"
       sx={{
         width: '100%', height: 'auto', display: 'block', borderRadius: completa ? 0 : 2,
         ...(proporcion !== 'original' && { aspectRatio: proporcion.replace(':', ' / '), objectFit: 'cover' }),

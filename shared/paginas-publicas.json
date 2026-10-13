@@ -87,7 +87,7 @@
       "nombre": "Trono",
       "ruta": "/sabado-de-pasion/trono",
       "grupo": "Sábado de Pasión",
-      "descripcion": "El trono de la Sagrada Titular.",
+      "descripcion": "El trono de la imagen titular.",
       "modulo": "paginas-propias"
     },
     {
@@ -119,7 +119,7 @@
       "nombre": "Ajuar",
       "ruta": "/ajuar",
       "grupo": "Sagrada titular",
-      "descripcion": "El manto, la corona y las joyas de la Sagrada Titular."
+      "descripcion": "El manto, la corona y las joyas de la imagen titular."
     },
     {
       "slug": "agenda",

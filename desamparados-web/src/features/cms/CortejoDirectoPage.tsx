@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Alert, Box, Button, CircularProgress, Paper, Stack, Typography } from '@mui/material'
 import MyLocationIcon from '@mui/icons-material/MyLocation'
 import StopIcon from '@mui/icons-material/Stop'
@@ -7,7 +7,6 @@ import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
 import CabeceraSeccion from './CabeceraSeccion'
 import { cortejoParaLaJunta, enviarPosicion, terminarDirecto, type CortejoParaLaJunta, type PosicionCortejo } from '../../lib/api/cortejoDirecto'
-import { getContenido, type BloqueItinerario, type PaginaDeBloques } from '../../lib/api/contenido'
 import { DISTANCIA_MAXIMA_M, posicionesEnRuta, puntoEn, sobreElRecorrido } from '../../components/bloques/recorrido'
 import { site } from '../../config/site'
 
@@ -22,12 +21,6 @@ const REPITE_MS = 60_000
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
 const hora = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
-/** El itinerario dibujado en el mapa, si lo hay: las paradas para marcarlas a mano. */
-function itinerarioDe(pagina: PaginaDeBloques | null) {
-  const b = pagina?.bloques.find((x): x is BloqueItinerario => x.tipo === 'itinerario' && (x as BloqueItinerario).recorrido !== undefined)
-  return b?.recorrido && b.recorrido.linea.length > 1 ? { paradas: b.paradas, linea: b.recorrido.linea } : null
-}
-
 /**
  * El cortejo en directo, desde el móvil de quien va en la calle: «Empezar»
  * manda la posición del GPS mientras la pantalla siga abierta; si el GPS falla
@@ -36,7 +29,6 @@ function itinerarioDe(pagina: PaginaDeBloques | null) {
  */
 export default function CortejoDirectoPage() {
   const [estado, setEstado] = useState<CortejoParaLaJunta | null>(null)
-  const [pagina, setPagina] = useState<PaginaDeBloques | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [siguiendo, setSiguiendo] = useState(false)
   const [ocupado, setOcupado] = useState(false)
@@ -48,13 +40,15 @@ export default function CortejoDirectoPage() {
 
   useEffect(() => {
     let cancelado = false
-    Promise.all([cortejoParaLaJunta(), getContenido<PaginaDeBloques>('recorrido').catch(() => null)])
-      .then(([e, p]) => { if (!cancelado) { setEstado(e); setPagina(p) } })
+    cortejoParaLaJunta()
+      .then((e) => { if (!cancelado) setEstado(e) })
       .catch((err: unknown) => { if (!cancelado) setError(mensaje(err, 'No se ha podido cargar el directo.')) })
     return () => { cancelado = true }
   }, [])
 
-  const itinerario = useMemo(() => itinerarioDe(pagina), [pagina])
+  // El servidor busca el itinerario con mapa entre las páginas encendidas:
+  // no va fijo a una página propia que otra corporación no tiene.
+  const itinerario = estado?.recorrido ?? null
 
   const mandar = useCallback(async (p: PosicionCortejo) => {
     ultima.current = { p, enviadaEn: Date.now() }
@@ -126,7 +120,7 @@ export default function CortejoDirectoPage() {
   return <>
     <Helmet><title>{`Cortejo en directo | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo="Cortejo en directo" subtitulo="Desde el móvil de quien va en la calle: el mapa del recorrido de la web enseña por dónde va.">
-      <Button variant="outlined" component={Link} to="/sabado-de-pasion/recorrido" target="_blank" startIcon={<OpenInNewIcon />}>Ver el mapa</Button>
+      {estado.ruta && <Button variant="outlined" component={Link} to={estado.ruta} target="_blank" startIcon={<OpenInNewIcon />}>Ver el mapa</Button>}
     </CabeceraSeccion>
 
     <Stack spacing={2.5} sx={{ maxWidth: 640 }}>
@@ -164,7 +158,7 @@ export default function CortejoDirectoPage() {
           </Box>
         </Box>
       )}
-      {!itinerario && pagina && <Alert severity="info">El recorrido aún no está dibujado en el mapa (Web pública → Páginas → Recorrido): sin él, la web no puede enseñar la posición.</Alert>}
+      {!itinerario && <Alert severity="info">Ninguna página tiene un itinerario con mapa (Web pública → Páginas, bloque Itinerario con su recorrido dibujado): sin él, la web no puede enseñar la posición.</Alert>}
     </Stack>
   </>
 }
