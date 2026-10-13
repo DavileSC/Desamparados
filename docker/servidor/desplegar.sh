@@ -70,7 +70,11 @@ fi
 git -c advice.detachedHead=false checkout --quiet "$COMMIT"
 if [[ "$ANTES" != "$COMMIT" ]]; then
   log "De ${ANTES:0:7} a ${COMMIT:0:7}:"
-  git log --oneline "$ANTES..$COMMIT" | sed 's/^/    /' | head -n 30
+  # El tope, en git y no con `| head`: con pipefail, cortar la tubería deja a
+  # git con SIGPIPE (141) y el despliegue se paraba con más de 30 commits.
+  git log --oneline -n 30 "$ANTES..$COMMIT" | sed 's/^/    /'
+  NUEVOS="$(git rev-list --count "$ANTES..$COMMIT")"
+  [[ "$NUEVOS" -le 30 ]] || echo "    … y $((NUEVOS - 30)) más."
 fi
 
 # La versión que el compose del servidor descarga.
