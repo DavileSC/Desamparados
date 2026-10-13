@@ -117,8 +117,6 @@ describe('AgendaYDirecto', () => {
       titulo: 'Próximos cultos',
       parrafo: 'Un párrafo distinto sobre la vida de oración.',
       enlace: 'Ver toda la agenda',
-      directoTitulo: 'Síguelo ahora',
-      directoTexto: 'Emisión en directo desde la parroquia',
       imagenUrl: '/images/procesion.jpg',
     }
     responderPortada(textos)
