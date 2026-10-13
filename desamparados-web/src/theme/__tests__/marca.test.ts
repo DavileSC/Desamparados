@@ -2,7 +2,7 @@
 // el tema es el de siempre; con otra, los pares que se usan de verdad siguen
 // cumpliendo AA (docs/notas-del-proyecto.md §11).
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { contraste, PAPELES_DE_IMPRENTA, PAPELES_DE_MARCA, PARTIDA } from '../../../../shared/colores-de-marca.mjs'
+import { contraste, FONDOS, PAPELES_DE_IMPRENTA, PAPELES_DE_MARCA, PARTIDA } from '../../../../shared/colores-de-marca.mjs'
 import { INSTALACION } from '../../test/instalacion'
 import { IMPRENTA, MARCA } from '../marca'
 
@@ -71,5 +71,19 @@ describe('la marca de la web', () => {
       const tema = cms.crearTemaCms(modo)
       expect(contraste(tema.palette.primary.contrastText, tema.palette.primary.main)).toBeGreaterThanOrEqual(4.5)
     }
+  })
+
+  // Un principal que cumple justo sobre el blanco y el lienzo del CMS se queda
+  // corto sobre el papel del almanaque y sobre su rosa viejo, más oscuros
+  // (WP10): el domingo de un día solemne y «Próximo acto:» bajaban de AA.
+  it.each(['#2a6fa8', '#3a7a3a', '#8a5a9a', '#1f4e79'])('con %s, el granate del almanaque se lee sobre su papel y su rosa', async (principal) => {
+    const { marca } = await temasCon(principal, null)
+    for (const fondo of [FONDOS.almanaque, FONDOS.solemne]) {
+      expect(contraste(marca.principalAlmanaque, fondo), `sobre ${fondo}`).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
+  it('con la marca de partida, el granate del almanaque es el de siempre', () => {
+    expect(MARCA.principalAlmanaque).toBe(MARCA.principal)
   })
 })

@@ -164,6 +164,8 @@ export const FONDOS = Object.freeze({
   lienzoCms: '#f4f2ee',
   /** El rosa viejo de los días solemnes del calendario. */
   solemne: '#ead9d0',
+  /** El papel crema del calendario de la Agenda (la hoja de almanaque). */
+  almanaque: '#f3eee5',
   /** La crema de las piezas apadrinadas. */
   crema: '#f3ebdc',
   /** El velo de las piezas sin apadrinar (`rgba(20, 17, 17, .72)` sobre la foto, a lo peor). */
@@ -196,6 +198,12 @@ const PAPELES_WEB = {
   principalTostado: { familia: 'principal', partida: '#2a1216' },
   principalNoche: { familia: 'principal', partida: '#1d0a0e' },
   principalTinta: { familia: 'principal', partida: '#3a1016', suelos: [[FONDOS.solemne, 4.5]] },
+  // El mismo `principal` (con su partida y relativo a él), pero con suelo sobre
+  // el papel del almanaque y su rosa viejo, más oscuros que el lienzo del CMS:
+  // un principal que cumple justo ahí se quedaba en ~3,7:1 en el domingo de un
+  // día solemne. Papel propio y no un suelo más en `principal`, para no
+  // oscurecer la marca en toda la web por una hoja.
+  principalAlmanaque: { familia: 'principal', partida: '#6e1822', relativo: true, suelos: [[FONDOS.solemne, 4.5], [FONDOS.almanaque, 4.5]] },
   principalClaro: { familia: 'principal', partida: '#fc858a', suelos: [[FONDOS.publico, 4.5], [FONDOS.profundo, 4.5]] },
   principalPalido: { familia: 'principal', partida: '#ffb3b4', suelos: [[FONDOS.publico, 4.5], [FONDOS.tarjetaCms, 4.5]] },
   principalGrafica: { familia: 'principal', partida: '#f08a93', suelos: [[FONDOS.tarjetaCms, 3]] },

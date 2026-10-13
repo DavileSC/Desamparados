@@ -3,20 +3,25 @@ import { Box, ButtonBase, ClickAwayListener, Dialog, Popper, Typography, useMedi
 import { keyframes, useTheme } from '@mui/material/styles'
 import { useReducedMotion } from 'framer-motion'
 import type { ApiEvent } from '../../../lib/api/agenda'
-import { GRANATE } from '../../inicio/estilos'
 import { TIPOS, diasDeLaRejilla, inicioDeMes, nombreDelMes, sumarMeses } from '../../inicio/agenda'
 import { claveDelDia, cuandoEnCartel, hora, primerDiaEnElMes, repartoDeLaSemana, ultimoMes } from './cultos'
 import VentanaDelActo from './VentanaDelActo'
 import Hueso from '../../../components/esqueleto/Hueso'
 import { CORMORANT } from './letraAlmanaque'
-import { MARCA } from '../../../theme/marca'
+import { FONDOS, MARCA } from '../../../theme/marca'
 import { diaDelCalendario, hoyDelCalendario } from '../../../lib/horaDeMadrid'
 
-const PAPEL = '#f3eee5'
+const PAPEL = FONDOS.almanaque
 /** Los días de otro mes, un poco más apagados que la hoja. */
 const PAPEL_FUERA = '#ece5d9'
 /** Los días de culto solemne: un rosa viejo que se nota sin teñir la hoja. */
-const SOLEMNE = '#ead9d0'
+const SOLEMNE = FONDOS.solemne
+/**
+ * El granate del Grupo en la hoja: el principal de la marca, con su suelo de
+ * contraste sobre este papel y sobre el rosa, que son más oscuros que el
+ * blanco donde lo tiene `MARCA.principal`.
+ */
+const GRANATE = MARCA.principalAlmanaque
 const RAYA = '#d9cfc1'
 export const TINTA = '#231d20'
 const TINTA_SUAVE = '#5b4f53'
