@@ -8,6 +8,7 @@ import { authRoutes } from './routes/auth.routes.js';
 import { hermanoRoutes } from './routes/hermano.routes.js';
 import { reciboRoutes } from './routes/recibo.routes.js';
 import { comunicadosRoutes } from './routes/comunicados.routes.js';
+import { boletinRoutes } from './routes/boletin.routes.js';
 import { cabildosRoutes } from './routes/cabildos.routes.js';
 import { tiendaRoutes } from './routes/tienda.routes.js';
 import { plantillasCorreoRoutes } from './routes/plantillas-correo.routes.js';
@@ -16,7 +17,6 @@ import { apadrinamientosRoutes } from './routes/apadrinamientos.routes.js';
 import { cortejoDirectoRoutes } from './routes/cortejo-directo.routes.js';
 import { pagoRoutes } from './routes/pago.routes.js';
 import { cartaRoutes } from './routes/carta.routes.js';
-import { paginaRoutes } from './routes/pagina.routes.js';
 import { agendaRoutes } from './routes/agenda.routes.js';
 import { noticiaRoutes } from './routes/noticia.routes.js'; 
 import { subidaRoutes } from './routes/subida.routes.js';
@@ -126,14 +126,14 @@ app.use(globalLimiter);
 // Cuerpos JSON. El tope general es 100 KB: ningún formulario de la web se
 // acerca, y un cuerpo grande sin sesión (el formulario de contacto, el login)
 // solo sirve para hacer trabajar al servidor. Las rutas que reciben el HTML
-// del CMS (noticias, páginas, publicaciones, comunicados y actas) admiten 2 MB; su parser se
+// del CMS (noticias, publicaciones, comunicados y actas) admiten 2 MB; su parser se
 // monta ANTES del general, y el general ya no vuelve a leer un cuerpo leído.
 // Sin `express.urlencoded` general: la web solo envía JSON y las subidas van
 // en multipart, que lee multer en su propia ruta. La única excepción es el
 // aviso del banco, que trae su lector en `pago.routes.ts`.
 const CUERPO_CMS = '2mb';
 const CUERPO_GENERAL = '100kb';
-app.use(['/api/news', '/api/pages', '/api/publications', '/api/comunicados', '/api/cabildos'], express.json({ limit: CUERPO_CMS }));
+app.use(['/api/news', '/api/publications', '/api/comunicados', '/api/cabildos'], express.json({ limit: CUERPO_CMS }));
 app.use(express.json({ limit: CUERPO_GENERAL }));
 
 // Sin `hpp`: con Express 5, `req.query` es un getter que vuelve a analizar la
@@ -166,7 +166,6 @@ app.use('/api/hermanos', nucleo, hermanoRoutes); // Gestión de Cofrades (los di
 app.use('/api/cartas', conModulo('cartas'), cartaRoutes);     // Cartas y circulares de Secretaría
 app.use('/api/recibos', nucleo, reciboRoutes);   // Pagos y Tesorería (remesas, Modelo 182 y cuotas en línea, dentro con su guarda)
 app.use('/api/pagos', nucleo, pagoRoutes);       // Avisos del banco (Redsys), sin sesión; nunca se apaga (dentro: métodos y donativo)
-app.use('/api/pages', nucleo, paginaRoutes);     // Contenido estático
 app.use('/api/events', conModulo('agenda'), agendaRoutes);    // Agenda
 app.use('/api/news', conModulo('noticias'), noticiaRoutes);        // Noticias
 app.use('/api/publications', conModulo('publicaciones'), publicacionRoutes); // Publicaciones
@@ -182,6 +181,7 @@ app.use('/api/transacciones', conModulo('contabilidad'), transaccionRoutes); // 
 app.use('/api/panel', nucleo, panelRoutes);      // Panel del CMS
 app.use('/api/datos', nucleo, datosRoutes);      // Datos e informes de la junta (el Informe anual lleva dentro su guarda)
 app.use('/api/comunicados', conModulo('comunicados'), comunicadosRoutes); // Boletín y avisos por correo
+app.use('/api/boletin', nucleo, boletinRoutes); // La baja desde el enlace del correo: vale aunque se apague el boletín
 app.use('/api/cabildos', conModulo('cabildos'), cabildosRoutes); // Cabildos y libro de actas
 app.use('/api/tienda', conModulo('tienda'), tiendaRoutes); // Tienda: la caja y los productos (la compra desde la web, dentro con tienda-web)
 app.use('/api/plantillas-correo', nucleo, plantillasCorreoRoutes); // Emails: las plantillas de los correos

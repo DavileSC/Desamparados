@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import type { AdminReceipt, AdminReceiptStatus } from '../../../lib/api/tesoreria'
 import { etiquetaMetodo, euros, fechaCorta } from '../contabilidad/formato'
 import SelloEstado from './SelloEstado'
-import { CAMBIOS_DE_ESTADO, accionDeCambio } from './estados'
+import { accionDeCambio, cambiosDe } from './estados'
 
 interface Props {
   recibos: AdminReceipt[]
@@ -117,7 +117,7 @@ export default function ListaRecibos({ recibos, verAnio, ocupado, onCobrar, onCo
               {r.estado === 'PENDIENTE' && boton('Cobrar', `Cobrar ${r.concepto} de ${nombre}`, () => onCobrar(r))}
               {r.estado === 'REMESADO' && boton('Confirmar', `Confirmar el cobro de ${r.concepto} de ${nombre}`, () => onConfirmar(r))}
               {reemitible && boton('Reemitir', `Reemitir ${r.concepto} de ${nombre}`, () => onReemitir(r))}
-              {(CAMBIOS_DE_ESTADO[r.estado].length > 0 || conApuntes(r)) ? (
+              {(cambiosDe(r).length > 0 || conApuntes(r)) ? (
                 <IconButton aria-label={`Más acciones de ${r.concepto} de ${nombre}`} onClick={(e) => setMenu({ ancla: e.currentTarget, recibo: r })} disabled={ocupado} sx={{ ml: 'auto', [enTabla]: { ml: 0 } }}>
                   <MoreVertIcon />
                 </IconButton>
@@ -127,12 +127,12 @@ export default function ListaRecibos({ recibos, verAnio, ocupado, onCobrar, onCo
         )
       })}
       <Menu anchorEl={menu?.ancla} open={menu !== null} onClose={cerrar}>
-        {menu && CAMBIOS_DE_ESTADO[menu.recibo.estado].map((destino) => (
+        {menu && cambiosDe(menu.recibo).map((destino) => (
           <MenuItem key={destino} onClick={() => { cerrar(); onCambiarEstado(menu.recibo, destino) }}>
             {accionDeCambio(destino)}
           </MenuItem>
         ))}
-        {menu && CAMBIOS_DE_ESTADO[menu.recibo.estado].length > 0 && conApuntes(menu.recibo) && <Divider />}
+        {menu && cambiosDe(menu.recibo).length > 0 && conApuntes(menu.recibo) && <Divider />}
         {menu && conApuntes(menu.recibo) && (
           <MenuItem component={Link} to={`/cms/contabilidad?recibo=${menu.recibo.id}`} onClick={cerrar}>
             <ListItemText primary="Ver en Contabilidad" secondary="Sus apuntes en el libro de caja" />

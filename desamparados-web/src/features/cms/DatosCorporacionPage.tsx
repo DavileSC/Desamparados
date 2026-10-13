@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { Alert, Box, Button, CircularProgress, Paper, Stack, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
+import { useBlocker } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import CabeceraSeccion from './CabeceraSeccion'
+import AvisoCambiosSinGuardar from './ficha/AvisoCambiosSinGuardar'
+import { useAvisoAlCerrarLaPestana } from '../../hooks/useAvisoAlCerrarLaPestana'
 import {
   datosDeContactoDelCms, guardarDatosDeContacto, ponerDatosDeContacto, type DatosDeContacto,
 } from '../../lib/api/corporacion'
@@ -116,9 +119,17 @@ export default function DatosCorporacionPage() {
     },
   })
 
+  const [copiado, setCopiado] = useState<typeof data>(undefined)
+  // Antes de los `return`, porque los avisos son hooks. Mientras lo del
+  // servidor aún no ha pasado al formulario, no hay nada sin guardar.
+  const sinGuardar = Boolean(data && data === copiado) && CAMPOS.some(({ ruta }) => formulario[ruta].trim() !== aFormulario(data!)[ruta])
+  // Son veinte campos: al ir a otra pantalla del CMS o cerrar la pestaña se
+  // perdían sin preguntar, como no pasa en las demás fichas.
+  const bloqueo = useBlocker(({ currentLocation, nextLocation }) => sinGuardar && currentLocation.pathname !== nextLocation.pathname)
+  useAvisoAlCerrarLaPestana(sinGuardar)
+
   // Lo del servidor pasa al formulario al pintar, no en un efecto: así no se
   // ve un instante con los campos vacíos (como en Ajustes del Inicio).
-  const [copiado, setCopiado] = useState<typeof data>(undefined)
   if (data && data !== copiado) {
     setCopiado(data)
     setFormulario(aFormulario(data))
@@ -129,8 +140,6 @@ export default function DatosCorporacionPage() {
   if (isPending) return <CircularProgress aria-label="Cargando los datos de la corporación" />
   if (isError) return <Alert severity="error">No se han podido cargar los datos de la corporación. Inténtalo de nuevo en unos minutos.</Alert>
 
-  const enServidor = aFormulario(data)
-  const sinGuardar = CAMPOS.some(({ ruta }) => formulario[ruta].trim() !== enServidor[ruta])
   const errores = Object.fromEntries(CAMPOS.map((c) => [c.ruta, errorDe(c.tipo, formulario[c.ruta])]))
   const hayErrores = Object.values(errores).some(Boolean)
   const delServidor = guardar.error instanceof ErrorDeApi ? guardar.error.fields : {}
@@ -185,6 +194,7 @@ export default function DatosCorporacionPage() {
           </Stack>
         </Stack>
       </Box>
+      <AvisoCambiosSinGuardar bloqueo={bloqueo} deQue="los datos de la corporación" />
     </>
   )
 }

@@ -72,6 +72,8 @@ const REGLAS: Record<Tipo, [RegExp, string][]> = {
     [/extraordinari|excepcional/, '778'],
   ],
   GASTO: [
+    // Reembolsar un pedido anulado deshace una venta: minora la de ventas.
+    [/reembolso.*tienda|tienda.*reembolso/, '700'],
     // Devolver un recibo deshace un ingreso de cuotas: minora la cuenta de cuotas.
     [/devoluci/, '720'],
     [/comision|banc/, '626'],

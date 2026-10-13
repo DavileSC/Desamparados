@@ -6,7 +6,9 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { ArkErrors } from 'arktype';
 import defectos from '../../shared/contenido-por-defecto.json' with { type: 'json' };
-import { RUTAS_DESTINO, esDestinoValido } from '../src/domain/destinos.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { RUTAS_DESTINO, esDestinoValido, moduloDeDestino } from '../src/domain/destinos.js';
 import { esquemaDeBloque } from '../src/schemas/bloques.schema.js';
 
 const tarjetas = (enlace: string) => ({ tipo: 'tarjetas', titulo: '', tarjetas: [{ titulo: 'Una', descripcion: '', enlace }] });
@@ -70,5 +72,34 @@ describe('destinos de los enlaces', () => {
     recorrer(defectos, false);
     assert.ok(enlaces.length >= 7);
     for (const enlace of enlaces) assert.ok(esDestinoValido(enlace), enlace);
+  });
+
+  // WP2: agenda, noticias, publicaciones y hazte hermano no decían su módulo
+  // en el catálogo, y con él apagado el CMS los seguía ofreciendo y la API
+  // servía su contenido. Cada destino dice el mismo que exige su ruta en la
+  // web (routes/index.tsx, leído como texto como en modulos-cobertura).
+  test('cada destino fijo es del mismo módulo que su ruta en la web', () => {
+    const rutas = new Map<string, string>();
+    const fichero = fileURLToPath(new URL('../../desamparados-web/src/routes/index.tsx', import.meta.url));
+    for (const linea of readFileSync(fichero, 'utf8').split(/\r?\n/)) {
+      const ruta = /\bpath:\s*'([^']*)'/.exec(linea);
+      const modulo = /\bpagina\(\w+,\s*'([a-z0-9-]+)'\)/.exec(linea);
+      // La primera: las públicas van antes que las del CMS (que repiten «noticias»).
+      const clave = ruta?.[1].replace(/^\//, '');
+      if (clave !== undefined && modulo && !rutas.has(clave)) rutas.set(clave, modulo[1]);
+    }
+    const fallos: string[] = [];
+    let comprobados = 0;
+    for (const ruta of RUTAS_DESTINO) {
+      const enLaWeb = rutas.get(ruta.replace(/^\//, ''));
+      if (enLaWeb === undefined) continue; // la portada y /acceso no van en una sola línea
+      comprobados++;
+      const declarado = moduloDeDestino(ruta) ?? 'nucleo';
+      if (declarado !== enLaWeb) fallos.push(`${ruta}: el catálogo dice «${declarado}» y la web exige «${enLaWeb}»`);
+    }
+    assert.deepEqual(fallos, [], fallos.join('\n'));
+    assert.ok(comprobados >= 20, `solo se comprobaron ${comprobados}`);
+    assert.equal(moduloDeDestino('/agenda'), 'agenda');
+    assert.equal(moduloDeDestino('/hazte-hermano'), 'alta-web');
   });
 });

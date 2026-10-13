@@ -1,7 +1,7 @@
 import { Box } from '@mui/material'
 import { Link } from 'react-router-dom'
 import Boton from '../Boton'
-import { esDestinoValido } from '../../lib/destinos'
+import { useEnlaceVivo } from '../../hooks/useEnlaceVivo'
 import { valorDe } from './presentacion'
 import type { BloqueBotones as Datos } from '../../lib/api/contenido'
 
@@ -11,10 +11,11 @@ import type { BloqueBotones as Datos } from '../../lib/api/contenido'
  * que es donde se pulsan bien con el dedo.
  */
 export default function BloqueBotones({ bloque }: { bloque: Datos }) {
+  const enlaceVivo = useEnlaceVivo()
   const izquierda = valorDe(bloque, 'alineacion') === 'izquierda'
   const grande = valorDe(bloque, 'tamano') === 'grande'
   // Un destino que ya no existe no se pinta: llevaría a «página no encontrada».
-  const validos = bloque.botones.filter((b) => b.texto.trim() !== '' && esDestinoValido(b.enlace))
+  const validos = bloque.botones.filter((b) => b.texto.trim() !== '' && enlaceVivo(b.enlace))
   if (validos.length === 0) return null
   return (
     <Box sx={{

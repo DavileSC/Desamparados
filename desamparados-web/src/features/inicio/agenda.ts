@@ -1,4 +1,5 @@
 import type { ApiEvent, EventoCalendario } from '../../lib/api/agenda'
+import { diaDelCalendario } from '../../lib/horaDeMadrid'
 
 export {  SERIF } from './estilos'
 
@@ -45,10 +46,13 @@ export function diasDeLaRejilla(mes: Date) {
   return Array.from({ length: 42 }, (_, i) => new Date(mes.getFullYear(), mes.getMonth(), 1 - desfase + i))
 }
 
-/** Si el acto ocupa ese día: un triduo del 20 al 22 cubre el 20, el 21 y el 22. */
+/**
+ * Si el acto ocupa ese día: un triduo del 20 al 22 cubre el 20, el 21 y el 22.
+ * Los días del acto son los de Madrid, se mire desde donde se mire.
+ */
 export function cubreElDia(evento: EventoCalendario, dia: Date) {
   const d = inicioDelDia(dia).getTime()
-  return inicioDelDia(evento.start).getTime() <= d && d <= inicioDelDia(evento.end ?? evento.start).getTime()
+  return diaDelCalendario(evento.start).getTime() <= d && d <= diaDelCalendario(evento.end ?? evento.start).getTime()
 }
 
 /** «Octubre», o «Abril 2027» cuando hace falta el año. */

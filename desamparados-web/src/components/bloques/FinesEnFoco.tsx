@@ -5,7 +5,7 @@ import { keyframes } from '@mui/material/styles'
 import { useInView, useReducedMotion } from 'framer-motion'
 import Boton from '../Boton'
 import { GOLD } from '../../features/inicio/estilos'
-import { esDestinoValido } from '../../lib/destinos'
+import { useEnlaceVivo } from '../../hooks/useEnlaceVivo'
 import { useModoEdicion } from './modoEdicion'
 import { anchoMaximo } from './presentacion'
 import type { BloqueAnillos as Datos } from '../../lib/api/contenido'
@@ -49,6 +49,7 @@ const esquina = (lado: 'arriba-izquierda' | 'arriba-derecha' | 'abajo-izquierda'
  * hecho con CSS y un filtro SVG: sin WebGL, que en un móvil modesto se nota).
  */
 export default function FinesEnFoco({ bloque }: { bloque: Datos }) {
+  const enlaceVivo = useEnlaceVivo()
   const marco = useRef<HTMLDivElement>(null)
   const aLaVista = useInView(marco, { amount: 0.4 })
   const reducir = useReducedMotion()
@@ -154,7 +155,7 @@ export default function FinesEnFoco({ bloque }: { bloque: Datos }) {
             {ROMANOS[foco]} · {actual.titulo}
           </Typography>
           {actual.texto && <Typography sx={{ fontSize: { xs: 17, md: 19 }, lineHeight: 1.75, color: 'text.primary' }}>{actual.texto}</Typography>}
-          {actual.boton && esDestinoValido(actual.enlace) && (
+          {actual.boton && enlaceVivo(actual.enlace) && (
             <Box>
               <Boton component={Link} to={actual.enlace} appVariant="secondary">{actual.boton}</Boton>
             </Box>

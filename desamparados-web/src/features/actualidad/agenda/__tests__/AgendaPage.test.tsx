@@ -5,12 +5,13 @@ import { renderWithProviders } from '../../../../test/test-utils'
 import AgendaPage from '../AgendaPage'
 import { precargarBloques } from '../../../../test/bloques'
 import { stubFetchPublico } from '../../../../test/fetchPublico'
+import { isoEnMadrid } from '../../../../lib/horaDeMadrid'
 
 // La página es de bloques y el listado se descarga aparte: aquí se mira lo que pinta.
 beforeAll(async () => { await precargarBloques() })
 
-// Horas locales, como las ve quien entra.
-const en = (dia: string, hora: string) => new Date(`${dia}T${hora}`).toISOString()
+// Horas de Madrid, que son las que enseña la Agenda se mire desde donde se mire.
+const en = (dia: string, hora: string) => isoEnMadrid(`${dia}T${hora}`)
 const apertura = {
   id: 1, title: 'Eucaristía de apertura de curso', description: null, location: 'Parroquia de los Padres Pasionistas',
   startDate: en('2026-09-29', '19:00'), endDate: null, type: 'CULTO', cartel: false,

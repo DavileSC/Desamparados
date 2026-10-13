@@ -13,6 +13,7 @@ import SelectorSalida from '../../procesion/SelectorSalida'
 import { useSalidaElegida } from '../../procesion/useSalidas'
 import { site } from '../../../config/site'
 import { deArticulo, deLaCorporacion } from '../../../domain/articulos'
+import { useAuthStore } from '../../altas/auth/store'
 
 /** Las cuentas se refrescan solas: varios diputados escanean a la vez en distintas puertas. */
 const SONDEO_MS = 5_000
@@ -110,7 +111,10 @@ export default function PuertaTemploPage() {
   }, [])
 
   const clave = ['puerta', slug]
-  const { data: estado, error: errorCarga } = useQuery({ queryKey: clave, queryFn: () => estadoPuerta(slug), refetchInterval: SONDEO_MS, staleTime: 0, enabled: Boolean(salida) })
+  // Con la sesión caducada, el sondeo se para hasta volver a entrar: cada
+  // vuelta recibía otro 401 y volvía a preguntar a /auth/me.
+  const caducada = useAuthStore((s) => s.cmsCaducada)
+  const { data: estado, error: errorCarga } = useQuery({ queryKey: clave, queryFn: () => estadoPuerta(slug), refetchInterval: caducada ? false : SONDEO_MS, staleTime: 0, enabled: Boolean(salida) })
   const refrescar = useCallback(() => cliente.invalidateQueries({ queryKey: ['puerta'] }), [cliente])
 
   /** Cada resultado empieza su cuenta: el anterior no puede borrar el nuevo antes de tiempo. */

@@ -38,6 +38,7 @@ const TRANSACCION_ERRORS = {
   // Los cobra el banco: el dinero ya entró, y lo que haya que devolver se
   // devuelve desde el banco, no borrando el apunte.
   DE_TIENDA: 'Este apunte es el cobro de un pedido de la tienda en línea: no se corrige a mano.',
+  REEMBOLSO_DE_TIENDA: 'Este apunte es el reembolso de un pedido anulado de la tienda en línea: no se corrige a mano.',
   DE_APADRINAMIENTO: 'Este apunte es el cobro de un apadrinamiento: no se corrige a mano.',
   DE_DONATIVO: 'Este apunte es un donativo cobrado en línea: no se corrige a mano.',
   CATEGORIA_NO_EXISTE: 'La categoría no existe.',
@@ -258,14 +259,15 @@ export class TransaccionService {
     const enlace = { select: { id: true } } as const;
     const encontrado = await db.transaccion.findUnique({
       where: { id },
-      include: { talonarioLoteria: enlace, compraDeLoteria: enlace, ventaDeCaja: enlace, pedidoTienda: enlace, apadrinamiento: enlace, pagoEnLinea: enlace },
+      include: { talonarioLoteria: enlace, compraDeLoteria: enlace, ventaDeCaja: enlace, pedidoTienda: enlace, reembolsoDePedido: enlace, apadrinamiento: enlace, pagoEnLinea: enlace },
     });
     if (!encontrado) throw new NotFoundError(TRANSACCION_ERRORS.NO_EXISTE);
-    const { talonarioLoteria, compraDeLoteria, ventaDeCaja, pedidoTienda, apadrinamiento, pagoEnLinea, ...apunte } = encontrado;
+    const { talonarioLoteria, compraDeLoteria, ventaDeCaja, pedidoTienda, reembolsoDePedido, apadrinamiento, pagoEnLinea, ...apunte } = encontrado;
     if (apunte.reciboId !== null) throw new HttpError(TRANSACCION_ERRORS.DE_RECIBO, 409);
     if (talonarioLoteria || compraDeLoteria) throw new HttpError(TRANSACCION_ERRORS.DE_LOTERIA, 409);
     if (ventaDeCaja) throw new HttpError(TRANSACCION_ERRORS.DE_CAJA, 409);
     if (pedidoTienda) throw new HttpError(TRANSACCION_ERRORS.DE_TIENDA, 409);
+    if (reembolsoDePedido) throw new HttpError(TRANSACCION_ERRORS.REEMBOLSO_DE_TIENDA, 409);
     if (apadrinamiento) throw new HttpError(TRANSACCION_ERRORS.DE_APADRINAMIENTO, 409);
     if (pagoEnLinea) throw new HttpError(TRANSACCION_ERRORS.DE_DONATIVO, 409);
     return apunte;

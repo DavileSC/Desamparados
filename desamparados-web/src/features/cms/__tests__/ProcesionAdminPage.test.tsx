@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { renderWithProviders } from '../../../test/test-utils'
 import ProcesionAdminPage from '../ProcesionAdminPage'
 import { useAuthStore } from '../../altas/auth/store'
 import type { PlazoDePapeletas } from '../../../lib/api/procesion'
 import { salidasDePrueba, salidaPasion, salidaRosario, esListaDeSalidas } from '../../../test/salidas'
+import { fijarZonaHoraria } from '../../../test/zonaHoraria'
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 
@@ -38,6 +40,46 @@ beforeEach(() => como('SECRETARIA'))
 afterEach(() => { vi.unstubAllGlobals(); localStorage.clear() })
 
 describe('ProcesionAdminPage', () => {
+  it('añadir o borrar un día de reparto hace que la Agenda y la mesa lo vuelvan a pedir', async () => {
+    let cliente: QueryClient | null = null
+    const Sonda = () => { cliente = useQueryClient(); return null }
+    const user = userEvent.setup()
+    const llamadas = servidor()
+    renderWithProviders(<><Sonda /><ProcesionAdminPage /></>)
+    const invalidar = vi.spyOn(cliente!, 'invalidateQueries')
+
+    await user.click(await screen.findByRole('button', { name: 'Nuevo día de reparto' }))
+    await user.type(within(screen.getByRole('dialog')).getByLabelText(/^Día/), '2027-03-09')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(llamadas.some((l) => l.metodo === 'POST')).toBe(true))
+
+    // El cliente de pruebas no guarda en caché lo que nadie mira: se comprueba
+    // la petición de recargar, no su efecto.
+    await waitFor(() => expect(invalidar).toHaveBeenCalledWith({ queryKey: ['mesa'] }))
+    expect(invalidar).toHaveBeenCalledWith({ queryKey: ['home', 'agenda'] })
+  })
+
+  it('un día de reparto se guarda en hora de Madrid, aunque este equipo esté en otra zona', async () => {
+    // Desde Canarias (una hora menos): tomadas en la zona del navegador, las
+    // 18:00 se guardaban como las 19:00 de Madrid, que es lo que leen los hermanos.
+    const restaurarZona = fijarZonaHoraria('Atlantic/Canary')
+    try {
+      const user = userEvent.setup()
+      const llamadas = servidor()
+      renderWithProviders(<ProcesionAdminPage />)
+      await user.click(await screen.findByRole('button', { name: 'Nuevo día de reparto' }))
+      await user.type(within(screen.getByRole('dialog')).getByLabelText(/^Día/), '2027-03-08')
+      await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+      await waitFor(() => expect(llamadas.some((l) => l.metodo === 'POST')).toBe(true))
+      expect(llamadas.find((l) => l.metodo === 'POST')?.cuerpo).toMatchObject({
+        fecha: '2027-03-08', horaInicio: '2027-03-08T17:00:00.000Z', horaFin: '2027-03-08T20:00:00.000Z',
+      })
+    } finally {
+      restaurarZona()
+    }
+  })
+
   it('abrir pregunta antes y avisa por correo y deja el borrador de noticia', async () => {
     const user = userEvent.setup()
     const llamadas = servidor()

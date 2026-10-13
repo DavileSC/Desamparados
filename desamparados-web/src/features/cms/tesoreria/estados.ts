@@ -1,4 +1,4 @@
-import type { AdminReceiptStatus } from '../../../lib/api/tesoreria'
+import type { AdminReceipt, AdminReceiptStatus } from '../../../lib/api/tesoreria'
 import { segunModo } from '../../../theme/cms'
 
 type Tono = { texto: string; fondo: string }
@@ -62,10 +62,12 @@ export const ESTADOS_RECIBO: Record<AdminReceiptStatus, EstadoRecibo> = {
 /**
  * Lo que se puede hacer a mano con un recibo en cada estado: el mismo grafo
  * que `domain/recibo-estados.ts` del servidor. Cobrar no está: tiene su botón
- * y su propia operación, porque apunta el ingreso.
+ * y su propia operación, porque apunta el ingreso. Enviar al banco tampoco:
+ * solo lo hace una remesa, y a mano dejaba un recibo «en el banco» que
+ * ninguna remesa recogía, el extracto no veía y la mesa no cobraba.
  */
 export const CAMBIOS_DE_ESTADO: Record<AdminReceiptStatus, readonly AdminReceiptStatus[]> = {
-  PENDIENTE: ['REMESADO', 'EXENTO', 'ANULADO'],
+  PENDIENTE: ['EXENTO', 'ANULADO'],
   REMESADO: ['DEVUELTO', 'ANULADO'],
   PAGADO: ['DEVUELTO', 'REEMBOLSADO'],
   DEVUELTO: [],
@@ -75,15 +77,25 @@ export const CAMBIOS_DE_ESTADO: Record<AdminReceiptStatus, readonly AdminReceipt
 }
 
 /**
+ * Los cambios de un recibo concreto: los de su estado y, en un REMESADO que no
+ * va en ninguna remesa, volver a pendiente, como `transicionesDesde` del
+ * servidor. Así la próxima remesa lo recoge.
+ */
+export function cambiosDe(recibo: Pick<AdminReceipt, 'estado' | 'remesaId'>): readonly AdminReceiptStatus[] {
+  const cambios = CAMBIOS_DE_ESTADO[recibo.estado]
+  return recibo.estado === 'REMESADO' && recibo.remesaId === null ? [...cambios, 'PENDIENTE'] : cambios
+}
+
+/**
  * El texto del menú de cada cambio. Un cobrado tiene dos salidas que no se
  * deben confundir: el banco lo echó atrás (se sigue debiendo) o se le devuelve
  * el dinero al hermano (no se debe).
  */
 export function accionDeCambio(destino: AdminReceiptStatus): string {
-  if (destino === 'REMESADO') return 'Enviar al banco'
   if (destino === 'EXENTO') return 'Eximir de pago'
   if (destino === 'ANULADO') return 'Anular'
   if (destino === 'REEMBOLSADO') return 'Reembolsar al hermano'
+  if (destino === 'PENDIENTE') return 'Volver a pendiente'
   return 'Devuelto por el banco'
 }
 

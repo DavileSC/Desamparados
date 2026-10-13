@@ -10,6 +10,7 @@ import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import { fechaCabildo } from './cabildos/formato'
 import { site } from '../../config/site'
+import { isoEnMadrid } from '../../lib/horaDeMadrid'
 
 const ESTADO: Record<CabildoEnLista['estado'], { texto: string; color: 'default' | 'info' | 'success' }> = {
   CONVOCADO: { texto: 'Convocado', color: 'info' },
@@ -48,7 +49,8 @@ export default function CabildosAdminPage() {
     try {
       const c = await convocarCabildo({
         tipo: nuevo.tipo,
-        fecha: new Date(nuevo.fecha).toISOString(),
+        // En hora de Madrid, aunque este equipo esté en otra zona.
+        fecha: isoEnMadrid(nuevo.fecha),
         lugar: nuevo.lugar.trim(),
         ordenDelDia: nuevo.puntos.split('\n').map((p) => p.trim()).filter(Boolean),
       })

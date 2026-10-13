@@ -50,6 +50,9 @@ export interface PaletaDeMarca {
   principalNoche: string
   /** #3a1016 · ≥ 4,5 sobre el rosa viejo #ead9d0. Los títulos solemnes de CalendarioDeCultos (`GRANATE_TINTA`). */
   principalTinta: string
+  /** #6e1822 · el `principal`, con ≥ 4,5 sobre el papel del almanaque #f3eee5 y su rosa viejo #ead9d0. El granate
+   *  de CalendarioDeCultos (los domingos, los días solemnes, el mes, «Próximo acto:»). */
+  principalAlmanaque: string
   /** #fc858a · ≥ 4,5 sobre #262326 y #121113. `palette.primary.light`; el «granate claro» o `ROSA` para escribir
    *  sobre el fondo oscuro: BloqueAnillos, BloqueCronologia, BloqueDonativo, BloquePuertas, BloqueTarjetas,
    *  RecorridoEnMapa, EditorDeRecorrido, MapaFueraDelRecorrido; sus halos con `alfa(principalClaro, …)`. */
@@ -144,7 +147,7 @@ export interface Papel {
 
 export declare const PARTIDA: Readonly<{ colorPrincipal: '#6e1822'; colorAcento: '#dec72b' }>
 export declare const FONDOS: Readonly<Record<
-  'blanco' | 'publico' | 'profundo' | 'tarjetaCms' | 'mapa' | 'cartel' | 'lienzoCms' | 'solemne' | 'crema' | 'velo' | 'negroImprenta' | 'marfil',
+  'blanco' | 'publico' | 'profundo' | 'tarjetaCms' | 'mapa' | 'cartel' | 'lienzoCms' | 'solemne' | 'almanaque' | 'crema' | 'velo' | 'negroImprenta' | 'marfil',
   string
 >>
 export declare const PAPELES_DE_MARCA: Readonly<Record<keyof PaletaDeMarca, Papel>>

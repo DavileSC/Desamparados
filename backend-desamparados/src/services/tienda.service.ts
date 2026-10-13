@@ -9,11 +9,12 @@
  * no queda existencia, el pago queda como incidencia para devolverlo.
  */
 import crypto from 'node:crypto';
-import { EstadoPedido, MetodoPago, OrigenPago, Prisma, TipoTransaccion } from '@prisma/client';
+import { EstadoPagoEnLinea, EstadoPedido, MetodoPago, OrigenPago, Prisma, TipoTransaccion } from '@prisma/client';
 import db from '../config/db';
 import { HttpError, NotFoundError } from '../utils/error.handle';
+import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
-import { PagoEnLineaService, registrarOrigenDePago, type MetodoEnLinea } from './pagos/pago-en-linea.service.js';
+import { PagoEnLineaService, intentosVigentesDesde, registrarOrigenDePago, type MetodoEnLinea } from './pagos/pago-en-linea.service.js';
 import { idCategoriaDeRecibos } from './recibos/comunes.js';
 import { enviarCorreo } from './correos/envio.js';
 import { PlantillasCorreoService } from './plantillas-correo.service.js';
@@ -25,6 +26,8 @@ import { deLaCorporacion } from '../domain/articulos.js';
 import { eurosDeCentimos } from '../utils/euros.js';
 
 export const CATEGORIA_TIENDA = 'Ventas de la tienda';
+/** El gasto que devuelve lo cobrado de un pedido anulado: minora las ventas (700). */
+export const CATEGORIA_REEMBOLSOS_TIENDA = 'Reembolsos de la tienda';
 
 export interface DatosProducto {
   nombre: string;
@@ -175,14 +178,23 @@ function correoDePedido(p: { nombre: string; id: number; total: Prisma.Decimal; 
  * Aplica el pago de un pedido: existencias, contabilidad y estado, todo o
  * nada. Lanza HttpError si ya no se puede (y el pago queda como incidencia).
  */
-async function aplicarPago(pedidoId: number, metodo: MetodoEnLinea, meta: MetaDeAuditoria) {
+async function aplicarPago(pedidoId: number, metodo: MetodoEnLinea, meta: MetaDeAuditoria, alAplicar?: (tx: Prisma.TransactionClient) => Promise<void>) {
   const categoriaId = await idCategoriaDeRecibos(TipoTransaccion.INGRESO, CATEGORIA_TIENDA);
-  const pedido = await db.$transaction(async (tx) => {
+  // Serializable y con reintento: dos avisos casi a la vez del mismo producto
+  // chocan (1020/1213) al descontar, y sin reintento el segundo se quedaba
+  // «sin pagar» con el dinero cobrado.
+  const pedido = await transactionWithRetry(async (tx) => {
     const p = await tx.pedidoTienda.findUnique({ where: { id: pedidoId }, include: { lineas: true } });
     if (!p) throw new HttpError('El pedido ya no existe.');
     if (p.estado !== EstadoPedido.PENDIENTE_PAGO) throw new HttpError('El pedido ya no estaba pendiente de pago.');
     for (const l of p.lineas) {
-      if (l.productoId === null) continue;
+      // Sin producto es que se borró con el pedido sin pagar (un intento
+      // caducado): no se cobra lo que ya no existe.
+      if (l.productoId === null) throw new HttpError(`«${nombreConTalla(l.nombre, l.nombreTalla)}» ya no está a la venta.`);
+      // La talla se borró con el pedido en el banco: sin ella, el descuento
+      // caía sobre el producto (sin límite cuando cuenta por tallas) y se
+      // cobraba sin comprobar nada.
+      if (l.tallaId === null && l.nombreTalla !== null) throw new HttpError(`La talla ${l.nombreTalla} de «${l.nombre}» ya no está a la venta.`);
       // Condicionado: con dos pedidos del último que queda, solo uno se lo
       // lleva. Con talla, se descuenta de la talla. Sin límite no se
       // descuenta: `decrement` sobre null deja null.
@@ -199,17 +211,40 @@ async function aplicarPago(pedidoId: number, metodo: MetodoEnLinea, meta: MetaDe
       },
     });
     // El pedido guarda su apunte: así la contabilidad sabe que no es manual.
+    // El aviso del banco cierra aquí su pago: lo aplicado y el pago, a la vez.
+    await alAplicar?.(tx);
     return tx.pedidoTienda.update({
       where: { id: pedidoId },
       data: { estado: EstadoPedido.PAGADO, metodo: metodo as MetodoPago, pagadoEl: new Date(), transaccionId: apunte.id },
       include: { lineas: true },
     });
-  });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   await AuditoriaService.log(ACCIONES_AUDITORIA.TIENDA_PEDIDO_PAGADO, meta, 'pedido', pedidoId, { despues: { total: pedido.total.toString(), metodo } });
   void correoDePedido(pedido).then(({ asunto, html, uso }) => enviarCorreo(pedido.email, asunto, html, { uso })).catch(console.error);
 }
 
-registrarOrigenDePago(OrigenPago.TIENDA, aplicarPago, async (id) => (await db.pedidoTienda.findUnique({ where: { id }, select: { email: true } }))?.email ?? null);
+registrarOrigenDePago(OrigenPago.TIENDA, {
+  aplicar: aplicarPago,
+  correo: async (id) => (await db.pedidoTienda.findUnique({ where: { id }, select: { email: true } }))?.email ?? null,
+  cancelar: async (id) => { await db.pedidoTienda.updateMany({ where: { id, estado: EstadoPedido.PENDIENTE_PAGO }, data: { estado: EstadoPedido.CANCELADO } }); },
+  // Resolver una incidencia ya es solo de Tesorería (y el pedido está sin cobrar).
+  anular: async (id, meta) => { await TiendaService.anular(id, meta, { puedeReembolsar: true }); },
+});
+
+/**
+ * Los pedidos cuyo pago cobró el banco y quedó como incidencia sin resolver:
+ * el dinero está, el pedido no. Sin `ids`, todos: se parte de los pagos
+ * (pocos, e indexados por estado) y no de los pedidos PENDIENTE_PAGO, que
+ * crecen con cada carrito que se abandona en la página del banco.
+ */
+async function conPagoEnIncidencia(ids?: number[]): Promise<Set<number>> {
+  if (ids?.length === 0) return new Set();
+  const pagos = await db.pagoEnLinea.findMany({
+    where: { origen: OrigenPago.TIENDA, referenciaId: ids ? { in: ids } : { not: null }, estado: EstadoPagoEnLinea.INCIDENCIA, resueltaEl: null },
+    select: { referenciaId: true },
+  });
+  return new Set(pagos.map((p) => p.referenciaId!));
+}
 
 export class TiendaService {
   /** Lo que se vende, para la web pública: solo lo activo. */
@@ -270,6 +305,9 @@ export class TiendaService {
     return {
       numero: p.id, estado: p.estado, total: Number(p.total), nombre: p.nombre,
       lineas: p.lineas.map(lineaVista),
+      // Cobrado pero sin poder completarse (se agotó mientras pagaba): la
+      // pantalla no debe decir «el banco aún no ha confirmado el pago».
+      pagoConIncidencia: (await conPagoEnIncidencia([p.id])).has(p.id),
     };
   }
 
@@ -310,7 +348,13 @@ export class TiendaService {
 
   /** Con pedidos, no se borra (los pedidos lo nombran): se retira de la venta. */
   static async borrarProducto(id: number) {
-    const usado = await db.pedidoTiendaLinea.count({ where: { productoId: id } });
+    // Los pedidos cancelados y los intentos caducados no lo atan.
+    const usado = await db.pedidoTiendaLinea.count({
+      where: {
+        productoId: id,
+        pedido: { estado: { not: EstadoPedido.CANCELADO }, NOT: { estado: EstadoPedido.PENDIENTE_PAGO, createdAt: { lt: intentosVigentesDesde() } } },
+      },
+    });
     if (usado > 0) {
       await db.producto.update({ where: { id }, data: { activo: false } });
       return { message: 'Tiene pedidos: se ha retirado de la venta en vez de borrarlo.' };
@@ -365,17 +409,77 @@ export class TiendaService {
   }
 
   static async pedidos(estado?: EstadoPedido) {
+    // Sin filtro, los que no se pagaron no salen, salvo los cobrados con
+    // incidencia: el banco tiene el dinero y hay que devolverlo o anularlos.
+    const enIncidencia = estado ? [] : [...await conPagoEnIncidencia()];
     const lista = await db.pedidoTienda.findMany({
-      where: estado ? { estado } : { estado: { not: EstadoPedido.PENDIENTE_PAGO } },
+      where: estado ? { estado } : { OR: [{ estado: { not: EstadoPedido.PENDIENTE_PAGO } }, { id: { in: enIncidencia } }] },
       include: { lineas: true },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: 200,
     });
+    const conIncidencia = await conPagoEnIncidencia(lista.filter((p) => p.estado === EstadoPedido.PENDIENTE_PAGO).map((p) => p.id));
     return lista.map((p) => ({
       id: p.id, nombre: p.nombre, email: p.email, telefono: p.telefono, estado: p.estado, total: Number(p.total), metodo: p.metodo,
-      creadoEl: p.createdAt, pagadoEl: p.pagadoEl, entregadoEl: p.entregadoEl,
+      creadoEl: p.createdAt, pagadoEl: p.pagadoEl, entregadoEl: p.entregadoEl, canceladoEl: p.canceladoEl,
+      pagoConIncidencia: conIncidencia.has(p.id),
       lineas: p.lineas.map(lineaVista),
     }));
+  }
+
+  /**
+   * Anula un pedido: el cobrado con incidencia (se agotó mientras pagaba) o
+   * el desistimiento de los 14 días de las Condiciones de compra. Pasa a
+   * CANCELADO y, si llegó a cobrarse (pagado o entregado), vuelven las
+   * existencias, como al anular una venta en mano, y se apunta el reembolso
+   * como gasto: el ingreso se queda, porque el dinero entró y salió (y puede
+   * ser de un ejercicio ya cerrado). Devolver el dinero al comprador es cosa
+   * del banco o de Secretaría; esto deja la tienda y la contabilidad al día.
+   *
+   * El cobrado solo lo anula quien lleva Contabilidad (`puedeReembolsar`):
+   * el gasto que apunta no se puede tocar después y el pedido CANCELADO no
+   * tiene vuelta atrás, así que Secretaría, que no entra en Contabilidad,
+   * dejaba un reembolso que nadie podía corregir. El no cobrado no apunta
+   * nada y lo sigue anulando cualquiera de la tienda.
+   */
+  static async anular(id: number, meta: MetaDeAuditoria | undefined, { puedeReembolsar }: { puedeReembolsar: boolean }) {
+    const categoriaId = await idCategoriaDeRecibos(TipoTransaccion.GASTO, CATEGORIA_REEMBOLSOS_TIENDA);
+    const { antes, reembolso } = await transactionWithRetry(async (tx) => {
+      const p = await tx.pedidoTienda.findUnique({ where: { id }, include: { lineas: true } });
+      if (!p) throw new NotFoundError('Pedido no encontrado.');
+      if (p.estado === EstadoPedido.CANCELADO) throw new HttpError('Ese pedido ya estaba anulado.', 409);
+      const cobrado = p.estado === EstadoPedido.PAGADO || p.estado === EstadoPedido.ENTREGADO;
+      if (cobrado && !puedeReembolsar) {
+        throw new HttpError('Este pedido ya se cobró: anularlo apunta su reembolso en Contabilidad, y eso solo lo puede hacer Tesorería.', 403, { soloTesoreria: true });
+      }
+      let reembolsoId: number | null = null;
+      if (cobrado) {
+        for (const l of p.lineas) {
+          if (l.productoId === null) continue;
+          // Sin límite (null) se queda sin límite. Con talla, vuelve a su
+          // talla si aún existe; si se borró, no va al producto (que cuenta por tallas).
+          if (l.tallaId !== null) await tx.tallaProducto.updateMany({ where: { id: l.tallaId, existencias: { not: null } }, data: { existencias: { increment: l.cantidad } } });
+          else if (l.nombreTalla === null) await tx.producto.updateMany({ where: { id: l.productoId, existencias: { not: null } }, data: { existencias: { increment: l.cantidad } } });
+        }
+        if (p.transaccionId !== null) {
+          const apunte = await tx.transaccion.create({
+            data: {
+              tipo: TipoTransaccion.GASTO, categoriaId, concepto: `Tienda: reembolso del pedido n.º ${id}`,
+              importe: p.total, fecha: new Date(), metodoPago: p.metodo,
+            },
+          });
+          reembolsoId = apunte.id;
+        }
+      }
+      const { count } = await tx.pedidoTienda.updateMany({
+        where: { id, estado: p.estado },
+        data: { estado: EstadoPedido.CANCELADO, canceladoEl: new Date(), reembolsoId },
+      });
+      if (count !== 1) throw new HttpError('El pedido acaba de cambiar. Recarga la página.', 409);
+      return { antes: p.estado, reembolso: reembolsoId !== null };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    await AuditoriaService.log(ACCIONES_AUDITORIA.TIENDA_PEDIDO_ANULADO, meta ?? {}, 'pedido', id, { antes: { estado: antes }, despues: { estado: EstadoPedido.CANCELADO, reembolso } });
+    return { message: reembolso ? `Pedido n.º ${id} anulado: el reembolso queda apuntado en Contabilidad.` : `Pedido n.º ${id} anulado.` };
   }
 
   static async entregar(id: number, meta?: MetaDeAuditoria) {

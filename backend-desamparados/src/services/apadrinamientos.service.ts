@@ -13,7 +13,7 @@ import { EstadoPedido, MetodoPago, OrigenPago, Prisma, TipoTransaccion } from '@
 import db from '../config/db';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
-import { PagoEnLineaService, registrarOrigenDePago, type MetodoEnLinea } from './pagos/pago-en-linea.service.js';
+import { PagoEnLineaService, intentosVigentesDesde, registrarOrigenDePago, type MetodoEnLinea } from './pagos/pago-en-linea.service.js';
 import { idCategoriaDeRecibos } from './recibos/comunes.js';
 import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { enviarCorreo } from './correos/envio.js';
@@ -75,9 +75,12 @@ function correoDeApadrinamiento(a: { nombre: string; importe: Prisma.Decimal; de
   });
 }
 
-async function aplicarPago(apadrinamientoId: number, metodo: MetodoEnLinea, meta: MetaDeAuditoria) {
+async function aplicarPago(apadrinamientoId: number, metodo: MetodoEnLinea, meta: MetaDeAuditoria, alAplicar?: (tx: Prisma.TransactionClient) => Promise<void>) {
   const categoriaId = await idCategoriaDeRecibos(TipoTransaccion.INGRESO, CATEGORIA_APADRINAMIENTOS);
-  const hecho = await db.$transaction(async (tx) => {
+  // Con reintento: dos padrinos de la misma pieza acaban en interbloqueo
+  // (1213), y el que pierde tiene que llegar a «la apadrinó otra persona»
+  // (incidencia) en vez de quedarse pendiente sin rastro.
+  const hecho = await transactionWithRetry(async (tx) => {
     const a = await tx.apadrinamiento.findUnique({ where: { id: apadrinamientoId }, include: { pieza: { include: { campana: true } } } });
     if (!a) throw new HttpError('El apadrinamiento ya no existe.');
     if (a.estado !== EstadoPedido.PENDIENTE_PAGO) throw new HttpError('El apadrinamiento ya no estaba pendiente de pago.');
@@ -90,6 +93,8 @@ async function aplicarPago(apadrinamientoId: number, metodo: MetodoEnLinea, meta
       },
     });
     // Guarda su apunte: así la contabilidad sabe que no es manual.
+    // El aviso del banco cierra aquí su pago: lo aplicado y el pago, a la vez.
+    await alAplicar?.(tx);
     return tx.apadrinamiento.update({
       where: { id: apadrinamientoId },
       data: { estado: EstadoPedido.PAGADO, metodo: metodo as MetodoPago, pagadoEl: new Date(), transaccionId: apunte.id },
@@ -100,7 +105,11 @@ async function aplicarPago(apadrinamientoId: number, metodo: MetodoEnLinea, meta
   void correoDeApadrinamiento(hecho).then(({ asunto, html, uso }) => enviarCorreo(hecho.email, asunto, html, { uso })).catch(console.error);
 }
 
-registrarOrigenDePago(OrigenPago.APADRINAMIENTO, aplicarPago, async (id) => (await db.apadrinamiento.findUnique({ where: { id }, select: { email: true } }))?.email ?? null);
+registrarOrigenDePago(OrigenPago.APADRINAMIENTO, {
+  aplicar: aplicarPago,
+  correo: async (id) => (await db.apadrinamiento.findUnique({ where: { id }, select: { email: true } }))?.email ?? null,
+  cancelar: async (id) => { await db.apadrinamiento.updateMany({ where: { id, estado: EstadoPedido.PENDIENTE_PAGO }, data: { estado: EstadoPedido.CANCELADO } }); },
+});
 
 export class ApadrinamientosService {
   /** Las campañas activas, para la web pública, con cuántas piezas quedan libres. */
@@ -159,10 +168,15 @@ export class ApadrinamientosService {
   static async campanas() {
     const lista = await db.campanaApadrinamiento.findMany({ orderBy: [{ activa: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }], select: { id: true } });
     const campanas = await Promise.all(lista.map(({ id }) => campanaCompleta(id, true)));
-    return campanas.map((c) => ({
+    // Lo cobrado, como en Contabilidad, y no el precio actual de cada pieza:
+    // si cambió con un pago en curso, las dos cifras no casaban.
+    const cobrado = await Promise.all(lista.map(({ id }) => db.apadrinamiento.aggregate({
+      where: { estado: { in: PAGADOS }, pieza: { campanaId: id } }, _sum: { importe: true },
+    })));
+    return campanas.map((c, i) => ({
       id: c.id, titulo: c.titulo, foto: c.foto, activa: c.activa, piezas: c.piezas.length,
       apadrinadas: c.piezas.filter((p) => p.apadrinada).length,
-      recaudado: c.piezas.filter((p) => p.apadrinada).reduce((s, p) => s + p.precio, 0),
+      recaudado: Number(cobrado[i]._sum.importe ?? 0),
     }));
   }
 
@@ -199,11 +213,14 @@ export class ApadrinamientosService {
    * Solo una pieza sin apadrinar y sin nadie en el banco con ella. Se mira y
    * se borra en la misma transacción, serializable como el cobro: fuera, un
    * pago que llegara entre medias se perdía con la pieza. Los intentos que el
-   * banco no cobró (CANCELADO) no son de nadie y se van con ella.
+   * banco no cobró (CANCELADO) y los caducados (`intentosVigentesDesde`) no
+   * son de nadie y se van con ella.
    */
   static async quitarPieza(campanaId: number, piezaId: number) {
     await transactionWithRetry(async (tx) => {
-      const vivos = await tx.apadrinamiento.count({ where: { piezaId, estado: { not: EstadoPedido.CANCELADO } } });
+      const vivos = await tx.apadrinamiento.count({
+        where: { piezaId, estado: { not: EstadoPedido.CANCELADO }, NOT: { estado: EstadoPedido.PENDIENTE_PAGO, createdAt: { lt: intentosVigentesDesde() } } },
+      });
       if (vivos > 0) throw new HttpError('Esa pieza ya está apadrinada, o alguien la está pagando ahora: no se quita.', 409);
       if (!(await tx.piezaApadrinable.findFirst({ where: { id: piezaId, campanaId }, select: { id: true } }))) return;
       await tx.apadrinamiento.deleteMany({ where: { piezaId } });

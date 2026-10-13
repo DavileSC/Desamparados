@@ -50,11 +50,6 @@ export const site = {
     localidad: identidad.localidad,
   },
 
-  /** Retransmisión en directo desde la sede. `null` si no hay stream publicado. */
-  directo: {
-    urlAlternativa: null as string | null,
-  },
-
   /** Las normas o estatutos por los que se rige, que enlaza el aviso legal ({ titulo, url }), o null. */
   normas: identidad.normas,
 

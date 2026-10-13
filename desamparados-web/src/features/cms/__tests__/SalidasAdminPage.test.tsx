@@ -9,7 +9,8 @@ import { crearTemaCms } from '../../../theme/cms'
 import { useAuthStore } from '../../altas/auth/store'
 import SalidasAdminPage from '../salidas/SalidasAdminPage'
 import SalidaEditPage from '../salidas/SalidaEditPage'
-import { crearSalida, fijarFechaDeSalida, salidasDelCms, type Salida } from '../../../lib/api/salidas'
+import { crearSalida, editarSalida, fijarFechaDeSalida, salidasDelCms, type Salida } from '../../../lib/api/salidas'
+import { fijarZonaHoraria } from '../../../test/zonaHoraria'
 
 // `useSalidas` (tarea 4) llama a estas funciones: se simula el módulo entero y
 // no `fetch`, tal y como pide el encargo (el backend lo termina otro agente).
@@ -48,8 +49,7 @@ function montar(ruta = '/cms/procesion/salidas') {
 }
 
 /** La ficha de edición, con su ruta real: la ventana no tiene suficiente para enseñar la vista previa. */
-function montarFicha(id: number) {
-  const cliente = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
+function montarFicha(id: number, cliente = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })) {
   const router = createMemoryRouter(
     [
       { path: '/cms/procesion/salidas', element: <div>Listado de salidas</div> },
@@ -126,8 +126,7 @@ describe('SalidaEditPage', () => {
   })
 
   it('la fecha a mano se guarda en hora de Madrid aunque el equipo esté en otra zona', async () => {
-    const zona = process.env.TZ
-    process.env.TZ = 'America/Argentina/Buenos_Aires'
+    const restaurarZona = fijarZonaHoraria('America/Argentina/Buenos_Aires')
     try {
       vi.mocked(fijarFechaDeSalida).mockResolvedValue({ fechaDelAnio: '2026-10-17', acto: null } as never)
       const user = userEvent.setup()
@@ -139,8 +138,24 @@ describe('SalidaEditPage', () => {
       // Buenos Aires (UTC−3) serían las 22:30.
       await waitFor(() => expect(fijarFechaDeSalida).toHaveBeenCalledWith(2, { inicio: '2026-10-17T17:30:00.000Z', lugar: null }))
     } finally {
-      process.env.TZ = zona
+      restaurarZona()
     }
+  })
+
+  it('cambiar la fecha hace que la portada vuelva a pedir la agenda y la cuenta atrás', async () => {
+    vi.mocked(fijarFechaDeSalida).mockResolvedValue({ fechaDelAnio: '2026-10-17', acto: null } as never)
+    // Lo que la portada tenía en caché, de antes del cambio.
+    const cliente = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } })
+    cliente.setQueryData(['home', 'proxima-salida'], { fecha: 'vieja' })
+    cliente.setQueryData(['home', 'agenda', 'proximos'], [])
+    const user = userEvent.setup()
+    montarFicha(2, cliente)
+    const seccion = (await screen.findByRole('heading', { name: 'Fecha' })).closest('section')!
+    fireEvent.change(within(seccion).getByLabelText('Día y hora'), { target: { value: '2026-10-17T19:30' } })
+    await user.click(within(seccion).getByRole('button', { name: 'Guardar' }))
+
+    await waitFor(() => expect(cliente.getQueryState(['home', 'proxima-salida'])?.isInvalidated).toBe(true))
+    expect(cliente.getQueryState(['home', 'agenda', 'proximos'])?.isInvalidated).toBe(true)
   })
 
   it('con solicitudes sin recoger, avisa al cambiar el cobro, no antes', async () => {
@@ -150,7 +165,50 @@ describe('SalidaEditPage', () => {
     const seccion = (await screen.findByRole('heading', { name: 'Cobro' })).closest('section')!
     expect(within(seccion).queryByText(/sin recoger/)).not.toBeInTheDocument()
     await user.click(within(seccion).getByRole('radio', { name: 'Donativo' }))
-    expect(within(seccion).getByText(/Hay 3 solicitudes de 2026 sin recoger, hechas con el cobro de antes/)).toBeInTheDocument()
+    expect(within(seccion).getByText(/Hay 3 solicitudes sin recoger de 2026, con el cobro de antes/)).toBeInTheDocument()
+  })
+
+  it('las papeletas ya sacadas también cuentan en el aviso, y dice a quién escribir', async () => {
+    vi.mocked(salidasDelCms).mockResolvedValue([{ ...pasion, solicitudesPendientes: 1, papeletasDelAnio: 40 }, rosario])
+    const user = userEvent.setup()
+    montarFicha(1)
+    const seccion = (await screen.findByRole('heading', { name: 'Fecha' })).closest('section')!
+    await user.click(within(seccion).getByRole('radio', { name: 'A mano' }))
+    expect(within(seccion).getByText(/Hay 1 solicitud sin recoger y 40 papeletas ya sacadas de 2026, con la fecha de antes/)).toBeInTheDocument()
+    expect(within(seccion).getByText(/«Apuntados al Sábado de Pasión»/)).toBeInTheDocument()
+  })
+
+  it('solo con papeletas ya sacadas (el plazo cerrado), también avisa', async () => {
+    vi.mocked(salidasDelCms).mockResolvedValue([{ ...pasion, papeletasDelAnio: 2 }, rosario])
+    const user = userEvent.setup()
+    montarFicha(1)
+    const seccion = (await screen.findByRole('heading', { name: 'Cobro' })).closest('section')!
+    await user.click(within(seccion).getByRole('radio', { name: 'Donativo' }))
+    expect(within(seccion).getByText(/Hay 2 papeletas ya sacadas de 2026/)).toBeInTheDocument()
+  })
+
+  it('pasar de la Pascua a una fecha a mano es una sola llamada, con aMano', async () => {
+    vi.mocked(editarSalida).mockClear()
+    vi.mocked(fijarFechaDeSalida).mockResolvedValue({ fechaDelAnio: '2026-10-17', acto: null } as never)
+    const user = userEvent.setup()
+    montarFicha(1)
+    const seccion = (await screen.findByRole('heading', { name: 'Fecha' })).closest('section')!
+    await user.click(within(seccion).getByRole('radio', { name: 'A mano' }))
+    fireEvent.change(within(seccion).getByLabelText('Día y hora'), { target: { value: '2026-10-17T19:30' } })
+    await user.click(within(seccion).getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(fijarFechaDeSalida).toHaveBeenCalledWith(1, { inicio: '2026-10-17T17:30:00.000Z', lugar: null, aMano: true }))
+    expect(editarSalida).not.toHaveBeenCalled()
+  })
+
+  it('el 409 de la fecha sale en la sección', async () => {
+    vi.mocked(fijarFechaDeSalida).mockRejectedValue(new Error('Con el plazo abierto, la fecha tiene que ser de 2026.'))
+    const user = userEvent.setup()
+    montarFicha(1)
+    const seccion = (await screen.findByRole('heading', { name: 'Fecha' })).closest('section')!
+    await user.click(within(seccion).getByRole('radio', { name: 'A mano' }))
+    fireEvent.change(within(seccion).getByLabelText('Día y hora'), { target: { value: '2027-10-17T19:30' } })
+    await user.click(within(seccion).getByRole('button', { name: 'Guardar' }))
+    expect(await within(seccion).findByText('Con el plazo abierto, la fecha tiene que ser de 2026.')).toBeInTheDocument()
   })
 
   it('sin solicitudes sin recoger, cambiar la fecha no avisa', async () => {

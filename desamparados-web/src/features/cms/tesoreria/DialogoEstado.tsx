@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Alert, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, InputAdornment, Stack, TextField } from '@mui/material'
+import { Alert, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, InputAdornment, Stack, TextField } from '@mui/material'
 import type { AdminReceipt, AdminReceiptStatus, DatosDevolucion } from '../../../lib/api/tesoreria'
 import { hoy } from '../../../lib/fechas'
+import { diaEnMadrid } from '../../../lib/horaDeMadrid'
 import { euros } from '../contabilidad/formato'
 import { accionDeCambio } from './estados'
 
@@ -22,12 +23,15 @@ function explicacion({ recibo, destino }: CambioEstado): string[] {
     ? ['Su papeleta de sitio queda anulada y su sitio en la procesión, libre.']
     : []
   switch (destino) {
-    case 'REMESADO':
-      return ['Queda en el banco, a la espera del cargo. Cuando llegue el dinero, pulsa «Confirmar» y se apunta el ingreso en Contabilidad.']
     case 'EXENTO':
       return ['El hermano no paga este recibo. En Contabilidad no se apunta nada.', 'No se puede deshacer.']
     case 'ANULADO':
-      return ['El recibo deja de contar. En Contabilidad no se apunta nada.', ...papeleta, 'No se puede deshacer.']
+      return [
+        'El recibo deja de contar. En Contabilidad no se apunta nada.',
+        ...(enUnaRemesa(recibo) ? [ANULAR_REMESADO] : []),
+        ...papeleta,
+        'No se puede deshacer.',
+      ]
     case 'DEVUELTO':
       return [
         recibo.estado === 'PAGADO'
@@ -43,10 +47,28 @@ function explicacion({ recibo, destino }: CambioEstado): string[] {
         'Es dinero que se le devuelve al hermano: no queda nada por cobrar y no se reemite.',
         'No se puede deshacer.',
       ]
+    case 'PENDIENTE':
+      return [
+        'No va en ninguna remesa: vuelve a quedar por cobrar y la próxima remesa lo recogerá. En Contabilidad no se apunta nada.',
+      ]
     default:
       return []
   }
 }
+
+// Un remesado va en un fichero SEPA ya generado, y anularlo aquí no lo saca de
+// él: si el fichero está en el banco, el cargo llega igual, y el abono de la
+// remesa deja de cuadrar con lo apuntado (el extracto lo manda a dudosos).
+const ANULAR_REMESADO = 'Va en una remesa ya generada. Anularlo aquí no lo saca del fichero: si ya está en el banco, el banco lo cargará igual al hermano, y entonces habrá que devolvérselo aparte. El abono de esa remesa no cuadrará con lo apuntado y el extracto lo dejará como dudoso.'
+
+/**
+ * Va de verdad en un fichero SEPA. Un REMESADO sin remesa (de antes de que
+ * solo una remesa pusiera ese estado) no está en ningún banco: anularlo no
+ * pide la advertencia ni la casilla.
+ */
+const enUnaRemesa = (recibo: AdminReceipt) => recibo.estado === 'REMESADO' && recibo.remesaId !== null
+
+const comoDia = (dia: string) => dia.split('-').reverse().join('/')
 
 // Lo mismo que acepta el servidor: positivo y con dos decimales como mucho.
 const IMPORTE = /^\d{1,8}(?:[.,]\d{1,2})?$/
@@ -55,10 +77,12 @@ const IMPORTE = /^\d{1,8}(?:[.,]\d{1,2})?$/
  * Confirma un cambio de estado. Al devolver, pide también la comisión del
  * banco, si la hubo: se apunta como gasto en «Comisiones bancarias».
  */
-export default function DialogoEstado({ cambio, guardando, error, onConfirmar, onCancelar }: {
+export default function DialogoEstado({ cambio, guardando, error, errorDelDia = null, onConfirmar, onCancelar }: {
   cambio: CambioEstado | null
   guardando: boolean
   error: string | null
+  /** El servidor rechazó el día de la devolución: se dice junto a ese campo. */
+  errorDelDia?: string | null
   onConfirmar: (devolucion: DatosDevolucion) => void
   onCancelar: () => void
 }) {
@@ -66,13 +90,21 @@ export default function DialogoEstado({ cambio, guardando, error, onConfirmar, o
   const [dia, setDia] = useState(hoy)
   // Se limpia al abrir otro cambio, no al cerrar: así no parpadea mientras se va.
   const [deCambio, setDeCambio] = useState<CambioEstado | null>(null)
-  if (cambio && cambio !== deCambio) { setDeCambio(cambio); setComision(''); setDia(hoy()) }
+  const [aSabiendas, setASabiendas] = useState(false)
+  if (cambio && cambio !== deCambio) { setDeCambio(cambio); setComision(''); setDia(hoy()); setASabiendas(false) }
 
   const devolver = cambio?.destino === 'DEVUELTO'
   const texto = comision.trim()
   const comisionValida = texto === '' || (IMPORTE.test(texto) && Number(texto.replace(',', '.')) > 0)
-  // Un día que ya haya llegado: el servidor rechaza los de mañana.
-  const diaValido = /^\d{4}-\d{2}-\d{2}$/.test(dia) && dia <= hoy()
+  // Un día que ya haya llegado y no de antes del cobro: el servidor rechaza los
+  // dos (un año mal puesto llevaba el reverso a un ejercicio sin su ingreso).
+  // El cobro, en su día de Madrid, que es como lo compara el servidor.
+  const diaDelCobro = cambio?.recibo.estado === 'PAGADO' && cambio.recibo.fechaPago ? diaEnMadrid(cambio.recibo.fechaPago) : null
+  const formatoValido = /^\d{4}-\d{2}-\d{2}$/.test(dia) && dia <= hoy()
+  const antesDelCobro = diaDelCobro !== null && dia < diaDelCobro
+  const diaValido = formatoValido && !antesDelCobro
+  // Anular un remesado pide decir aparte que se sabe lo del banco.
+  const pideASabiendas = cambio?.destino === 'ANULADO' && enUnaRemesa(cambio.recibo)
   const confirmar = () => onConfirmar(devolver
     ? { ...(texto ? { comision: Number(texto.replace(',', '.')) } : {}), fechaDevolucion: dia }
     : {})
@@ -96,9 +128,12 @@ export default function DialogoEstado({ cambio, guardando, error, onConfirmar, o
                 label="Día de la devolución"
                 value={dia}
                 onChange={(e) => setDia(e.target.value)}
-                slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: hoy() } }}
-                error={!diaValido}
-                helperText={diaValido ? 'El que trae el extracto del banco. El cobro anulado y la comisión se apuntan ese día.' : 'Un día que ya haya pasado, o hoy.'}
+                slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: hoy(), ...(diaDelCobro ? { min: diaDelCobro } : {}) } }}
+                error={!diaValido || Boolean(errorDelDia)}
+                helperText={antesDelCobro && diaDelCobro
+                  ? `No puede ser anterior al cobro, el ${comoDia(diaDelCobro)}.`
+                  : !formatoValido ? 'Un día que ya haya pasado, o hoy.'
+                  : errorDelDia ?? 'El que trae el extracto del banco. El cobro anulado y la comisión se apuntan ese día.'}
                 fullWidth
               />
             )}
@@ -113,12 +148,18 @@ export default function DialogoEstado({ cambio, guardando, error, onConfirmar, o
                 fullWidth
               />
             )}
+            {pideASabiendas && (
+              <FormControlLabel
+                control={<Checkbox checked={aSabiendas} onChange={(e) => setASabiendas(e.target.checked)} />}
+                label="Entiendo que, si la remesa ya está subida, el banco lo cargará de todos modos."
+              />
+            )}
             {error && <Alert severity="error">{error}</Alert>}
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={onCancelar} disabled={guardando}>Volver</Button>
-          <Button variant="contained" color={peligro ? 'error' : 'primary'} onClick={confirmar} disabled={guardando || !comisionValida || (devolver && !diaValido)}>
+          <Button variant="contained" color={peligro ? 'error' : 'primary'} onClick={confirmar} disabled={guardando || !comisionValida || (devolver && !diaValido) || (pideASabiendas && !aSabiendas)}>
             {accionDeCambio(cambio.destino)}
           </Button>
         </DialogActions>

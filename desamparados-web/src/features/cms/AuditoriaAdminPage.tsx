@@ -39,6 +39,7 @@ const ACCIONES: Record<string, string> = {
   CONTABILIDAD_EXPORTAR: 'Exportar la contabilidad a Excel',
   TIENDA_PEDIDO_PAGADO: 'Pedido de la tienda pagado',
   TIENDA_PEDIDO_ENTREGADO: 'Entregar un pedido de la tienda',
+  TIENDA_PEDIDO_ANULADO: 'Anular un pedido de la tienda',
   APADRINAMIENTO_PAGADO: 'Apadrinamiento pagado',
   CAJA_ABRIR: 'Abrir la caja de la tienda',
   CAJA_VENDER: 'Venta en mano de la tienda',
@@ -175,6 +176,7 @@ const CAMPOS: Record<string, string> = {
   abierto: 'Solicitud abierta', avisados: 'Cuentas avisadas por correo', noticiaId: 'Borrador de noticia',
   motivo: 'Motivo', uso: 'Correo', para: 'Para', fichaConEseDni: 'Ficha que ya tiene ese DNI',
   sesionesCerradas: 'Sesiones cerradas', antes: 'Antes', despues: 'Después',
+  reembolso: 'Reembolso apuntado en Contabilidad',
 }
 
 /**

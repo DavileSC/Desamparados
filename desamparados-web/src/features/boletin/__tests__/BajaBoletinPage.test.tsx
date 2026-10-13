@@ -17,6 +17,9 @@ describe('BajaBoletinPage', () => {
     await user.click(screen.getByRole('button', { name: 'Darme de baja del boletín' }))
     expect(await screen.findByText('Hecho: ya no recibirás el boletín.')).toBeInTheDocument()
     expect(JSON.parse(String((fetch.mock.calls[0][1] as RequestInit).body))).toEqual({ token: 'abc.def' })
+    // Del núcleo, no de Comunicados: un boletín enviado antes de apagar el
+    // módulo tiene que poder darse de baja igual.
+    expect(String(fetch.mock.calls[0][0])).toMatch(/\/api\/boletin\/baja$/)
   })
 
   it('sin enlace, lo dice', () => {

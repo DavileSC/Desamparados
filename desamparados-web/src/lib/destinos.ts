@@ -18,9 +18,9 @@ export interface Destino {
  * rechaza cualquier otra al guardar (backend: domain/destinos.ts).
  */
 export const DESTINOS_FIJOS: Destino[] = [
-  ...DESTINOS.otros.filter((d) => d.grupo === 'General'),
+  ...(DESTINOS.otros as Destino[]).filter((d) => d.grupo === 'General'),
   ...(CATALOGO.paginas as Destino[]).map(({ ruta, nombre, grupo, modulo }) => ({ ruta, nombre, grupo, modulo })),
-  ...DESTINOS.otros.filter((d) => d.grupo !== 'General'),
+  ...(DESTINOS.otros as Destino[]).filter((d) => d.grupo !== 'General'),
 ]
 
 /**
@@ -53,4 +53,29 @@ export function esDestinoValido(enlace: string): boolean {
   const ruta = almohadilla === -1 ? enlace : enlace.slice(0, almohadilla)
   if (almohadilla !== -1 && !ANCLA.test(enlace.slice(almohadilla + 1))) return false
   return RUTAS.has(ruta) || NOTICIA.test(ruta)
+}
+
+/**
+ * El módulo de la página a la que lleva un enlace válido: el de su ruta fija
+ * (o el de la ruta nueva, si es una antigua), `noticias` para una noticia y
+ * `nucleo` para lo demás. Es el mismo que exige su ruta en `routes/index.tsx`.
+ */
+export function moduloDelEnlace(enlace: string): Modulo {
+  const almohadilla = enlace.indexOf('#')
+  const ruta = almohadilla === -1 ? enlace : enlace.slice(0, almohadilla)
+  const actual = DESTINOS.antiguas.find((d) => d.ruta === ruta)?.ahora ?? ruta
+  const fijo = DESTINOS_FIJOS.find((d) => d.ruta === actual)
+  if (fijo) return fijo.modulo ?? 'nucleo'
+  return NOTICIA.test(actual) ? 'noticias' : 'nucleo'
+}
+
+/**
+ * `true` si el enlace lleva a una página que existe y está encendida en esta
+ * instalación. Lo usan los bloques de la web pública: un enlace guardado a una
+ * página de un módulo que luego se apagó (o el «Ver la agenda» del contenido
+ * de partida, con Agenda apagada) no se pinta, en vez de llevar a la 404.
+ * Sin la lista de módulos todavía, solo vale lo del núcleo, como en `useModulos`.
+ */
+export function esEnlaceVivo(enlace: string, activos: ReadonlySet<string> | null): boolean {
+  return esDestinoValido(enlace) && cumple(moduloDelEnlace(enlace), activos ?? new Set())
 }

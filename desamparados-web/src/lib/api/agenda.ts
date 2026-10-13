@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import type { Acto } from '../../types'
 import { llamarApi } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
+import { diaEnMadrid, fechaEnMadrid, horaEnMadrid } from '../horaDeMadrid'
 
 /**
  * Tras crear, cambiar o borrar un acto en el CMS: que la agenda de la portada
@@ -34,18 +35,13 @@ export interface ApiEvent {
   salidaEnlazada?: { id: number; nombre: string } | null
 }
 
+// El día y la hora de un acto, los de Madrid: a la que hay que estar, se mire desde donde se mire.
 function enTexto(fecha: string) {
-  return new Date(fecha).toLocaleDateString('es-ES', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
+  return fechaEnMadrid(fecha, { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 function aActo(acto: ApiEvent): Acto {
-  const inicio = new Date(acto.startDate)
-  const fin = acto.endDate ? new Date(acto.endDate) : null
-  const fecha = fin && inicio.toDateString() !== fin.toDateString()
+  const fecha = acto.endDate && diaEnMadrid(acto.startDate) !== diaEnMadrid(acto.endDate)
     ? `${enTexto(acto.startDate)} - ${enTexto(acto.endDate!)}`
     : enTexto(acto.startDate)
 
@@ -54,7 +50,7 @@ function aActo(acto: ApiEvent): Acto {
     titulo: acto.title,
     descripcion: acto.description ?? '',
     fecha,
-    hora: inicio.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+    hora: horaEnMadrid(acto.startDate),
     lugar: acto.location ?? undefined,
     destacado: acto.type === 'CULTO' || acto.type === 'PROCESION',
   }

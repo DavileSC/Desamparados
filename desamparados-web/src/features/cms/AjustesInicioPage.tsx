@@ -4,8 +4,11 @@ import {
   type SxProps, type Theme,
 } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
+import { useBlocker } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import CabeceraSeccion from './CabeceraSeccion'
+import AvisoCambiosSinGuardar from './ficha/AvisoCambiosSinGuardar'
+import { useAvisoAlCerrarLaPestana } from '../../hooks/useAvisoAlCerrarLaPestana'
 import {
   guardarRetablo, traerRetablo,
   type AjustesRetablo, type CuentaAtras, type CuentaDeHoy, type OpcionesRetablo, type TiempoCalculado, type TiempoDelRetablo,
@@ -175,6 +178,15 @@ export default function AjustesInicioPage() {
     },
   })
 
+  // Antes de los `return` de abajo, porque los avisos son hooks. Mientras lo
+  // del servidor aún no ha pasado al formulario, no hay nada sin guardar.
+  const sinGuardar = Boolean(data && data === copiado) &&
+    JSON.stringify(ajustes) !== JSON.stringify({ foto: data!.foto, x: data!.x, y: data!.y, tiempos: data!.tiempos, cuenta: data!.cuenta })
+  // Una foto movida, un tiempo nuevo: al ir a otra pantalla del CMS o cerrar
+  // la pestaña se perdían sin preguntar, como no pasa en las demás fichas.
+  const bloqueo = useBlocker(({ currentLocation, nextLocation }) => sinGuardar && currentLocation.pathname !== nextLocation.pathname)
+  useAvisoAlCerrarLaPestana(sinGuardar)
+
   if (isPending) return <CircularProgress aria-label="Cargando los ajustes del Inicio" />
   if (isError) return <Alert severity="error">No se han podido cargar los ajustes del Inicio. Inténtalo de nuevo en unos minutos.</Alert>
 
@@ -189,8 +201,6 @@ export default function AjustesInicioPage() {
   const deHoy = indiceDeHoy < 0 ? { foto: ajustes.foto ?? FOTO_POR_DEFECTO, x: ajustes.x, y: ajustes.y } : ajustes.tiempos[indiceDeHoy]
   const cuentaPrevia = cuentaElegida(ajustes.cuenta, opciones)
 
-  const enServidor = { foto: data.foto, x: data.x, y: data.y, tiempos: data.tiempos, cuenta: data.cuenta }
-  const sinGuardar = JSON.stringify(ajustes) !== JSON.stringify(enServidor)
   const sinFoto = ajustes.tiempos.find((t) => !t.foto)
   const sinNombre = ajustes.tiempos.find((t) => t.tiempo === 'a-mano' && !t.nombre.trim())
   const falta = sinFoto ? `Falta la foto de «${nombreDe(sinFoto)}».` : sinNombre ? 'Ponle nombre a las fechas a mano.' : null
@@ -424,6 +434,7 @@ export default function AjustesInicioPage() {
           </Button>
         </Stack>
       </Stack>
+      <AvisoCambiosSinGuardar bloqueo={bloqueo} deQue="los ajustes del Inicio" />
     </>
   )
 }

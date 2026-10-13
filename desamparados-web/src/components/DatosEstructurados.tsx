@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { site } from '../config/site'
 import { useContacto } from '../hooks/useContacto'
 import type { DatosDeContacto } from '../lib/api/corporacion'
+import { telefonoInternacional } from '../lib/validacion/identidad'
 
 /**
  * Quién es la corporación en el formato de los buscadores (schema.org), con lo
@@ -44,7 +45,7 @@ function datosDe({ secretaria, sede, redes }: DatosDeContacto) {
     ...(site.entidad.denominacion && { legalName: site.entidad.denominacion }),
     url: `${site.url}/`,
     ...(secretaria.email && { email: secretaria.email }),
-    ...(secretaria.telefono && { telephone: `+34 ${secretaria.telefono}` }),
+    ...(secretaria.telefono && { telephone: telefonoInternacional(secretaria.telefono) }),
     // La de compartir de la marca (o su icono grande), la misma que el
     // og:image y el JSON-LD de index.html.
     image: `${site.url}${site.imagenes.compartir}`,

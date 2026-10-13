@@ -9,6 +9,7 @@
  */
 import { randomBytes } from 'node:crypto';
 import { Cingulo, EstadoCita, EstadoPrenda, EstadoSolicitud, Parentesco, Prisma, Role, Sexo, TipoPrenda } from '@prisma/client';
+import { transactionWithRetry } from '../../utils/transaction-retry.js';
 import db from '../../config/db.js';
 import { encrypt } from '../../utils/bcrypt.handle.js';
 import { HttpError, NotFoundError } from '../../utils/error.handle.js';
@@ -568,7 +569,10 @@ export class MesaService {
 
     const cingulo = conRopa && dto.cingulo !== undefined ? dto.cingulo : antes.cingulo;
 
-    const despues = await db.$transaction(async (tx) => {
+    // Serializable y con reintento: el recuento de cíngulos lee filas que
+    // otra mesa puede estar cambiando a la vez, y con dos papeletas pasando a
+    // «Prestado» con un solo cíngulo en el ropero se prestaban los dos.
+    const despues = await transactionWithRetry(async (tx) => {
       // Dárselo ahora (se le debía) o corregirlo: si pasa a prestado, tiene que quedar alguno.
       if (cingulo === Cingulo.PRESTADO && antes.cingulo !== Cingulo.PRESTADO) {
         await prestarCinguloEnTransaccion(tx, antes.hermanoId, papeletaId);
@@ -609,7 +613,7 @@ export class MesaService {
           ...(dto.observaciones !== undefined && { observaciones: dto.observaciones?.trim() || null }),
         },
       });
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     await AuditoriaService.log(ACCIONES_AUDITORIA.PAPELETA_EDITAR, meta ?? {}, 'papeleta', papeletaId, {
       antes: { puesto: antes.puesto, tramo: antes.tramo, origenTunica: antes.origenTunica, cingulo: antes.cingulo, ...Object.fromEntries(Object.keys(ropa).map((k) => [k, antes[k as keyof typeof ropa]])) },

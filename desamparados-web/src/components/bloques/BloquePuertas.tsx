@@ -4,7 +4,7 @@ import { Box, ButtonBase, Typography } from '@mui/material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import CheckIcon from '@mui/icons-material/Check'
 import { SERIF } from '../../features/inicio/estilos'
-import { esDestinoValido } from '../../lib/destinos'
+import { useEnlaceVivo } from '../../hooks/useEnlaceVivo'
 import { BOTON } from '../estiloDeBoton'
 import { anchoMaximo } from './presentacion'
 import type { BloquePuertas as Datos, DatoDePuerta, Puerta } from '../../lib/api/contenido'
@@ -46,8 +46,9 @@ export default function BloquePuertas({ bloque }: { bloque: Datos }) {
 }
 
 function PanelDePuerta({ puerta, acento, boton }: { puerta: Puerta; acento: string; boton: object }) {
+  const enlaceVivo = useEnlaceVivo()
   const datos = puerta.datos.filter((dato) => dato.valor.trim() !== '')
-  const conBoton = puerta.boton.trim() !== '' && esDestinoValido(puerta.enlace)
+  const conBoton = puerta.boton.trim() !== '' && enlaceVivo(puerta.enlace)
   return (
     <Box component="section" aria-label={puerta.titulo} sx={{
       display: 'flex', flexDirection: 'column', gap: 2.25,

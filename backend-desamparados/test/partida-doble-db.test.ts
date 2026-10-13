@@ -7,7 +7,7 @@ import { after, before, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import ExcelJS from 'exceljs';
-import { Role, TipoTransaccion } from '@prisma/client';
+import { EstadoPago, Role, TipoRecibo, TipoTransaccion } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
@@ -16,6 +16,7 @@ import { HttpError } from '../src/utils/error.handle.js';
 import { PartidaDobleService } from '../src/services/partida-doble.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { SIN_DB } from './fixtures/sin-db.js';
+import { idCategoriaDevoluciones, idCategoriaIngresos } from '../src/services/recibos/comunes.js';
 
 let dbDisponible = false;
 let server: Server;
@@ -85,5 +86,30 @@ test('el ejercicio cuadra, la cuenta asignada manda y el Excel lleva sus hojas',
     await db.categoriaTransaccion.deleteMany({ where: { id: { in: [ingreso.id, gasto.id] } } });
     await db.auditLog.deleteMany({ where: { userId: tesorero.id } });
     await borrarUsuarioPrueba(tesorero.id);
+  }
+});
+
+test('NG10: el reverso de un donativo devuelto minora la cuenta de donativos, no la de cuotas', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const usuario = await crearUsuarioPrueba(Role.USER);
+  const hermano = await db.hermano.create({ data: { userId: usuario.id, nombre: 'Prueba', apellidos: `Partida ${Date.now()}`, fechaNacimiento: new Date('1990-01-01T00:00:00Z') } });
+  try {
+    const recibo = await db.recibo.create({ data: { hermanoId: hermano.id, year: 2096, concepto: 'Donativo de salida', importe: '50', tipo: TipoRecibo.DONATIVO, estado: EstadoPago.DEVUELTO } });
+    // Cobrado en 2096 y devuelto en 2096 y 2097 (el ingreso puede ser de otro ejercicio).
+    await db.transaccion.createMany({
+      data: [
+        { tipo: 'INGRESO', categoriaId: await idCategoriaIngresos(TipoRecibo.DONATIVO), concepto: 'Donativo de salida', importe: '50', fecha: new Date('2096-12-01T10:00:00Z'), metodoPago: 'DOMICILIACION', reciboId: recibo.id, hermanoId: hermano.id },
+        { tipo: 'GASTO', categoriaId: await idCategoriaDevoluciones(), concepto: `Reverso contable recibo #${recibo.id}`, importe: '50', fecha: new Date('2097-01-10T10:00:00Z'), metodoPago: 'DOMICILIACION', reciboId: recibo.id, hermanoId: hermano.id },
+      ],
+    });
+    const e = await PartidaDobleService.ejercicio(2097);
+    const cuenta = (c: string) => e.sumas.find((s) => s.cuenta === c);
+    assert.equal(cuenta('720'), undefined, 'ninguna cuota se cobró ni se devolvió');
+    assert.deepEqual([cuenta('740')?.debe, cuenta('740')?.haber], [50, 0]);
+  } finally {
+    await db.transaccion.deleteMany({ where: { hermanoId: hermano.id } });
+    await db.recibo.deleteMany({ where: { hermanoId: hermano.id } });
+    await db.hermano.delete({ where: { id: hermano.id } });
+    await borrarUsuarioPrueba(usuario.id);
   }
 });

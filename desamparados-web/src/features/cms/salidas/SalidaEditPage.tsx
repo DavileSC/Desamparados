@@ -16,20 +16,13 @@ import AvisoCambiosSinGuardar from '../ficha/AvisoCambiosSinGuardar'
 import { useAvisoAlCerrarLaPestana } from '../../../hooks/useAvisoAlCerrarLaPestana'
 import { CLAVE_SALIDAS, editarSalida, fijarFechaDeSalida, type DatosSalida, type PuestoDelCatalogo, type Salida } from '../../../lib/api/salidas'
 import CabeceraSeccion from '../CabeceraSeccion'
+import { invalidarAgendaPublica } from '../../../lib/api/agenda'
 import { fechaConDia } from './formato'
 import { site } from '../../../config/site'
-import { ARTICULOS, deArticulo, type Articulo } from '../../../domain/articulos'
-import { instanteEnMadrid } from '../../../components/bloques/fechas'
+import { ARTICULOS, aArticulo, deArticulo, type Articulo } from '../../../domain/articulos'
+import { aCampoFechaMadrid, instanteEnMadrid } from '../../../lib/horaDeMadrid'
 
 const mensaje = (e: unknown, porDefecto: string) => (e instanceof Error ? e.message : porDefecto)
-
-/** Un instante ISO como «AAAA-MM-DDTHH:mm» en hora de Madrid, para un campo datetime-local. */
-function aCampoFechaMadrid(iso: string): string {
-  const d = new Date(iso)
-  const dia = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
-  const hora = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d)
-  return `${dia}T${hora}`
-}
 
 function Seccion({ titulo, detalle, children }: { titulo: string; detalle?: string; children: ReactNode }) {
   return (
@@ -68,16 +61,22 @@ function useSeccionSucia(seccion: string, valores: unknown, onSucio: SeccionProp
 }
 
 /**
- * Con solicitudes de este año sin recoger, cambiar la fecha o el cobro les
- * cambia lo que pidieron, y nada se lo avisa solo: se dice antes de guardar.
+ * Con solicitudes sin recoger o papeletas ya sacadas este año, cambiar la
+ * fecha o el cobro les cambia lo que pidieron, y nada se lo avisa solo: se
+ * dice antes de guardar, y dónde escribirles.
  */
 function AvisoSolicitudesPendientes({ salida, deQue }: { salida: Salida; deQue: string }) {
-  const n = salida.solicitudesPendientes ?? 0
-  if (n === 0) return null
+  const solicitudes = salida.solicitudesPendientes ?? 0
+  const papeletas = salida.papeletasDelAnio ?? 0
+  if (solicitudes === 0 && papeletas === 0) return null
+  const partes = [
+    solicitudes > 0 && (solicitudes === 1 ? '1 solicitud sin recoger' : `${solicitudes} solicitudes sin recoger`),
+    papeletas > 0 && (papeletas === 1 ? '1 papeleta ya sacada' : `${papeletas} papeletas ya sacadas`),
+  ].filter(Boolean)
   return (
     <Alert severity="warning">
-      {n === 1 ? 'Hay 1 solicitud' : `Hay ${n} solicitudes`} de {salida.anio} sin recoger, hechas con {deQue} de antes.
-      Al guardar no se les avisa: díselo a esos hermanos.
+      Hay {partes.join(' y ')} de {salida.anio}, con {deQue} de antes. Al guardar no se les avisa: escríbeles desde
+      Boletín y avisos, a «Apuntados {aArticulo(salida.articulo, salida.nombre)}».
     </Alert>
   )
 }
@@ -181,6 +180,7 @@ function SeccionFecha({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProp
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [guardado, sucio] = useSeccionSucia('fecha', { tipo, diasDesdePascua, horaPascua, lugarPascua, fechaHoraManual, lugarManual }, onSucio)
+  const cliente = useQueryClient()
 
   const diasValidos = /^-?\d+$/.test(diasDesdePascua.trim())
   const valido = tipo === 'MANUAL' || diasValidos
@@ -198,16 +198,18 @@ function SeccionFecha({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProp
         })
         setFechaDelAnio(actualizada.fechaDelAnio)
       } else {
-        // Primero se pasa la fila a «a mano» (si no lo era ya): fijar la fecha
-        // exige que la salida ya esté en ese modo, o el servidor responde 409.
-        if (salida.fecha !== 'MANUAL') await editarSalida(salida.id, { fecha: 'MANUAL' })
+        const pasaAMano = salida.fecha !== 'MANUAL'
+        // Sin día, solo se cambia el modo; con el plazo abierto el servidor lo
+        // rechaza (409): la salida no puede quedarse sin fecha.
+        if (!fechaHoraManual && pasaAMano) await editarSalida(salida.id, { fecha: 'MANUAL' })
         if (fechaHoraManual) {
           // El campo se rellena en hora de Madrid (aCampoFechaMadrid) y así se
           // lee: con `new Date(campo)` se tomaría en la zona de este equipo, y
           // desde uno de fuera la salida quedaría a otra hora sin que se viera.
           const instante = instanteEnMadrid(fechaHoraManual)
           if (instante === null) throw new Error('El día y la hora no son válidos.')
-          const fijada = await fijarFechaDeSalida(salida.id, { inicio: new Date(instante).toISOString(), lugar: lugarManual.trim() || null })
+          // Con `aMano`, el cambio de modo y el día van en una sola operación.
+          const fijada = await fijarFechaDeSalida(salida.id, { inicio: new Date(instante).toISOString(), lugar: lugarManual.trim() || null, ...(pasaAMano && { aMano: true }) })
           setFechaDelAnio(fijada.fechaDelAnio)
           if (fijada.acto) {
             setFechaHoraManual(aCampoFechaMadrid(fijada.acto.inicio))
@@ -216,6 +218,11 @@ function SeccionFecha({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProp
         }
       }
       onGuardado()
+      // La fecha mueve el acto de la salida en la Agenda y la cuenta atrás de
+      // la portada: sin esto, quien la abre en esta pestaña sigue viendo la
+      // vieja hasta que caducan (5 min).
+      invalidarAgendaPublica(cliente)
+      void cliente.invalidateQueries({ queryKey: ['home', 'proxima-salida'] })
       guardado()
     } catch (e: unknown) {
       setError(mensaje(e, 'No se ha podido guardar la fecha.'))

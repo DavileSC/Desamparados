@@ -21,11 +21,10 @@ import VentanaFormulario from './VentanaFormulario'
 import EditorTexto from './EditorTexto'
 import { fechaCabildo } from './cabildos/formato'
 import { site } from '../../config/site'
+import { aCampoFechaMadrid, isoEnMadrid } from '../../lib/horaDeMadrid'
 
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
 const plural = (n: number, uno: string, varios: string) => (n === 1 ? `1 ${uno}` : `${n} ${varios}`)
-/** Un instante ISO → «AAAA-MM-DDTHH:mm» en la hora local, para un campo datetime-local. */
-const aCampoFecha = (iso: string) => { const d = new Date(iso); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16) }
 const nombreDe = (h: { nombre: string; apellidos: string; numeroHermano: number | null }) => `${h.apellidos}, ${h.nombre}${h.numeroHermano !== null ? ` · n.º ${h.numeroHermano}` : ''}`
 
 const ESTADO: Record<Cabildo['estado'], string> = { CONVOCADO: 'Convocado', CELEBRADO: 'Acta en redacción', ACTA_APROBADA: 'Acta aprobada' }
@@ -130,7 +129,7 @@ export default function CabildoPage() {
       </Box>
       {!cerrado && (
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-          <Button variant="outlined" onClick={() => setEditando({ tipo: c.tipo, fecha: aCampoFecha(c.fecha), lugar: c.lugar, puntos: c.ordenDelDia.join('\n') })}>Cambiar datos</Button>
+          <Button variant="outlined" onClick={() => setEditando({ tipo: c.tipo, fecha: aCampoFechaMadrid(c.fecha), lugar: c.lugar, puntos: c.ordenDelDia.join('\n') })}>Cambiar datos</Button>
           {c.convocatoriaId
             ? <Button component={Link} to={`/cms/comunicados/${c.convocatoriaId}`}>Abrir la convocatoria en Boletín y avisos</Button>
             : <Button disabled={ocupado} onClick={() => void hacer(async () => { const { comunicadoId } = await prepararConvocatoria(id); return { ...c, convocatoriaId: comunicadoId } }, 'Convocatoria preparada como borrador de aviso. Revísala y envíala desde Boletín y avisos.')}>Preparar la convocatoria por correo</Button>}
@@ -230,7 +229,7 @@ export default function CabildoPage() {
       error={null}
       onGuardar={async () => {
         if (!editando) return
-        await hacer(() => guardarCabildo(id, { tipo: editando.tipo, fecha: new Date(editando.fecha).toISOString(), lugar: editando.lugar.trim(), ordenDelDia: editando.puntos.split('\n').map((p) => p.trim()).filter(Boolean) }), 'Datos guardados.')
+        await hacer(() => guardarCabildo(id, { tipo: editando.tipo, fecha: isoEnMadrid(editando.fecha), lugar: editando.lugar.trim(), ordenDelDia: editando.puntos.split('\n').map((p) => p.trim()).filter(Boolean) }), 'Datos guardados.')
         setEditando(null)
       }}
       onCerrar={() => setEditando(null)}

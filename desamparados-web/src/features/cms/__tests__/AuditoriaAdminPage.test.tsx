@@ -147,5 +147,17 @@ describe('AuditoriaAdminPage', () => {
     await user.click(screen.getByRole('button', { name: 'Ver detalles' }))
     expect(screen.getByText(/^Después:/).parentElement).toHaveTextContent('01/10/2026')
   })
+  it('anular un pedido de la tienda tiene nombre y dice si se apuntó el reembolso', async () => {
+    const user = userEvent.setup()
+    responder([{
+      id: 18, action: 'TIENDA_PEDIDO_ANULADO', entityType: 'pedido', entityId: '3', ip: null, createdAt: '2026-10-13T10:00:00.000Z', user: autor,
+      detalles: { antes: { estado: 'PAGADO' }, despues: { estado: 'CANCELADO', reembolso: true } },
+    }])
+    renderWithProviders(<AuditoriaAdminPage />)
+
+    expect(await screen.findByText('Anular un pedido de la tienda')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Ver detalles' }))
+    expect(within(screen.getByRole('table', { name: 'Cambios' })).getByRole('row', { name: /reembolso apuntado/i })).toHaveTextContent('Sí')
+  })
 })
 

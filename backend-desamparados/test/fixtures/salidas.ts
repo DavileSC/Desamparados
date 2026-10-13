@@ -1,3 +1,4 @@
+import db from '../../src/config/db.js';
 import { SalidasService, type SalidaConActo } from '../../src/services/procesion/salidas.service.js';
 import { conceptoDeSalida } from '../../src/domain/salidas.js';
 import { aArticulo, articuloDe, deArticulo } from '../../src/domain/articulos.js';
@@ -34,3 +35,22 @@ export const aLaSalida = async (slug: string): Promise<string> => {
 
 /** Un texto cualquiera dentro de una expresión regular, sin que sus signos cuenten. */
 export const literal = (texto: string): RegExp => new RegExp(texto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+
+/**
+ * Da a una salida a mano una fecha de prueba dentro de `dias` días (un acto
+ * suyo en la Agenda) y devuelve cómo dejarla como estaba. Sin próxima fecha
+ * no se pide papeleta, ni en el área ni en la mesa, y en la base nueva del CI
+ * el Rosario no tiene acto: la prueba que pide para él le pone uno.
+ */
+export async function conFechaDePrueba(slug: string, dias = 30): Promise<() => Promise<void>> {
+  const s = await salida(slug);
+  const previo = s.eventoId;
+  const acto = await db.evento.create({
+    data: { title: s.nombre, type: 'PROCESION', startDate: new Date(Date.now() + dias * 24 * 60 * 60 * 1000) },
+  });
+  await db.salida.update({ where: { id: s.id }, data: { eventoId: acto.id } });
+  return async () => {
+    await db.salida.update({ where: { id: s.id }, data: { eventoId: previo } });
+    await db.evento.deleteMany({ where: { id: acto.id } });
+  };
+}

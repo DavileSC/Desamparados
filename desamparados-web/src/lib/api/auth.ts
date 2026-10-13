@@ -1,4 +1,4 @@
-import { llamarApi } from './cliente'
+import { llamarApi, traerArchivo } from './cliente'
 import type { AuthUser } from '../../features/altas/auth/store'
 import { normalizarDni, normalizarIban, normalizarTelefono } from '../validacion/identidad'
 
@@ -298,4 +298,26 @@ export function desactivar2FA(token2fa: string) {
 /** Cierra la sesión de un área. La del área contraria no se toca. */
 export function cerrarSesionApi(area: 'cms' | 'hermanos') {
   return llamarApi<null>('/auth/logout', { method: 'POST', auth: false, json: { area } })
+}
+
+// ===================================================================
+//  Derechos del RGPD sobre la propia cuenta (acceso y supresión)
+// ===================================================================
+
+/**
+ * Todos los datos de la cuenta y de sus fichas, en JSON (art. 15). Responde
+ * también con el primer acceso pendiente: nadie tiene que completar su ficha
+ * para poder llevarse lo que ya hay.
+ */
+export function descargarMisDatos() {
+  return traerArchivo('/auth/mis-datos')
+}
+
+/**
+ * Suprime la cuenta (art. 17): la anonimiza, da de baja sus fichas y cierra
+ * todas sus sesiones. Una contraseña equivocada es un 401 normal aquí, no una
+ * sesión caducada: por eso `auth: false`.
+ */
+export function borrarMiCuenta(password: string) {
+  return llamarApi<{ message: string }>('/auth/mi-cuenta', { method: 'DELETE', json: { password }, auth: false })
 }

@@ -41,6 +41,7 @@ import IncidenciasDePago from './tesoreria/IncidenciasDePago'
 import Modelo182 from './tesoreria/Modelo182'
 import Remesas from './tesoreria/Remesas'
 import { site } from '../../config/site'
+import { ErrorDeApi } from '../../lib/api/cliente'
 
 const methods: PaymentMethod[] = ['EFECTIVO', 'BIZUM', 'TRANSFERENCIA', 'TARJETA', 'DOMICILIACION']
 const statusLabels: Record<AdminReceipt['estado'], string> = { PENDIENTE: 'Pendiente', REMESADO: 'Remesado', PAGADO: 'Pagado', ANULADO: 'Anulado', DEVUELTO: 'Devuelto', EXENTO: 'Exento', REEMBOLSADO: 'Reembolsado' }
@@ -81,7 +82,8 @@ const nombreHermano = (h: ReceiptBrother) => `${h.apellidos}, ${h.nombre}${h.num
 // Sin tipo preseleccionado: con «Cuota de hermano» por defecto era fácil emitir
 // una segunda cuota del año sin darse cuenta. El tipo decide cómo se cuenta el
 // recibo, así que se elige a propósito.
-interface NuevoRecibo { hermano: ReceiptBrother | null; year: string; concepto: string; importe: string; tipo: EmittableReceiptType | '' }
+// `reemisionDe`: el devuelto que se vuelve a cobrar, si se llegó por «Reemitir».
+interface NuevoRecibo { hermano: ReceiptBrother | null; year: string; concepto: string; importe: string; tipo: EmittableReceiptType | ''; reemisionDe?: number }
 
 export default function TesoreriaAdminPage() {
   const { activo } = useModulos()
@@ -114,7 +116,9 @@ export default function TesoreriaAdminPage() {
   const [buscando, setBuscando] = useState(false)
   const [payment, setPayment] = useState<PaymentMethod>('EFECTIVO')
   const [cambio, setCambio] = useState<CambioEstado | null>(null)
-  const [errorCambio, setErrorCambio] = useState<string | null>(null)
+  // `delDia`: el servidor rechazó el día de la devolución (de mañana, o de antes
+  // del cobro); se enseña junto a ese campo, que es lo que hay que cambiar.
+  const [errorCambio, setErrorCambio] = useState<{ texto: string; delDia: boolean } | null>(null)
   const [loading, setLoading] = useState(true)
   const [working, setWorking] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -183,8 +187,11 @@ export default function TesoreriaAdminPage() {
   }
   // Reemitir un devuelto es emitir uno nuevo con sus mismos datos, ya rellenos.
   // El concepto cambia: el servidor no admite dos recibos iguales para el mismo
-  // hermano y año, y así se distingue el nuevo del devuelto.
+  // hermano y año, y así se distingue el nuevo del devuelto. Va enlazado al
+  // devuelto: sin el enlace, un donativo reemitido no lo tapaba y seguía
+  // contando como deuda.
   const abrirReemision = (recibo: AdminReceipt) => abrirNuevo({
+    reemisionDe: recibo.id,
     hermano: recibo.hermano,
     year: String(recibo.year),
     concepto: `${recibo.concepto} (reemisión)`.slice(0, 150),
@@ -207,7 +214,7 @@ export default function TesoreriaAdminPage() {
     if (!nuevo.hermano || !nuevo.tipo) return
     setWorking(true); setErrorNuevo(null); setNotice(null)
     let resultado: Awaited<ReturnType<typeof crearRecibo>>
-    try { resultado = await crearRecibo({ hermanoId: nuevo.hermano.id, year: Number(nuevo.year), concepto: nuevo.concepto.trim(), importe: leerImporte(nuevo.importe), tipo: nuevo.tipo }) }
+    try { resultado = await crearRecibo({ hermanoId: nuevo.hermano.id, year: Number(nuevo.year), concepto: nuevo.concepto.trim(), importe: leerImporte(nuevo.importe), tipo: nuevo.tipo, ...(nuevo.reemisionDe !== undefined ? { reemisionDeId: nuevo.reemisionDe } : {}) }) }
     catch (err: unknown) { setErrorNuevo(err instanceof Error ? err.message : 'No se ha podido emitir el recibo.'); return }
     finally { setWorking(false) }
     setEmitiendo(false)
@@ -235,7 +242,10 @@ export default function TesoreriaAdminPage() {
       setNotice(resultado.message)
       await cargar()
     } catch (err: unknown) {
-      setErrorCambio(err instanceof Error ? err.message : 'No se ha podido cambiar el estado del recibo.')
+      // Un 400 sin campos al devolver solo puede ser por el día: la comisión
+      // mal escrita llega con su campo.
+      const delDia = cambio.destino === 'DEVUELTO' && err instanceof ErrorDeApi && err.status === 400 && Object.keys(err.fields).length === 0
+      setErrorCambio({ texto: err instanceof Error ? err.message : 'No se ha podido cambiar el estado del recibo.', delDia })
     } finally { setWorking(false) }
   }
 
@@ -295,6 +305,9 @@ export default function TesoreriaAdminPage() {
       onCerrar={() => setEmitiendo(false)}
     >
       <Typography variant="body2" color="text.secondary">Emite un recibo suelto a un hermano: una cuota que faltaba, un donativo o la reemisión de un recibo devuelto. Nace pendiente de cobro. Las papeletas de sitio se emiten en la mesa de reparto.</Typography>
+      {nuevo.reemisionDe !== undefined && (
+        <Alert severity="info">Reemite el recibo #{nuevo.reemisionDe}, que el banco devolvió: al emitirlo, ese deja de contar como pendiente. Tienen que coincidir el hermano, el año y el tipo.</Alert>
+      )}
       <Autocomplete
         options={textoBusqueda.length >= 2 ? candidatos : []}
         value={nuevo.hermano}
@@ -366,7 +379,7 @@ export default function TesoreriaAdminPage() {
     {loading ? <CircularProgress aria-label="Cargando recibos" /> : receipts.length === 0
       ? <Alert severity="info">{filtros.q || filtros.estado || filtros.tipo ? 'No hay recibos con esta búsqueda o estos filtros.' : filtros.recibo ? `No existe el recibo #${filtros.recibo}.` : esAnioCompleto(year) ? 'No hay recibos para este año.' : 'No hay recibos.'}</Alert>
       : <ListaRecibos recibos={receipts} verAnio={!esAnioCompleto(year)} ocupado={working} onCobrar={pay} onConfirmar={pay} onReemitir={abrirReemision} onCambiarEstado={abrirCambio} />}
-    <DialogoEstado cambio={cambio} guardando={working} error={errorCambio} onConfirmar={(devolucion) => void cambiarEstado(devolucion)} onCancelar={() => setCambio(null)} />
+    <DialogoEstado cambio={cambio} guardando={working} error={errorCambio?.delDia ? null : errorCambio?.texto ?? null} errorDelDia={errorCambio?.delDia ? errorCambio.texto : null} onConfirmar={(devolucion) => void cambiarEstado(devolucion)} onCancelar={() => setCambio(null)} />
     {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="recibos" />}
     </>}
   </>

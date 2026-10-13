@@ -7,7 +7,7 @@ import type { ApiEvent } from '../../../lib/api/agenda'
 import AccionesActo from './AccionesActo'
 import PuntoTipo from './PuntoTipo'
 import { rejillaEvento } from './rejilla'
-import { diaSemana, hora, finEnOtroDia, loQueFalta } from './fechas'
+import { diaDelMes, diaSemana, hora, finEnOtroDia, loQueFalta } from './fechas'
 
 interface Props {
   evento: ApiEvent
@@ -35,7 +35,7 @@ export default function FilaEvento({ evento, enPortada, volver, onBorrar }: Prop
       {/* En el móvil la fila crece hacia abajo con el tipo y los botones: el día, arriba, junto al título. */}
       <Box sx={{ gridArea: 'dia', alignSelf: { xs: 'start', md: 'center' }, pt: { xs: 0.25, md: 0 }, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>
         <Box sx={{ fontSize: fin ? 16 : 24, fontWeight: 600, lineHeight: 1, whiteSpace: 'nowrap', color: superficies.enlace }}>
-          {fin ? `${inicio.getDate()}–${fin.getDate()}` : inicio.getDate()}
+          {fin ? `${diaDelMes(inicio)}–${diaDelMes(fin)}` : diaDelMes(inicio)}
         </Box>
         <Box sx={{ mt: 0.5, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'text.secondary', whiteSpace: 'nowrap' }}>
           {fin ? `${diaSemana(inicio)}–${diaSemana(fin)}` : diaSemana(inicio)}

@@ -96,9 +96,10 @@ export const ACCIONES_AUDITORIA = {
   // Partida doble: la cuenta de cada categoría y sacar el ejercicio a Excel
   CATEGORIA_CUENTA: 'CATEGORIA_CUENTA',
   CONTABILIDAD_EXPORTAR: 'CONTABILIDAD_EXPORTAR',
-  // La tienda: el pedido pagado (por el banco) y entregado en Secretaría
+  // La tienda: el pedido pagado (por el banco), entregado en Secretaría o anulado
   TIENDA_PEDIDO_PAGADO: 'TIENDA_PEDIDO_PAGADO',
   TIENDA_PEDIDO_ENTREGADO: 'TIENDA_PEDIDO_ENTREGADO',
+  TIENDA_PEDIDO_ANULADO: 'TIENDA_PEDIDO_ANULADO',
   // Un apadrinamiento pagado (por el banco)
   APADRINAMIENTO_PAGADO: 'APADRINAMIENTO_PAGADO',
   // La caja de la tienda: abrirla, cada venta, anular una y cerrarla con el arqueo

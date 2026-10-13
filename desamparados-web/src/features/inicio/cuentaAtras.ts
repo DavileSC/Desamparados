@@ -1,6 +1,6 @@
 import type { Articulo } from '../../domain/articulos'
 import type { ProximaSalidaWeb } from '../../lib/api/salidas'
-import { instanteEnMadrid } from '../../components/bloques/fechas'
+import { instanteEnMadrid } from '../../lib/horaDeMadrid'
 
 /**
  * La cuenta atrás de la portada, a partir de la próxima salida que da el

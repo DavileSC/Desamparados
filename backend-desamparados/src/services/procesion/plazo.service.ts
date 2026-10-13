@@ -20,6 +20,7 @@ import { DOMINIO_CUENTA_ELIMINADA } from '../../domain/cuenta-anonimizada.js';
 import { anioDeLaSalida, diaMadrid, proximaFecha } from '../../domain/fecha-salida.js';
 import { articuloDe, deArticulo } from '../../domain/articulos.js';
 import { reglaDe, type SalidaConActo } from './salidas.service.js';
+import { esDireccionDeNadie } from '../../domain/cuenta-de-custodia.js';
 
 type Cliente = Prisma.TransactionClient | typeof db;
 
@@ -108,7 +109,11 @@ export class PlazoPapeletasService {
       return { abierto: abrir, avisados: 0, noticiaId: null as number | null };
     }
 
-    await db.salida.update({ where: { id: salida.id }, data: { plazoAbierto: abrir, plazoCambiadoEl: new Date() } });
+    // Condicionado al estado leído: con dos «Abrir» a la vez, los dos veían
+    // el plazo cerrado y se mandaban todos los correos (y el borrador) dos
+    // veces. El que llega tarde no cambia nada y no avisa a nadie.
+    const { count } = await db.salida.updateMany({ where: { id: salida.id, plazoAbierto: !abrir }, data: { plazoAbierto: abrir, plazoCambiadoEl: new Date() } });
+    if (count === 0) return { abierto: abrir, avisados: 0, noticiaId: null as number | null };
 
     const year = PlazoPapeletasService.anioDeLaProcesion(salida);
     // Sin área de hermanos la papeleta se pide en la mesa de reparto: ni se
@@ -167,8 +172,10 @@ export class PlazoPapeletasService {
         hermanos: { where: { activo: true }, select: { nombre: true, apellidos: true, esTitular: true, sexo: true }, orderBy: { fechaNacimiento: 'asc' } },
       },
     });
+    // Sin las direcciones de nadie (la cuenta de custodia del censo
+    // importado, `.invalido`): su correo no sale y no es un avisado.
     return cuentas
-      .filter((c) => Boolean(c.email))
+      .filter((c) => Boolean(c.email) && !esDireccionDeNadie(c.email))
       .map((c) => ({
         email: c.email,
         nombre: c.nombre ?? c.hermanos[0]?.nombre ?? '',

@@ -66,6 +66,11 @@ export interface PedidoPublico {
   total: number
   nombre: string
   lineas: { nombre: string; talla: string | null; precio: number; cantidad: number }[]
+  /**
+   * El banco cobró pero el pedido no se pudo completar (se agotó mientras se
+   * pagaba): el pago espera en Tesorería a que se devuelva. Va con PENDIENTE_PAGO.
+   */
+  pagoConIncidencia?: boolean
 }
 
 interface PedidoDelCms extends PedidoPublico {
@@ -76,6 +81,7 @@ interface PedidoDelCms extends PedidoPublico {
   creadoEl: string
   pagadoEl: string | null
   entregadoEl: string | null
+  canceladoEl: string | null
 }
 
 export type DatosProducto = Omit<Producto, 'id' | 'tallas' | 'creadoEl'> & {
@@ -100,3 +106,5 @@ export const ordenarCategorias = (ids: number[]) => llamarApi<CategoriaDelCms[]>
 export const borrarCategoria = (id: number) => llamarApi<{ message: string }>(`/tienda/admin/categorias/${id}`, { method: 'DELETE' })
 export const pedidosDelCms = (estado?: EstadoPedido) => llamarApi<PedidoDelCms[]>(`/tienda/admin/pedidos${estado ? `?estado=${estado}` : ''}`)
 export const entregarPedido = (id: number) => llamarApi<{ message: string }>(`/tienda/admin/pedidos/${id}/entregar`, { method: 'POST' })
+/** Lo pasa a CANCELADO; si estaba cobrado, vuelven las existencias y se apunta el reembolso. */
+export const anularPedido = (id: number) => llamarApi<{ message: string }>(`/tienda/admin/pedidos/${id}/anular`, { method: 'POST' })

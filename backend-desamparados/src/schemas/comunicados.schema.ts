@@ -5,6 +5,7 @@ import { type } from 'arktype';
 // general de JSON: por eso la ruta lleva su propio tope (ver app.ts).
 const segmento = type({
     "conPapeleta?": "number.integer > 0 | null",
+    "apuntadosA?": "number.integer > 0 | null",
     "conDeuda?": "boolean",
     "edad?": "'MAYORES' | 'MENORES' | null",
     "poblacion?": type("string <= 100").matching(/^[^<>]*$/).or("null"),

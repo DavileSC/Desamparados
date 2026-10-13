@@ -12,13 +12,15 @@ import { ModulosService } from './modulos.service.js';
  * anunciado) y no podía nombrar las noticias, que viven en la base. Aquí se
  * arma en cada petición con lo de ahora: las páginas fijas del router
  * (shared/rutas-publicas.json, que genera `npm run sitemap` en la web) de los
- * módulos encendidos, y cada noticia publicada con su fecha de cambio.
+ * módulos encendidos, cada noticia publicada y cada producto a la venta en
+ * la tienda de la web, con su fecha de cambio.
  */
 
 interface RutaPublica { ruta: string; requisito: string[] }
 
-/** El detalle de una noticia: la única ruta con parámetro que se rellena. */
+/** Las rutas con parámetro que se rellenan: el detalle de una noticia y la ficha de un producto. */
 const RUTA_DE_NOTICIA = '/noticias/:slug';
+const RUTA_DE_PRODUCTO = '/tienda/producto/:id';
 
 const RUTAS: readonly RutaPublica[] = rutasPublicas.rutas;
 
@@ -50,9 +52,21 @@ export class SitemapService {
       })
       : [];
 
+    // La ficha de un producto se indexa (la tienda solo pone `noindex` al que
+    // ya no está): los mismos que la tienda de la web, los activos.
+    const deProducto = RUTAS.find((r) => r.ruta === RUTA_DE_PRODUCTO);
+    const productos = deProducto && cumple(deProducto.requisito, activos)
+      ? await db.producto.findMany({
+        where: { activo: true },
+        orderBy: [{ orden: 'asc' }, { id: 'asc' }],
+        select: { id: true, updatedAt: true },
+      })
+      : [];
+
     return [
       ...fijas,
       ...noticias.map((n) => ({ ruta: RUTA_DE_NOTICIA.replace(':slug', encodeURIComponent(n.slug)), lastmod: n.updatedAt })),
+      ...productos.map((p) => ({ ruta: RUTA_DE_PRODUCTO.replace(':id', String(p.id)), lastmod: p.updatedAt })),
     ];
   }
 

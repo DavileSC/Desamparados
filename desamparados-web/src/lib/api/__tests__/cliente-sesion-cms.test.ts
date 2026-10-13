@@ -20,7 +20,7 @@ function servidor(rutas: Record<string, () => Response>) {
 }
 
 beforeEach(() => {
-  useAuthStore.setState({ status: 'listo', cms: cmsUser, hermano: null, cmsCaducada: false })
+  useAuthStore.setState({ status: 'listo', cms: cmsUser, hermano: null, cmsCaducada: false, hermanoCaducada: false })
 })
 
 afterEach(() => { vi.unstubAllGlobals() })
@@ -60,6 +60,43 @@ describe('llamarApi ante un 401', () => {
     await waitFor(() => {
       expect(useAuthStore.getState()).toMatchObject({ status: 'listo', cms: cmsUser, hermano: hermanoUser, cmsCaducada: true })
     })
+  })
+
+  // Lo mismo en el área de hermanos: vaciar `hermano` hacía que ExigeSesion
+  // mandara al acceso con Mi perfil a medias.
+  it('si caduca la de hermanos con alguien dentro, la marca como caducada sin vaciarla; la del CMS se reparte', async () => {
+    useAuthStore.setState({ hermano: hermanoUser })
+    const fetchMock = servidor({
+      '/hermanos/mis-perfiles': () => respuesta({ error: 'No autenticado' }, 401),
+      '/auth/me': () => respuesta({ cms: cmsUser, hermano: null }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(llamarApi('/hermanos/mis-perfiles')).rejects.toBeInstanceOf(ErrorDeApi)
+
+    await waitFor(() => {
+      expect(useAuthStore.getState()).toMatchObject({ status: 'listo', cms: cmsUser, hermano: hermanoUser, cmsCaducada: false, hermanoCaducada: true })
+    })
+  })
+
+  it('si caducan las dos a la vez, las dos quedan marcadas y ninguna se vacía', async () => {
+    useAuthStore.setState({ hermano: hermanoUser })
+    vi.stubGlobal('fetch', servidor({
+      '/contabilidad': () => respuesta({ error: 'No autenticado' }, 401),
+      '/auth/me': () => respuesta({ cms: null, hermano: null }),
+    }))
+
+    await expect(llamarApi('/contabilidad')).rejects.toBeInstanceOf(ErrorDeApi)
+
+    await waitFor(() => {
+      expect(useAuthStore.getState()).toMatchObject({ cms: cmsUser, hermano: hermanoUser, cmsCaducada: true, hermanoCaducada: true })
+    })
+  })
+
+  it('volver a entrar al área quita su marca de caducada, y no la del CMS', () => {
+    useAuthStore.setState({ cmsCaducada: true, hermanoCaducada: true })
+    useAuthStore.getState().entrarSesion('hermanos', hermanoUser)
+    expect(useAuthStore.getState()).toMatchObject({ cmsCaducada: true, hermanoCaducada: false })
   })
 
   it('volver a entrar quita la marca de caducada', () => {

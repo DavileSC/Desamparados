@@ -35,7 +35,7 @@ export class SalidasController {
 
   static fijarFecha = manejar('Error fijando la fecha de la salida', async (req, res) => {
     const salida = await SalidasService.porId(Number(req.params.id));
-    await SalidasService.fijarFecha(salida, req.body as { inicio: string; lugar?: string | null }, AuditoriaService.metaFromReq(req));
+    await SalidasService.fijarFecha(salida, req.body as { inicio: string; lugar?: string | null; aMano?: boolean }, AuditoriaService.metaFromReq(req));
     // `fijarFecha` devuelve el acto, no la fila entera: se relee con su acto ya enlazado para la respuesta (`paraLaWeb`).
     res.json(SalidasService.paraLaWeb(await SalidasService.porId(salida.id)));
   });

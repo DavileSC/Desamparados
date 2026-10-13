@@ -41,7 +41,10 @@ export const emitirReciboSchema = type({
         year: anioSchema,
         concepto: conceptoSchema,
         importe: importeSchema,
-        tipo: tipoEmitibleSchema
+        tipo: tipoEmitibleSchema,
+        // El devuelto que vuelve a cobrar, si es una reemisión: el enlace es lo
+        // que lo da por reemitido (ver domain/reemisiones).
+        "reemisionDeId?": type("number.integer > 0").describe("el identificador del recibo devuelto")
     }
 });
 

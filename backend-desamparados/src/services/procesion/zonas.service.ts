@@ -37,7 +37,7 @@ import {
   notaDePerdon, pendienteDeLaSalida, requisitosParaRecoger, tipoReciboDe, type CuotaDelHermano,
 } from '../../domain/salidas.js';
 import { articuloDe } from '../../domain/articulos.js';
-import type { SalidaConActo } from './salidas.service.js';
+import { exigirProximaFecha, type SalidaConActo } from './salidas.service.js';
 import { PapeletasService, type SolicitudConRecibo } from './papeletas.service.js';
 import { PlazoPapeletasService } from './plazo.service.js';
 import { archivoDePapeleta, datosDeLaPapeleta, papeletaEnPdf } from './papeleta-pdf.js';
@@ -123,9 +123,9 @@ export async function cuotasQueCuentan(cliente: Cliente, hermanoIds: number[]): 
   if (hermanoIds.length === 0) return porHermano;
   const recibos = await cliente.recibo.findMany({
     where: { hermanoId: { in: [...new Set(hermanoIds)] }, tipo: TipoRecibo.CUOTA_HERMANO },
-    select: { id: true, hermanoId: true, year: true, tipo: true, concepto: true, importe: true, estado: true },
+    select: { id: true, hermanoId: true, year: true, concepto: true, importe: true, estado: true, reemisionDeId: true },
   });
-  const reemitidos = idsReemitidos(recibos.filter((r) => r.estado === EstadoPago.DEVUELTO), recibos);
+  const reemitidos = idsReemitidos(recibos);
   const vivos: EstadoPago[] = [EstadoPago.PENDIENTE, EstadoPago.DEVUELTO, EstadoPago.REMESADO];
   for (const r of recibos) {
     if (!vivos.includes(r.estado) || reemitidos.has(r.id)) continue;
@@ -187,6 +187,7 @@ export class ZonasService {
     if (!hermano.activo) throw new HttpError(`${hermano.nombre} no está en activo: Secretaría tiene que darla de alta o reactivarla antes.`, 409);
     if (!dto.puesto.trim()) throw new HttpError('Falta el puesto.');
     const alturaHombro = alturaDictada(dto.alturaHombro);
+    exigirProximaFecha(dto.salida);
     const year = anioDeLaMesa(dto.salida);
 
     const { resultado, repetida } = await unaVez(clave, 'inscribir', async (tx) => {
@@ -283,7 +284,7 @@ export class ZonasService {
           await exigirSinReemision(tx, r);
           cobrado = await tx.recibo.create({
             data: {
-              hermanoId: r.hermanoId, year: r.year, tipo: r.tipo, importe: r.importe,
+              hermanoId: r.hermanoId, year: r.year, tipo: r.tipo, importe: r.importe, reemisionDeId: r.id,
               concepto: await conceptoDeReemision(tx, r.hermanoId, r.year, r.concepto),
               estado: EstadoPago.PAGADO, fechaPago: ahora, metodoPago: dto.metodoPago,
               observaciones: `Reemisión del recibo ${r.id}, devuelto por el banco, cobrada en la mesa.`,
@@ -336,7 +337,7 @@ export class ZonasService {
           await exigirSinReemision(tx, r);
           const reemision = await tx.recibo.create({
             data: {
-              hermanoId: r.hermanoId, year: r.year, tipo: r.tipo, importe: r.importe, estado: EstadoPago.EXENTO,
+              hermanoId: r.hermanoId, year: r.year, tipo: r.tipo, importe: r.importe, estado: EstadoPago.EXENTO, reemisionDeId: r.id,
               concepto: await conceptoDeReemision(tx, r.hermanoId, r.year, r.concepto), observaciones: nota,
             },
           });

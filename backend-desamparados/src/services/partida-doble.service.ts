@@ -7,7 +7,8 @@ import ExcelJS from 'exceljs';
 import db from '../config/db';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
-import { diaMadrid, inicioDiaMadrid } from '../domain/contabilidad.js';
+import { CATEGORIA_DEVOLUCIONES, diaMadrid, inicioDiaMadrid } from '../domain/contabilidad.js';
+import { TipoTransaccion } from '@prisma/client';
 import { aCentimos } from '../domain/sepa.js';
 import {
   PLAN, cuentaDeResultados, cuentaPropuesta, esCuentaDelPlan, libroDiario, nombreDeCuenta, sumasYSaldos, type ApunteDeCaja, type TraspasoABanco,
@@ -29,17 +30,47 @@ async function planDeCategorias() {
   });
 }
 
+/**
+ * El reverso de un recibo devuelto o reembolsado deshace su ingreso, así que
+ * minora la cuenta de ese ingreso: la de un donativo (740) o una papeleta
+ * (721), no siempre la de cuotas (720), que es la que se proponía para
+ * «Devoluciones de recibos». Con un donativo devuelto salía «740: +50» y
+ * «720: −50» sin haberse cobrado ni devuelto ninguna cuota. El ingreso puede
+ * ser de otro ejercicio. Devuelve, por id de apunte, la cuenta de su ingreso.
+ */
+async function cuentasDeLosReversos(
+  apuntes: { id: number; tipo: string; categoriaId: number; reciboId: number | null }[],
+  plan: { id: number; nombre: string; tipo: string; cuenta: string }[],
+): Promise<Map<number, string>> {
+  const devoluciones = plan.find((c) => c.tipo === 'GASTO' && c.nombre === CATEGORIA_DEVOLUCIONES)?.id;
+  const reversos = apuntes.filter((a) => a.tipo === 'GASTO' && a.categoriaId === devoluciones && a.reciboId !== null);
+  if (reversos.length === 0) return new Map();
+  const ingresos = await db.transaccion.findMany({
+    where: { tipo: TipoTransaccion.INGRESO, reciboId: { in: [...new Set(reversos.map((r) => r.reciboId!))] } },
+    select: { reciboId: true, categoriaId: true },
+    orderBy: { id: 'asc' },
+  });
+  const cuentaDe = new Map(plan.map((c) => [c.id, c.cuenta]));
+  const cuentaDelRecibo = new Map<number, string>();
+  for (const i of ingresos) if (!cuentaDelRecibo.has(i.reciboId!)) cuentaDelRecibo.set(i.reciboId!, cuentaDe.get(i.categoriaId)!);
+  return new Map(reversos.flatMap((r) => {
+    const cuenta = cuentaDelRecibo.get(r.reciboId!);
+    return cuenta ? [[r.id, cuenta] as const] : [];
+  }));
+}
+
 async function asientosDelEjercicio(anio: number) {
   const plan = await planDeCategorias();
   const cuentaDe = new Map(plan.map((c) => [c.id, c.cuenta]));
   const apuntes = await db.transaccion.findMany({
     where: { fecha: { gte: inicioDiaMadrid(`${anio}-01-01`), lt: inicioDiaMadrid(`${anio + 1}-01-01`) } },
-    select: { id: true, fecha: true, concepto: true, tipo: true, importe: true, metodoPago: true, categoriaId: true },
+    select: { id: true, fecha: true, concepto: true, tipo: true, importe: true, metodoPago: true, categoriaId: true, reciboId: true },
     orderBy: [{ fecha: 'asc' }, { id: 'asc' }],
   });
+  const cuentaDelReverso = await cuentasDeLosReversos(apuntes, plan);
   const deCaja: ApunteDeCaja[] = apuntes.map((a) => ({
     id: a.id, fecha: diaMadrid(a.fecha), concepto: a.concepto, tipo: a.tipo, centimos: aCentimos(a.importe),
-    metodoPago: a.metodoPago, cuentaCategoria: cuentaDe.get(a.categoriaId)!,
+    metodoPago: a.metodoPago, cuentaCategoria: cuentaDelReverso.get(a.id) ?? cuentaDe.get(a.categoriaId)!,
   }));
   // El efectivo de la tienda llevado al banco: de Caja a Bancos.
   const ingresos = await db.ingresoEfectivoTienda.findMany({

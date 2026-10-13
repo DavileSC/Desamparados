@@ -53,5 +53,7 @@ export const crearSalidaSchema = type({ body: datosSalida });
 export const editarSalidaSchema = type({ params: { id: idParam }, body: datosSalida.partial() });
 export const fechaDeSalidaSchema = type({
   params: { id: idParam },
-  body: { inicio: 'string > 0', 'lugar?': lugar },
+  // `aMano`: una salida de la Pascua pasa a mano con esta fecha, en una sola
+  // operación (ver `SalidasService.fijarFecha`).
+  body: { inicio: 'string > 0', 'lugar?': lugar, 'aMano?': 'boolean' },
 });

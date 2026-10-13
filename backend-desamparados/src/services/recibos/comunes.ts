@@ -16,7 +16,7 @@ import { anioDeLaSalida, diaMadrid, fechaDeSalida } from '../../domain/fecha-sal
 import { reglaDe, type SalidaConActo } from '../procesion/salidas.service.js';
 import { palabrasDeBusqueda } from '../../domain/busqueda-texto.js';
 import { CATEGORIA_COMISIONES, CATEGORIA_DE_RECIBO, CATEGORIA_DEVOLUCIONES } from '../../domain/contabilidad.js';
-import { idsReemitidos, type ClaveRecibo } from '../../domain/reemisiones.js';
+import { idsReemitidos } from '../../domain/reemisiones.js';
 
 type Tx = Prisma.TransactionClient;
 
@@ -316,31 +316,25 @@ export async function apuntarComisionEnTransaccion(
  *
  * Va dentro de la transacción de quien cobra, y antes de mirar escribe en la
  * fila del devuelto: dos cobros a la vez del mismo devuelto chocan en esa
- * fila (y el reintento ya ve la reemisión del otro) en vez de emitir dos.
+ * fila (y el reintento ya ve la reemisión del otro) en vez de emitir dos. Y
+ * si aun así se colaran, el índice único de `reemisionDeId` no deja dos.
  */
-export async function exigirSinReemision(tx: Tx, r: { id: number; hermanoId: number; year: number; tipo: TipoRecibo; concepto: string }) {
+export async function exigirSinReemision(tx: Tx, r: { id: number; concepto: string }) {
   await tx.recibo.update({ where: { id: r.id }, data: { updatedAt: new Date() } });
-  const posterior = await tx.recibo.findFirst({ where: { hermanoId: r.hermanoId, year: r.year, tipo: r.tipo, id: { gt: r.id } }, select: { id: true } });
-  if (posterior) throw new HttpError(MENSAJE_YA_REEMITIDO(r.concepto), 409);
+  const reemision = await tx.recibo.findUnique({ where: { reemisionDeId: r.id }, select: { id: true } });
+  if (reemision) throw new HttpError(MENSAJE_YA_REEMITIDO(r.concepto), 409);
 }
 
 export const MENSAJE_YA_REEMITIDO = (concepto: string) => `«${concepto}» ya se volvió a emitir: lo que queda por cobrar es el recibo nuevo. Recarga la ficha.`;
 
-/**
- * De estos devueltos, cuáles ya tienen reemisión (ver `domain/reemisiones`).
- * Se leen solo los recibos de sus hermanos, años y tipos: nunca la tabla entera.
- */
-export async function reemitidosDe(devueltos: ClaveRecibo[]): Promise<Set<number>> {
+/** De estos devueltos, cuáles ya tienen reemisión (ver `domain/reemisiones`). */
+export async function reemitidosDe(devueltos: { id: number }[]): Promise<Set<number>> {
   if (devueltos.length === 0) return new Set();
-  const recibos = await db.recibo.findMany({
-    where: {
-      hermanoId: { in: [...new Set(devueltos.map((d) => d.hermanoId))] },
-      year: { in: [...new Set(devueltos.map((d) => d.year))] },
-      tipo: { in: [...new Set(devueltos.map((d) => d.tipo as TipoRecibo))] },
-    },
-    select: { id: true, hermanoId: true, year: true, tipo: true },
+  const reemisiones = await db.recibo.findMany({
+    where: { reemisionDeId: { in: devueltos.map((d) => d.id) } },
+    select: { reemisionDeId: true },
   });
-  return idsReemitidos(devueltos, recibos);
+  return idsReemitidos(reemisiones);
 }
 
 /**
@@ -350,7 +344,7 @@ export async function reemitidosDe(devueltos: ClaveRecibo[]): Promise<Set<number
 export async function devueltosPendientes(where: Prisma.ReciboWhereInput = {}): Promise<{ total: number; importe: number }> {
   const devueltos = await db.recibo.findMany({
     where: { ...where, estado: EstadoPago.DEVUELTO },
-    select: { id: true, hermanoId: true, year: true, tipo: true, importe: true },
+    select: { id: true, importe: true },
   });
   const reemitidos = await reemitidosDe(devueltos);
   const pendientes = devueltos.filter((d) => !reemitidos.has(d.id));

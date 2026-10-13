@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
-import { EstadoPago, Role, TipoRecibo } from '@prisma/client';
+import { EstadoPago, EstadoSolicitud, OrigenSolicitud, Role, TipoRecibo } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
@@ -17,8 +17,12 @@ import { HttpError } from '../src/utils/error.handle.js';
 import { ponerTransporte } from '../src/services/correos/envio.js';
 import { ComunicadosService, envioTerminado } from '../src/services/comunicados.service.js';
 import { tokenDeBaja } from '../src/domain/comunicados.js';
+import { ModulosService } from '../src/services/modulos.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { SIN_DB } from './fixtures/sin-db.js';
+import { encenderModulos } from './fixtures/modulos.js';
+import { PASION, aLaSalida, literal, salida as salidaDePrueba } from './fixtures/salidas.js';
+import { anioDeLaMesa } from '../src/services/procesion/zonas.service.js';
 
 let dbDisponible = false;
 let server: Server;
@@ -124,8 +128,9 @@ test('el aviso va a todos los activos del segmento, y los filtros se suman', asy
     await db.recibo.create({ data: { hermanoId: conDeuda.id, year: 2099, concepto: 'Cuota 2099', importe: '30', tipo: TipoRecibo.CUOTA_HERMANO } });
     // Ni un donativo pendiente ni una cuota devuelta que ya se reemitió (y pagó) son cuotas por cobrar.
     await db.recibo.create({ data: { hermanoId: pepe.id, year: 2099, concepto: 'Donativo', importe: '10', tipo: TipoRecibo.DONATIVO } });
-    await db.recibo.create({ data: { hermanoId: pepe.id, year: 2098, concepto: 'Cuota 2098', importe: '30', tipo: TipoRecibo.CUOTA_HERMANO, estado: EstadoPago.DEVUELTO } });
-    await db.recibo.create({ data: { hermanoId: pepe.id, year: 2098, concepto: 'Cuota 2098 (reemisión)', importe: '30', tipo: TipoRecibo.CUOTA_HERMANO, estado: EstadoPago.PAGADO } });
+    const devuelta = await db.recibo.create({ data: { hermanoId: pepe.id, year: 2098, concepto: 'Cuota 2098', importe: '30', tipo: TipoRecibo.CUOTA_HERMANO, estado: EstadoPago.DEVUELTO } });
+    // La reemisión apunta a su devuelta (NG1): es el enlace lo que la da por reemitida.
+    await db.recibo.create({ data: { hermanoId: pepe.id, year: 2098, concepto: 'Cuota 2098 (reemisión)', importe: '30', tipo: TipoRecibo.CUOTA_HERMANO, estado: EstadoPago.PAGADO, reemisionDeId: devuelta.id } });
 
     assert.equal((await ComunicadosService.destinatarios('AVISO', { poblacion: e.pueblo })).correos, 3);
     assert.equal((await ComunicadosService.destinatarios('AVISO', { poblacion: e.pueblo, edad: 'MAYORES' })).correos, 2);
@@ -170,21 +175,60 @@ test('los fallidos se reintentan, y la prueba llega a quien la pide', async (t) 
   }
 });
 
-test('la baja del boletín desde el enlace, sin sesión; con el enlace cambiado, no', async (t) => {
+// NG12: «apuntados a…» llega a quien pidió la papeleta y a quien ya la recogió.
+test('«apuntados a» una salida: con la solicitud pendiente o con la papeleta de su año', async (t) => {
   if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const restaurar = await encenderModulos(['agenda', 'procesion']);
   const e = await escenario();
   try {
+    const pasion = await salidaDePrueba(PASION);
+    const year = anioDeLaMesa(pasion);
+    const pide = await e.ficha({ nombre: 'Pide', email: 'pide.apuntados@ejemplo.test' });
+    const tiene = await e.ficha({ nombre: 'Tiene', email: 'tiene.apuntados@ejemplo.test' });
+    const cancelo = await e.ficha({ nombre: 'Cancela', email: 'cancela.apuntados@ejemplo.test' });
+    const otroAnio = await e.ficha({ nombre: 'Antes', email: 'antes.apuntados@ejemplo.test' });
+    await e.ficha({ nombre: 'Nada', email: 'nada.apuntados@ejemplo.test' });
+    const solicitud = (hermanoId: number, estado: EstadoSolicitud, y = year) =>
+      db.solicitud.create({ data: { hermanoId, salidaId: pasion.id, year: y, puesto: 'Nazareno', origen: OrigenSolicitud.WEB, estado } });
+    await solicitud(pide.id, EstadoSolicitud.PENDIENTE);
+    await solicitud(cancelo.id, EstadoSolicitud.CANCELADA);
+    await solicitud(otroAnio.id, EstadoSolicitud.PENDIENTE, year - 1);
+    const recibo = await db.recibo.create({ data: { hermanoId: tiene.id, year, concepto: 'Papeleta', importe: '0', tipo: TipoRecibo.PAPELETA_SITIO, estado: EstadoPago.PAGADO } });
+    await db.papeletaSitio.create({ data: { hermanoId: tiene.id, salidaId: pasion.id, year, puesto: 'Nazareno', reciboId: recibo.id } });
+
+    const r = await ComunicadosService.destinatarios('AVISO', { poblacion: e.pueblo, apuntadosA: pasion.id });
+    assert.equal(r.fichas, 2);
+    const c = await e.crear('AVISO', { apuntadosA: pasion.id });
+    assert.match(c.para, literal(`apuntados ${await aLaSalida(PASION)}`));
+  } finally {
+    await db.solicitud.deleteMany({ where: { hermano: { poblacion: e.pueblo } } });
+    await db.papeletaSitio.deleteMany({ where: { hermano: { poblacion: e.pueblo } } });
+    await e.recoger();
+    await restaurar();
+  }
+});
+
+test('la baja del boletín desde el enlace, sin sesión y con el módulo apagado; con el enlace cambiado, no', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  const antes = await db.modulo.findUnique({ where: { clave: 'comunicados' }, select: { activo: true } });
+  try {
     const ana = await e.ficha({ nombre: 'Ana', email: 'ana.baja@ejemplo.test', boletin: true });
-    const res = await fetch(`${baseUrl}/api/comunicados/baja-boletin`, {
+    // El boletín ya está en los buzones cuando se apaga el módulo: el enlace tiene que seguir valiendo.
+    await db.modulo.updateMany({ where: { clave: 'comunicados' }, data: { activo: false } });
+    await ModulosService.cargar();
+    const res = await fetch(`${baseUrl}/api/boletin/baja`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: tokenDeBaja('ana.baja@ejemplo.test', process.env.JWT_SECRET!) }),
     });
     assert.equal(res.status, 200);
     assert.equal((await db.hermano.findUniqueOrThrow({ where: { id: ana.id } })).boletin, false);
 
-    const mal = await fetch(`${baseUrl}/api/comunicados/baja-boletin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: 'abc.def' }) });
+    const mal = await fetch(`${baseUrl}/api/boletin/baja`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: 'abc.def' }) });
     assert.equal(mal.status, 400);
   } finally {
+    if (antes) await db.modulo.updateMany({ where: { clave: 'comunicados' }, data: { activo: antes.activo } });
+    await ModulosService.cargar();
     await e.recoger();
   }
 });

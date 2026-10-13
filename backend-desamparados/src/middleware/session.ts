@@ -3,6 +3,7 @@ import { verifyToken, AuthTokenPayload } from "../utils/jwt.handle.js";
 import { AreaSesion, nombreCookie } from "../utils/cookies.js";
 import db from "../config/db.js";
 import { ModulosService } from "../services/modulos.service.js";
+import { conModulo } from "./modulos.js";
 
 // 1. DECLARATION MERGING: Extiende el Request global de Express de forma automática
 declare global {
@@ -14,8 +15,13 @@ declare global {
        * en las rutas de staff, para que la auditoría apunte a quien corresponde.
        */
       user?: AuthTokenPayload;
-      /** Las dos sesiones que trae el navegador, cada una ya validada. */
-      sesiones: { cms: AuthTokenPayload | null; hermano: AuthTokenPayload | null };
+      /**
+       * Las dos sesiones que trae el navegador, cada una ya validada.
+       * `hermanoSinConfirmar`: había una del área, buena, pero `authenticateToken`
+       * la ha apartado por el primer acceso pendiente. `exigirAreaHermanos` la
+       * necesita para responder 403 (ir a la revisión) y no 401 (volver a entrar).
+       */
+      sesiones: { cms: AuthTokenPayload | null; hermano: AuthTokenPayload | null; hermanoSinConfirmar?: boolean };
     }
   }
 }
@@ -100,8 +106,15 @@ export const PRIMER_ACCESO_PENDIENTE = 'PRIMER_ACCESO_PENDIENTE';
  * de «Mi perfil» que reutiliza). `/auth/me` y `/auth/logout` no pasan por
  * aquí: no llevan `authenticateToken`. Una pantalla nueva en la revisión que
  * llame a otra ruta tiene que añadirla aquí, o recibirá el 403.
+ *
+ * Descargar los datos y borrar la cuenta (RGPD, arts. 15 y 17) también: son
+ * derechos de la persona, y exigirle antes el DNI, la dirección o el IBAN que
+ * faltan en su ficha para poder ejercerlos sería pedirle justo lo que quizá
+ * no quiere dar.
  */
 const RUTAS_DE_LA_REVISION: { metodo: string; ruta: RegExp }[] = [
+  { metodo: 'GET', ruta: /^\/api\/auth\/mis-datos\/?$/i },
+  { metodo: 'DELETE', ruta: /^\/api\/auth\/mi-cuenta\/?$/i },
   { metodo: 'GET', ruta: /^\/api\/hermanos\/mis-perfiles\/?$/i },
   { metodo: 'PUT', ruta: /^\/api\/hermanos\/mis-perfiles\/[^/]+\/?$/i },
   { metodo: '*', ruta: /^\/api\/hermanos\/primer-acceso\/./i },
@@ -134,7 +147,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     return res.status(401).json({ error: 'NO_TOKEN_PROVIDED', message: 'Se requiere una sesión iniciada' });
   }
   if (req.sesiones.hermano?.primerAccesoPendiente && !esDeLaRevision(req)) {
-    req.sesiones = { cms: req.sesiones.cms, hermano: null };
+    req.sesiones = { cms: req.sesiones.cms, hermano: null, hermanoSinConfirmar: true };
     req.user = req.sesiones.cms ?? undefined;
     if (!req.sesiones.cms) {
       return res.status(403).json({
@@ -146,3 +159,34 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
   next();
 };
 
+const guardaDelArea = conModulo('area-hermanos');
+
+/**
+ * La guarda de las rutas propias del área de hermanos (mis fichas, el primer
+ * acceso, mi procesión, mis recibos y certificados, mis datos y borrar mi
+ * cuenta), detrás de `authenticateToken`; nunca en las `/admin`.
+ *
+ * Solo vale la sesión del área: `authenticateToken` deja pasar con cualquiera
+ * de las dos, y caer a la del CMS hacía dos daños. Uno, un cargo pedía
+ * papeletas o daba de alta a un menor por la API con el área apagada o sin
+ * haber revisado su ficha. Otro, en un ordenador con el CMS abierto, la sesión
+ * del área caducaba sin 401: la web no se enteraba, y sus pantallas (y
+ * «Descargar mis datos») pasaban a ser las de la cuenta del CMS, que puede ser
+ * otra persona. Con las dos cookies, `req.user` queda en la del área.
+ */
+export const exigirAreaHermanos = (req: Request, res: Response, next: NextFunction) =>
+  guardaDelArea(req, res, (error?: unknown) => {
+    if (error) return next(error);
+    const hermano = req.sesiones?.hermano;
+    if (req.sesiones?.hermanoSinConfirmar || (hermano?.primerAccesoPendiente && !esDeLaRevision(req))) {
+      return res.status(403).json({
+        error: PRIMER_ACCESO_PENDIENTE,
+        message: 'Antes de usar el área de hermanos tienes que revisar y confirmar tu ficha.',
+      });
+    }
+    if (!hermano) {
+      return res.status(401).json({ error: 'NO_TOKEN_PROVIDED', message: 'Se requiere una sesión del área de hermanos' });
+    }
+    req.user = hermano;
+    next();
+  });

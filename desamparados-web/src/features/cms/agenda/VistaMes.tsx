@@ -6,6 +6,7 @@ import type { EventoDelCalendario } from '../../../lib/api/agenda'
 import { segunModo } from '../../../theme/cms'
 import { claveDia, colores, type Tramo } from './calendario'
 import { hora, loQueFalta } from './fechas'
+import { hoyDelCalendario } from '../../../lib/horaDeMadrid'
 import { MARCA, alfa } from '../../../theme/marca'
 
 const DIAS_SEMANA = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom']
@@ -44,7 +45,7 @@ interface Props {
  * Los días de reparto de papeletas los pone Procesión: van con el borde
  * discontinuo, como en el calendario del Inicio.
  */
-export default function VistaMes({ primero, dias, porDia, elegido, portada, hoy = new Date(), alto, onElegir }: Props) {
+export default function VistaMes({ primero, dias, porDia, elegido, portada, hoy = hoyDelCalendario(), alto, onElegir }: Props) {
   const { superficies } = useTemaCms()
   const claveHoy = claveDia(hoy)
   const semanas = dias.length / 7

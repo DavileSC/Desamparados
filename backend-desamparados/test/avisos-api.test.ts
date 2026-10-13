@@ -179,13 +179,15 @@ describe('los tiempos y la cuenta atrás del retablo', () => {
   const FOTO_CUARESMA = '/storage/public/11111111111111111111111111111111.webp';
   const FOTO_TODO_EL_ANIO = '/storage/public/22222222222222222222222222222222.webp';
   // Un mes a mano que siempre incluye hoy: así la foto de hoy es la suya sea cuando sea.
+  // Hasta el 28, que existe en todos los meses, o hasta hoy si ya ha pasado:
+  // con el 28 fijo, los días 29 a 31 la prueba se omitía (unos siete al año).
   const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date());
   const mm = hoy.slice(5, 7);
-  const ESTE_MES = { tiempo: 'a-mano', nombre: 'Este mes', desde: `${mm}-01`, hasta: `${mm}-28`, foto: FOTO_CUARESMA, x: 40, y: 20 };
+  const hasta = Number(hoy.slice(8, 10)) > 28 ? hoy.slice(8, 10) : '28';
+  const ESTE_MES = { tiempo: 'a-mano', nombre: 'Este mes', desde: `${mm}-01`, hasta: `${mm}-${hasta}`, foto: FOTO_CUARESMA, x: 40, y: 20 };
 
   test('se guardan con la foto de todo el año, y el Inicio recibe la foto que toca hoy', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    if (Number(hoy.slice(8, 10)) > 28) return t.skip('los días 29 a 31 caen fuera del mes de prueba');
     const hm = await cargo(Role.HERMANO_MAYOR);
     const guardado = await pedir('/retablo', hm.cookie, 'PUT', {
       foto: FOTO_TODO_EL_ANIO, x: 50, y: 30, tiempos: [{ tiempo: 'cuaresma', foto: FOTO_CUARESMA, x: 50, y: 30 }, ESTE_MES], cuenta: { tipo: 'ninguna' },

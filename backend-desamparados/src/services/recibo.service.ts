@@ -17,7 +17,7 @@ import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditor
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { anulaPapeleta, estadosCobrablesCon, MENSAJE_REMESADO_EN_MANO, puedeCobrarse, puedeTransicionar, requiereReverso } from '../domain/recibo-estados.js';
-import { instanteDelApunte } from '../domain/contabilidad.js';
+import { diaMadrid, instanteDelApunte } from '../domain/contabilidad.js';
 import { enmascararEmail } from '../utils/log-privacidad.js';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { agruparImpagos } from '../domain/impagos.js';
@@ -25,7 +25,7 @@ import { diaDeHoy } from '../domain/fechas-hermano.js';
 import { ORDENES_RECIBOS, ordenDe } from '../domain/ordenacion.js';
 import {
   ESTADOS_CUOTA_VIVA, MENSAJE_ESTADO_CAMBIADO, apuntarComisionEnTransaccion, devolverCobroEnTransaccion, fotoRecibo,
-  idCategoriaComisiones, idCategoriaDevoluciones, idCategoriaIngresos, leerDatosEvento, reemitidosDe, retirarPapeletaEnTransaccion,
+  idCategoriaComisiones, idCategoriaDevoluciones, idCategoriaIngresos, exigirSinReemision, leerDatosEvento, reemitidosDe, retirarPapeletaEnTransaccion,
   whereRecibosAdmin, type ConsultaRecibos,
 } from './recibos/comunes.js';
 
@@ -51,6 +51,9 @@ export class ReciboService {
         select: {
           id: true, year: true, concepto: true, importe: true, fechaEmision: true,
           estado: true, fechaPago: true, metodoPago: true, observaciones: true, tipo: true,
+          // Un REMESADO sin remesa (de cuando se podía «enviar al banco» a
+          // mano) puede volver a PENDIENTE; con remesa, no: la web lo decide por esto.
+          remesaId: true,
           hermano: { select: { id: true, nombre: true, apellidos: true, numeroHermano: true } }
         }
       }),
@@ -58,7 +61,7 @@ export class ReciboService {
     ]);
 
     // Un devuelto ya reemitido no pide nada: la pantalla deja de ofrecer reemitirlo.
-    const reemitidos = await reemitidosDe(data.filter((r) => r.estado === EstadoPago.DEVUELTO).map((r) => ({ ...r, hermanoId: r.hermano.id })));
+    const reemitidos = await reemitidosDe(data.filter((r) => r.estado === EstadoPago.DEVUELTO));
     return respuestaPaginada(data.map((r) => ({ ...r, reemitido: reemitidos.has(r.id) })), total, paginacion);
   }
 
@@ -105,7 +108,7 @@ export class ReciboService {
       },
     });
     // Una cuota devuelta y ya reemitida no se debe dos veces: cuenta su reemisión.
-    const reemitidas = await reemitidosDe(leidos.filter((r) => r.estado === EstadoPago.DEVUELTO).map((r) => ({ ...r, hermanoId: r.hermano.id, tipo: TipoRecibo.CUOTA_HERMANO })));
+    const reemitidas = await reemitidosDe(leidos.filter((r) => r.estado === EstadoPago.DEVUELTO));
     const recibos = leidos.filter((r) => !reemitidas.has(r.id));
     const filas = agruparImpagos(recibos, Number(query.minimo ?? 1));
     const paginacion = sanearPaginacion(query);
@@ -235,7 +238,15 @@ export class ReciboService {
       // hermano pagaba dos veces. Solo cuenta la cuota viva (por cobrar,
       // remesada o cobrada): tras una devuelta o anulada, emitir otra es
       // justo la reemisión que este extremo existe para permitir.
-      if (dto.tipo === TipoRecibo.CUOTA_HERMANO) {
+      //
+      // Con `reemisionDeId` no se mira: el enlace explícito manda, y ya está
+      // acotado (un devuelto del mismo año y tipo, sin otra reemisión). Es lo
+      // que cierra el devuelto que el relleno de la migración
+      // 20261119200000_reemision_de dejó suelto porque su reemisión se emitió
+      // a mano sin «(reemisión)»: DEVUELTO es final y Tesorería no puede
+      // anularlo (lo contrario de lo que dice el comentario de esa migración),
+      // así que se reemite enlazado y se anula la nueva, que sobra.
+      if (dto.tipo === TipoRecibo.CUOTA_HERMANO && dto.reemisionDeId === undefined) {
         const cuotaViva = await tx.recibo.findFirst({
           where: { hermanoId: dto.hermanoId, year: dto.year, tipo: TipoRecibo.CUOTA_HERMANO, estado: { in: [...ESTADOS_CUOTA_VIVA] } },
           select: { concepto: true, estado: true }
@@ -245,10 +256,36 @@ export class ReciboService {
         }
       }
 
+      // Una cuota nueva con la de ese año devuelta y sin reemitir es su
+      // reemisión aunque no se diga: solo hay una cuota por año, y si no se
+      // enlazara la deuda contaría dos veces.
+      let reemisionDeId = dto.reemisionDeId;
+      if (reemisionDeId === undefined && dto.tipo === TipoRecibo.CUOTA_HERMANO) {
+        const devuelta = await tx.recibo.findFirst({
+          where: { hermanoId: dto.hermanoId, year: dto.year, tipo: TipoRecibo.CUOTA_HERMANO, estado: EstadoPago.DEVUELTO, reemision: { is: null } },
+          orderBy: { id: 'desc' },
+          select: { id: true },
+        });
+        reemisionDeId = devuelta?.id;
+      }
+
+      // Una reemisión es del mismo hermano, año y tipo que su devuelto, y
+      // solo una por devuelto (exigirSinReemision).
+      if (reemisionDeId !== undefined) {
+        const devuelto = await tx.recibo.findUnique({ where: { id: reemisionDeId } });
+        if (!devuelto || devuelto.hermanoId !== dto.hermanoId) throw new NotFoundError('No se encontró el recibo devuelto que se quiere reemitir.');
+        if (devuelto.estado !== EstadoPago.DEVUELTO) throw new HttpError(`«${devuelto.concepto}» no está devuelto: solo se reemite un recibo devuelto.`, 409);
+        if (devuelto.year !== dto.year || devuelto.tipo !== dto.tipo) {
+          throw new HttpError(`La reemisión de «${devuelto.concepto}» tiene que ser del mismo año y tipo que él.`, 400);
+        }
+        await exigirSinReemision(tx, devuelto);
+      }
+
       return tx.recibo.create({
         data: {
           hermanoId: dto.hermanoId,
           year: dto.year,
+          reemisionDeId: reemisionDeId ?? null,
           concepto,
           importe: new Prisma.Decimal(dto.importe),
           tipo: dto.tipo as TipoRecibo,
@@ -259,7 +296,7 @@ export class ReciboService {
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     await AuditoriaService.log(ACCIONES_AUDITORIA.RECIBO_EMITIR, meta ?? {}, 'recibo', recibo.id, {
-      despues: { hermanoId: recibo.hermanoId, year: recibo.year, concepto: recibo.concepto, tipo: recibo.tipo, ...fotoRecibo(recibo) }
+      despues: { hermanoId: recibo.hermanoId, year: recibo.year, concepto: recibo.concepto, tipo: recibo.tipo, reemisionDeId: recibo.reemisionDeId, ...fotoRecibo(recibo) }
     });
 
     return recibo;
@@ -390,7 +427,8 @@ export class ReciboService {
   }
 
   // Cambiar el estado de un recibo y los datos de su papeleta (puesto, tramo)
-  static async adminUpdateDetalles(reciboId: number, data: UpdateReciboDto, meta?: MetaDeAuditoria) {
+  // `delExtracto`: la devolución la trae un extracto Norma 43 (ver más abajo).
+  static async adminUpdateDetalles(reciboId: number, data: UpdateReciboDto, meta?: MetaDeAuditoria, { delExtracto = false } = {}) {
     const tocaPapeleta = data.puesto !== undefined || data.tramo !== undefined || data.observaciones !== undefined;
     // Solo una devolución puede necesitar el reverso; la categoría se resuelve
     // antes de abrir la transacción (ver idCategoriaDeRecibos).
@@ -419,8 +457,21 @@ export class ReciboService {
 
       // El grafo de transiciones vive en src/domain/recibo-estados.ts para
       // poder probarlo sin base de datos.
-      if (cambiaEstado && !puedeTransicionar(actual.estado, destino)) {
+      if (cambiaEstado && !puedeTransicionar(actual.estado, destino, actual)) {
         throw new HttpError(`No se puede cambiar un recibo de ${actual.estado} a ${destino}.`);
+      }
+      // El día de la devolución no puede ser anterior al ingreso: el reverso
+      // caería en otro ejercicio sin nada que deshacer (un año mal puesto).
+      // El de un extracto es el del banco y no es un error: si la remesa se
+      // dio por cobrada a mano días después, el reverso va al día del cobro.
+      let fechaReverso = fechaDevolucion;
+      if (cambiaEstado && data.fechaDevolucion !== undefined && requiereReverso(actual.estado, destino)) {
+        const ingreso = await tx.transaccion.findFirst({ where: { reciboId, tipo: TipoTransaccion.INGRESO }, orderBy: { fecha: 'asc' }, select: { fecha: true } });
+        const diaDelCobro = ingreso ? diaMadrid(ingreso.fecha) : actual.fechaPago ? diaMadrid(actual.fechaPago) : null;
+        if (diaDelCobro !== null && data.fechaDevolucion < diaDelCobro) {
+          if (!delExtracto) throw new HttpError(`El día de la devolución no puede ser anterior al del cobro (${diaDelCobro.split('-').reverse().join('/')}).`);
+          fechaReverso = instanteDelApunte(diaDelCobro);
+        }
       }
       // Un recibo que ya estaba devuelto no genera otra comisión.
       if (data.comision !== undefined && !cambiaEstado) {
@@ -435,7 +486,7 @@ export class ReciboService {
           if (categoriaDevolucionesId === null) throw new Error('Falta la categoría de devoluciones.');
           await devolverCobroEnTransaccion(tx, actual, categoriaDevolucionesId, {
             destino: destino as typeof EstadoPago.DEVUELTO | typeof EstadoPago.REEMBOLSADO,
-            fecha: fechaDevolucion,
+            fecha: fechaReverso,
           });
         } else {
           // Condicionado al estado que se validó: si entre la lectura y la
@@ -449,7 +500,7 @@ export class ReciboService {
         }
 
         if (categoriaComisionesId !== null && data.comision !== undefined) {
-          await apuntarComisionEnTransaccion(tx, actual, data.comision, categoriaComisionesId, fechaDevolucion);
+          await apuntarComisionEnTransaccion(tx, actual, data.comision, categoriaComisionesId, fechaReverso);
         }
 
         // Coherencia con la mesa de reparto: un recibo de papeleta devuelto o

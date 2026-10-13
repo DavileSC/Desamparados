@@ -80,6 +80,13 @@ describe('qué semilla vale', () => {
     );
   });
 
+  test('una clave retirada del de partida no para el arranque: se tira al mezclar', () => {
+    const semilla = validarContenidoInicial({ portada: { agenda: { titulo: 'Cultos', directoTitulo: 'Ver en directo', directoTexto: 'Desde la sede' } } });
+    const agenda = (semilla.get('portada') as { agenda: Record<string, unknown> }).agenda;
+    assert.equal(agenda.titulo, 'Cultos');
+    assert.ok(!('directoTitulo' in agenda) && !('directoTexto' in agenda));
+  });
+
   test('todos los problemas a la vez, para corregirlos de una pasada', () => {
     assert.throws(() => validarContenidoInicial({ uno: {}, dos: {} }), /2 problemas/);
   });

@@ -15,6 +15,7 @@ import { useAuthStore } from '../../altas/auth/store'
 import { cerrarSesion } from '../../altas/auth/session'
 import { useModulos } from '../../../hooks/useModulos'
 import { CuotaYPago, type Revision } from '../perfil/apartados'
+import MisDerechos from '../perfil/MisDerechos'
 import { deLaCorporacion } from '../../../domain/articulos'
 import { designTokens } from '../../../theme'
 import { site } from '../../../config/site'
@@ -22,6 +23,7 @@ import PasoTusDatos from './PasoTusDatos'
 import PasoFamilia from './PasoFamilia'
 import { enUnaFrase, faltanDeLaCuota, faltanDeTusDatos, faltanDelFamiliar } from './obligatorios'
 import { MARCA, alfa } from '../../../theme/marca'
+import VentanaSesionCaducada from '../../../app/VentanaSesionCaducada'
 
 type ClavePaso = 'datos' | 'cuota' | 'familia' | 'confirmar'
 
@@ -300,6 +302,8 @@ export default function RevisarFichaPage() {
   return (
     <>
       <Helmet><title>{`Revisa tu ficha | ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
+      {/* Si la sesión caduca a media revisión, se vuelve a entrar sin perder lo escrito. */}
+      <VentanaSesionCaducada area="hermanos" />
       <DialogoConfirmacion
         abierto={porDevolver !== null}
         titulo="¿No es de tu familia?"
@@ -357,6 +361,17 @@ export default function RevisarFichaPage() {
               <Button onClick={() => ir(indice - 1)} sx={{ alignSelf: 'flex-start', color: 'text.secondary', textTransform: 'none', letterSpacing: 0, fontSize: 15, px: 0.5 }}>
                 ← Atrás
               </Button>
+            )}
+            {/* Llevarse los datos o borrar la cuenta no espera a completar la
+                ficha: pedir antes el DNI o el IBAN para poder irse sería
+                condicionar un derecho del RGPD (el servidor deja pasar las dos). */}
+            {!hecho && (
+              <Box component="aside" aria-label="Tus datos y tu cuenta" sx={{ mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+                <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
+                  ¿Prefieres no seguir? Sin terminar la revisión puedes descargar tus datos o borrar tu cuenta.
+                </Typography>
+                <MisDerechos />
+              </Box>
             )}
           </Box>
         </Box>

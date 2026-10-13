@@ -16,6 +16,7 @@ import { identidad } from '../src/domain/datos-entidad.js';
 import { ModulosService } from '../src/services/modulos.service.js';
 import rutasPublicas from '../../shared/rutas-publicas.json' with { type: 'json' };
 import { SIN_DB } from './fixtures/sin-db.js';
+import { encenderModulos } from './fixtures/modulos.js';
 
 let server: Server;
 let baseUrl: string;
@@ -86,6 +87,27 @@ test('con Noticias apagado desde el CMS, ni el listado ni las noticias se anunci
     assert.ok(lista.includes(`${DOMINIO}/contacto`), 'el núcleo sigue');
   } finally {
     await db.modulo.updateMany({ where: { clave: 'noticias' }, data: { activo: true } });
+    await ModulosService.cargar();
+  }
+});
+
+// WP13 (auditoría 13-10-2026): las fichas de producto se indexan y no se anunciaban.
+test('con la tienda de la web encendida, cada producto a la venta va con su fecha; el retirado o con la tienda apagada, no', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const restaurar = await encenderModulos(['tienda', 'pago-en-linea', 'tienda-web']);
+  const aLaVenta = await db.producto.create({ data: { nombre: `Sitemap ${sufijo}`, precio: '5' } });
+  const retirado = await db.producto.create({ data: { nombre: `Sitemap retirado ${sufijo}`, precio: '5', activo: false } });
+  try {
+    const xml = await (await fetch(`${baseUrl}/sitemap.xml`)).text();
+    assert.ok(xml.includes(`<url><loc>${DOMINIO}/tienda/producto/${aLaVenta.id}</loc><lastmod>${aLaVenta.updatedAt.toISOString()}</lastmod></url>`));
+    assert.ok(!urls(xml).includes(`${DOMINIO}/tienda/producto/${retirado.id}`), 'el retirado no se anuncia');
+
+    await db.modulo.updateMany({ where: { clave: 'tienda-web' }, data: { activo: false } });
+    await ModulosService.cargar();
+    assert.ok(!urls(await (await fetch(`${baseUrl}/sitemap.xml`)).text()).some((u) => u.includes('/tienda/producto/')));
+  } finally {
+    await db.producto.deleteMany({ where: { id: { in: [aLaVenta.id, retirado.id] } } });
+    await restaurar();
     await ModulosService.cargar();
   }
 });

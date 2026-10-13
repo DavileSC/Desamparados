@@ -48,7 +48,9 @@ const portadaSchema = type({
   actualidad: { ceja: ETIQUETA, titulo: TITULO, enlace: ETIQUETA },
   agenda: {
     ceja: ETIQUETA, titulo: TITULO, parrafo: PARRAFO, enlace: ETIQUETA,
-    directoTitulo: ETIQUETA, directoTexto: ETIQUETA,
+    // `directoTitulo` y `directoTexto` ya no existen (el aviso de retransmisión
+    // no se pintaba nunca): una portada guardada con ellos sigue pasando, y
+    // `mezclarConDefectos` los tira al leerla.
     // La foto velada del fondo del bloque. Vacía, el bloque queda sobre fondo
     // oscuro liso: a diferencia del Sábado de Pasión, aquí la foto es ambiente.
     imagenUrl: sinFoto.or(rutaImagenPublica),

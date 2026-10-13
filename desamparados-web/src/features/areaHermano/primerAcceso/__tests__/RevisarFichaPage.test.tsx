@@ -303,3 +303,55 @@ describe('RevisarFichaPage', () => {
     expect(screen.getByRole('heading', { level: 2, name: /^Bruno Pérez Ruiz n\.º\s302$/ })).toBeInTheDocument()
   })
 })
+
+describe('RevisarFichaPage: los derechos del RGPD no esperan a la revisión', () => {
+  it('con la ficha a medias se puede borrar la cuenta, con la contraseña', async () => {
+    const usuario = userEvent.setup()
+    const fichas = [ficha(1, 'Ana', { dni: null })]
+    const simulado = vi.fn().mockImplementation((url: string, init: RequestInit = {}) => {
+      if (String(url).includes('/auth/mi-cuenta')) {
+        const { password } = JSON.parse(String(init.body)) as { password: string }
+        return Promise.resolve(password === 'La-Buena-2026'
+          ? json({ message: 'Tu cuenta ha sido eliminada y tus datos personales anonimizados.' })
+          : json({ error: 'Contraseña incorrecta: no se puede eliminar la cuenta.' }, 401))
+      }
+      return Promise.resolve(json({ data: fichas, meta: { total: 1, page: 1, limit: 50, totalPages: 1 } }))
+    })
+    vi.stubGlobal('fetch', simulado)
+    renderWithProviders(<RevisarFichaPage />)
+
+    await screen.findByRole('heading', { level: 1, name: 'Tus datos' })
+    expect(screen.getByRole('button', { name: /Sí, es correcto/ })).toBeDisabled()
+    await usuario.click(screen.getByRole('button', { name: 'Borrar mi cuenta' }))
+    const dialogo = await screen.findByRole('dialog', { name: '¿Borrar tu cuenta?' })
+    await usuario.type(within(dialogo).getByLabelText('Tu contraseña'), 'Otra')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Borrar mi cuenta' }))
+    expect(await within(dialogo).findByText('Contraseña incorrecta: no se puede eliminar la cuenta.')).toBeInTheDocument()
+    // Una contraseña equivocada no es una sesión caducada: no se pregunta por las sesiones.
+    expect(llamadasA(simulado, '/auth/me')).toHaveLength(0)
+
+    await usuario.clear(within(dialogo).getByLabelText('Tu contraseña'))
+    await usuario.type(within(dialogo).getByLabelText('Tu contraseña'), 'La-Buena-2026')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Borrar mi cuenta' }))
+    expect(await screen.findByText(/Tu cuenta ha sido eliminada/)).toBeInTheDocument()
+    const borrado = llamadasA(simulado, '/auth/mi-cuenta').at(-1)!
+    expect((borrado[1] as RequestInit).method).toBe('DELETE')
+  })
+
+  it('y descargar los datos', async () => {
+    const usuario = userEvent.setup()
+    const fichas = [ficha(1, 'Ana', { dni: null })]
+    const simulado = vi.fn().mockImplementation((url: string) => Promise.resolve(String(url).includes('/auth/mis-datos')
+      ? json({ cuenta: { email: 'ana@ejemplo.test' } })
+      : json({ data: fichas, meta: { total: 1, page: 1, limit: 50, totalPages: 1 } })))
+    vi.stubGlobal('fetch', simulado)
+    const crear = vi.fn(() => 'blob:mis-datos')
+    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: crear, revokeObjectURL: vi.fn() }))
+    renderWithProviders(<RevisarFichaPage />)
+
+    await screen.findByRole('heading', { level: 1, name: 'Tus datos' })
+    await usuario.click(screen.getByRole('button', { name: 'Descargar mis datos' }))
+    await waitFor(() => expect(crear).toHaveBeenCalledTimes(1))
+    expect(llamadasA(simulado, '/auth/mis-datos')).toHaveLength(1)
+  })
+})

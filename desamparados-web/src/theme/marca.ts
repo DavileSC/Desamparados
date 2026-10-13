@@ -19,7 +19,7 @@
  * La guardiana `src/__tests__/sin-colores-de-marca.test.ts` impide volver a
  * escribir a mano, fuera de aquí, uno de los colores de partida.
  */
-import { alfa, componentes, paletaDeImprenta, paletaDeMarca } from '../../../shared/colores-de-marca.mjs'
+import { FONDOS, alfa, componentes, paletaDeImprenta, paletaDeMarca } from '../../../shared/colores-de-marca.mjs'
 import { instalacion } from '../config/instalacion'
 
 /** Los papeles de la web (pública, CMS y área de hermanos). */
@@ -37,6 +37,12 @@ export const IMPRENTA = paletaDeImprenta(instalacion.marca)
  * compone el `rgba()` él mismo.
  */
 export { alfa, componentes }
+
+/**
+ * Los fondos sobre los que se miden los suelos de contraste: quien pinta sobre
+ * uno de ellos lo toma de aquí, para que el fondo y su suelo no se separen.
+ */
+export { FONDOS }
 
 /**
  * Las variables CSS de la marca, para lo que se pinta desde una hoja .css

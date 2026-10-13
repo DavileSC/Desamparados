@@ -8,6 +8,7 @@ import { Aviso, EnPortada } from './FilaEvento'
 import PuntoTipo from './PuntoTipo'
 import { claveDia, type Tramo } from './calendario'
 import { finEnOtroDia, hora, loQueFalta } from './fechas'
+import { fechaEnMadrid } from '../../../lib/horaDeMadrid'
 
 interface Props {
   dia: Date
@@ -21,6 +22,8 @@ interface Props {
 }
 
 const deMes = (fecha: Date) => fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })
+/** Lo mismo para el instante de un acto: su día en Madrid, no en el de quien edita. */
+const deMesEnMadrid = (instante: Date) => fechaEnMadrid(instante, { day: 'numeric', month: 'long' })
 
 /**
  * El día elegido en el calendario: sus actos enteros, con lo que en la
@@ -63,7 +66,7 @@ export default function PanelDelDia({ dia, actos, portada, volver, altoMaximo, o
 function cuando(evento: EventoDelCalendario) {
   const inicio = new Date(evento.startDate)
   const finOtroDia = finEnOtroDia(evento)
-  if (finOtroDia) return `Del ${deMes(inicio)} al ${deMes(finOtroDia)}, a las ${hora(inicio)}`
+  if (finOtroDia) return `Del ${deMesEnMadrid(inicio)} al ${deMesEnMadrid(finOtroDia)}, a las ${hora(inicio)}`
   return evento.endDate ? `${hora(inicio)} a ${hora(new Date(evento.endDate))}` : hora(inicio)
 }
 

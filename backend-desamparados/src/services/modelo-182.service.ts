@@ -114,6 +114,33 @@ function faltaParaElFichero(c: ConfiguracionModelo182): string[] {
 }
 
 /**
+ * De estos recibos, los que reemiten (directa o indirectamente) uno pagado
+ * por una salida. La reemisión de Tesorería no lleva ni papeleta ni
+ * solicitud, pero sigue siendo el precio de un puesto, no un donativo: hereda
+ * el origen de lo que reemite y no entra en el 182.
+ */
+async function reemisionesDeUnaSalida(recibos: { id: number; reemisionDeId: number | null }[]): Promise<Set<number>> {
+  const fuera = new Set<number>();
+  // Cada reemisión, hacia atrás por su cadena hasta el recibo original.
+  let pendientes = new Map(recibos.flatMap((r) => (r.reemisionDeId === null ? [] : [[r.id, r.reemisionDeId] as const])));
+  for (let vuelta = 0; pendientes.size > 0 && vuelta < 20; vuelta += 1) {
+    const anteriores = new Map((await db.recibo.findMany({
+      where: { id: { in: [...new Set(pendientes.values())] } },
+      select: { id: true, reemisionDeId: true, papeleta: { select: { id: true } }, solicitud: { select: { id: true } } },
+    })).map((a) => [a.id, a]));
+    const siguen = new Map<number, number>();
+    for (const [id, anteriorId] of pendientes) {
+      const anterior = anteriores.get(anteriorId);
+      if (!anterior) continue;
+      if (anterior.papeleta || anterior.solicitud) fuera.add(id);
+      else if (anterior.reemisionDeId !== null) siguen.set(id, anterior.reemisionDeId);
+    }
+    pendientes = siguen;
+  }
+  return fuera;
+}
+
+/**
  * Las aportaciones con NIF de los cuatro últimos ejercicios hasta `ejercicio`
  * (los tres de antes sirven para saber si es recurrente), lo que no se puede
  * declarar y por qué, y los donativos anónimos.
@@ -131,14 +158,16 @@ async function aportaciones(ejercicio: number, cuotas: boolean) {
 
   // --- Recibos de los hermanos.
   const tipos: TipoRecibo[] = cuotas ? [TipoRecibo.DONATIVO, TipoRecibo.CUOTA_HERMANO] : [TipoRecibo.DONATIVO];
-  const recibos = await db.recibo.findMany({
+  const pagados = await db.recibo.findMany({
     where: { estado: EstadoPago.PAGADO, tipo: { in: tipos }, fechaPago: { gte: desde, lt: hasta }, papeleta: null, solicitud: null },
     select: {
-      id: true, importe: true, fechaPago: true, concepto: true,
+      id: true, importe: true, fechaPago: true, concepto: true, reemisionDeId: true,
       hermano: { select: { id: true, nombre: true, apellidos: true, dni: true, fechaNacimiento: true, codigoPostal: true, email: true, userId: true, esTitular: true } },
     },
     orderBy: [{ fechaPago: 'asc' }, { id: 'asc' }],
   });
+  const deSalida = await reemisionesDeUnaSalida(pagados);
+  const recibos = pagados.filter((r) => !deSalida.has(r.id));
   const titulares = new Map((await db.hermano.findMany({
     where: { esTitular: true, userId: { in: [...new Set(recibos.map((r) => r.hermano.userId))] } },
     select: { id: true, userId: true, nombre: true, apellidos: true, dni: true, codigoPostal: true, email: true },

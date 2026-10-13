@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import Boton from '../Boton'
 import ContenedorDePagina from '../ContenedorDePagina'
 import { limpiarHtml } from '../../lib/limpiarHtml'
-import { esDestinoValido } from '../../lib/destinos'
+import { useEnlaceVivo } from '../../hooks/useEnlaceVivo'
 import { anchoMaximo, valorDe } from './presentacion'
 import { SERIF } from '../../features/inicio/estilos'
 import type { BloqueFotoTexto as Datos } from '../../lib/api/contenido'
@@ -19,6 +19,7 @@ import { propsDeFoto } from '../../lib/fotoSubida'
  * bloque de texto.
  */
 export default function BloqueFotoTexto({ bloque }: { bloque: Datos }) {
+  const enlaceVivo = useEnlaceVivo()
   if (valorDe(bloque, 'estilo') === 'fundido') return <Fundido bloque={bloque} />
   const derecha = valorDe(bloque, 'lado') === 'derecha'
   const tercio = valorDe(bloque, 'anchoFoto') === 'tercio'
@@ -56,7 +57,7 @@ export default function BloqueFotoTexto({ bloque }: { bloque: Datos }) {
           }}
           dangerouslySetInnerHTML={{ __html: limpiarHtml(bloque.html) }}
         />
-        {bloque.boton && esDestinoValido(bloque.enlace) && (
+        {bloque.boton && enlaceVivo(bloque.enlace) && (
           <Box sx={{ mt: 3.5 }}>
             <Boton component={Link} to={bloque.enlace}>{bloque.boton}</Boton>
           </Box>
@@ -79,6 +80,7 @@ const NOCHE = '#0a090b'
  * texto. El pie, si lo hay, va pequeño en la esquina de la foto.
  */
 function Fundido({ bloque }: { bloque: Datos }) {
+  const enlaceVivo = useEnlaceVivo()
   const derecha = valorDe(bloque, 'lado') === 'derecha'
   const haciaElTexto = derecha ? '90deg' : '270deg'
   return (
@@ -120,7 +122,7 @@ function Fundido({ bloque }: { bloque: Datos }) {
             }}
             dangerouslySetInnerHTML={{ __html: limpiarHtml(bloque.html) }}
           />
-          {bloque.boton && esDestinoValido(bloque.enlace) && (
+          {bloque.boton && enlaceVivo(bloque.enlace) && (
             <Box sx={{ mt: 3.5 }}>
               <Boton component={Link} to={bloque.enlace}>{bloque.boton}</Boton>
             </Box>

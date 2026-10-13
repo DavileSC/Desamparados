@@ -3,12 +3,13 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { TemaCmsProvider } from '../../../app/temaCms'
 import VentanaSesionCaducada from '../../../app/VentanaSesionCaducada'
 import ExigeRol from '../../../routes/ExigeRol'
 import NoticiaEditPage from '../NoticiaEditPage'
 import { useAuthStore, type AuthUser } from '../../altas/auth/store'
+import { llamarApi } from '../../../lib/api/cliente'
 
 // Fija lo que pasa cuando la sesión del CMS caduca a media edición (8 h fijas
 // en el servidor): antes el 401 vaciaba la sesión, ExigeRol mandaba al acceso
@@ -25,7 +26,7 @@ const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuer
 
 beforeEach(() => {
   sessionStorage.clear()
-  useAuthStore.setState({ status: 'listo', cms: admin, hermano: null, cmsCaducada: false })
+  useAuthStore.setState({ status: 'listo', cms: admin, hermano: null, cmsCaducada: false, hermanoCaducada: false })
 })
 afterEach(() => { vi.unstubAllGlobals() })
 
@@ -98,6 +99,34 @@ describe('la sesión del CMS caduca a media edición', () => {
     const ventana = await screen.findByRole('dialog', { name: 'Tu sesión ha caducado' })
     await user.click(within(ventana).getByRole('button', { name: 'Salir del CMS' }))
     expect(await screen.findByText('pantalla de acceso')).toBeInTheDocument()
+  })
+})
+
+describe('al volver a entrar', () => {
+  /** Una pantalla que pidió algo con la sesión ya caducada y se quedó con el error. */
+  function Recuento() {
+    const { data, isError } = useQuery({ queryKey: ['recuento'], queryFn: () => llamarApi<{ total: number }>('/cms/recuento'), retry: false })
+    return <p>{isError ? 'No se ha podido cargar el recuento.' : data ? `Total: ${data.total}` : 'Cargando…'}</p>
+  }
+
+  it('lo que falló con la sesión caducada se vuelve a pedir, sin recargar la página', async () => {
+    let sesionViva = false
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
+      const u = String(url)
+      if (u.includes('/auth/me')) return Promise.resolve(json({ cms: sesionViva ? admin : null, hermano: null }))
+      if (u.includes('/auth/login')) { sesionViva = true; return Promise.resolve(json({ status: 'OK', user: admin })) }
+      return Promise.resolve(sesionViva ? json({ total: 12 }) : json({ error: 'Token expirado' }, 401))
+    }))
+    const router = createMemoryRouter([{ path: '/cms', element: <><Recuento /><VentanaSesionCaducada /></> }], { initialEntries: ['/cms'] })
+    render(<QueryClientProvider client={new QueryClient()}><HelmetProvider><TemaCmsProvider><RouterProvider router={router} /></TemaCmsProvider></HelmetProvider></QueryClientProvider>)
+    const user = userEvent.setup()
+
+    expect(await screen.findByText('No se ha podido cargar el recuento.')).toBeInTheDocument()
+    const ventana = await screen.findByRole('dialog', { name: 'Tu sesión ha caducado' })
+    await user.type(within(ventana).getByLabelText(/contraseña/i, { selector: 'input' }), 'Desamparados2026')
+    await user.click(within(ventana).getByRole('button', { name: 'Entrar' }))
+
+    expect(await screen.findByText('Total: 12')).toBeInTheDocument()
   })
 })
 

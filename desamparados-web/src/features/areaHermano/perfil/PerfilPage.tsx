@@ -12,6 +12,7 @@ import { misFichas, type ApiProfile } from '../../../lib/api/perfil'
 import { aniosCumplidos } from '../../altas/public/schema'
 import { Contacto, CuotaYPago, DatosPersonales, VidaDeHermano } from './apartados'
 import ApartadoContrasena from './ApartadoContrasena'
+import { ApartadoMisDatos } from './MisDerechos'
 import { PARENTESCO, aDia, diaLegible } from './etiquetas'
 import { site } from '../../../config/site'
 import { useModulos } from '../../../hooks/useModulos'
@@ -41,7 +42,7 @@ const PESTANAS: { clave: ClaveApartado; titulo: string; corto: string; modulo?: 
   { clave: 'hermano', titulo: 'Vida de hermano', corto: 'Hermano', modulo: 'procesion' },
   // Con remesas también: el IBAN es lo que se carga en la domiciliación, y solo lo cambia el hermano.
   { clave: 'cuota', titulo: 'Cuota y pago', corto: 'Cuota', modulo: ['cuotas-en-linea', 'remesas'] },
-  { clave: 'contrasena', titulo: 'Contraseña', corto: 'Contraseña' },
+  { clave: 'contrasena', titulo: 'Cuenta y contraseña', corto: 'Cuenta' },
 ]
 
 /**
@@ -249,13 +250,13 @@ export default function PerfilPage() {
                 {abierta.clave === 'hermano' && <VidaDeHermano ficha={ficha} onGuardada={guardada} onSucio={setSucio} />}
                 {abierta.clave === 'cuota' && <CuotaYPago ficha={ficha} onGuardada={guardada} onSucio={setSucio} />}
                 {/* De la cuenta, no de la ficha: es la misma sea cual sea la persona elegida. */}
-                {abierta.clave === 'contrasena' && <ApartadoContrasena onSucio={setSucio} />}
+                {abierta.clave === 'contrasena' && <Box sx={{ display: 'grid', gap: 2 }}><ApartadoContrasena onSucio={setSucio} /><ApartadoMisDatos /></Box>}
               </Box>
             </>
           )}
 
           {/* Sin ficha que enseñar, la contraseña de la cuenta sigue a mano. */}
-          {!cargando && !ficha && <Box sx={{ maxWidth: 640 }}><ApartadoContrasena onSucio={setSucio} /></Box>}
+          {!cargando && !ficha && <Box sx={{ maxWidth: 640, display: 'grid', gap: 2 }}><ApartadoContrasena onSucio={setSucio} /><ApartadoMisDatos /></Box>}
         </ContenedorDePagina>
       </SeccionAnimada>
     </>

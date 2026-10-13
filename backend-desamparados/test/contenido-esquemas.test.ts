@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { ArkErrors } from 'arktype';
 import topes from '../../shared/topes-contenido.json' with { type: 'json' };
 import { esquemaDeSlug } from '../src/schemas/contenido.schema.js';
-import { porDefecto, type SlugContenido } from '../src/domain/contenido.js';
+import { mezclarConDefectos, porDefecto, type SlugContenido } from '../src/domain/contenido.js';
 
 const valida = (slug: SlugContenido, datos: unknown) =>
   !(esquemaDeSlug(slug)(datos) instanceof ArkErrors);
@@ -116,4 +116,15 @@ test('la ceja de la cabecera es opcional y tiene el tope de una etiqueta', () =>
 
   datos.cabecera.ceja = 'a'.repeat(topes.etiqueta + 1);
   assert.ok(!valida('historia', datos));
+});
+
+// WP12: el aviso de retransmisión se quitó. Una portada guardada antes, con
+// sus dos textos, se sigue pudiendo guardar, y al leerla ya no los trae.
+test('una portada guardada con los textos del directo sigue valiendo y se depura al leer', () => {
+  const portada = porDefecto('portada') as { agenda: Record<string, unknown> };
+  assert.ok(!('directoTitulo' in portada.agenda), 'el contenido de partida ya no los trae');
+  const vieja = { ...portada, agenda: { ...portada.agenda, directoTitulo: 'Ver en directo', directoTexto: 'Desde la sede' } };
+  assert.ok(!(esquemaDeSlug('portada')(vieja) instanceof ArkErrors));
+  const leida = mezclarConDefectos('portada', vieja) as { agenda: Record<string, unknown> };
+  assert.ok(!('directoTitulo' in leida.agenda) && !('directoTexto' in leida.agenda));
 });

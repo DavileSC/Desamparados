@@ -76,7 +76,6 @@ const pedir = (ruta: string, opciones: { metodo?: string; cookie?: string; cuerp
 const fueraDeLaRevision = (hijoId: number) => [
   { ruta: '/api/procesion/mi-estado' },
   { ruta: '/api/recibos/mis-recibos' },
-  { ruta: '/api/auth/mis-datos' },
   { ruta: '/api/hermanos/mis-perfiles', metodo: 'POST', cuerpo: { nombre: 'Ana', fechaNacimiento: '2018-01-01', parentesco: 'HIJO' } },
   { ruta: `/api/hermanos/mis-perfiles/${hijoId}`, metodo: 'DELETE' },
   { ruta: `/api/hermanos/mis-perfiles/${hijoId}/emancipar`, metodo: 'POST', cuerpo: { newEmail: 'pablo@ejemplo.test', newPassword: 'Trono-Alameda-84-Verde' } },
@@ -113,13 +112,15 @@ test('con el primer acceso pendiente, la revisión sí se abre', async (t) => {
     const corregir = await pedir(`/api/hermanos/mis-perfiles/${e.titular.id}`, { metodo: 'PUT', cookie: e.sesionHermano, cuerpo: { poblacion: 'Torremolinos' } });
     assert.equal(corregir.status, 200);
 
+    // Los derechos del RGPD no esperan a la ficha: descargar los datos se abre ya.
+    assert.equal((await pedir('/api/auth/mis-datos', { cookie: e.sesionHermano })).status, 200);
+
     // Confirmar es de la revisión: con la ficha completa, abre el resto.
     assert.equal((await pedir('/api/hermanos/primer-acceso/confirmar', { metodo: 'POST', cookie: e.sesionHermano })).status, 200);
 
     // Con la misma sesión, lo de antes ya responde.
     assert.equal((await pedir('/api/procesion/mi-estado', { cookie: e.sesionHermano })).status, 200);
     assert.equal((await pedir('/api/recibos/mis-recibos', { cookie: e.sesionHermano })).status, 200);
-    assert.equal((await pedir('/api/auth/mis-datos', { cookie: e.sesionHermano })).status, 200);
 
     // Y cerrar sesión siempre se puede.
     assert.equal((await pedir('/api/auth/logout', { metodo: 'POST', cookie: e.sesionHermano, cuerpo: { area: 'hermanos' } })).status, 204);
@@ -156,6 +157,45 @@ test('una cuenta del equipo con el primer acceso pendiente sigue entrando al CMS
     assert.equal(res.status, 200);
     // Solo con la del área, el CMS sigue cerrado como siempre.
     assert.equal((await pedir('/api/hermanos/admin/primer-acceso', { cookie: e.sesionHermano })).status, 403);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('borrar la cuenta (RGPD) se abre con el primer acceso pendiente', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    // Con la contraseña equivocada: basta con ver que llega al servicio (400/401) y no se queda en el 403.
+    const res = await pedir('/api/auth/mi-cuenta', { metodo: 'DELETE', cookie: e.sesionHermano, cuerpo: { password: 'no-es-la-buena-1A' } });
+    assert.notEqual(res.status, 403);
+    assert.notEqual((await res.json() as { error?: string }).error, PRIMER_ACCESO_PENDIENTE);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('con el primer acceso pendiente, la sesión del CMS tampoco abre el área', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario(Role.TESORERIA);
+  try {
+    // Un cargo recién nombrado que aún no ha revisado su ficha.
+    const sesionCms = `${COOKIE_CMS}=${generateToken(e.cuenta.id, Role.TESORERIA, false, 'cms')}`;
+    for (const { ruta, metodo, cuerpo } of fueraDeLaRevision(e.hijo.id)) {
+      // Solo con la cookie del CMS: el área no la acepta (401).
+      const soloCms = await pedir(ruta, { metodo, cuerpo, cookie: sesionCms });
+      assert.equal(soloCms.status, 401, `solo CMS, ${metodo ?? 'GET'} ${ruta}`);
+      // Con las dos: la del área está pendiente y la del CMS no la sustituye;
+      // es un 403 (a la revisión), no un 401 (volver a entrar).
+      const lasDos = await pedir(ruta, { metodo, cuerpo, cookie: `${sesionCms}; ${e.sesionHermano}` });
+      assert.equal(lasDos.status, 403, `las dos, ${metodo ?? 'GET'} ${ruta}`);
+      assert.equal((await lasDos.json() as { error?: string }).error, PRIMER_ACCESO_PENDIENTE, `${metodo ?? 'GET'} ${ruta}`);
+    }
+    assert.equal((await db.hermano.findUniqueOrThrow({ where: { id: e.hijo.id } })).fechaBaja, null);
+    // Lo suyo del CMS sigue abierto: la guarda es solo de las rutas del área.
+    // (Sin 2FA puede responder otro 403; lo que no puede es pararse en el primer acceso.)
+    const cms = await pedir('/api/recibos/admin/resumen', { cookie: sesionCms });
+    assert.notEqual((await cms.json() as { error?: string }).error, PRIMER_ACCESO_PENDIENTE);
   } finally {
     await e.recoger();
   }

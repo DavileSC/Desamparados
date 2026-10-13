@@ -3,7 +3,7 @@ import { Box, Typography } from '@mui/material'
 import { useReducedMotion } from 'framer-motion'
 import { SERIF } from '../../features/inicio/estilos'
 import { valorDe } from './presentacion'
-import { instanteEnMadrid } from './fechas'
+import { instanteEnMadrid } from '../../lib/horaDeMadrid'
 import type { BloqueCuentaAtras as Datos } from '../../lib/api/contenido'
 
 /** Lo que falta, en días, horas, minutos y segundos. */

@@ -12,6 +12,8 @@ import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { prepararVenta, resumenDeCaja } from '../src/domain/caja.js';
+import { CajaService } from '../src/services/caja.service.js';
+import { HttpError } from '../src/utils/error.handle.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 
@@ -109,6 +111,36 @@ test('vender en mano, anular e ingresar el efectivo en el banco', async (t) => {
     await db.transaccion.deleteMany({ where: { id: { in: apuntes } } });
     await db.ingresoEfectivoTienda.deleteMany({ where: { id: { in: ingresos } } });
     await db.producto.deleteMany({ where: { id: producto.id } });
+    await db.auditLog.deleteMany({ where: { userId: tesorero.id } });
+    await borrarUsuarioPrueba(tesorero.id);
+  }
+});
+
+test('NG19: dos ingresos a la vez de lo último que queda: solo entra uno', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const tesorero = await crearUsuarioPrueba(Role.TESORERIA);
+  const meta = { userId: tesorero.id };
+  const ventas: number[] = [];
+  const ingresos: number[] = [];
+  try {
+    const venta = await CajaService.vender([{ nombre: 'Libro usado', centimos: 50_00, cantidad: 1 }], 'EFECTIVO', meta);
+    ventas.push(venta.ventaId);
+    // Todo lo que queda por ingresar, dos veces a la vez.
+    const todo = venta.estado.efectivoPorIngresar;
+    const intentos = await Promise.allSettled([1, 2].map((n) => CajaService.ingresar('2026-01-01', todo, `NG19 ${n}`, meta)));
+    const apuntados = await db.ingresoEfectivoTienda.findMany({ where: { nota: { in: ['NG19 1', 'NG19 2'] } }, select: { id: true } });
+    ingresos.push(...apuntados.map((i) => i.id));
+    assert.equal(intentos.filter((r) => r.status === 'fulfilled').length, 1);
+    assert.equal(apuntados.length, 1, 'sin un segundo ingreso del mismo dinero');
+    const rechazo = intentos.find((r) => r.status === 'rejected');
+    assert.ok(rechazo && rechazo.status === 'rejected' && rechazo.reason instanceof HttpError && rechazo.reason.status === 409);
+    assert.equal((await CajaService.estado()).efectivoPorIngresar, 0);
+  } finally {
+    const apuntes = (await db.cajaVenta.findMany({ where: { id: { in: ventas } }, select: { transaccionId: true } })).flatMap((v) => (v.transaccionId ? [v.transaccionId] : []));
+    await db.ingresoEfectivoTienda.deleteMany({ where: { id: { in: ingresos } } });
+    await db.cajaVentaLinea.deleteMany({ where: { ventaId: { in: ventas } } });
+    await db.cajaVenta.deleteMany({ where: { id: { in: ventas } } });
+    await db.transaccion.deleteMany({ where: { id: { in: apuntes } } });
     await db.auditLog.deleteMany({ where: { userId: tesorero.id } });
     await borrarUsuarioPrueba(tesorero.id);
   }

@@ -3,62 +3,23 @@ import { Box, Typography, type SxProps, type Theme } from '@mui/material'
 import { Link } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
-import PlayCircleIcon from '@mui/icons-material/PlayCircle'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
 import SeccionAnimada, { Revela } from '../../components/SeccionAnimada'
 import { eventosDelCalendario, type EventoCalendario } from '../../lib/api/agenda'
-import { site } from '../../config/site'
 import { useTextosPortada } from './useContenidoPortada'
 import TextoDePortada from './TextoDePortada'
 import AvisosDeInicio from './AvisosDeInicio'
 import MiniCalendario from './MiniCalendario'
 import ListaDeAgenda, { ListaDeAgendaEsqueleto } from './ListaDeAgenda'
 import EnCarga from '../../components/esqueleto/EnCarga'
-import { inicioDeMes, inicioDelDia, nombreDelMes, sumarMeses } from './agenda'
-import { GOLD, PAPEL, SERIF, TINTA, ceja, enlaceBloque } from './estilos'
+import { inicioDeMes, nombreDelMes, sumarMeses } from './agenda'
+import { comienzoEnMadrid, diaDelCalendario, hoyDelCalendario } from '../../lib/horaDeMadrid'
+import { PAPEL, SERIF, TINTA, ceja, enlaceBloque } from './estilos'
 import { propsDeFoto } from '../../lib/fotoSubida'
 import { useModulos } from '../../hooks/useModulos'
 
 // El tope por página del servidor: sobra para dos meses de actos.
 const ACTOS_POR_VENTANA = 100
-
-function AvisoDirecto({ url, titulo, texto }: { url: string; titulo: string; texto: string }) {
-  return (
-    <Box
-      component="a"
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1.75,
-        p: 2,
-        maxWidth: 320,
-        borderRadius: '10px',
-        backgroundColor: 'rgba(7, 6, 8, 0.52)',
-        backdropFilter: 'blur(14px) saturate(1.15)',
-        color: '#fff',
-        textDecoration: 'none',
-        transition: 'background-color .3s ease',
-        '@media (hover: hover)': {
-          '&:hover': { backgroundColor: 'rgba(28, 23, 20, 0.66)' },
-          '&:hover .directo-titulo': { color: GOLD },
-        },
-      }}
-    >
-      <PlayCircleIcon aria-hidden="true" sx={{ fontSize: 34, color: GOLD }} />
-      <Box component="span">
-        <Box component="span" className="directo-titulo" sx={{ display: 'block', fontFamily: SERIF, fontSize: 16, transition: 'color .3s ease' }}>
-          {titulo}
-        </Box>
-        <Box component="span" sx={{ display: 'block', fontSize: 13, color: 'rgba(228, 226, 223, 0.7)' }}>
-          {texto} <span className="home-visually-hidden">(nueva pestaña)</span>
-        </Box>
-      </Box>
-    </Box>
-  )
-}
 
 /**
  * Al cambiar de mes la tarjeta no cambia de alto: guarda la mayor altura que ha tenido con este
@@ -94,11 +55,13 @@ function AlturaSostenida({ children, className, sx }: { children: ReactNode; cla
 export default function AgendaYDirecto() {
   const textos = useTextosPortada()
   const { activos, activo } = useModulos()
-  // La sección es la agenda: sin ella no se pinta ni se pide nada (el directo va dentro).
+  // La sección es la agenda: sin ella no se pinta ni se pide nada.
   // La lista llega en milisegundos y en esta instalación todo está encendido: mejor un
   // esqueleto mientras no se sabe que un hueco que luego crece.
   const apagado = activos !== null && !activo('agenda')
-  const hoy = inicioDelDia(new Date())
+  // Hoy, los meses y los días de los actos son los de Madrid, se mire desde
+  // donde se mire; a la API se le piden desde la medianoche de Madrid.
+  const hoy = hoyDelCalendario()
   const [mesElegido, setMesElegido] = useState<Date | null>(null)
   // undefined: nadie ha tocado nada y se abre el próximo acto; null: el visitante lo ha cerrado.
   const [abierto, setAbierto] = useState<string | null | undefined>(undefined)
@@ -110,21 +73,22 @@ export default function AgendaYDirecto() {
   // en cadena tras la de los módulos; ahora la otra solo sale al cambiar de mes.
   const proximo = useQuery({
     queryKey: ['home', 'agenda', 'proximos', hoy.getTime()],
-    queryFn: () => eventosDelCalendario({ desde: hoy, cuantos: ACTOS_POR_VENTANA }),
+    queryFn: () => eventosDelCalendario({ desde: comienzoEnMadrid(hoy), cuantos: ACTOS_POR_VENTANA }),
     enabled: activos !== null && activo('agenda'),
     retry: false,
     staleTime: 60_000,
   })
-  const mesInicial = inicioDeMes(proximo.data?.[0]?.start ?? hoy)
+  const primero = proximo.data?.[0]
+  const mesInicial = inicioDeMes(primero ? diaDelCalendario(primero.start) : hoy)
   const mes = mesElegido ?? mesInicial
-  const iniciales = (proximo.data ?? []).filter((e) => e.start < sumarMeses(mesInicial, 2))
+  const iniciales = (proximo.data ?? []).filter((e) => e.start < comienzoEnMadrid(sumarMeses(mesInicial, 2)))
 
   // Otro mes: la ventana es el mes visible y el siguiente, desde hoy (los actos pasados no se enseñan).
   const ventana = useQuery({
     queryKey: ['home', 'agenda', mes.getTime()],
     queryFn: () => eventosDelCalendario({
-      desde: mes.getTime() > hoy.getTime() ? mes : hoy,
-      hasta: sumarMeses(mes, 2),
+      desde: comienzoEnMadrid(mes.getTime() > hoy.getTime() ? mes : hoy),
+      hasta: comienzoEnMadrid(sumarMeses(mes, 2)),
       cuantos: ACTOS_POR_VENTANA,
     }),
     enabled: proximo.isSuccess && mesElegido !== null,
@@ -136,8 +100,6 @@ export default function AgendaYDirecto() {
   // Mientras llega la del mes elegido, se queda a la vista la de antes.
   const eventos = mesElegido === null ? iniciales : ventana.data ?? iniciales
   const abiertoId = abierto === undefined ? eventos[0]?.id ?? null : abierto
-  // El aviso del directo es del cortejo en directo: con su módulo apagado no se ofrece.
-  const stream = activo('cortejo-directo') ? site.directo.urlAlternativa : undefined
 
   const cambiarMes = (salto: number) => {
     setMesElegido(sumarMeses(mes, salto))
@@ -231,11 +193,6 @@ export default function AgendaYDirecto() {
               <Box component={Link} to="/agenda" sx={enlaceBloque}>
                 <TextoDePortada anchos={['9em']}>{textos.agenda.enlace}</TextoDePortada> <ArrowForwardIcon />
               </Box>
-              {stream && (
-                <Box sx={{ mt: 4 }}>
-                  <AvisoDirecto url={stream} titulo={textos.agenda.directoTitulo} texto={textos.agenda.directoTexto} />
-                </Box>
-              )}
             </Revela>
           </Box>
 

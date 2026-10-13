@@ -11,7 +11,7 @@
  */
 import { EstadoPago, EstadoPagoEnLinea, EstadoSolicitud, OrigenPago, Prisma, TipoPagoEnLinea } from '@prisma/client';
 import db from '../../config/db.js';
-import { HttpError, NotFoundError } from '../../utils/error.handle.js';
+import { HttpError, NotFoundError, esFalloPasajero } from '../../utils/error.handle.js';
 import { pendienteDeLaSalida } from '../../domain/salidas.js';
 import { configuracionRedsys, formularioDePago, leerAviso, modoDePago, numeroDePedido } from '../../domain/redsys.js';
 import { urlDeLaWeb } from '../correos/plantilla.js';
@@ -35,14 +35,41 @@ interface LoQueSePaga {
  * así la pasarela no importa a la tienda, y la tienda sí a la pasarela.
  * Si no se puede aplicar, lanza un HttpError y el pago queda como incidencia.
  */
-type Aplicador = (referenciaId: number, metodo: MetodoEnLinea, meta: MetaDeAuditoria) => Promise<void>;
-const APLICADORES: Partial<Record<OrigenPago, Aplicador>> = {};
-/** El correo de quien pagó sin cuenta, para las incidencias. */
-const CORREO_DE: Partial<Record<OrigenPago, (referenciaId: number) => Promise<string | null>>> = {};
+type Aplicador = (
+  referenciaId: number, metodo: MetodoEnLinea, meta: MetaDeAuditoria,
+  /**
+   * Lo último que se hace dentro de su transacción: el aviso del banco marca
+   * ahí el pago, para que «aplicado» y «pago cerrado» se escriban a la vez.
+   */
+  alAplicar?: (tx: Prisma.TransactionClient) => Promise<void>,
+) => Promise<void>;
+interface OrigenDePago {
+  aplicar: Aplicador;
+  /** El correo de quien pagó sin cuenta, para las incidencias. */
+  correo: (referenciaId: number) => Promise<string | null>;
+  /**
+   * El banco no lo cobró: lo que esperaba el pago, si sigue pendiente, pasa
+   * a CANCELADO. Sin esto se quedaba PENDIENTE_PAGO para siempre y la pieza
+   * o el producto no se podían quitar.
+   */
+  cancelar: (referenciaId: number) => Promise<void>;
+  /** Deshacer lo pagado al resolver una incidencia (ver `resolver`), si el origen lo admite. */
+  anular?: (referenciaId: number, meta: MetaDeAuditoria) => Promise<void>;
+}
+const ORIGENES: Partial<Record<OrigenPago, OrigenDePago>> = {};
 
-export function registrarOrigenDePago(origen: OrigenPago, aplicar: Aplicador, correo: (referenciaId: number) => Promise<string | null>) {
-  APLICADORES[origen] = aplicar;
-  CORREO_DE[origen] = correo;
+/**
+ * Un intento sin pagar de más de un día ya no cuenta como «alguien lo está
+ * pagando»: cerrar la pestaña del banco no manda ningún aviso, y sin
+ * caducidad bastaba empezar un pago (el alta es pública) para que una pieza
+ * o un producto no se pudieran quitar nunca. Si el banco cobrara después, el
+ * aviso no encontraría qué aplicar y quedaría como incidencia.
+ */
+export const INTENTO_CADUCA_MS = 24 * 60 * 60 * 1000;
+export const intentosVigentesDesde = () => new Date(Date.now() - INTENTO_CADUCA_MS);
+
+export function registrarOrigenDePago(origen: OrigenPago, o: OrigenDePago) {
+  ORIGENES[origen] = o;
 }
 
 export class PagoEnLineaService {
@@ -174,14 +201,15 @@ export class PagoEnLineaService {
     const banco = { respuesta: aviso.respuesta, autorizacion: aviso.autorizacion };
 
     if (!aviso.cobrado) {
-      await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.RECHAZADO, ...banco } });
+      const { count } = await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.RECHAZADO, ...banco } });
+      if (count === 1 && pago.origen !== OrigenPago.AREA_HERMANOS && pago.referenciaId !== null) await ORIGENES[pago.origen]?.cancelar(pago.referenciaId);
       return true;
     }
 
     const incidencia = async (motivo: string) => {
       // Si otro aviso del mismo pedido ya lo cobró, no es incidencia: es el repetido.
       if (await db.operacionMesa.findUnique({ where: { clave: claveDelCobro(aviso.pedido) }, select: { clave: true } })) {
-        await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.PAGADO, ...banco } });
+        await PagoEnLineaService.marcarPagado(pago.id, banco);
         return;
       }
       await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.INCIDENCIA, motivo, ...banco } });
@@ -203,7 +231,7 @@ export class PagoEnLineaService {
     // Lo que no es del área de hermanos lo aplica su propio servicio, con la
     // misma regla: lo que ya no se puede aplicar es incidencia.
     if (pago.origen !== OrigenPago.AREA_HERMANOS) {
-      const aplicar = APLICADORES[pago.origen];
+      const aplicar = ORIGENES[pago.origen]?.aplicar;
       // El pedido se reserva antes de aplicarlo, con la misma clave que el
       // cobro del área. Un segundo aviso del banco que llegue mientras se
       // aplica el primero choca con ella y es el repetido; sin esto, su
@@ -212,19 +240,35 @@ export class PagoEnLineaService {
       try {
         await db.operacionMesa.create({ data: { clave, tipo: 'aviso-del-banco' } });
       } catch (e) {
+        // El otro aviso lo está aplicando o ya lo aplicó (y entonces cerró el
+        // pago en la misma transacción): no hay nada más que hacer.
         if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') return true;
         throw e;
       }
       try {
         if (!aplicar || pago.referenciaId === null) throw new HttpError('El pago no dice qué se pagaba.');
-        await aplicar(pago.referenciaId, pago.metodo as MetodoEnLinea, { ...meta });
-        await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.PAGADO, ...banco } });
+        // El pago se marca dentro de la transacción del aplicador: antes se
+        // marcaba después, y si la base se cortaba entre medias el pedido
+        // quedaba pagado y el pago PENDIENTE para siempre, sin incidencia
+        // que lo dijera ni aviso repetido que lo cerrara.
+        await aplicar(pago.referenciaId, pago.metodo as MetodoEnLinea, { ...meta }, (tx) => PagoEnLineaService.marcarPagado(pago.id, banco, tx));
       } catch (e) {
-        // Sin aplicar, la reserva sobra: con ella, `incidencia` lo tomaría por
-        // cobrado, y un fallo de verdad tiene que poder reintentarse.
+        // No se aplicó nada (todo o nada): la reserva sobra, y con ella
+        // `incidencia` lo tomaría por cobrado y un reenvío por el repetido.
         await db.operacionMesa.deleteMany({ where: { clave } });
-        if (!(e instanceof HttpError)) throw e;
-        await incidencia(`No se pudo aplicar el pago: ${e.message}`);
+        // Un choque que agotó los reintentos o la base caída no dicen nada del
+        // pedido: el pago se queda PENDIENTE y el error sube (el banco no
+        // recibe su 200 y reenvía el aviso, que entonces lo aplica). Con
+        // INCIDENCIA, el reenvío se paraba en «ya no está pendiente» y había
+        // que devolver el dinero de un pedido que se podía servir.
+        if (esFalloPasajero(e)) throw e;
+        // Lo demás es incidencia, no solo lo esperado: el banco ha cobrado, y
+        // un pedido «sin pagar» sin rastro no lo ve nadie. Ya está apuntada,
+        // así que se responde que sí: un 500 no lo arreglaría el reenvío.
+        if (!(e instanceof HttpError)) console.error(`[Pagos] Error al aplicar el pedido ${aviso.pedido}:`, e);
+        await incidencia(e instanceof HttpError
+          ? `No se pudo aplicar el pago: ${e.message}`
+          : 'No se pudo aplicar el pago por un error del servidor: revísalo antes de devolverlo.');
       }
       return true;
     }
@@ -246,13 +290,22 @@ export class PagoEnLineaService {
         { hermanoId: ahora.hermanoId, reciboIds, solicitudes: solicitudIds.map((solicitudId) => ({ solicitudId })), metodoPago: pago.metodo as MetodoEnLinea },
         claveDelCobro(aviso.pedido), { ...meta, userId }, ACCIONES_AUDITORIA.PAGO_EN_LINEA,
       );
-      await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.PAGADO, ...banco } });
+      await PagoEnLineaService.marcarPagado(pago.id, banco);
     } catch (e) {
       // Lo que ya no se puede cobrar (pagado en Secretaría, solicitud anulada…) es incidencia; lo demás, un fallo de verdad.
       if (!(e instanceof HttpError)) throw e;
       await incidencia(`No se pudo aplicar el pago: ${e.message}`);
     }
     return true;
+  }
+
+  /**
+   * El último paso de un aviso cobrado: el pago, a PAGADO, dentro de la
+   * transacción de lo que se aplica si la hay (`tx`). Aparte y público para
+   * que las pruebas puedan hacerlo fallar.
+   */
+  static async marcarPagado(id: number, banco: { respuesta: string | null; autorizacion: string | null }, tx?: Prisma.TransactionClient) {
+    await (tx ?? db).pagoEnLinea.updateMany({ where: { id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.PAGADO, ...banco } });
   }
 
   /** Cómo va un pago propio, para la vuelta del banco (el aviso puede llegar después). */
@@ -273,22 +326,37 @@ export class PagoEnLineaService {
     const correo = new Map(usuarios.map((u) => [u.id, u.email]));
     // Sin cuenta: de un donativo, el correo que dejó el donante; de la tienda o
     // de un apadrinamiento, el que dé su servicio. Es a quien hay que devolverle el dinero.
-    const sinCuenta = await Promise.all(filas.map((f) => (f.userId === null && f.referenciaId !== null ? CORREO_DE[f.origen]?.(f.referenciaId) ?? null : null)));
+    const sinCuenta = await Promise.all(filas.map((f) => (f.userId === null && f.referenciaId !== null ? ORIGENES[f.origen]?.correo(f.referenciaId) ?? null : null)));
     const deQuien = (f: (typeof filas)[number], i: number) =>
       (f.userId !== null ? correo.get(f.userId) : (f.donativo as { email?: string | null } | null)?.email ?? sinCuenta[i]) ?? null;
+    // `origen` y `anulable`, para que Tesorería vea de dónde viene y la web
+    // solo ofrezca «Resolver y anular» donde `resolver({ anular })` lo admite.
     return filas.map((f, i) => ({
       id: f.id, pedido: f.pedido, fecha: f.createdAt, importe: Number(f.importe), metodo: f.metodo,
       autorizacion: f.autorizacion, motivo: f.motivo, correo: deQuien(f, i), donativo: f.tipo === TipoPagoEnLinea.DONATIVO,
+      origen: f.origen, anulable: !!ORIGENES[f.origen]?.anular && f.referenciaId !== null,
     }));
   }
 
-  /** Tesorería devolvió el dinero (o lo aplicó a mano): la incidencia deja de salir. */
-  static async resolver(id: number, meta: MetaDeAuditoria) {
+  /**
+   * Tesorería devolvió el dinero (o lo aplicó a mano): la incidencia deja de
+   * salir. Con `anular`, además se anula lo que se pagaba (un pedido de la
+   * tienda agotado), si su origen lo admite: antes el pedido se quedaba
+   * «sin pagar» para siempre.
+   */
+  static async resolver(id: number, meta: MetaDeAuditoria, { anular = false } = {}) {
+    if (anular) {
+      const pago = await db.pagoEnLinea.findUnique({ where: { id }, select: { estado: true, resueltaEl: true, origen: true, referenciaId: true } });
+      if (!pago || pago.estado !== EstadoPagoEnLinea.INCIDENCIA || pago.resueltaEl) throw new NotFoundError('Esa incidencia no existe o ya está resuelta.');
+      const deshacer = ORIGENES[pago.origen]?.anular;
+      if (!deshacer || pago.referenciaId === null) throw new HttpError('Lo que se pagaba con esta incidencia no se puede anular desde aquí.', 409);
+      await deshacer(pago.referenciaId, meta);
+    }
     const { count } = await db.pagoEnLinea.updateMany({
       where: { id, estado: EstadoPagoEnLinea.INCIDENCIA, resueltaEl: null },
       data: { resueltaEl: new Date(), resueltaPor: meta.userId ?? null },
     });
     if (count !== 1) throw new NotFoundError('Esa incidencia no existe o ya está resuelta.');
-    await AuditoriaService.log(ACCIONES_AUDITORIA.PAGO_EN_LINEA_RESOLVER, meta, 'PagoEnLinea', id);
+    await AuditoriaService.log(ACCIONES_AUDITORIA.PAGO_EN_LINEA_RESOLVER, meta, 'PagoEnLinea', id, { anulado: anular });
   }
 }

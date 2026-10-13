@@ -35,6 +35,19 @@ const MODULO_DE_PAGINA: ReadonlyMap<string, ClaveEncendible> = new Map(
 /** De qué módulo es la página, o `undefined` si es del núcleo. */
 export const moduloDePagina = (slug: SlugContenido): ClaveEncendible | undefined => MODULO_DE_PAGINA.get(slug);
 
+/**
+ * Claves que el contenido de partida tuvo y ya no tiene, como `página.ruta`.
+ * Lo guardado con ellas se depura solo al leer (`mezclarConDefectos` tira lo
+ * que no conoce); esta lista es para la semilla de una instalación, que con
+ * una clave desconocida no arranca (`contenido-inicial.ts`): una semilla
+ * escrita antes de retirarla no tiene por qué dejar la API parada.
+ */
+export const CLAVES_RETIRADAS: ReadonlySet<string> = new Set([
+  // El aviso de retransmisión de la portada (WP12, 13-10-2026): nunca llegó a pintarse.
+  'portada.agenda.directoTitulo',
+  'portada.agenda.directoTexto',
+]);
+
 /** Copia nueva de los textos de siempre. Nunca se devuelve el objeto original. */
 export const porDefecto = (slug: SlugContenido): unknown =>
   structuredClone((defectos as Record<string, unknown>)[slug]);

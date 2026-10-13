@@ -20,6 +20,12 @@ export interface AdminReceipt {
   hermano: { id: number; nombre: string; apellidos: string; numeroHermano: number | null }
   /** Devuelto y ya reemitido: su recibo nuevo sigue su curso y este no pide nada. */
   reemitido?: boolean
+  /**
+   * La remesa que lo lleva. Un REMESADO sin ella (de antes de que solo una
+   * remesa pusiera ese estado) no va en ningún fichero: puede volver a
+   * PENDIENTE, y anularlo no tiene nada que ver con el banco.
+   */
+  remesaId: number | null
 }
 
 /** Lo justo para elegir a quién se le emite un recibo: sin DNI ni datos de contacto. */
@@ -36,6 +42,12 @@ interface DatosDeRecibo {
   concepto: string
   importe: number
   tipo: EmittableReceiptType
+  /**
+   * El DEVUELTO que este recibo vuelve a cobrar. El servidor lo enlaza con él:
+   * así el devuelto deja de contar como deuda y la reemisión hereda su origen
+   * (la de un donativo de salida no entra en el 182).
+   */
+  reemisionDeId?: number
 }
 
 /** `true` si el texto es un año de cuatro cifras, que es lo único que acepta el servidor como filtro. */
@@ -118,14 +130,22 @@ export interface IncidenciaDePago {
   autorizacion: string | null
   motivo: string | null
   correo: string | null
+  /** Qué se pagaba. */
+  origen: 'AREA_HERMANOS' | 'TIENDA' | 'APADRINAMIENTO'
+  /**
+   * Si se puede resolver anulando lo que se pagaba: hoy, un pedido de la
+   * tienda que aún existe. Lo decide el servidor, que es quien sabe anularlo.
+   */
+  anulable: boolean
 }
 
 export function incidenciasDePago() {
   return llamarApi<IncidenciaDePago[]>('/recibos/admin/pagos-en-linea/incidencias')
 }
 
-export function resolverIncidenciaDePago(id: number) {
-  return llamarApi<{ message: string }>(`/recibos/admin/pagos-en-linea/incidencias/${id}/resolver`, { method: 'POST' })
+/** Con `anular`, antes de darla por resuelta anula lo que se pagaba (hoy, solo un pedido de la tienda). */
+export function resolverIncidenciaDePago(id: number, opciones: { anular?: boolean } = {}) {
+  return llamarApi<{ message: string }>(`/recibos/admin/pagos-en-linea/incidencias/${id}/resolver`, { method: 'POST', ...(opciones.anular ? { json: { anular: true } } : {}) })
 }
 
 // --- Remesas SEPA ---

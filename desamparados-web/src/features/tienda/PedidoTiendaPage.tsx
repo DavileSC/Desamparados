@@ -36,7 +36,8 @@ export default function PedidoTiendaPage() {
         if (cancelado) return
         hechos += 1
         setPedido(p); setIntentos(hechos)
-        if (p.estado !== 'PENDIENTE_PAGO' || fallo || hechos >= INTENTOS) clearInterval(reloj)
+        // Con el pago en incidencia el banco ya avisó: no hay nada más que esperar.
+        if (p.estado !== 'PENDIENTE_PAGO' || p.pagoConIncidencia || fallo || hechos >= INTENTOS) clearInterval(reloj)
       })
       .catch((err: unknown) => { if (!cancelado) { clearInterval(reloj); setError(err instanceof Error ? err.message : 'No se encuentra el pedido.') } })
     const reloj = setInterval(() => void preguntar(), ESPERA_MS)
@@ -44,7 +45,8 @@ export default function PedidoTiendaPage() {
     return () => { cancelado = true; clearInterval(reloj) }
   }, [token, fallo])
 
-  const esperando = pedido?.estado === 'PENDIENTE_PAGO' && !fallo && intentos < INTENTOS
+  const conIncidencia = pedido?.estado === 'PENDIENTE_PAGO' && pedido.pagoConIncidencia === true
+  const esperando = pedido?.estado === 'PENDIENTE_PAGO' && !conIncidencia && !fallo && intentos < INTENTOS
 
   return <>
     <MetaDePagina titulo="Tu pedido" sinIndexar />
@@ -61,14 +63,23 @@ export default function PedidoTiendaPage() {
                 : 'Este pedido ya está entregado. ¡Gracias!'}
             </Alert>
           )}
-          {pedido.estado === 'PENDIENTE_PAGO' && (esperando
+          {conIncidencia && (
+            <Alert severity="warning" sx={{ mb: 3 }}>
+              Pago recibido, pero no se ha podido completar: te devolvemos el dinero. Lo más probable es que alguien se llevara lo último que quedaba mientras pagabas. Si tienes cualquier duda, escríbenos o pásate por Secretaría.
+            </Alert>
+          )}
+          {pedido.estado === 'PENDIENTE_PAGO' && !conIncidencia && (esperando
             ? <Alert severity="info" icon={<CircularProgress size={18} />} sx={{ mb: 3 }}>Esperando la confirmación del banco…</Alert>
             : <Alert severity={fallo ? 'warning' : 'info'} sx={{ mb: 3 }}>
               {fallo
                 ? 'El pago no se ha completado y no se ha cobrado nada. Puedes volver a la tienda e intentarlo otra vez.'
                 : 'El banco aún no ha confirmado el pago. Si se completó, te llegará el correo de confirmación en unos minutos.'}
             </Alert>)}
-          {pedido.estado === 'CANCELADO' && <Alert severity="warning" sx={{ mb: 3 }}>Este pedido está anulado.</Alert>}
+          {pedido.estado === 'CANCELADO' && (
+            <Alert severity="warning" sx={{ mb: 3 }}>
+              Este pedido está anulado. Si llegaste a pagarlo, te devolvemos el dinero por el mismo medio con el que pagaste; si el banco no llegó a cobrarlo, no se te ha cargado nada.
+            </Alert>
+          )}
           <Paper sx={{ p: 3, display: 'grid', gap: 0.75 }}>
             {pedido.lineas.map((l, i) => (
               <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>

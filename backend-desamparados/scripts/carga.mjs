@@ -291,7 +291,7 @@ async function visitante(medida, hasta) {
     } else if (destino < 0.8) {
       await pedir(medida, 'api agenda', '/api/events');
     } else {
-      await pedir(medida, 'api páginas', alAzar(['/api/pages/quienes-somos', '/api/contenido/historia']));
+      await pedir(medida, 'api páginas', alAzar(['/api/contenido/historia', '/api/contenido/parroquia']));
     }
     await pausaVisitante();
   }

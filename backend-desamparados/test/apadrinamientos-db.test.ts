@@ -132,6 +132,24 @@ test('con Redsys, dos a por la misma pieza: se la lleva el primer aviso y el otr
   }
 });
 
+test('NG20: lo recaudado es lo cobrado, aunque el precio de la pieza cambiara con el pago en curso', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  process.env.PAGO_EN_LINEA = 'redsys';
+  const e = await escenario();
+  try {
+    const a = await ApadrinamientosService.apadrinar({ ...e.persona('Ana', true), piezaId: e.vela1.id }, {});
+    if (a.tipo !== 'banco') throw new Error('se esperaba ir al banco');
+    // Aún sin pagar, el precio se puede cambiar; el banco cobra lo de antes.
+    await ApadrinamientosService.cambiarPieza(e.c.id, e.vela1.id, { nombre: 'Vela 1', precio: 30, x: 10.5, y: 40 });
+    assert.ok(await PagoEnLineaService.avisoDelBanco(aviso({ Ds_Order: a.pedido, Ds_Amount: '2000', Ds_Response: '0000' }), {}));
+    const resumen = (await ApadrinamientosService.campanas()).find((x) => x.id === e.c.id)!;
+    assert.deepEqual([resumen.apadrinadas, resumen.recaudado], [1, 20], 'lo que apuntó Contabilidad, no el precio nuevo');
+  } finally {
+    delete process.env.PAGO_EN_LINEA;
+    await e.recoger();
+  }
+});
+
 test('lo público sin sesión, la gestión solo con la del CMS', async (t) => {
   assert.equal((await fetch(`${baseUrl}/api/apadrinamientos/admin/campanas`)).status, 401);
   if (!dbDisponible) { t.skip(SIN_DB); return; }
@@ -155,23 +173,35 @@ test('lo público sin sesión, la gestión solo con la del CMS', async (t) => {
   }
 });
 
-test('DS2: una pieza con alguien pagándola en el banco no se quita; con solo intentos cancelados, sí', async (t) => {
+test('DS2 y NG9: una pieza con alguien pagándola no se quita; si el banco lo rechaza o el intento caduca, sí', async (t) => {
   if (!dbDisponible) { t.skip(SIN_DB); return; }
+  process.env.PAGO_EN_LINEA = 'redsys';
   const e = await escenario();
+  // Quitar la pieza se lleva sus intentos: sus pagos se recogen aparte.
+  const pedidos: string[] = [];
   try {
-    const intento = (piezaId: number, estado: 'PENDIENTE_PAGO' | 'CANCELADO') => db.apadrinamiento.create({
-      data: { token: crypto.randomUUID().replace(/-/g, ''), piezaId, nombre: 'Rosa', email: 'rosa@ejemplo.test', telefono: '600000000', estado, importe: '20' },
-    });
-    await intento(e.vela1.id, 'PENDIENTE_PAGO');
+    // Alguien empieza a pagar la vela 1: mientras, no se quita.
+    const intento = await ApadrinamientosService.apadrinar({ ...e.persona('Rosa', true), piezaId: e.vela1.id }, {});
+    if (intento.tipo !== 'banco') throw new Error('se esperaba ir al banco');
+    pedidos.push(intento.pedido);
     await assert.rejects(ApadrinamientosService.quitarPieza(e.c.id, e.vela1.id), (err: unknown) => err instanceof HttpError && err.status === 409);
     assert.ok(await db.apadrinamiento.findFirst({ where: { piezaId: e.vela1.id } }), 'el cobro en curso sigue ahí');
 
-    await intento(e.vela2.id, 'CANCELADO');
-    const sin = await ApadrinamientosService.quitarPieza(e.c.id, e.vela2.id);
-    assert.deepEqual(sin.piezas.map((p) => p.nombre), ['Vela 1']);
-    // La base tampoco deja borrar a ciegas una pieza con apadrinamientos.
-    await assert.rejects(db.piezaApadrinable.delete({ where: { id: e.vela1.id } }));
+    // El banco no lo cobra: el apadrinamiento pasa a CANCELADO y la pieza se puede quitar.
+    assert.ok(await PagoEnLineaService.avisoDelBanco(aviso({ Ds_Order: intento.pedido, Ds_Amount: '2000', Ds_Response: '0190' }), {}));
+    assert.equal((await ApadrinamientosService.apadrinamientoPublico(intento.token)).estado, 'CANCELADO');
+    const sin = await ApadrinamientosService.quitarPieza(e.c.id, e.vela1.id);
+    assert.deepEqual(sin.piezas.map((p) => p.nombre), ['Vela 2']);
+
+    // Quien cerró la pestaña del banco no manda aviso: pasado un día, su intento ya no ata la pieza.
+    const abandonado = await ApadrinamientosService.apadrinar({ ...e.persona('Luis', true), piezaId: e.vela2.id }, {});
+    if (abandonado.tipo === 'banco') pedidos.push(abandonado.pedido);
+    await assert.rejects(ApadrinamientosService.quitarPieza(e.c.id, e.vela2.id), (err: unknown) => err instanceof HttpError && err.status === 409);
+    await db.apadrinamiento.updateMany({ where: { token: abandonado.token }, data: { createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000) } });
+    assert.deepEqual((await ApadrinamientosService.quitarPieza(e.c.id, e.vela2.id)).piezas, []);
   } finally {
+    delete process.env.PAGO_EN_LINEA;
+    await db.pagoEnLinea.deleteMany({ where: { pedido: { in: pedidos } } });
     await e.recoger();
   }
 });

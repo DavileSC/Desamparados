@@ -121,7 +121,7 @@ export default function PaginaDeBloquesPublica({ slug }: Props) {
           <>
             {sinCabecera
               ? <Typography component="h1" sx={visuallyHidden}>{titulo}</Typography>
-              : <Box className="esqueleto-quieto"><CabeceraASangreEsqueleto ceja={ceja} /></Box>}
+              : <Box className="esqueleto-quieto"><CabeceraASangreEsqueleto ceja={ceja} titulo={titulo} /></Box>}
             <Box sx={seccion}>
               <ContenedorDePagina>
                 <EnCarga avisoArriba estado="error" que="esta página" alReintentar={() => { void consulta.refetch() }} esqueleto={<BloquesEsqueleto />} />

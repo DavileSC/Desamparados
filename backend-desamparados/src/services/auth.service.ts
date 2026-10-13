@@ -472,6 +472,7 @@ export class AuthService {
     // Buscar y después escribir dejaba que dos peticiones con el mismo enlace
     // lo usaran las dos (y ganara la última). Ahora el token se gasta en la
     // misma sentencia que lo comprueba: solo una encuentra el hash sin usar.
+    const corte = corteDeSesiones();
     const { count } = await db.user.updateMany({
       where: vigente,
       data: {
@@ -484,7 +485,7 @@ export class AuthService {
         contrasenaPuestaEn: new Date(),
         // Invalidamos TODAS las sesiones abiertas (por si la contraseña se cambió
         // por robo de cuenta: el atacante con token viejo queda fuera)
-        tokenValidAfter: corteDeSesiones()
+        tokenValidAfter: corte
       }
     });
 
@@ -502,7 +503,9 @@ export class AuthService {
       this.fallosLoginPorIp.limpiarPrefijo(`${email}|`);
     }
 
-    return { message: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.' };
+    // El corte, para quien abra una sesión justo después (`estrenar`): tiene
+    // que esperar a que pase, o la sesión nueva nacería ya cortada.
+    return { message: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.', corte };
   }
 
   // Fallos de la contraseña actual al cambiarla, por cuenta. Desde una sesión

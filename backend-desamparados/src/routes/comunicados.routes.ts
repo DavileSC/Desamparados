@@ -6,16 +6,12 @@ import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { validate } from '../config/validate.js';
 import { idParam } from '../config/common.js';
-import { limitadorContacto } from '../config/limiter.js';
-import { bajaBoletinSchema, comunicadoSchema, destinatariosSchema } from '../schemas/comunicados.schema.js';
+import { comunicadoSchema, destinatariosSchema } from '../schemas/comunicados.schema.js';
 
 const comunicadosRoutes = Router();
 
-// La baja del boletín va ANTES de `authenticateToken`, sin sesión: se pulsa
-// desde el correo y no se puede pedir entrar para dejar de recibirlo. La
-// protege la firma del enlace (domain/comunicados.ts) y el limitador del
-// formulario de contacto, el otro público que escribe.
-comunicadosRoutes.post('/baja-boletin', limitadorContacto, validate(bajaBoletinSchema), ComunicadosController.bajaBoletin);
+// La baja del boletín no está aquí: va en `boletin.routes.ts`, del núcleo,
+// para que el enlace del correo siga valiendo con el módulo apagado.
 
 comunicadosRoutes.use(authenticateToken);
 

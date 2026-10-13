@@ -6,12 +6,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { HelmetProvider } from 'react-helmet-async'
 import { TemaCmsProvider } from '../../../app/temaCms'
 import AgendaEditPage from '../AgendaEditPage'
+import { isoEnMadrid } from '../../../lib/horaDeMadrid'
+import { enZonaHoraria } from '../../../test/zonaHoraria'
 
-// Fechas en hora local, como las escribe quien usa la ficha.
-const enLocal = (dia: string, hora: string) => new Date(`${dia}T${hora}`).toISOString()
+// Las fechas del acto son de Madrid, sea cual sea la zona del equipo de quien
+// edita. Las pruebas corren desde Canarias (una hora menos): con la zona de la
+// máquina (Madrid en local, UTC en el CI) no se distinguiría una cosa de otra.
+const enMadrid = (dia: string, hora: string) => isoEnMadrid(`${dia}T${hora}`)
+enZonaHoraria('Atlantic/Canary')
 const besapies = {
   id: 3, title: 'Besapiés', description: 'A la Virgen de los Desamparados.', location: 'Parroquia',
-  startDate: enLocal('2099-10-12', '18:00'), endDate: null, type: 'CULTO',
+  startDate: enMadrid('2099-10-12', '18:00'), endDate: null, type: 'CULTO',
   updatedAt: new Date().toISOString(),
 }
 const ensayo = { ...besapies, id: 4, title: 'Ensayo de costaleros', description: null, type: 'ENSAYO' }
@@ -62,6 +67,8 @@ describe('AgendaEditPage', () => {
     expect(screen.getByLabelText('Hora')).toHaveValue('18:00')
     const vista = screen.getByTestId('vista-previa-evento')
     expect(vista).toHaveTextContent('A la Virgen de los Desamparados.')
+    // La vista previa es la lista de la portada, que también pinta la hora de
+    // Madrid, no la de quien mira (aquí, Canarias).
     expect(vista).toHaveTextContent('18:00 · Parroquia')
     expect(vista).toHaveTextContent('Culto')
   })
@@ -107,7 +114,7 @@ describe('AgendaEditPage', () => {
     expect(await screen.findByText('Añadido a la agenda: ya se ve en la web.')).toBeInTheDocument()
     const peticion = guardado(simulado)!
     expect(peticion.metodo).toBe('POST')
-    expect(peticion.cuerpo).toMatchObject({ title: 'Función principal', startDate: enLocal('2099-11-08', '12:00'), endDate: null, type: 'CULTO' })
+    expect(peticion.cuerpo).toMatchObject({ title: 'Función principal', startDate: enMadrid('2099-11-08', '12:00'), endDate: null, type: 'CULTO' })
     expect(peticion.cuerpo).not.toHaveProperty('visibility')
   })
 
@@ -145,7 +152,7 @@ describe('AgendaEditPage', () => {
     await usuario.click(screen.getByRole('button', { name: 'Añadir a la agenda' }))
 
     await waitFor(() => expect(guardado(simulado)?.metodo).toBe('POST'))
-    expect(guardado(simulado)!.cuerpo).toMatchObject({ title: 'Besapiés', location: 'Parroquia', startDate: enLocal('2099-10-19', '18:00') })
+    expect(guardado(simulado)!.cuerpo).toMatchObject({ title: 'Besapiés', location: 'Parroquia', startDate: enMadrid('2099-10-19', '18:00') })
   })
 
   it('desde el día del calendario, el acto nuevo nace con ese día y sin nada que guardar', async () => {
@@ -158,7 +165,7 @@ describe('AgendaEditPage', () => {
     await usuario.click(screen.getByRole('button', { name: 'Añadir a la agenda' }))
 
     await waitFor(() => expect(guardado(simulado)?.metodo).toBe('POST'))
-    expect(guardado(simulado)!.cuerpo).toMatchObject({ title: 'Ensayo de acólitos', startDate: enLocal('2099-10-21', '18:15') })
+    expect(guardado(simulado)!.cuerpo).toMatchObject({ title: 'Ensayo de acólitos', startDate: enMadrid('2099-10-21', '18:15') })
   })
 
   it('un acto en cartel guarda su dedicatoria y enseña cómo sale en la Agenda', async () => {
@@ -183,5 +190,32 @@ describe('AgendaEditPage', () => {
     montar('/cms/agenda/nuevo')
     await usuario.type(await screen.findByLabelText('Día'), '2001-01-01')
     expect(screen.getByText('Ese día ya ha pasado: el acto no saldrá en la web.')).toBeInTheDocument()
+  })
+
+  it('el acto de una salida, abierto desde el listado: la fecha, el título y el tipo no se tocan aquí', async () => {
+    const usuario = userEvent.setup()
+    const simulado = montar({ pathname: '/cms/agenda/3/editar', state: { salidaEnlazada: { id: 7, nombre: 'Rosario de la Aurora' } } })
+    expect(await screen.findByDisplayValue('Besapiés')).toBeDisabled()
+    expect(screen.getByText(/Es la fecha de la salida «Rosario de la Aurora»/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'la ficha de la salida' })).toHaveAttribute('href', '/cms/procesion/salidas/7/editar')
+    expect(screen.getByLabelText('Día')).toBeDisabled()
+    expect(screen.getByLabelText('Hora')).toBeDisabled()
+    expect(screen.getByRole('combobox', { name: 'Tipo' })).toHaveAttribute('aria-disabled', 'true')
+
+    // El lugar sí: el servidor lo guarda como siempre.
+    await usuario.clear(screen.getByLabelText('Lugar'))
+    await usuario.type(screen.getByLabelText('Lugar'), 'Santa Iglesia Catedral')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await waitFor(() => expect(guardado(simulado)?.cuerpo).toMatchObject({ location: 'Santa Iglesia Catedral', title: 'Besapiés' }))
+  })
+
+  it('entrando por la dirección, el 409 del servidor dice dónde se cambia', async () => {
+    const usuario = userEvent.setup()
+    const simulado = montar('/cms/agenda/3/editar')
+    await usuario.type(await screen.findByLabelText('Título'), ' solemne')
+    simulado.mockImplementationOnce(() => Promise.resolve(json({ error: 'Este acto es la fecha de la salida «Rosario de la Aurora»: su día, su título y su tipo se cambian desde la ficha de la salida, no desde la Agenda.' }, 409)))
+    await usuario.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(await screen.findByText(/se cambian desde la ficha de la salida, no desde la Agenda/)).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Listado de la agenda' })).not.toBeInTheDocument()
   })
 })

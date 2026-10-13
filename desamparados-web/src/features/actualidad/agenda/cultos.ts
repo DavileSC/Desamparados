@@ -1,16 +1,20 @@
 import type { ApiEvent } from '../../../lib/api/agenda'
-import { TIPOS, inicioDeMes, inicioDelDia } from '../../inicio/agenda'
+import { TIPOS, inicioDeMes } from '../../inicio/agenda'
 import { site } from '../../../config/site'
 import { FOTO_DE_CULTO, FOTO_DE_SALIDA } from '../../../config/fotosDeLaInstalacion'
+import { diaDelCalendario, horaEnMadrid } from '../../../lib/horaDeMadrid'
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
 const mayuscula = (texto: string) => texto.charAt(0).toUpperCase() + texto.slice(1)
 
-/** Los días que abarca un acto, en la hora de este navegador. */
+/**
+ * Los días que abarca un acto, en Madrid: un culto a las 00:30 del 3 es del 3
+ * también para quien mira desde Canarias, donde aún es el 2.
+ */
 function diasDelActo(evento: ApiEvent): Date[] {
-  const inicio = inicioDelDia(new Date(evento.startDate))
-  const fin = evento.endDate ? inicioDelDia(new Date(evento.endDate)) : inicio
+  const inicio = diaDelCalendario(evento.startDate)
+  const fin = evento.endDate ? diaDelCalendario(evento.endDate) : inicio
   const lista: Date[] = []
   for (let d = inicio; d <= fin && lista.length < 31; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) lista.push(d)
   return lista
@@ -40,12 +44,11 @@ export function cuandoEnCartel(evento: ApiEvent) {
   return `${mayuscula(DIAS[d.getDay()])} ${d.getDate()} de ${MESES[d.getMonth()]}`
 }
 
-/** «19:00», en la hora de este navegador. */
-export const hora = (evento: ApiEvent) =>
-  new Date(evento.startDate).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+/** «19:00», la hora de Madrid: a la que hay que estar en la parroquia. */
+export const hora = (evento: ApiEvent) => horaEnMadrid(evento.startDate)
 
 /** Lo que dice el cartel sobre el título: qué clase de acto es. */
-export function claseDelCartel(evento: ApiEvent) {
+function claseDelCartel(evento: ApiEvent) {
   if (evento.type === 'CULTO') return 'Culto solemne'
   if (evento.type === 'PROCESION') return 'Salida procesional'
   return TIPOS[evento.type].nombre
@@ -87,7 +90,7 @@ export function notaDelActo(evento: ApiEvent) {
     .map((t) => (/[.!?…]$/.test(t!) ? t : `${t}.`)).join(' ')
 }
 
-/** Un día como clave: «2026-11-03», en la hora de este navegador. */
+/** Un día del calendario como clave: «2026-11-03». */
 export const claveDelDia = (dia: Date) =>
   `${dia.getFullYear()}-${String(dia.getMonth() + 1).padStart(2, '0')}-${String(dia.getDate()).padStart(2, '0')}`
 

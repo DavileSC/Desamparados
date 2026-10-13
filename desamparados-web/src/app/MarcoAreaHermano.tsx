@@ -26,6 +26,7 @@ import { cerrarSesion } from '../features/altas/auth/session'
 import { site } from '../config/site'
 import { entradasDelArea } from './areaHermanoNavegacion'
 import { useModulos } from '../hooks/useModulos'
+import VentanaSesionCaducada from './VentanaSesionCaducada'
 
 const ANCHO_CAJON = 260
 
@@ -219,6 +220,8 @@ export default function MarcoAreaHermano() {
           <Outlet />
         </TransicionDePagina>
       </Box>
+      {/* Si la sesión caduca con Mi perfil a medias, se vuelve a entrar sin perder lo escrito. */}
+      <VentanaSesionCaducada area="hermanos" />
     </Box>
   )
 }

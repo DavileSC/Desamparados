@@ -34,7 +34,7 @@ import {
   type Bloque, type CabeceraPagina, type PaginaDeBloques, type SlugContenido,
 } from '../../lib/api/contenido'
 
-export const AVISO_SIN_TITULO = 'La página se ha quedado sin título. Ponle uno antes de guardar.'
+const AVISO_SIN_TITULO = 'La página se ha quedado sin título. Ponle uno antes de guardar.'
 
 /**
  * Traduce `ErrorDeApi.fields` («bloques.2»: motivo) a algo que diga de qué

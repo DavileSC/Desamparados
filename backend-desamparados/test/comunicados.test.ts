@@ -27,6 +27,11 @@ describe('a quién va', () => {
       describirSegmento('AVISO', { conPapeleta: 7, conDeuda: true, edad: 'MAYORES', poblacion: ' Málaga ' }, new Map([[7, { nombre: 'Sábado de Pasión', articulo: 'el' }]])),
       'Hermanos activos · con papeleta del Sábado de Pasión · con cuotas pendientes · mayores de edad · de Málaga',
     );
+    assert.equal(
+      describirSegmento('AVISO', { apuntadosA: 8 }, new Map([[8, { nombre: 'Procesión Magna', articulo: 'la' }]])),
+      'Hermanos activos · apuntados a la Procesión Magna',
+    );
+    assert.equal(describirSegmento('AVISO', { apuntadosA: 9 }), 'Hermanos activos · apuntados a la salida');
   });
 });
 

@@ -470,6 +470,16 @@ huesos piden la portada antes que el bloque sus datos (los efectos de los
 hijos van primero), y con una sola instancia el primero consume el cuerpo y
 el segundo falla (pasó en `NoticiasDestacadas.test.tsx`).
 
+**Un devuelto que el relleno de NG1 deja suelto se cierra con «Reemitir»
+enlazado y anulando el recibo nuevo.** La migración `20261119200000_reemision_de`
+enlaza cada recibo devuelto con el primero posterior que se llame
+«(reemisión…)»; si se reemitió con otro concepto, el devuelto queda sin enlazar
+y vuelve a salir como deuda aunque ya esté pagada. Anularlo no se puede:
+DEVUELTO es un estado final. Se reemite desde Tesorería (con `reemisionDeId` el
+enlace se hace aunque la cuota ya esté emitida) y se anula el recibo nuevo, que
+sobra. Antes de desplegar, cuántos quedan:
+`SELECT COUNT(*) FROM Recibo d WHERE d.estado='DEVUELTO' AND NOT EXISTS (SELECT 1 FROM Recibo n WHERE n.reemisionDeId = d.id)`.
+
 ---
 
 ## 10. Las fotos del CMS se recortan a 1920 px de lado
@@ -652,6 +662,10 @@ otra pantalla.
 **El aviso del banco nunca se apaga.** `POST /api/pagos/redsys/notificacion`
 se monta como núcleo: un pago empezado antes de apagar Pago en línea es
 dinero real.
+
+**La baja del boletín tampoco se apaga.** `POST /api/boletin/baja` y su
+página, `/boletin/baja`, son del núcleo y no de Comunicados: quien recibió un
+boletín antes de apagar el módulo tiene que poder darse de baja con su enlace.
 
 **Con el área de hermanos apagada, el acceso rechaza a todo el mundo.**
 `/acceso` responde 404 con «El área de hermanos no está activada en esta

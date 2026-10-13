@@ -26,7 +26,7 @@ import { leerDatosEvento } from '../recibos/comunes.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../auditoria.service.js';
 import { idCategoriaDevoluciones } from '../recibos/comunes.js';
 import { PlazoPapeletasService, cuotaDe } from './plazo.service.js';
-import { SalidasService, type SalidaConActo } from './salidas.service.js';
+import { SalidasService, exigirProximaFecha, type SalidaConActo } from './salidas.service.js';
 import { PapeletasService } from './papeletas.service.js';
 import { cuotasQueCuentan, pendienteDe } from './zonas.service.js';
 import { avisarALaMesa } from './avisos-mesa.js';
@@ -96,6 +96,7 @@ export class MiProcesionService {
       if (!(await PlazoPapeletasService.estaAbierto(salida, tx))) {
         throw new HttpError(`La inscripción ${deArticulo(articulo, salida.nombre)} no está abierta.`, 409);
       }
+      exigirProximaFecha(salida);
       // El año de la salida que se prepara, no el de hoy ni el del reparto: un
       // reparto en otoño es para la salida del año siguiente.
       const year = PlazoPapeletasService.anioDeLaProcesion(salida);

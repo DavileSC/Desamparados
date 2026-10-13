@@ -18,6 +18,8 @@ export interface EmitirReciboDto {
   concepto: string;
   importe: number;
   tipo: TipoReciboEmitible;
+  /** El devuelto que vuelve a cobrar, si es una reemisión. */
+  reemisionDeId?: number;
 }
 
 export interface UpdateReciboDto {

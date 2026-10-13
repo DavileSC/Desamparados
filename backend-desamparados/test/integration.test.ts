@@ -530,12 +530,11 @@ test('promover a staff invalida la sesion emitida como hermano', async (t) => {
   }
 });
 
-// El listado de paginas del CMS tiene que declararse ANTES de '/:slug' o queda
-// ensombrecido. Distinguir los tres estados importa: 200 seria estar abierta,
-// 404 seria estar rota por el orden, y solo 401 es correcto.
-test('el listado de paginas del CMS exige sesion y no queda ensombrecido por /:slug', async () => {
-  const res = await fetch(`${baseUrl}/api/pages/list-all`);
-  assert.equal(res.status, 401, `esperado 401; un 404 significa que /:slug la captura, un 200 que esta abierta`);
+// El router heredado /api/pages se quitó (nadie lo llamaba y dejaba escribir
+// páginas a roles que no ven «Páginas»): que no vuelva a montarse sin querer.
+test('el router heredado /api/pages ya no existe', async () => {
+  assert.equal((await fetch(`${baseUrl}/api/pages/list-all`)).status, 404);
+  assert.equal((await fetch(`${baseUrl}/api/pages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status, 404);
 });
 
 // El restablecimiento usaba un validador propio, definido en linea en el router,
@@ -859,7 +858,7 @@ test('mis recibos respetan la página y el tamaño pedidos', async (t) => {
 
   try {
     fichas = await sembrarFamiliaPrueba(usuario.id);
-    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(usuario.id, Role.USER)}` };
+    const cabeceras = { Cookie: `${COOKIE_HERMANO}=${generateToken(usuario.id, Role.USER, false, 'hermanos')}` };
 
     const primera = await fetch(`${baseUrl}/api/recibos/mis-recibos?page=1&limit=2`, { headers: cabeceras });
     assert.equal(primera.status, 200);
@@ -901,7 +900,7 @@ test('mis perfiles respetan la página y el tamaño pedidos', async (t) => {
 
   try {
     fichas = await sembrarFamiliaPrueba(usuario.id);
-    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(usuario.id, Role.USER)}` };
+    const cabeceras = { Cookie: `${COOKIE_HERMANO}=${generateToken(usuario.id, Role.USER, false, 'hermanos')}` };
 
     const primera = await fetch(`${baseUrl}/api/hermanos/mis-perfiles?page=1&limit=2`, { headers: cabeceras });
     assert.equal(primera.status, 200);
@@ -940,7 +939,7 @@ test('mis perfiles caben enteros en la página que pide el selector', async (t) 
 
   try {
     fichas = await sembrarFamiliaPrueba(usuario.id);
-    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(usuario.id, Role.USER)}` };
+    const cabeceras = { Cookie: `${COOKIE_HERMANO}=${generateToken(usuario.id, Role.USER, false, 'hermanos')}` };
     const respuesta = await fetch(`${baseUrl}/api/hermanos/mis-perfiles?page=1&limit=50`, { headers: cabeceras });
     const cuerpo = await respuesta.json() as { data: { id: number }[]; meta: Record<string, number> };
 
@@ -961,7 +960,7 @@ test('mi histórico de papeletas respeta la página y el tamaño pedidos', async
 
   try {
     fichas = await sembrarFamiliaPrueba(usuario.id);
-    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(usuario.id, Role.USER)}` };
+    const cabeceras = { Cookie: `${COOKIE_HERMANO}=${generateToken(usuario.id, Role.USER, false, 'hermanos')}` };
 
     const primera = await fetch(`${baseUrl}/api/procesion/mis-papeletas?page=1&limit=2`, { headers: cabeceras });
     assert.equal(primera.status, 200);

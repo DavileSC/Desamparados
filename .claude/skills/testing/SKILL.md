@@ -28,9 +28,9 @@ description: Cómo se prueba el proyecto: node:test en el backend, Vitest + Test
 
 ## Web (`desamparados-web/src/**/__tests__/`)
 
-- Vitest + Testing Library + jsdom. Ejecutar con
-  `npx vitest run --testTimeout=20000` (con 5 s caen varias por carga, en
-  falso).
+- Vitest + Testing Library + jsdom. Ejecutar con `npx vitest run`. El tope
+  (30 s) ya está en `vitest.config.ts`: no pasar `--testTimeout`, que manda
+  sobre el fichero y, si es menor, da rojos falsos por carga.
 - `renderWithProviders` (`src/test/test-utils.tsx`) y `stubFetchPublico`
   (`src/test/fetchPublico.ts`) para simular la API.
 - **MUI y `*ByRole`**: con un menú o diálogo abierto o cerrándose, el resto

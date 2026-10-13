@@ -1,3 +1,4 @@
+import type { Role } from '@prisma/client';
 import { PanelService } from '../services/panel.service.js';
 import { AvisoService } from '../services/aviso.service.js';
 import { RetabloService, type AjustesRetablo, type Retablo } from '../services/retablo.service.js';
@@ -12,7 +13,7 @@ export class PanelController {
     // convierte en 400: es un parámetro mal puesto, no un fallo del servidor.
     const [panel, avisos, retablo] = await Promise.all([
       PanelService.getPanel(req.query.anio),
-      AvisoService.pendientes(),
+      AvisoService.pendientes(req.user!.role as Role),
       RetabloService.deHoy(),
     ]);
     res.status(200).json({ ...panel, avisos, retablo });

@@ -126,35 +126,40 @@
       "nombre": "Agenda",
       "ruta": "/agenda",
       "grupo": "Actualidad",
-      "descripcion": "El calendario de cultos y actos. Los actos se escriben en «Agenda»."
+      "descripcion": "El calendario de cultos y actos. Los actos se escriben en «Agenda».",
+      "modulo": "agenda"
     },
     {
       "slug": "noticias",
       "nombre": "Noticias",
       "ruta": "/noticias",
       "grupo": "Actualidad",
-      "descripcion": "El archivo de noticias. Las noticias se escriben en «Noticias»."
+      "descripcion": "El archivo de noticias. Las noticias se escriben en «Noticias».",
+      "modulo": "noticias"
     },
     {
       "slug": "publicaciones",
       "nombre": "Publicaciones",
       "ruta": "/publicaciones",
       "grupo": "Publicaciones",
-      "descripcion": "Todas las publicaciones. Los PDF se suben en «Publicaciones»."
+      "descripcion": "Todas las publicaciones. Los PDF se suben en «Publicaciones».",
+      "modulo": "publicaciones"
     },
     {
       "slug": "boletines",
       "nombre": "Boletines",
       "ruta": "/publicaciones/boletines",
       "grupo": "Publicaciones",
-      "descripcion": "Los boletines anuales de la corporación."
+      "descripcion": "Los boletines anuales de la corporación.",
+      "modulo": "publicaciones"
     },
     {
       "slug": "dossier-prensa",
       "nombre": "Dossier de prensa",
       "ruta": "/publicaciones/dossier-prensa",
       "grupo": "Publicaciones",
-      "descripcion": "Las apariciones en los medios."
+      "descripcion": "Las apariciones en los medios.",
+      "modulo": "publicaciones"
     },
     {
       "slug": "contacto",

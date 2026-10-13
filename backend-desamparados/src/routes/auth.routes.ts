@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { type } from 'arktype';
 import { AuthController } from '../controllers/auth.controller';
-import { authenticateToken, resolverSesiones } from '../middleware/session';
+import { authenticateToken, exigirAreaHermanos, resolverSesiones } from '../middleware/session';
 import { checkRole } from '../middleware/checkRole';
 import { conModulo } from '../middleware/modulos';
 import { Role } from '@prisma/client';
@@ -68,8 +68,10 @@ authRoutes.post('/register', conModulo('alta-web'), authLimiter, recibirAlta, va
 
 // Pedir volver tras una baja: la web lo ofrece cuando el registro topa con un
 // DNI que ya está en el censo. Lleva el mismo limitador que el resto, porque es
-// justo lo que usaría quien quisiera ir tanteando DNI uno a uno.
-authRoutes.post('/reactivacion', authLimiter, validate(reactivacionSchema), AuthController.solicitarReactivacion);
+// justo lo que usaría quien quisiera ir tanteando DNI uno a uno. Y la guarda
+// del alta: volver es pedir el alta otra vez, y sin «Alta por la web» la web
+// no ofrece ese camino; abierta, dejaba solicitudes en la cola de Secretaría.
+authRoutes.post('/reactivacion', conModulo('alta-web'), authLimiter, validate(reactivacionSchema), AuthController.solicitarReactivacion);
 
 // Login 
 authRoutes.post('/login', limitadorEntrada, validate(loginSchema), AuthController.login);
@@ -120,14 +122,21 @@ authRoutes.post('/cambiar-contrasena', authenticateToken, limitadorEntrada, vali
 //  RGPD (Datos personales del propio usuario)
 // ==========================================
 
+// Las dos son del área de hermanos («Mi perfil» y la revisión del primer
+// acceso; el CMS no tiene pantalla para ellas) y van con su sesión, nunca con
+// la del CMS: con la del área caducada y el CMS abierto en el mismo
+// navegador, «Descargar mis datos» bajaba los de la cuenta del CMS, que puede
+// ser otra persona. Una cuenta del equipo borra la suya desde el área, con la
+// sesión del CMS abierta a la vez (ver `deleteOwnAccount`).
+
 // Derecho de acceso: exportación completa de mis datos (art. 15 RGPD)
-authRoutes.get('/mis-datos', authenticateToken, AuthController.exportMisDatos);
+authRoutes.get('/mis-datos', authenticateToken, exigirAreaHermanos, AuthController.exportMisDatos);
 
 // Derecho de supresión: anonimización de mi cuenta (art. 17 RGPD).
 // Requiere confirmar con la contraseña actual en el body. Sin checkRole porque
 // también la usan los hermanos; el servicio exige origen 'cms' a las cuentas
 // del equipo y protege al último ADMIN activo.
-authRoutes.delete('/mi-cuenta', authenticateToken, validate(deleteAccountSchema), AuthController.deleteOwnAccount);
+authRoutes.delete('/mi-cuenta', authenticateToken, exigirAreaHermanos, validate(deleteAccountSchema), AuthController.deleteOwnAccount);
 
 
 // ==========================================

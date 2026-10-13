@@ -6,11 +6,11 @@ import { Helmet } from 'react-helmet-async'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import ListaDeAgenda from '../inicio/ListaDeAgenda'
-import CartelDeCulto from '../actualidad/agenda/CartelDeCulto'
+import VentanaDelActo from '../actualidad/agenda/VentanaDelActo'
 import CampoImagen from './CampoImagen'
 import { PAPEL } from '../inicio/estilos'
 import temaPublico from '../../theme'
-import { aDia, aHora } from '../../lib/fechas'
+import { diaEnMadrid, horaEnMadrid, instanteEnMadrid } from '../../lib/horaDeMadrid'
 import { ANCHO_EDICION } from './PantallaEdicion'
 import AvisoCambiosSinGuardar from './ficha/AvisoCambiosSinGuardar'
 import { useFichaCms } from './ficha/useFichaCms'
@@ -39,7 +39,13 @@ interface Formulario {
 
 const vacio: Formulario = { title: '', description: '', location: '', type: 'CULTO', dia: '', hora: '', conFin: false, diaFin: '', horaFin: '', cartel: false, dedicatoria: '', fotoCartel: '' }
 
-const momento = (dia: string, hora: string) => (dia && hora ? new Date(`${dia}T${hora}`) : null)
+// El día y la hora se escriben y se leen en hora de Madrid, que es la del acto,
+// aunque este equipo esté en otra zona: tomados en la del navegador, un acto
+// puesto desde Canarias quedaba una hora más tarde en la Agenda.
+const momento = (dia: string, hora: string) => {
+  const instante = dia && hora ? instanteEnMadrid(`${dia}T${hora}`) : null
+  return instante === null ? null : new Date(instante)
+}
 
 function desdeEvento(evento: ApiEvent): Formulario {
   const inicio = new Date(evento.startDate)
@@ -47,8 +53,8 @@ function desdeEvento(evento: ApiEvent): Formulario {
   return {
     title: evento.title, description: evento.description ?? '', location: evento.location ?? '',
     type: evento.type,
-    dia: aDia(inicio), hora: aHora(inicio),
-    conFin: fin !== null, diaFin: fin ? aDia(fin) : '', horaFin: fin ? aHora(fin) : '',
+    dia: diaEnMadrid(inicio), hora: horaEnMadrid(inicio),
+    conFin: fin !== null, diaFin: fin ? diaEnMadrid(fin) : '', horaFin: fin ? horaEnMadrid(fin) : '',
     cartel: evento.cartel ?? false, dedicatoria: evento.dedicatoria ?? '', fotoCartel: evento.fotoCartel ?? '',
   }
 }
@@ -73,6 +79,11 @@ export default function AgendaEditPage() {
   // Desde el panel del día del calendario, el acto nuevo nace con ese día puesto.
   const fecha = nuevo ? (state as { fecha?: unknown } | null)?.fecha : undefined
   const diaInicial = typeof fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fecha) ? fecha : ''
+  // El acto que da la fecha a una salida: su día, su título y su tipo se
+  // cambian desde la ficha de la salida (el servidor responde 409 aquí). Lo
+  // dice el listado al abrirla; entrando por la dirección no se sabe, y el
+  // 409 sale arriba con su explicación.
+  const enlazada = nuevo ? null : (state as { salidaEnlazada?: { id: number; nombre: string } | null } | null)?.salidaEnlazada ?? null
   const { cargado, form, inicial, sucio, guardando, error, bloqueo, borrador, volverAlListado, campo, setForm, guardar: guardarFicha } =
     useFichaCms<ApiEvent, Formulario>({
       listado: '/cms/agenda',
@@ -98,12 +109,11 @@ export default function AgendaEditPage() {
   const finAntes = Boolean(inicio && fin && fin < inicio)
   // La vista previa, con el día aunque falte la hora, y sin inventarse una:
   // antes enseñaba la hora de ahora (y el día de hoy si faltaba el día).
-  const inicioPrevia = inicio ?? (form.dia ? new Date(`${form.dia}T00:00`) : new Date(new Date().setHours(0, 0, 0, 0)))
-  const hoy = new Date()
-  hoy.setHours(0, 0, 0, 0)
+  const hoy = new Date(new Date().setHours(0, 0, 0, 0))
+  const inicioPrevia = inicio ?? momento(form.dia, '00:00') ?? hoy
   // Mismo corte que el servidor: lo anterior a hoy a las 00:00 va a «Pasados».
   // Basta el día para saberlo: el aviso sale antes de poner la hora.
-  const yaPaso = Boolean(form.dia && new Date(`${form.dia}T00:00`) < hoy)
+  const yaPaso = Boolean(form.dia && form.dia < diaEnMadrid(new Date()))
   const falta = [form.title.trim() === '' && 'el título', !form.dia && 'el día', !form.hora && 'la hora', form.conFin && !form.horaFin && 'la hora del final'].filter(Boolean) as string[]
   const sePuedeGuardar = falta.length === 0 && !finAntes
 
@@ -165,6 +175,13 @@ export default function AgendaEditPage() {
         </Box>
 
         {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+        {enlazada && (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            Es la fecha de la salida «{enlazada.nombre}»: su día, su hora, su título y su tipo se cambian desde{' '}
+            <Link to={`/cms/procesion/salidas/${enlazada.id}/editar`}>la ficha de la salida</Link>. Aquí puedes cambiar el
+            lugar, la descripción y el cartel.
+          </Alert>
+        )}
 
         <Box sx={{ display: 'grid', gap: 2.5, gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) 320px' }, alignItems: 'start' }}>
           <Stack spacing={2.5}>
@@ -174,6 +191,7 @@ export default function AgendaEditPage() {
                   label="Título"
                   value={form.title}
                   onChange={(e) => campo('title', e.target.value)}
+                  disabled={!!enlazada}
                   fullWidth
                   multiline
                   variant="standard"
@@ -200,6 +218,7 @@ export default function AgendaEditPage() {
                   label="Tipo"
                   value={form.type}
                   onChange={(e) => campo('type', e.target.value as ApiEvent['type'])}
+                  disabled={!!enlazada}
                   helperText="Da el color en el calendario de la portada. Los cultos y las procesiones se destacan en Actualidad."
                   slotProps={{ select: { renderValue: (valor) => <PuntoTipo tipo={valor as ApiEvent['type']} /> } }}
                   sx={{ maxWidth: 360 }}
@@ -237,18 +256,18 @@ export default function AgendaEditPage() {
             <Panel titulo="Cuándo">
               <Stack spacing={2}>
                 <Stack direction="row" spacing={1.5}>
-                  <TextField label="Día" type="date" size="small" value={form.dia} onChange={(e) => campo('dia', e.target.value)} slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 3 }} />
-                  <TextField label="Hora" type="time" size="small" value={form.hora} onChange={(e) => campo('hora', e.target.value)} slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 2 }} />
+                  <TextField label="Día" type="date" size="small" disabled={!!enlazada} value={form.dia} onChange={(e) => campo('dia', e.target.value)} slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 3 }} />
+                  <TextField label="Hora" type="time" size="small" disabled={!!enlazada} value={form.hora} onChange={(e) => campo('hora', e.target.value)} slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 2 }} />
                 </Stack>
                 {yaPaso && <Alert severity="warning" sx={{ py: 0 }}>Ese día ya ha pasado: el acto no saldrá en la web.</Alert>}
                 <FormControlLabel
-                  control={<Checkbox size="small" checked={form.conFin} onChange={(e) => setForm({ ...form, conFin: e.target.checked, diaFin: form.diaFin || form.dia })} />}
+                  control={<Checkbox size="small" disabled={!!enlazada} checked={form.conFin} onChange={(e) => setForm({ ...form, conFin: e.target.checked, diaFin: form.diaFin || form.dia })} />}
                   label="Tiene hora de final"
                 />
                 {form.conFin && (
                   <Stack direction="row" spacing={1.5}>
-                    <TextField label="Termina el día" type="date" size="small" value={form.diaFin} onChange={(e) => campo('diaFin', e.target.value)} helperText="Otro día si dura varios, como un triduo." slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 3 }} />
-                    <TextField label="A las" type="time" size="small" value={form.horaFin} onChange={(e) => campo('horaFin', e.target.value)} slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 2 }} />
+                    <TextField label="Termina el día" type="date" size="small" disabled={!!enlazada} value={form.diaFin} onChange={(e) => campo('diaFin', e.target.value)} helperText="Otro día si dura varios, como un triduo." slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 3 }} />
+                    <TextField label="A las" type="time" size="small" disabled={!!enlazada} value={form.horaFin} onChange={(e) => campo('horaFin', e.target.value)} slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 2 }} />
                   </Stack>
                 )}
                 {finAntes && <Alert severity="error" sx={{ py: 0 }}>El final es anterior al comienzo.</Alert>}
@@ -290,10 +309,11 @@ export default function AgendaEditPage() {
         {form.cartel && (
           <Box sx={{ mt: 2.5 }}>
             <Panel titulo="Así sale en la Agenda">
-              {/* El cartel de verdad, con el tema de la web, sin poder pulsarlo. */}
+              {/* La ventana de verdad que abre el acto en la Agenda, con el tema
+                  de la web, sin poder pulsarla (inert: tampoco se enfoca su «Cerrar»). */}
               <ThemeProvider theme={temaPublico}>
-                <Box inert data-testid="vista-previa-cartel" sx={{ fontFamily: temaPublico.typography.fontFamily, pointerEvents: 'none', backgroundColor: '#0c0b0d', p: { xs: 1.5, md: 3 } }}>
-                  <CartelDeCulto sinHora={!inicio} evento={{
+                <Box inert data-testid="vista-previa-cartel" sx={{ fontFamily: temaPublico.typography.fontFamily, pointerEvents: 'none', backgroundColor: PAPEL, p: { xs: 1.5, md: 3 }, display: 'flex', justifyContent: 'center' }}>
+                  <VentanaDelActo origen={null} quieto esDialogo={false} onCerrar={() => {}} sinHora={!inicio} evento={{
                     id: 0,
                     title: form.title.trim() || 'Título del acto',
                     description: form.description || null,

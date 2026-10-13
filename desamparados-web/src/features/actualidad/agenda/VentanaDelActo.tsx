@@ -5,6 +5,7 @@ import { GRANATE } from '../../inicio/estilos'
 import { claseDelActo, cuandoEnCartel, fotoDelCartel, hora, notaDelActo } from './cultos'
 import EnlacesDelActo from './EnlacesDelActo'
 import { useFotoQueFalla } from '../../../hooks/useFotoQueFalla'
+import { propsDeFoto } from '../../../lib/fotoSubida'
 
 /** La ventana es otra hoja, un punto más clara que el calendario. */
 const HOJA = '#fbf8f2'
@@ -22,13 +23,15 @@ interface Props {
   /** En el móvil la ventana va dentro de un Dialog, que ya es el diálogo. */
   esDialogo: boolean
   onCerrar: () => void
+  /** Solo en la vista previa del CMS, mientras el acto no tiene hora. */
+  sinHora?: boolean
 }
 
 /**
  * Un acto de la Agenda, en su ventana: la foto si es solemne, qué es, cuándo,
  * dónde y, para no olvidarlo, al calendario del móvil.
  */
-export default function VentanaDelActo({ evento, origen, quieto, esDialogo, onCerrar }: Props) {
+export default function VentanaDelActo({ evento, origen, quieto, esDialogo, onCerrar, sinHora = false }: Props) {
   const raiz = useRef<HTMLDivElement>(null)
   const cerrar = useRef<HTMLButtonElement>(null)
   const nota = notaDelActo(evento)
@@ -80,7 +83,8 @@ export default function VentanaDelActo({ evento, origen, quieto, esDialogo, onCe
       }}
     >
       {foto && conFoto && (
-        <Box component="img" src={foto.src} alt={foto.alt} onError={alFallar} sx={{ display: 'block', width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', objectPosition: 'center 25%' }} />
+        // La ventana mide 360 px: con las copias de la foto subida, el móvil no baja la original de 1920.
+        <Box component="img" alt={foto.alt} {...propsDeFoto(foto.src, '360px', alFallar)} sx={{ display: 'block', width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', objectPosition: 'center 25%' }} />
       )}
       <ButtonBase
         ref={cerrar}
@@ -102,7 +106,7 @@ export default function VentanaDelActo({ evento, origen, quieto, esDialogo, onCe
           {evento.title}
         </Typography>
         {evento.dedicatoria && <Typography sx={{ fontStyle: 'italic', color: GRIS, fontSize: 15 }}>{evento.dedicatoria}</Typography>}
-        <Typography sx={{ color: TINTA, fontWeight: 600, fontSize: 15.5 }}>{cuandoEnCartel(evento)}, a las {hora(evento)}</Typography>
+        <Typography sx={{ color: TINTA, fontWeight: 600, fontSize: 15.5 }}>{cuandoEnCartel(evento)}{!sinHora && <>, a las {hora(evento)}</>}</Typography>
         {nota && <Typography sx={{ color: GRIS, fontSize: 14.5 }}>{nota}</Typography>}
         <EnlacesDelActo evento={evento} sinMapa />
       </Box>
