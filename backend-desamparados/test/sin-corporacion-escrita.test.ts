@@ -10,7 +10,9 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const RAIZ = fileURLToPath(new URL('../../', import.meta.url));
-const CORPORACION = /Grupo Parroquial|\b(?:el|del|al|nuestro|El|Del|Al|Nuestro)\s+Grupo\b/;
+// `\s+` y no un espacio: los patrones se pasan al fichero entero (ver
+// `buscar`), y así ven también la frase partida entre dos líneas de JSX.
+const CORPORACION = /Grupo\s+Parroquial|\b(?:el|del|al|nuestro|El|Del|Al|Nuestro)\s+Grupo\b/;
 // «del ${identidad.nombre}», «el ${identidad.tipo}»…: la Tarea 4 encontró este
 // fallo de concordancia (un artículo escrito a mano delante del nombre propio
 // de la corporación interpolado) porque no contiene la palabra «Grupo» y el
@@ -47,6 +49,15 @@ const CORPORACION_INTERPOLADA_JSX = /\b(?:el|del|al|El|Del|Al)\s+\{\s*(?:site|id
 // frase, que con «del» y «al» solos no se veía.
 const SALIDA_EN_CODIGO = /\b(?:del|al|el|El)\s+(?:\$\{|\{)\s*[\w$]+(?:\??\.[\w$]+)*\??\.nombre\b[^}]*\}/;
 const SALIDA_EN_PLANTILLA = /\b(?:del|al|el|El)\s+\{\{\s*salida\s*\}\}/;
+// Lo mismo con `+` en vez de interpolar: «'del ' + identidad.nombre» o
+// «'el ' + salida.nombre» dicen lo mismo y los de arriba no los veían.
+const CORPORACION_CONCATENADA = /\b(?:el|del|al|El|Del|Al)\s*['"`]\s*\+\s*(?:site|identidad\w*)\.(?:nombre|tipo|tipoCorto)\b/;
+const SALIDA_CONCATENADA = /\b(?:del|al|el|El)\s*['"`]\s*\+\s*[\w$]+(?:\??\.[\w$]+)*\??\.nombre\b/;
+// Y la variable suelta, sin objeto delante: un `const { nombre } = salida`
+// (o `identidad`) seguido de «del ${nombre}» se colaba. Lo que de verdad no
+// es la corporación ni una salida va a `EXCEPCIONES`, con su porqué.
+const SUELTA = /\b(?:el|del|al|El|Del|Al)\s+(?:\$\{|\{)\s*(?:nombre|tipo|tipoCorto)\s*\}/;
+const DE_CODIGO = [CORPORACION, CORPORACION_INTERPOLADA_TS, CORPORACION_INTERPOLADA_JSX, CORPORACION_CONCATENADA, SALIDA_EN_CODIGO, SALIDA_CONCATENADA, SUELTA];
 
 /** Lo que sí puede llevarlo escrito, con su porqué. Fichero relativo a la raíz y un trozo de la línea. */
 // La denominación jurídica de `config/site.ts` ya no está aquí: desde la etapa
@@ -54,7 +65,19 @@ const SALIDA_EN_PLANTILLA = /\b(?:del|al|el|El)\s+\{\{\s*salida\s*\}\}/;
 // protegía nada.
 // Ni los ejemplos de los campos comunes de usos-de-correo.json: la API los da
 // con la identidad de cada instalación (PlantillasCorreoService.listar).
-const EXCEPCIONES: { fichero: string; contiene: string; motivo: string }[] = [];
+const EXCEPCIONES: { fichero: string; contiene: string; motivo: string }[] = [
+  ...['backend-desamparados/src/domain/articulos.ts', 'desamparados-web/src/domain/articulos.ts'].flatMap((fichero) =>
+    ['`del ${nombre}`', '`al ${nombre}`'].map((contiene) => ({
+      fichero,
+      contiene,
+      motivo: 'deArticulo y aArticulo: la contracción genérica, para el artículo «el», que usa todo lo demás.',
+    }))),
+  ...['`Actos del ${nombre}`', 'Nuevo evento el {nombre}'].map((contiene) => ({
+    fichero: 'desamparados-web/src/features/cms/agenda/PanelDelDia.tsx',
+    contiene,
+    motivo: '`nombre` es el del día («lunes 5»): masculino siempre.',
+  })),
+];
 
 // `desamparados-web/src/test/` son las ayudas de las pruebas (setup, datos de
 // prueba): como `__tests__`, no llegan a ninguna pantalla.
@@ -86,39 +109,75 @@ const lineasDe = (contenido: string) => contenido.split(/\r?\n/);
 // formato a quien edite el fichero) y una de ellas cita «Grupo Parroquial» como
 // ejemplo de lo que escribiría un correo a mano, justo lo que esta prueba
 // persigue. Filtrar solo la línea con la clave (como hacía el encargo) no basta
-// porque dejaba las líneas de contenido del array; aquí se descarta el bloque
-// entero, de `"_comentario": [` a su `]` de cierre.
+// porque dejaba las líneas de contenido del array; aquí se vacía el bloque
+// entero, de `"_comentario": [` a su `]` de cierre. Vaciadas y no quitadas:
+// así cada hallazgo dice la línea de verdad del fichero.
 function sinBloqueDeComentario(lineas: string[]): string[] {
   let dentro = false;
-  return lineas.filter((l) => {
-    if (/^\s*"_comentario"\s*:\s*\[/.test(l)) { dentro = true; return false; }
-    if (!dentro) return true;
+  return lineas.map((l) => {
+    if (/^\s*"_comentario"\s*:\s*\[/.test(l)) { dentro = true; return ''; }
+    if (!dentro) return l;
     if (/^\s*\]/.test(l)) dentro = false;
-    return false;
+    return '';
   });
 }
 
-test('ni el código ni las plantillas escriben la corporación ni la salida a mano', () => {
-  const hallazgos: string[] = [];
-  const mirar = (fichero: string, lineas: string[], patrones: RegExp[]) => lineas.forEach((l, i) => {
-    const texto = sinComentarios(l);
-    if (!patrones.some((p) => p.test(texto))) return;
-    const rel = relative(RAIZ, fichero).replace(/\\/g, '/');
-    if (EXCEPCIONES.some((e) => e.fichero === rel && texto.includes(e.contiene))) return;
-    hallazgos.push(`${rel}:${i + 1}: ${texto.trim()}`);
-  });
-  for (const dir of ['backend-desamparados/src', 'desamparados-web/src']) {
-    for (const f of ficheros(join(RAIZ, dir))) {
-      mirar(f, lineasDe(readFileSync(f, 'utf8')), [
-        CORPORACION,
-        CORPORACION_INTERPOLADA_TS,
-        CORPORACION_INTERPOLADA_JSX,
-        SALIDA_EN_CODIGO,
-      ]);
+/**
+ * Los hallazgos de unos patrones en un fichero entero, sin sus comentarios. Se
+ * busca en el texto completo y no línea a línea: una frase partida entre dos
+ * líneas (JSX formateado, una cadena larga) no se veía. Cada hallazgo dice la
+ * línea donde empieza y las que ocupa, juntas.
+ */
+function buscar(fichero: string, lineas: string[], patrones: RegExp[]): string[] {
+  const limpias = lineas.map(sinComentarios);
+  const texto = limpias.join('\n');
+  const rel = relative(RAIZ, fichero).replace(/\\/g, '/');
+  const hallazgos = new Map<number, string>();
+  for (const patron of patrones) {
+    for (const m of texto.matchAll(new RegExp(patron.source, 'g'))) {
+      const primera = texto.slice(0, m.index).split('\n').length - 1;
+      const ultima = primera + m[0].split('\n').length - 1;
+      const trozo = limpias.slice(primera, ultima + 1).map((l) => l.trim()).join(' ');
+      if (EXCEPCIONES.some((e) => e.fichero === rel && trozo.includes(e.contiene))) continue;
+      hallazgos.set(primera, `${rel}:${primera + 1}: ${trozo}`);
     }
   }
-  const plantillas = join(RAIZ, 'shared/usos-de-correo.json');
-  mirar(plantillas, sinBloqueDeComentario(lineasDe(readFileSync(plantillas, 'utf8'))), [CORPORACION, SALIDA_EN_PLANTILLA]);
+  return [...hallazgos.values()];
+}
+
+/**
+ * Los JSON y módulos de `shared/`, que leen los dos lados. Sin `__fixtures__`
+ * ni los `casos-*.json`: son datos de prueba, y los casos de concordancia
+ * escriben «el Grupo Parroquial» a propósito.
+ */
+function deShared(dir = join(RAIZ, 'shared')): string[] {
+  return readdirSync(dir).flatMap((n) => {
+    const ruta = join(dir, n);
+    if (statSync(ruta).isDirectory()) return n === '__fixtures__' ? [] : deShared(ruta);
+    return /\.(json|mjs)$/.test(n) && !n.startsWith('casos-') ? [ruta] : [];
+  });
+}
+
+test('la guardiana ve la frase partida entre líneas, la concatenada y la variable suelta', () => {
+  const ve = (...lineas: string[]) => buscar(join(RAIZ, 'prueba.tsx'), lineas, DE_CODIGO).length;
+  assert.equal(ve('<p>Bienvenido al', '  Grupo Parroquial</p>'), 1);
+  assert.equal(ve('<p>Bienvenido del', '  {site.nombre}</p>'), 1);
+  assert.equal(ve("const t = 'del ' + identidad.nombre;"), 1);
+  assert.equal(ve("const t = 'el ' + salida.nombre;"), 1);
+  assert.equal(ve('const { nombre } = salida;', 'const t = `del ${nombre}`;'), 1);
+  assert.equal(ve('// del Grupo Parroquial, en un comentario', 'const t = deLaCorporacion();'), 0);
+});
+
+test('ni el código ni las plantillas escriben la corporación ni la salida a mano', () => {
+  const hallazgos: string[] = [];
+  // prisma/ también: la siembra escribe textos que acaban en la web.
+  for (const dir of ['backend-desamparados/src', 'backend-desamparados/prisma', 'desamparados-web/src']) {
+    for (const f of ficheros(join(RAIZ, dir))) hallazgos.push(...buscar(f, lineasDe(readFileSync(f, 'utf8')), DE_CODIGO));
+  }
+  for (const f of deShared()) {
+    const lineas = sinBloqueDeComentario(lineasDe(readFileSync(f, 'utf8')));
+    hallazgos.push(...buscar(f, lineas, f.endsWith('.mjs') ? DE_CODIGO : [CORPORACION, SALIDA_EN_PLANTILLA]));
+  }
   assert.deepEqual(hallazgos, [], `Escritas a mano (usa domain/articulos.ts o los campos {{la_corporacion}}…):\n${hallazgos.join('\n')}`);
 });
 

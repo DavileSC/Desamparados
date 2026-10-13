@@ -22,14 +22,14 @@
       "nombre": "Historia",
       "ruta": "/historia",
       "grupo": "Corporación",
-      "descripcion": "La cronología del Grupo Parroquial, con su fondo velado y su índice de momentos."
+      "descripcion": "La cronología de la corporación, con su fondo velado y su índice de momentos."
     },
     {
       "slug": "parroquia",
       "nombre": "Parroquia",
       "ruta": "/parroquia",
       "grupo": "Corporación",
-      "descripcion": "La sede canónica y la comunidad pasionista que acompaña al Grupo Parroquial."
+      "descripcion": "La sede canónica y la comunidad parroquial que acompaña a la corporación."
     },
     {
       "slug": "organos-de-gobierno",
@@ -43,7 +43,7 @@
       "nombre": "Nuestros Fines",
       "ruta": "/nuestros-fines",
       "grupo": "Corporación",
-      "descripcion": "Caridad y formación, los dos ejes de la acción del Grupo Parroquial."
+      "descripcion": "Caridad y formación, los dos ejes de la acción de la corporación."
     },
     {
       "slug": "caridad",
@@ -147,7 +147,7 @@
       "nombre": "Boletines",
       "ruta": "/publicaciones/boletines",
       "grupo": "Publicaciones",
-      "descripcion": "Los boletines anuales del Grupo Parroquial."
+      "descripcion": "Los boletines anuales de la corporación."
     },
     {
       "slug": "dossier-prensa",
@@ -161,7 +161,7 @@
       "nombre": "Contacto",
       "ruta": "/contacto",
       "grupo": "Contacto",
-      "descripcion": "El formulario de contacto y los datos para llegar al Grupo Parroquial."
+      "descripcion": "El formulario de contacto y los datos para llegar a la corporación."
     }
   ]
 }

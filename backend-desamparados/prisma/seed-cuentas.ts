@@ -68,7 +68,7 @@ export function planDeCuentas(entorno: Entorno = process.env): PlanCuentas {
   if (!adminEmail) {
     throw new Error(
       'Siembra cancelada: en producción hay que indicar el correo del administrador con SEED_ADMIN_EMAIL ' +
-      '(una dirección real del Grupo Parroquial, que recibirá la recuperación de contraseña).'
+      '(una dirección real de la corporación, que recibirá la recuperación de contraseña).'
     );
   }
   if (email(adminEmail) instanceof ArkErrors) {
@@ -77,7 +77,7 @@ export function planDeCuentas(entorno: Entorno = process.env): PlanCuentas {
   if (/@cofradia\.com$/i.test(adminEmail)) {
     throw new Error(
       'Siembra cancelada: cofradia.com es un dominio ajeno con correo activo. ' +
-      'SEED_ADMIN_EMAIL debe ser una dirección del Grupo Parroquial.'
+      'SEED_ADMIN_EMAIL debe ser una dirección de la corporación.'
     );
   }
 
