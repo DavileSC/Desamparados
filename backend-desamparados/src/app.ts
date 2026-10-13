@@ -8,6 +8,7 @@ import { authRoutes } from './routes/auth.routes.js';
 import { hermanoRoutes } from './routes/hermano.routes.js';
 import { reciboRoutes } from './routes/recibo.routes.js';
 import { comunicadosRoutes } from './routes/comunicados.routes.js';
+import { boletinRoutes } from './routes/boletin.routes.js';
 import { cabildosRoutes } from './routes/cabildos.routes.js';
 import { tiendaRoutes } from './routes/tienda.routes.js';
 import { plantillasCorreoRoutes } from './routes/plantillas-correo.routes.js';
@@ -182,6 +183,7 @@ app.use('/api/transacciones', conModulo('contabilidad'), transaccionRoutes); // 
 app.use('/api/panel', nucleo, panelRoutes);      // Panel del CMS
 app.use('/api/datos', nucleo, datosRoutes);      // Datos e informes de la junta (el Informe anual lleva dentro su guarda)
 app.use('/api/comunicados', conModulo('comunicados'), comunicadosRoutes); // Boletín y avisos por correo
+app.use('/api/boletin', nucleo, boletinRoutes); // La baja desde el enlace del correo: vale aunque se apague el boletín
 app.use('/api/cabildos', conModulo('cabildos'), cabildosRoutes); // Cabildos y libro de actas
 app.use('/api/tienda', conModulo('tienda'), tiendaRoutes); // Tienda: la caja y los productos (la compra desde la web, dentro con tienda-web)
 app.use('/api/plantillas-correo', nucleo, plantillasCorreoRoutes); // Emails: las plantillas de los correos

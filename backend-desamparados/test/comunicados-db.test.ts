@@ -17,6 +17,7 @@ import { HttpError } from '../src/utils/error.handle.js';
 import { ponerTransporte } from '../src/services/correos/envio.js';
 import { ComunicadosService, envioTerminado } from '../src/services/comunicados.service.js';
 import { tokenDeBaja } from '../src/domain/comunicados.js';
+import { ModulosService } from '../src/services/modulos.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 
@@ -171,21 +172,27 @@ test('los fallidos se reintentan, y la prueba llega a quien la pide', async (t) 
   }
 });
 
-test('la baja del boletín desde el enlace, sin sesión; con el enlace cambiado, no', async (t) => {
+test('la baja del boletín desde el enlace, sin sesión y con el módulo apagado; con el enlace cambiado, no', async (t) => {
   if (!dbDisponible) { t.skip(SIN_DB); return; }
   const e = await escenario();
+  const antes = await db.modulo.findUnique({ where: { clave: 'comunicados' }, select: { activo: true } });
   try {
     const ana = await e.ficha({ nombre: 'Ana', email: 'ana.baja@ejemplo.test', boletin: true });
-    const res = await fetch(`${baseUrl}/api/comunicados/baja-boletin`, {
+    // El boletín ya está en los buzones cuando se apaga el módulo: el enlace tiene que seguir valiendo.
+    await db.modulo.updateMany({ where: { clave: 'comunicados' }, data: { activo: false } });
+    await ModulosService.cargar();
+    const res = await fetch(`${baseUrl}/api/boletin/baja`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: tokenDeBaja('ana.baja@ejemplo.test', process.env.JWT_SECRET!) }),
     });
     assert.equal(res.status, 200);
     assert.equal((await db.hermano.findUniqueOrThrow({ where: { id: ana.id } })).boletin, false);
 
-    const mal = await fetch(`${baseUrl}/api/comunicados/baja-boletin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: 'abc.def' }) });
+    const mal = await fetch(`${baseUrl}/api/boletin/baja`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: 'abc.def' }) });
     assert.equal(mal.status, 400);
   } finally {
+    if (antes) await db.modulo.updateMany({ where: { clave: 'comunicados' }, data: { activo: antes.activo } });
+    await ModulosService.cargar();
     await e.recoger();
   }
 });
