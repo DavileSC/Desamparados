@@ -16,6 +16,7 @@
 import { MetodoPago, Prisma, TipoTransaccion } from '@prisma/client';
 import db from '../config/db.js';
 import { HttpError, NotFoundError } from '../utils/error.handle.js';
+import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from './auditoria.service.js';
 import { idCategoriaDeRecibos } from './recibos/comunes.js';
 import { CATEGORIA_TIENDA, aLaVenta, conTallas } from './tienda.service.js';
@@ -114,7 +115,10 @@ export class CajaService {
   /** Deshace una venta en mano: vuelven las existencias y se quita el apunte. */
   static async anular(ventaId: number, meta: MetaDeAuditoria) {
     const anuladaPor = await nombreDe(meta);
-    const venta = await db.$transaction(async (tx) => {
+    // Serializable: lo que queda por ingresar es una suma de filas que otro
+    // puede estar cambiando; sin aislamiento, dos operaciones a la vez lo
+    // dejaban en negativo (y la partida doble pasaba de más de Caja a Bancos).
+    const venta = await transactionWithRetry(async (tx) => {
       const v = await tx.cajaVenta.findUnique({ where: { id: ventaId }, include: { lineas: true, sesion: { select: { cerradaEl: true } } } });
       if (!v) throw new NotFoundError('Esa venta no existe.');
       if (v.anuladaEl) throw new HttpError('Esa venta ya estaba anulada.', 409);
@@ -133,7 +137,7 @@ export class CajaService {
       }
       if (v.transaccionId !== null) await tx.transaccion.deleteMany({ where: { id: v.transaccionId } });
       return tx.cajaVenta.update({ where: { id: ventaId }, data: { anuladaEl: new Date(), anuladaPor, transaccionId: null } });
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     await AuditoriaService.log(ACCIONES_AUDITORIA.CAJA_ANULAR, meta, 'cajaVenta', ventaId, { antes: { total: venta.total.toString(), metodo: venta.metodo } });
     return CajaService.estado();
   }
@@ -146,7 +150,9 @@ export class CajaService {
     const apuntadoPor = await nombreDe(meta);
     const centimos = Math.round(importe * 100);
     if (fecha > diaMadrid(new Date())) throw new HttpError('La fecha del ingreso no puede ser futura.');
-    const ingreso = await db.$transaction(async (tx) => {
+    // Serializable, como al anular: dos ingresos a la vez de los últimos 50 €
+    // leían los dos que quedaban 50 y apuntaban 100.
+    const ingreso = await transactionWithRetry(async (tx) => {
       const pendiente = await efectivoPorIngresar(tx);
       if (centimos > pendiente) {
         throw new HttpError(pendiente <= 0
@@ -154,7 +160,7 @@ export class CajaService {
           : `Solo quedan ${eurosDeCentimos(pendiente)} de la tienda por ingresar. Si llevas también dinero de otra cosa, apunta aquí solo lo de la tienda.`, 409);
       }
       return tx.ingresoEfectivoTienda.create({ data: { fecha: inicioDiaMadrid(fecha), importe: aEuros(centimos), nota: nota?.trim() || null, apuntadoPor } });
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     await AuditoriaService.log(ACCIONES_AUDITORIA.TIENDA_INGRESO_BANCO, meta, 'ingresoEfectivoTienda', ingreso.id, { despues: { fecha, importe } });
     return CajaService.estado();
   }
