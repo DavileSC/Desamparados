@@ -73,3 +73,27 @@ test('apagado, /acceso no da sesión a nadie y las que había dejan de valer; el
   assert.ok((await yo(cookieCms)).cms, 'la del CMS sigue');
   assert.equal((await fetch(`${baseUrl}/api/cms/modulos`, { headers: { Cookie: cookieCms } })).status, 200);
 });
+
+test('apagado, la sesión del CMS tampoco abre las rutas propias del área', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const admin = await crearUsuarioPrueba(Role.ADMIN);
+  usuarios.push(admin.id);
+  const cookieCms = `${COOKIE_CMS}=${generateToken(admin.id, Role.ADMIN, false, 'cms')}`;
+  const rutas = ['/api/hermanos/mis-perfiles', '/api/recibos/mis-recibos'];
+  const pedir = (ruta: string) => fetch(`${baseUrl}${ruta}`, { headers: { Cookie: cookieCms } });
+
+  await db.modulo.updateMany({ where: { clave: 'area-hermanos' }, data: { activo: true } });
+  await ModulosService.cargar();
+  for (const ruta of rutas) assert.equal((await pedir(ruta)).status, 200, `encendido, ${ruta}`);
+
+  // Directo a la tabla: lo que se prueba es la guarda, no la regla de requisitos.
+  await db.modulo.updateMany({ where: { clave: 'area-hermanos' }, data: { activo: false } });
+  await ModulosService.cargar();
+  for (const ruta of rutas) {
+    const r = await pedir(ruta);
+    assert.equal(r.status, 404, `apagado, ${ruta}`);
+    assert.equal((await r.json() as { error?: string }).error, 'MODULO_NO_ACTIVADO', ruta);
+  }
+  // Lo del equipo sigue: la guarda es solo de las rutas del área.
+  assert.equal((await pedir('/api/recibos/admin/resumen')).status, 200);
+});

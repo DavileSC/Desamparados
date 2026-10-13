@@ -3,7 +3,7 @@ import { ProcesionController } from '../controllers/procesion.controller.js';
 import { MesaController } from '../controllers/mesa.controller.js';
 import { CortejoController } from '../controllers/cortejo.controller.js';
 import { PuertaController } from '../controllers/puerta.controller.js';
-import { authenticateToken } from '../middleware/session.js';
+import { authenticateToken, exigirAreaHermanos } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { conModulo } from '../middleware/modulos.js';
 import { Role } from '@prisma/client';
@@ -56,6 +56,8 @@ const rolesCensoMesa = [...ROLES_CENSO_EN_MESA];
 // ==========================================
 //  ZONA HERMANO (APP)
 // ==========================================
+// Del área de hermanos, también con una sesión del CMS (ver `exigirAreaHermanos`).
+procesionRouter.use(['/dias', '/mi-estado', '/avisar', '/mis-papeletas'], exigirAreaHermanos);
 procesionRouter.get('/dias', validate(salidaQuerySchema), ProcesionController.getDias);
 procesionRouter.get('/mi-estado', ProcesionController.getMiEstado);
 procesionRouter.post('/avisar', validate(avisarAsistenciaSchema), ProcesionController.avisarAsistencia);

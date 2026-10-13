@@ -5,7 +5,7 @@ import { CensoHojaController } from '../controllers/censo-hoja.controller';
 import { PrimerAccesoController } from '../controllers/primer-acceso.controller';
 import { fichaAjenaSchema, invitarSchema, listadoPrimerAccesoSchema } from '../schemas/primer-acceso.schema';
 import { ficheroDeDatosMiddleware } from '../middleware/upload.middleware';
-import { authenticateToken } from '../middleware/session';
+import { authenticateToken, exigirAreaHermanos } from '../middleware/session';
 import { checkRole } from '../middleware/checkRole';
 import { conModulo } from '../middleware/modulos';
 
@@ -107,6 +107,10 @@ hermanoRouter.post('/admin/:id/emancipar', checkRole(rolesGestionCenso), validat
 // ==========================================
 // --- RUTAS FAMILIARES (Usuario normal) ---
 // ==========================================
+
+// Son del área de hermanos aunque la sesión sea del CMS: con el área apagada,
+// o la ficha sin confirmar, no se abren (ver `exigirAreaHermanos`).
+hermanoRouter.use(['/mis-perfiles', '/primer-acceso'], exigirAreaHermanos);
 
 hermanoRouter.get('/mis-perfiles', HermanoController.getMyProfiles);
 hermanoRouter.post('/mis-perfiles', validate(addProfileSchema), HermanoController.addProfile);

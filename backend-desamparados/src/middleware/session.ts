@@ -3,6 +3,7 @@ import { verifyToken, AuthTokenPayload } from "../utils/jwt.handle.js";
 import { AreaSesion, nombreCookie } from "../utils/cookies.js";
 import db from "../config/db.js";
 import { ModulosService } from "../services/modulos.service.js";
+import { conModulo } from "./modulos.js";
 
 // 1. DECLARATION MERGING: Extiende el Request global de Express de forma automática
 declare global {
@@ -100,8 +101,15 @@ export const PRIMER_ACCESO_PENDIENTE = 'PRIMER_ACCESO_PENDIENTE';
  * de «Mi perfil» que reutiliza). `/auth/me` y `/auth/logout` no pasan por
  * aquí: no llevan `authenticateToken`. Una pantalla nueva en la revisión que
  * llame a otra ruta tiene que añadirla aquí, o recibirá el 403.
+ *
+ * Descargar los datos y borrar la cuenta (RGPD, arts. 15 y 17) también: son
+ * derechos de la persona, y exigirle antes el DNI, la dirección o el IBAN que
+ * faltan en su ficha para poder ejercerlos sería pedirle justo lo que quizá
+ * no quiere dar.
  */
 const RUTAS_DE_LA_REVISION: { metodo: string; ruta: RegExp }[] = [
+  { metodo: 'GET', ruta: /^\/api\/auth\/mis-datos\/?$/i },
+  { metodo: 'DELETE', ruta: /^\/api\/auth\/mi-cuenta\/?$/i },
   { metodo: 'GET', ruta: /^\/api\/hermanos\/mis-perfiles\/?$/i },
   { metodo: 'PUT', ruta: /^\/api\/hermanos\/mis-perfiles\/[^/]+\/?$/i },
   { metodo: '*', ruta: /^\/api\/hermanos\/primer-acceso\/./i },
@@ -146,3 +154,25 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
   next();
 };
 
+const guardaDelArea = conModulo('area-hermanos');
+
+/**
+ * La guarda de las rutas propias del área de hermanos (mis fichas, mi
+ * procesión, mis recibos), detrás de `authenticateToken`; nunca en las
+ * `/admin`. `authenticateToken` deja pasar con cualquiera de las dos sesiones,
+ * y una del CMS no sabía nada del área: con «Área de hermanos» apagado, o con
+ * la cuenta aún sin confirmar su ficha, un cargo entraba por /cms/acceso y
+ * pedía papeletas o daba de alta a un menor por la API. Aquí cuenta la
+ * identidad que haya quedado, venga de la sesión que venga.
+ */
+export const exigirAreaHermanos = (req: Request, res: Response, next: NextFunction) =>
+  guardaDelArea(req, res, (error?: unknown) => {
+    if (error) return next(error);
+    if (req.user?.primerAccesoPendiente && !esDeLaRevision(req)) {
+      return res.status(403).json({
+        error: PRIMER_ACCESO_PENDIENTE,
+        message: 'Antes de usar el área de hermanos tienes que revisar y confirmar tu ficha.',
+      });
+    }
+    next();
+  });

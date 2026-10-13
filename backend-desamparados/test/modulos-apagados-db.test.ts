@@ -28,7 +28,7 @@ const RUTAS: Record<ClaveModulo, { method?: string; ruta: string }[]> = {
   publicaciones: [{ ruta: '/api/publications' }],
   agenda: [{ ruta: '/api/events' }],
   comunicados: [{ ruta: '/api/comunicados' }],
-  'alta-web': [{ method: 'POST', ruta: '/api/auth/register' }],
+  'alta-web': [{ method: 'POST', ruta: '/api/auth/register' }, { method: 'POST', ruta: '/api/auth/reactivacion' }],
   'area-hermanos': [], // se prueba en modulos-area-hermanos-db.test.ts
   procesion: [{ ruta: '/api/procesion/dias' }, { ruta: '/api/salidas' }, { ruta: '/api/cms/salidas' }, { ruta: '/api/ropero/cingulos' }],
   puerta: [{ ruta: '/api/procesion/admin/puerta' }],
@@ -61,6 +61,9 @@ before(async () => {
   dbDisponible = await Promise.race([db.$queryRaw`SELECT 1`.then(() => true).catch(() => false), timeout]);
   if (!dbDisponible) return;
   foto = await db.modulo.findMany({ select: { clave: true, activo: true } });
+  // Las rutas del área (/mis-recibos…) miran además «Área de hermanos»: si la
+  // base lo tenía apagado, encendido el módulo de la ruta seguiría el 404.
+  await ponerEnBase(['area-hermanos'], true);
   const u = await crearUsuarioPrueba(Role.ADMIN);
   admin = { id: u.id, cookie: `${COOKIE_CMS}=${generateToken(u.id, Role.ADMIN, false, 'cms')}` };
 });

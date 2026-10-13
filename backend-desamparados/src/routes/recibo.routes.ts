@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { ReciboController } from '../controllers/recibo.controller.js';
 import { Modelo182Controller } from '../controllers/modelo-182.controller.js';
 import { certificadosQuerySchema } from '../schemas/modelo-182.schema.js';
-import { authenticateToken } from '../middleware/session.js';
+import { authenticateToken, exigirAreaHermanos } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { ROLES_TESORERIA } from './roles.js';
 import { conModulo } from '../middleware/modulos.js';
@@ -34,6 +34,8 @@ const validateId = validate(type({ params: { id: idParam } }));
 // ==========================================
 //  RUTAS DE USUARIO (Familia)
 // ==========================================
+// Del área de hermanos, también con una sesión del CMS (ver `exigirAreaHermanos`).
+reciboRoutes.use('/mis-recibos', exigirAreaHermanos);
 reciboRoutes.get('/mis-recibos', validate(misRecibosQuerySchema), ReciboController.getMyRecibos);
 
 // El detalle de un recibo propio. El filtro de familia está en el servicio

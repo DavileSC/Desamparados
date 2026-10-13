@@ -68,8 +68,10 @@ authRoutes.post('/register', conModulo('alta-web'), authLimiter, recibirAlta, va
 
 // Pedir volver tras una baja: la web lo ofrece cuando el registro topa con un
 // DNI que ya está en el censo. Lleva el mismo limitador que el resto, porque es
-// justo lo que usaría quien quisiera ir tanteando DNI uno a uno.
-authRoutes.post('/reactivacion', authLimiter, validate(reactivacionSchema), AuthController.solicitarReactivacion);
+// justo lo que usaría quien quisiera ir tanteando DNI uno a uno. Y la guarda
+// del alta: volver es pedir el alta otra vez, y sin «Alta por la web» la web
+// no ofrece ese camino; abierta, dejaba solicitudes en la cola de Secretaría.
+authRoutes.post('/reactivacion', conModulo('alta-web'), authLimiter, validate(reactivacionSchema), AuthController.solicitarReactivacion);
 
 // Login 
 authRoutes.post('/login', limitadorEntrada, validate(loginSchema), AuthController.login);
