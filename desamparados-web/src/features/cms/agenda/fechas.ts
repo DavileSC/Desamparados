@@ -1,17 +1,25 @@
 import type { ApiEvent } from '../../../lib/api/agenda'
-import { inicioDelDia, nombreDelMes } from '../../inicio/agenda'
+import { diaDelCalendario, diaEnMadrid, fechaEnMadrid, horaEnMadrid, hoyDelCalendario } from '../../../lib/horaDeMadrid'
+import { nombreDelMes } from '../../inicio/agenda'
 
-/** «18:00». */
-export const hora = (fecha: Date) => fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+// Los actos se leen en hora de Madrid, como en la Agenda pública: quien edita
+// desde Canarias (o con el portátil en otra zona) veía la vigilia de las 00:30
+// del 3 a las 23:30 del 2, en otro día que el que sale en la web.
 
-/** «sáb», sin el punto que ponen algunos motores. */
-export const diaSemana = (fecha: Date) => fecha.toLocaleDateString('es-ES', { weekday: 'short' }).replace('.', '')
+/** «18:00», en Madrid. */
+export const hora = (fecha: Date) => horaEnMadrid(fecha)
+
+/** «sáb», sin el punto que ponen algunos motores; el día de Madrid. */
+export const diaSemana = (fecha: Date) => fechaEnMadrid(fecha, { weekday: 'short' }).replace('.', '')
+
+/** El número del día en Madrid: «3». */
+export const diaDelMes = (fecha: Date) => Number(diaEnMadrid(fecha).slice(8))
 
 /** El final, si el acto acaba otro día (un triduo); si acaba el mismo día, nada. */
 export function finEnOtroDia(evento: Pick<ApiEvent, 'startDate' | 'endDate'>): Date | null {
   if (!evento.endDate) return null
   const fin = new Date(evento.endDate)
-  return inicioDelDia(fin).getTime() !== inicioDelDia(new Date(evento.startDate)).getTime() ? fin : null
+  return diaEnMadrid(fin) !== diaEnMadrid(evento.startDate) ? fin : null
 }
 
 /**
@@ -22,24 +30,26 @@ export const loQueFalta = (evento: Pick<ApiEvent, 'location' | 'description'>) =
   [!evento.location?.trim() && 'Sin lugar', !evento.description?.trim() && 'Sin descripción'].filter(Boolean) as string[]
 
 /** Los actos de una página en apartados por mes, en el orden en que llegan: «Octubre», «Enero 2027». */
-export function agruparPorMes<E extends Pick<ApiEvent, 'startDate'>>(eventos: E[], hoy = new Date()) {
+export function agruparPorMes<E extends Pick<ApiEvent, 'startDate'>>(eventos: E[], ahora = new Date()) {
   const grupos: { clave: string; titulo: string; eventos: E[] }[] = []
+  const anioDeHoy = hoyDelCalendario(ahora).getFullYear()
   for (const evento of eventos) {
-    const inicio = new Date(evento.startDate)
-    const clave = `${inicio.getFullYear()}-${inicio.getMonth()}`
+    const dia = diaDelCalendario(evento.startDate)
+    const clave = `${dia.getFullYear()}-${dia.getMonth()}`
     const ultimo = grupos.at(-1)
     if (ultimo?.clave === clave) ultimo.eventos.push(evento)
-    else grupos.push({ clave, titulo: nombreDelMes(inicio, inicio.getFullYear() !== hoy.getFullYear()), eventos: [evento] })
+    else grupos.push({ clave, titulo: nombreDelMes(dia, dia.getFullYear() !== anioDeHoy), eventos: [evento] })
   }
   return grupos
 }
 
 /** «hoy», «mañana», «el sábado», «el 12 de octubre»: cuándo es el siguiente acto, dicho como se diría. */
 export function cuandoEs(iso: string, ahora = new Date()): string {
-  const fecha = new Date(iso)
-  const dias = Math.round((inicioDelDia(fecha).getTime() - inicioDelDia(ahora).getTime()) / 86_400_000)
+  // Días del calendario de Madrid; redondeado, porque un cambio de hora en medio
+  // deja la diferencia en 23 o 25 horas.
+  const dias = Math.round((diaDelCalendario(iso).getTime() - hoyDelCalendario(ahora).getTime()) / 86_400_000)
   if (dias === 0) return 'hoy'
   if (dias === 1) return 'mañana'
-  if (dias > 1 && dias < 7) return `el ${fecha.toLocaleDateString('es-ES', { weekday: 'long' })}`
-  return `el ${fecha.getDate()} de ${fecha.toLocaleDateString('es-ES', { month: 'long' })}`
+  if (dias > 1 && dias < 7) return `el ${fechaEnMadrid(iso, { weekday: 'long' })}`
+  return `el ${fechaEnMadrid(iso, { day: 'numeric', month: 'long' })}`
 }

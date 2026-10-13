@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import { TemaCmsProvider } from '../../../app/temaCms'
 import AgendaAdminPage from '../AgendaAdminPage'
+import { hoyDelCalendario, isoEnMadrid } from '../../../lib/horaDeMadrid'
+import { aDia } from '../../../lib/fechas'
 
 const montar = (ruta = '/cms/agenda?vista=lista') => renderWithProviders(<TemaCmsProvider><AgendaAdminPage /></TemaCmsProvider>, { ruta })
 
@@ -86,11 +88,11 @@ describe('AgendaAdminPage', () => {
   })
 
   it('en la cabecera dice cuál es el siguiente', async () => {
-    const manana = new Date()
-    manana.setDate(manana.getDate() + 1)
-    manana.setHours(20, 0, 0, 0)
+    // Mañana a las 20:00 de Madrid: es como lo lee la Agenda, sea cual sea la zona del equipo.
+    const hoy = hoyDelCalendario()
+    const manana = isoEnMadrid(`${aDia(new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 1))}T20:00`)
     responder([evento], { total: 1, page: 1, limit: 20, totalPages: 1 }, {
-      ...resumenBase, siguiente: { id: 3, title: 'Besapiés', startDate: manana.toISOString() },
+      ...resumenBase, siguiente: { id: 3, title: 'Besapiés', startDate: manana },
     })
     montar()
 
@@ -242,7 +244,8 @@ describe('AgendaAdminPage en el mes', () => {
     const peticion = decodeURIComponent(ultimaPeticion(simulado))
     expect(peticion).toContain('/events/admin/calendario?')
     // Octubre de 2026 empieza en jueves: la rejilla arranca el lunes 28 de septiembre.
-    expect(new Date(peticion.match(/desde=([^&]+)/)![1]).getDate()).toBe(28)
+    // Desde su medianoche de Madrid, sea cual sea la zona de quien edita.
+    expect(peticion.match(/desde=([^&]+)/)![1]).toBe(isoEnMadrid('2026-09-28T00:00'))
     expect(simulado.mock.calls.some(([url]) => String(url).includes('/events/admin?'))).toBe(false)
   })
 

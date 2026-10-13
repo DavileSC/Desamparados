@@ -6,6 +6,7 @@ import { calendarioDelCms, type ApiEvent, type EventoDelCalendario, type Resumen
 import { TIPOS_EVENTO } from './tiposEvento'
 import { actosPorDia, claveDia, colores, leerDia, rejillaDelMes, tituloDelMes } from './calendario'
 import VistaMes from './VistaMes'
+import { hoyDelCalendario } from '../../../lib/horaDeMadrid'
 import PanelDelDia from './PanelDelDia'
 
 interface Props {
@@ -36,7 +37,7 @@ interface Props {
  * volver de editar un acto se vuelve al mismo sitio. Sin día en la URL se
  * abre hoy si cae en el mes, y si no, el día 1.
  */
-export default function CalendarioAgenda({ primero, dia, tipo, volver, version, hoy = new Date(), conmutador, onMes, onDia, onTipo, onResumen, onBorrar }: Props) {
+export default function CalendarioAgenda({ primero, dia, tipo, volver, version, hoy = hoyDelCalendario(), conmutador, onMes, onDia, onTipo, onResumen, onBorrar }: Props) {
   const { dias, desde, hasta } = useMemo(() => rejillaDelMes(primero), [primero])
   const [eventos, setEventos] = useState<EventoDelCalendario[] | null>(null)
   const [portada, setPortada] = useState<number[]>([])
