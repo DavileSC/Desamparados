@@ -48,8 +48,7 @@ function montar(ruta = '/cms/procesion/salidas') {
 }
 
 /** La ficha de edición, con su ruta real: la ventana no tiene suficiente para enseñar la vista previa. */
-function montarFicha(id: number) {
-  const cliente = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
+function montarFicha(id: number, cliente = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })) {
   const router = createMemoryRouter(
     [
       { path: '/cms/procesion/salidas', element: <div>Listado de salidas</div> },
@@ -141,6 +140,22 @@ describe('SalidaEditPage', () => {
     } finally {
       process.env.TZ = zona
     }
+  })
+
+  it('cambiar la fecha hace que la portada vuelva a pedir la agenda y la cuenta atrás', async () => {
+    vi.mocked(fijarFechaDeSalida).mockResolvedValue({ fechaDelAnio: '2026-10-17', acto: null } as never)
+    // Lo que la portada tenía en caché, de antes del cambio.
+    const cliente = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } })
+    cliente.setQueryData(['home', 'proxima-salida'], { fecha: 'vieja' })
+    cliente.setQueryData(['home', 'agenda', 'proximos'], [])
+    const user = userEvent.setup()
+    montarFicha(2, cliente)
+    const seccion = (await screen.findByRole('heading', { name: 'Fecha' })).closest('section')!
+    fireEvent.change(within(seccion).getByLabelText('Día y hora'), { target: { value: '2026-10-17T19:30' } })
+    await user.click(within(seccion).getByRole('button', { name: 'Guardar' }))
+
+    await waitFor(() => expect(cliente.getQueryState(['home', 'proxima-salida'])?.isInvalidated).toBe(true))
+    expect(cliente.getQueryState(['home', 'agenda', 'proximos'])?.isInvalidated).toBe(true)
   })
 
   it('con solicitudes sin recoger, avisa al cambiar el cobro, no antes', async () => {

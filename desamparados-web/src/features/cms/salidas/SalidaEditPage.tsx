@@ -16,6 +16,7 @@ import AvisoCambiosSinGuardar from '../ficha/AvisoCambiosSinGuardar'
 import { useAvisoAlCerrarLaPestana } from '../../../hooks/useAvisoAlCerrarLaPestana'
 import { CLAVE_SALIDAS, editarSalida, fijarFechaDeSalida, type DatosSalida, type PuestoDelCatalogo, type Salida } from '../../../lib/api/salidas'
 import CabeceraSeccion from '../CabeceraSeccion'
+import { invalidarAgendaPublica } from '../../../lib/api/agenda'
 import { fechaConDia } from './formato'
 import { site } from '../../../config/site'
 import { ARTICULOS, deArticulo, type Articulo } from '../../../domain/articulos'
@@ -173,6 +174,7 @@ function SeccionFecha({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProp
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [guardado, sucio] = useSeccionSucia('fecha', { tipo, diasDesdePascua, horaPascua, lugarPascua, fechaHoraManual, lugarManual }, onSucio)
+  const cliente = useQueryClient()
 
   const diasValidos = /^-?\d+$/.test(diasDesdePascua.trim())
   const valido = tipo === 'MANUAL' || diasValidos
@@ -208,6 +210,11 @@ function SeccionFecha({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProp
         }
       }
       onGuardado()
+      // La fecha mueve el acto de la salida en la Agenda y la cuenta atrás de
+      // la portada: sin esto, quien la abre en esta pestaña sigue viendo la
+      // vieja hasta que caducan (5 min).
+      invalidarAgendaPublica(cliente)
+      void cliente.invalidateQueries({ queryKey: ['home', 'proxima-salida'] })
       guardado()
     } catch (e: unknown) {
       setError(mensaje(e, 'No se ha podido guardar la fecha.'))

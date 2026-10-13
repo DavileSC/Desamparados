@@ -8,6 +8,7 @@ import AddIcon from '@mui/icons-material/Add'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../altas/auth/store'
 import { rolesPorRutaCms } from '../../app/cmsNavegacion'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
@@ -28,6 +29,8 @@ import { useModulos } from '../../hooks/useModulos'
 import { deArticulo, laCorporacion, segunLaCorporacion, type Articulo } from '../../domain/articulos'
 import { euros } from '../../lib/euros'
 import { isoEnMadrid } from '../../lib/horaDeMadrid'
+import { invalidarAgendaPublica } from '../../lib/api/agenda'
+import { CLAVE_MESA } from './mesa/enVivo'
 
 const ZONA = 'Europe/Madrid'
 const formatoDia = new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
@@ -99,7 +102,15 @@ export default function ProcesionAdminPage() {
     return () => { cancelado = true }
   }, [slug])
 
-  const recargar = () => (slug ? cargar(slug) : Promise.resolve()).catch((e: unknown) => setError(mensaje(e, 'No se ha podido cargar la procesión.')))
+  const queryClient = useQueryClient()
+  // Un día de reparto es también un acto de la Agenda y un turno de la mesa:
+  // sin esto, la portada y el selector de la mesa lo seguían enseñando (o
+  // sin enseñar) hasta que caducaban, 5 min después.
+  const recargar = () => {
+    invalidarAgendaPublica(queryClient)
+    void queryClient.invalidateQueries({ queryKey: CLAVE_MESA })
+    return (slug ? cargar(slug) : Promise.resolve()).catch((e: unknown) => setError(mensaje(e, 'No se ha podido cargar la procesión.')))
+  }
 
   const cambiar = async (abrir: boolean) => {
     if (!slug) return
