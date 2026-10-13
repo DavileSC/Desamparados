@@ -39,9 +39,14 @@ export interface Salida {
    * hora y el lugar ya fijados al volver a abrir la ficha.
    */
   acto: { inicio: string; lugar: string | null } | null
+  /**
+   * Solo en la lista del CMS (`SalidaCms` de la API): las solicitudes de su
+   * año aún sin recoger. Con ellas, la ficha avisa al cambiar la fecha o el cobro.
+   */
+  solicitudesPendientes?: number
 }
 
-export type DatosSalida = Omit<Salida, 'id' | 'eventoId' | 'plazoAbierto' | 'cortejo' | 'anio' | 'fechaDelAnio' | 'acto'>
+export type DatosSalida = Omit<Salida, 'id' | 'eventoId' | 'plazoAbierto' | 'cortejo' | 'anio' | 'fechaDelAnio' | 'acto' | 'solicitudesPendientes'>
 
 export const CLAVE_SALIDAS = ['salidas'] as const
 

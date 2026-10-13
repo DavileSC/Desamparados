@@ -70,10 +70,13 @@ export function anioDeLaSalida(regla: ReglaFecha, hoy: string): number {
 
 /**
  * Por qué un día de reparto no vale, o `null`. Un reparto es para la próxima
- * salida y tiene que caer antes de ella: así la papeleta se cuenta en el año
- * de esa salida, aunque el reparto sea en otoño del año anterior.
+ * salida y tiene que caer entre hoy y ella: así la papeleta se cuenta en el año
+ * de esa salida, aunque el reparto sea en otoño del año anterior. Un día ya
+ * pasado no abre ningún reparto y, si cae antes de la salida anterior, sería
+ * de una temporada cerrada.
  */
 export function motivoRepartoFueraDeTemporada(dia: string, regla: ReglaFecha, hoy: string, nombre: string, articulo: Articulo): string | null {
+  if (dia < hoy) return `El reparto no puede ser en un día que ya ha pasado (hoy es ${diaLargo(hoy)}).`;
   const proxima = proximaFecha(regla, hoy);
   if (!proxima) return `${mayuscula(conArticulo(articulo, nombre))} ${segunNumero(articulo, 'todavía no tiene', 'todavía no tienen')} fecha. Pon antes la fecha de la salida en la Agenda.`;
   if (dia < proxima) return null;

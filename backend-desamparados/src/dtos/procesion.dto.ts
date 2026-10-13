@@ -77,3 +77,9 @@ export interface SalidaWeb {
    */
   acto: { inicio: string; lugar: string | null } | null;
 }
+
+/** La salida en la lista del CMS: lo de la web y lo que la ficha necesita para avisar. */
+export interface SalidaCms extends SalidaWeb {
+  /** Solicitudes de su año (`anio`) aún sin recoger: con ellas, cambiar la fecha o el cobro pide avisar a esos hermanos. */
+  solicitudesPendientes: number;
+}

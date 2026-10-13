@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -9,7 +9,7 @@ import { crearTemaCms } from '../../../theme/cms'
 import { useAuthStore } from '../../altas/auth/store'
 import SalidasAdminPage from '../salidas/SalidasAdminPage'
 import SalidaEditPage from '../salidas/SalidaEditPage'
-import { crearSalida, salidasDelCms, type Salida } from '../../../lib/api/salidas'
+import { crearSalida, fijarFechaDeSalida, salidasDelCms, type Salida } from '../../../lib/api/salidas'
 
 // `useSalidas` (tarea 4) llama a estas funciones: se simula el módulo entero y
 // no `fetch`, tal y como pide el encargo (el backend lo termina otro agente).
@@ -123,6 +123,42 @@ describe('SalidaEditPage', () => {
     montarFicha(3)
 
     expect(await screen.findByText('Papeleta de la Procesión Magna')).toBeInTheDocument()
+  })
+
+  it('la fecha a mano se guarda en hora de Madrid aunque el equipo esté en otra zona', async () => {
+    const zona = process.env.TZ
+    process.env.TZ = 'America/Argentina/Buenos_Aires'
+    try {
+      vi.mocked(fijarFechaDeSalida).mockResolvedValue({ fechaDelAnio: '2026-10-17', acto: null } as never)
+      const user = userEvent.setup()
+      montarFicha(2)
+      const seccion = (await screen.findByRole('heading', { name: 'Fecha' })).closest('section')!
+      fireEvent.change(within(seccion).getByLabelText('Día y hora'), { target: { value: '2026-10-17T19:30' } })
+      await user.click(within(seccion).getByRole('button', { name: 'Guardar' }))
+      // 19:30 de Madrid en octubre (verano, UTC+2) son las 17:30 UTC; tomado en
+      // Buenos Aires (UTC−3) serían las 22:30.
+      await waitFor(() => expect(fijarFechaDeSalida).toHaveBeenCalledWith(2, { inicio: '2026-10-17T17:30:00.000Z', lugar: null }))
+    } finally {
+      process.env.TZ = zona
+    }
+  })
+
+  it('con solicitudes sin recoger, avisa al cambiar el cobro, no antes', async () => {
+    vi.mocked(salidasDelCms).mockResolvedValue([{ ...pasion, solicitudesPendientes: 3 }, rosario])
+    const user = userEvent.setup()
+    montarFicha(1)
+    const seccion = (await screen.findByRole('heading', { name: 'Cobro' })).closest('section')!
+    expect(within(seccion).queryByText(/sin recoger/)).not.toBeInTheDocument()
+    await user.click(within(seccion).getByRole('radio', { name: 'Donativo' }))
+    expect(within(seccion).getByText(/Hay 3 solicitudes de 2026 sin recoger, hechas con el cobro de antes/)).toBeInTheDocument()
+  })
+
+  it('sin solicitudes sin recoger, cambiar la fecha no avisa', async () => {
+    const user = userEvent.setup()
+    montarFicha(1)
+    const seccion = (await screen.findByRole('heading', { name: 'Fecha' })).closest('section')!
+    await user.click(within(seccion).getByRole('radio', { name: 'A mano' }))
+    expect(within(seccion).queryByText(/sin recoger/)).not.toBeInTheDocument()
   })
 
   it('con una sección a medias, «Volver» pregunta antes de perder los cambios', async () => {

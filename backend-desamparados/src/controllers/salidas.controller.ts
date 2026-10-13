@@ -20,8 +20,7 @@ export class SalidasController {
   });
 
   static listarCms = manejar('Error obteniendo las salidas', async (_req, res) => {
-    const salidas = await SalidasService.listar({ todas: true });
-    res.json(salidas.map((s) => SalidasService.paraLaWeb(s)));
+    res.json(await SalidasService.paraElCms(await SalidasService.listar({ todas: true })));
   });
 
   static crear = manejar('Error dando de alta la salida', async (req, res) => {

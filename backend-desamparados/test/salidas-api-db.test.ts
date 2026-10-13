@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
-import { Role } from '@prisma/client';
+import { EstadoSolicitud, OrigenSolicitud, Role } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
@@ -261,6 +261,40 @@ test('desactivar una salida la quita de /api/salidas, pero no de /api/cms/salida
     assert.ok(cms.some((s: { slug: string }) => s.slug === slug));
   } finally {
     await db.salida.deleteMany({ where: { slug } });
+    await borrarUsuarioPrueba(staff.id);
+  }
+});
+
+test('la lista del CMS cuenta las solicitudes de su año aún sin recoger; la de la web no las da', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const staff = await crearUsuarioPrueba(Role.SECRETARIA);
+  const usuario = await crearUsuarioPrueba(Role.USER);
+  const slug = `prueba-salida-${Date.now()}`;
+  const hermano = await db.hermano.create({
+    data: { userId: usuario.id, nombre: 'Pendiente', apellidos: `Salida ${Date.now()}`, fechaNacimiento: new Date(Date.UTC(1990, 0, 1)), activo: true, esTitular: true },
+  });
+  try {
+    const alta = await fetch(`${baseUrl}/api/cms/salidas`, { method: 'POST', headers: cookieDe(staff.id, Role.SECRETARIA), body: JSON.stringify(datosDeAlta(slug)) });
+    assert.equal(alta.status, 201);
+    const { id, anio } = await alta.json();
+    const solicitud = (year: number, estado: EstadoSolicitud) =>
+      db.solicitud.create({ data: { hermanoId: hermano.id, salidaId: id, year, puesto: 'Acompañante', origen: OrigenSolicitud.WEB, estado } });
+    // Cuentan las dos pendientes de su año; ni la recogida, ni la cancelada, ni la de otro año.
+    await solicitud(anio, EstadoSolicitud.PENDIENTE);
+    await solicitud(anio, EstadoSolicitud.PENDIENTE);
+    await solicitud(anio, EstadoSolicitud.RECOGIDA);
+    await solicitud(anio, EstadoSolicitud.CANCELADA);
+    await solicitud(anio - 1, EstadoSolicitud.PENDIENTE);
+
+    const cms = await (await fetch(`${baseUrl}/api/cms/salidas`, { headers: cookieDe(staff.id, Role.SECRETARIA) })).json();
+    assert.equal(cms.find((s: { slug: string }) => s.slug === slug).solicitudesPendientes, 2);
+    const web = await (await fetch(`${baseUrl}/api/salidas`, { headers: cookieDe(staff.id, Role.SECRETARIA) })).json();
+    assert.ok(!('solicitudesPendientes' in web.find((s: { slug: string }) => s.slug === slug)));
+  } finally {
+    await db.solicitud.deleteMany({ where: { hermanoId: hermano.id } });
+    await db.hermano.deleteMany({ where: { id: hermano.id } });
+    await db.salida.deleteMany({ where: { slug } });
+    await borrarUsuarioPrueba(usuario.id);
     await borrarUsuarioPrueba(staff.id);
   }
 });

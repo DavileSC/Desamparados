@@ -19,6 +19,7 @@ import CabeceraSeccion from '../CabeceraSeccion'
 import { fechaConDia } from './formato'
 import { site } from '../../../config/site'
 import { ARTICULOS, deArticulo, type Articulo } from '../../../domain/articulos'
+import { instanteEnMadrid } from '../../../components/bloques/fechas'
 
 const mensaje = (e: unknown, porDefecto: string) => (e instanceof Error ? e.message : porDefecto)
 
@@ -63,7 +64,22 @@ function useSeccionSucia(seccion: string, valores: unknown, onSucio: SeccionProp
   const sucio = actual !== guardado
   useEffect(() => { onSucio(seccion, sucio) }, [seccion, sucio, onSucio])
   useEffect(() => () => onSucio(seccion, false), [seccion, onSucio])
-  return () => setGuardado(actual)
+  return [() => setGuardado(actual), sucio] as const
+}
+
+/**
+ * Con solicitudes de este año sin recoger, cambiar la fecha o el cobro les
+ * cambia lo que pidieron, y nada se lo avisa solo: se dice antes de guardar.
+ */
+function AvisoSolicitudesPendientes({ salida, deQue }: { salida: Salida; deQue: string }) {
+  const n = salida.solicitudesPendientes ?? 0
+  if (n === 0) return null
+  return (
+    <Alert severity="warning">
+      {n === 1 ? 'Hay 1 solicitud' : `Hay ${n} solicitudes`} de {salida.anio} sin recoger, hechas con {deQue} de antes.
+      Al guardar no se les avisa: díselo a esos hermanos.
+    </Alert>
+  )
 }
 
 /** Datos: nombre, slug, orden y si está activa. */
@@ -76,7 +92,7 @@ function SeccionDatos({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProp
   const [confirmandoBaja, setConfirmandoBaja] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const guardado = useSeccionSucia('datos', { nombre, slug, articulo, orden, activa }, onSucio)
+  const [guardado] = useSeccionSucia('datos', { nombre, slug, articulo, orden, activa }, onSucio)
 
   const valido = nombre.trim() !== '' && slug.trim() !== '' && /^\d+$/.test(orden.trim())
 
@@ -164,7 +180,7 @@ function SeccionFecha({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProp
   const [fechaDelAnio, setFechaDelAnio] = useState(salida.fechaDelAnio)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const guardado = useSeccionSucia('fecha', { tipo, diasDesdePascua, horaPascua, lugarPascua, fechaHoraManual, lugarManual }, onSucio)
+  const [guardado, sucio] = useSeccionSucia('fecha', { tipo, diasDesdePascua, horaPascua, lugarPascua, fechaHoraManual, lugarManual }, onSucio)
 
   const diasValidos = /^-?\d+$/.test(diasDesdePascua.trim())
   const valido = tipo === 'MANUAL' || diasValidos
@@ -186,7 +202,12 @@ function SeccionFecha({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProp
         // exige que la salida ya esté en ese modo, o el servidor responde 409.
         if (salida.fecha !== 'MANUAL') await editarSalida(salida.id, { fecha: 'MANUAL' })
         if (fechaHoraManual) {
-          const fijada = await fijarFechaDeSalida(salida.id, { inicio: new Date(fechaHoraManual).toISOString(), lugar: lugarManual.trim() || null })
+          // El campo se rellena en hora de Madrid (aCampoFechaMadrid) y así se
+          // lee: con `new Date(campo)` se tomaría en la zona de este equipo, y
+          // desde uno de fuera la salida quedaría a otra hora sin que se viera.
+          const instante = instanteEnMadrid(fechaHoraManual)
+          if (instante === null) throw new Error('El día y la hora no son válidos.')
+          const fijada = await fijarFechaDeSalida(salida.id, { inicio: new Date(instante).toISOString(), lugar: lugarManual.trim() || null })
           setFechaDelAnio(fijada.fechaDelAnio)
           if (fijada.acto) {
             setFechaHoraManual(aCampoFechaMadrid(fijada.acto.inicio))
@@ -206,6 +227,7 @@ function SeccionFecha({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProp
   return (
     <Seccion titulo="Fecha">
       {error && <Alert severity="error">{error}</Alert>}
+      {sucio && <AvisoSolicitudesPendientes salida={salida} deQue="la fecha" />}
       <Typography variant="body2" color="text.secondary">
         {fechaDelAnio ? `Este año: ${fechaConDia(fechaDelAnio)}.` : 'Todavía sin fecha para este año.'}
       </Typography>
@@ -261,7 +283,7 @@ function SeccionCobro({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProp
   const [importe, setImporte] = useState(String(salida.importeCuota).replace('.', ','))
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const guardado = useSeccionSucia('cobro', { cobro, importe }, onSucio)
+  const [guardado, sucio] = useSeccionSucia('cobro', { cobro, importe }, onSucio)
 
   const importeValido = /^\d{1,8}(?:[.,]\d{1,2})?$/.test(importe.trim())
   const valido = cobro === 'DONATIVO' || importeValido
@@ -283,6 +305,7 @@ function SeccionCobro({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProp
   return (
     <Seccion titulo="Cobro">
       {error && <Alert severity="error">{error}</Alert>}
+      {sucio && <AvisoSolicitudesPendientes salida={salida} deQue="el cobro" />}
       <Stack spacing={0.5}>
         <Typography variant="subtitle2">Cómo se cobra</Typography>
         <RadioGroup row value={cobro} onChange={(e) => setCobro(e.target.value as DatosSalida['cobro'])}>
@@ -312,7 +335,7 @@ function SeccionRopa({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProps
   const [conRopa, setConRopa] = useState(salida.conRopa)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const guardado = useSeccionSucia('ropa', { conRopa }, onSucio)
+  const [guardado] = useSeccionSucia('ropa', { conRopa }, onSucio)
 
   const guardar = async () => {
     setGuardando(true)
@@ -351,7 +374,7 @@ function SeccionPuestos({ salida, puedeGuardar, onGuardado, onSucio }: SeccionPr
   const [puestos, setPuestos] = useState<PuestoDelCatalogo[]>(salida.puestos.length > 0 ? salida.puestos : [PUESTO_VACIO])
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const guardado = useSeccionSucia('puestos', puestos, onSucio)
+  const [guardado] = useSeccionSucia('puestos', puestos, onSucio)
 
   const cambiar = <K extends keyof PuestoDelCatalogo>(i: number, clave: K, valor: PuestoDelCatalogo[K]) =>
     setPuestos((actuales) => actuales.map((p, j) => (i === j ? { ...p, [clave]: valor } : p)))
@@ -436,7 +459,7 @@ function SeccionIndicaciones({ salida, puedeGuardar, onGuardado, onSucio }: Secc
   const [texto, setTexto] = useState(salida.indicaciones ?? '')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const guardado = useSeccionSucia('indicaciones', texto, onSucio)
+  const [guardado] = useSeccionSucia('indicaciones', texto, onSucio)
 
   const guardar = async () => {
     setGuardando(true)

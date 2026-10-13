@@ -60,6 +60,14 @@ describe('los días de reparto, antes de su salida', () => {
   test('un reparto en otoño vale para la Pasión del año siguiente', () => {
     assert.equal(motivoRepartoFueraDeTemporada('2026-10-05', PASION, '2026-10-01', 'Sábado de Pasión', 'el'), null);
   });
+  test('un día ya pasado no vale, aunque caiga antes de la salida; hoy sí', () => {
+    assert.match(
+      motivoRepartoFueraDeTemporada('2026-09-30', PASION, '2026-10-01', 'Sábado de Pasión', 'el') ?? '',
+      /ya ha pasado.*1 de octubre de 2026/,
+    );
+    assert.match(motivoRepartoFueraDeTemporada('2025-03-01', PASION, '2026-10-01', 'Sábado de Pasión', 'el') ?? '', /ya ha pasado/);
+    assert.equal(motivoRepartoFueraDeTemporada('2026-10-01', PASION, '2026-10-01', 'Sábado de Pasión', 'el'), null);
+  });
   test('a mano sin fecha: hay que ponerla antes', () => {
     assert.match(
       motivoRepartoFueraDeTemporada('2026-10-05', { fecha: 'MANUAL', acto: null }, '2026-10-01', 'Rosario vespertino', 'el') ?? '',
