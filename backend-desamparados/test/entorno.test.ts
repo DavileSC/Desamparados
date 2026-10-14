@@ -73,6 +73,14 @@ describe('validarEntorno', () => {
     assert.ok(!validarEntorno({ COMUNICADOS_PAUSA_MS: '0' }).errores.some((e) => /COMUNICADOS_PAUSA_MS/.test(e)));
   });
 
+  test('con un servicio de envío (EMAIL_SMTP_HOST) hace falta el remitente aparte', () => {
+    const brevo = { ...PRODUCCION_COMPLETA, EMAIL_SMTP_HOST: 'smtp-relay.brevo.com', EMAIL_USER: '9a1b2c001@smtp-brevo.com' };
+    assert.ok(validarEntorno(brevo).errores.some((e) => /hace falta EMAIL_FROM/.test(e)));
+    assert.deepEqual(validarEntorno({ ...brevo, EMAIL_FROM: 'noreply@ejemplo.org', EMAIL_SMTP_PORT: '587' }).errores, []);
+    assert.ok(validarEntorno({ ...brevo, EMAIL_FROM: '"Secretaría" <noreply@ejemplo.org>' }).errores.some((e) => /EMAIL_FROM=.*solo una dirección/.test(e)));
+    assert.ok(validarEntorno({ ...brevo, EMAIL_FROM: 'noreply@ejemplo.org', EMAIL_SMTP_PORT: 'tls' }).errores.some((e) => /EMAIL_SMTP_PORT/.test(e)));
+  });
+
   test('en producción CLAMAV_REQUIRED=false no vale', () => {
     const { errores } = validarEntorno({ ...PRODUCCION_COMPLETA, CLAMAV_REQUIRED: 'false' });
     assert.ok(errores.some((e) => /CLAMAV_REQUIRED debe ser true/.test(e)));

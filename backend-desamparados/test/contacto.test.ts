@@ -22,7 +22,7 @@ import db from '../src/config/db.js';
 import { contactoSchema } from '../src/schemas/contacto.schema.js';
 import { motivoDescarte, MIN_MS_RELLENO } from '../src/domain/senales-de-robot.js';
 import { EmailService } from '../src/services/email.service.js';
-import { ponerCuentaDeContacto, ponerTransporte } from '../src/services/correos/envio.js';
+import { opcionesDelServidor, ponerCuentaDeContacto, ponerTransporte } from '../src/services/correos/envio.js';
 
 const valido = { nombre: 'Ana', email: 'ana@example.es', asunto: 'Besapiés', mensaje: 'Quería preguntar por el horario.' };
 const validar = (cambios: Record<string, unknown>) => contactoSchema({ body: { ...valido, ...cambios } });
@@ -148,7 +148,7 @@ function transporteFalso() {
 }
 
 describe('EmailService', () => {
-  const entorno = { EMAIL_USER: process.env.EMAIL_USER, CONTACT_EMAIL_USER: process.env.CONTACT_EMAIL_USER, CONTACT_EMAIL_PASS: process.env.CONTACT_EMAIL_PASS, CONTACT_EMAIL_TO: process.env.CONTACT_EMAIL_TO };
+  const entorno = { EMAIL_USER: process.env.EMAIL_USER, EMAIL_FROM: process.env.EMAIL_FROM, CONTACT_EMAIL_USER: process.env.CONTACT_EMAIL_USER, CONTACT_EMAIL_PASS: process.env.CONTACT_EMAIL_PASS, CONTACT_EMAIL_TO: process.env.CONTACT_EMAIL_TO };
 
   afterEach(() => {
     ponerTransporte(undefined);
@@ -174,6 +174,27 @@ describe('EmailService', () => {
     assert.match(registro.html, /Seán O&#39;Brien &lt;b&gt;/);
     assert.doesNotMatch(registro.html, /O'Brien <b>/);
     assert.equal(papeleta.subject, "Papeleta del Sábado de Pasión 2027: Seán O'Brien");
+  });
+
+  test('con un servicio de envío, el remitente es EMAIL_FROM y no el usuario de entrada, y se responde a Secretaría', async () => {
+    const general = transporteFalso();
+    ponerTransporte(general);
+    process.env.EMAIL_USER = '9a1b2c001@smtp-brevo.com';
+    process.env.EMAIL_FROM = 'noreply@example.es';
+    process.env.CONTACT_EMAIL_TO = 'secretaria@example.es';
+
+    await EmailService.enviarConfirmacionRegistro('hermano@example.es', 'Ana');
+
+    assert.match(general.enviados[0].from, /<noreply@example\.es>$/);
+    assert.equal(general.enviados[0].replyTo, 'secretaria@example.es');
+  });
+
+  test('el servidor de envío: Gmail sin EMAIL_SMTP_HOST, y con él, TLS obligatorio en el 587', () => {
+    assert.deepEqual(opcionesDelServidor({ EMAIL_USER: 'a@gmail.com', EMAIL_PASS: 'x' }), { service: 'gmail', auth: { user: 'a@gmail.com', pass: 'x' } });
+    assert.deepEqual(opcionesDelServidor({ EMAIL_SMTP_HOST: 'smtp-relay.brevo.com', EMAIL_USER: 'u', EMAIL_PASS: 'p' }), {
+      host: 'smtp-relay.brevo.com', port: 587, secure: false, requireTLS: true, auth: { user: 'u', pass: 'p' },
+    });
+    assert.partialDeepStrictEqual(opcionesDelServidor({ EMAIL_SMTP_HOST: 'smtp.x.es', EMAIL_SMTP_PORT: '465' }), { port: 465, secure: true, requireTLS: false });
   });
 
   test('el asunto de la papeleta lleva el artículo de la salida, no siempre «del»', async () => {

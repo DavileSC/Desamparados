@@ -21,7 +21,7 @@ import {
   COLORES, bloqueDeSecretaria, boton, cita, datos, esc, lista, maquetar, rotulo,
   parrafo, recuadro, segunSexo, urlDeLaWeb, type Sexo,
 } from './correos/plantilla.js';
-import { cuentaDeContacto, enviarCorreo } from './correos/envio.js';
+import { cuentaDeContacto, direccionDeEnvio, enviarCorreo } from './correos/envio.js';
 import { PlantillasCorreoService } from './plantillas-correo.service.js';
 import type { AreaSesion } from '../utils/cookies.js';
 
@@ -264,14 +264,14 @@ export class EmailService {
    * miraba el contador de «Hermanos», así que podía quedarse semanas parada sin
    * que nadie lo supiera.
    *
-   * Va al buzón de la corporación (CONTACT_EMAIL_TO, con respaldo en EMAIL_USER)
+   * Va al buzón de la corporación (CONTACT_EMAIL_TO, con respaldo en el remitente)
    * y no a las cuentas personales del staff: el destinatario es el cargo, no la
    * persona que hoy lo ocupa.
    */
   static async enviarAvisoSolicitud(datosSolicitud: { nombre: string; apellidos?: string | null; email: string; fichas?: number }) {
-    const destino = process.env.CONTACT_EMAIL_TO || process.env.EMAIL_USER;
+    const destino = process.env.CONTACT_EMAIL_TO || direccionDeEnvio();
     if (!destino) {
-      console.error('❌ Aviso de solicitud: ni CONTACT_EMAIL_TO ni EMAIL_USER están configurados.');
+      console.error('❌ Aviso de solicitud: ni CONTACT_EMAIL_TO ni EMAIL_FROM o EMAIL_USER están configurados.');
       return false;
     }
 
@@ -404,9 +404,9 @@ export class EmailService {
   }
 
   static async enviarContacto(datosContacto: ContactoDto): Promise<boolean> {
-    const destino = process.env.CONTACT_EMAIL_TO || process.env.EMAIL_USER;
+    const destino = process.env.CONTACT_EMAIL_TO || direccionDeEnvio();
     if (!destino) {
-      console.error('❌ Contacto: CONTACT_EMAIL_TO o EMAIL_USER no está configurado.');
+      console.error('❌ Contacto: CONTACT_EMAIL_TO o EMAIL_FROM o EMAIL_USER no está configurado.');
       return false;
     }
 

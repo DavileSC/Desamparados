@@ -102,6 +102,18 @@ export function validarEntorno(entorno: Entorno = process.env): ResultadoEntorno
   if (definida(entorno.COMUNICADOS_PAUSA_MS) && !esEnteroEnRango(entorno.COMUNICADOS_PAUSA_MS, 0, 60_000)) {
     errores.push(`COMUNICADOS_PAUSA_MS="${entorno.COMUNICADOS_PAUSA_MS}" debe ser un número entero de milisegundos entre 0 y 60000 (por defecto, 1500).`);
   }
+  // Un servicio de envío (Brevo) en vez de Gmail. Su usuario de entrada no es
+  // una dirección de nadie: sin EMAIL_FROM, los correos saldrían con ella de
+  // remitente y el servicio los rechazaría todos, sin que nada fallara al arrancar.
+  if (definida(entorno.EMAIL_SMTP_HOST) && !definida(entorno.EMAIL_FROM)) {
+    errores.push('Con EMAIL_SMTP_HOST hace falta EMAIL_FROM: la dirección con la que salen los correos (p. ej. noreply@tudominio), dada de alta como remitente en el servicio.');
+  }
+  if (definida(entorno.EMAIL_SMTP_PORT) && !esEnteroEnRango(entorno.EMAIL_SMTP_PORT, 1, 65535)) {
+    errores.push(`EMAIL_SMTP_PORT="${entorno.EMAIL_SMTP_PORT}" no es un puerto válido (normalmente 587).`);
+  }
+  if (definida(entorno.EMAIL_FROM) && !/^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(entorno.EMAIL_FROM.trim())) {
+    errores.push(`EMAIL_FROM="${entorno.EMAIL_FROM}" debe ser solo una dirección de correo (el nombre va en EMAIL_FROM_NAME).`);
+  }
   if (definida(entorno.AUDIT_RETENTION_DAYS) && !esEnteroEnRango(entorno.AUDIT_RETENTION_DAYS, 30, 100000)) {
     errores.push(`AUDIT_RETENTION_DAYS="${entorno.AUDIT_RETENTION_DAYS}" debe ser un número entero de días, 30 o más.`);
   }

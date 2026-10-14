@@ -139,6 +139,6 @@ export function lineasDeSecretaria(datosSecretaria: DatosSecretaria = secretaria
  */
 // El entorno llega de fuera para poder probarlo con uno inventado.
 export function emailDeSecretaria(entorno: Readonly<Record<string, string | undefined>>): string | null {
-  const candidatos = [secretaria.email, entorno.CONTACT_EMAIL_TO, entorno.EMAIL_USER];
+  const candidatos = [secretaria.email, entorno.CONTACT_EMAIL_TO, entorno.EMAIL_FROM, entorno.EMAIL_USER];
   return candidatos.find(informado) ?? null;
 }

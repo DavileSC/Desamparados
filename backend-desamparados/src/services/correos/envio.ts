@@ -47,10 +47,7 @@ function transporte(): TransporteDeCorreo {
     console.log('📬 [Email] EMAIL_BUZON_PRUEBAS activo: los correos se escriben en storage/correos y no se envían.');
     transporteGuardado = buzonDePruebas();
   } else if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-    transporteGuardado = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-    });
+    transporteGuardado = nodemailer.createTransport(opcionesDelServidor(process.env));
   } else {
     // Sin cuenta configurada NO se abre conexión: se falla en el acto.
     //
@@ -70,6 +67,32 @@ function transporte(): TransporteDeCorreo {
     };
   }
   return transporteGuardado;
+}
+
+type Entorno = Readonly<Record<string, string | undefined>>;
+
+/**
+ * Por qué servidor sale el correo. Sin EMAIL_SMTP_HOST, Gmail, como siempre.
+ * Con él, un servicio de envío (Brevo): Gmail deja unos 500 al día y saca los
+ * correos con la dirección de la cuenta de Gmail, no con la del dominio.
+ */
+export function opcionesDelServidor(entorno: Entorno) {
+  const auth = { user: entorno.EMAIL_USER, pass: entorno.EMAIL_PASS };
+  const host = entorno.EMAIL_SMTP_HOST?.trim();
+  if (!host) return { service: 'gmail', auth };
+  const port = Number(entorno.EMAIL_SMTP_PORT?.trim() || 587);
+  // 465 cifra desde el primer byte; 587 empieza en claro y pasa a TLS, y
+  // `requireTLS` impide que siga en claro si el servidor no lo ofrece.
+  return { host, port, secure: port === 465, requireTLS: port !== 465, auth };
+}
+
+/**
+ * La dirección que ve quien recibe el correo. En Gmail es la misma cuenta que
+ * entra (EMAIL_USER); en un servicio de envío, el usuario de entrada no es una
+ * dirección de nadie, y el remitente va aparte en EMAIL_FROM (noreply@…).
+ */
+export function direccionDeEnvio(entorno: Entorno = process.env): string | undefined {
+  return entorno.EMAIL_FROM?.trim() || entorno.EMAIL_USER;
 }
 
 /**
@@ -172,7 +195,7 @@ export async function enviarCorreo(
   }
   try {
     await (cuenta?.transporter ?? transporte()).sendMail({
-      from: `"${process.env.EMAIL_FROM_NAME || 'Secretaría'}" <${cuenta?.usuario ?? process.env.EMAIL_USER}>`,
+      from: `"${process.env.EMAIL_FROM_NAME || 'Secretaría'}" <${cuenta?.usuario ?? direccionDeEnvio()}>`,
       to,
       subject,
       html,
