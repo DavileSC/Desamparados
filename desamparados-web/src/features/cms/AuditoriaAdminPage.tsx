@@ -21,6 +21,13 @@ const ACCIONES: Record<string, string> = {
   MODULO_ENCENDER: 'Módulo encendido',
   MODULO_APAGAR: 'Módulo apagado',
   '2FA_RESET_ADMIN': 'Restablecer el segundo factor de otra persona',
+  MOVIL_APUNTAR: 'Apuntar un móvil para aprobar la entrada',
+  MOVIL_QUITAR: 'Quitar un móvil de los avisos',
+  ENTRADA_APROBADA: 'Entrada al CMS aprobada desde el móvil',
+  ENTRADA_RECHAZADA: 'Entrada al CMS rechazada desde el móvil',
+  ENTRADA_NUMERO_FALLADO: 'Número equivocado al aprobar la entrada',
+  ENTRADA_CADUCADA: 'Aviso de entrada caducado sin respuesta',
+  ENTRADA_DESDE_ESTE_MOVIL: 'Entrada al CMS desde el móvil apuntado',
   RECIBO_COBRAR: 'Cobrar un recibo',
   REMESA_GENERAR: 'Generar una remesa de adeudos',
   REMESA_COBRAR: 'Dar una remesa por cobrada',
@@ -283,7 +290,7 @@ const ENTIDADES: Record<string, string> = {
   transaccion: 'Apunte', categoria: 'Categoría', turno: 'Turno', cita: 'Cita', evento: 'Evento',
   noticia: 'Noticia', pagina: 'Página', publicacion: 'Publicación', seccion: 'Sección', portada: 'Portada',
   contenido: 'Contenido', enser: 'Enser', prenda: 'Prenda', email: 'Correo', config: 'Configuración',
-  configuracion: 'Configuración', modulo: 'Módulo',
+  configuracion: 'Configuración', modulo: 'Módulo', movil: 'Móvil', aprobacion: 'Aprobación de entrada',
 }
 
 const fechaCorta = (iso: string) => new Date(iso).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })

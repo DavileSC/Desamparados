@@ -152,7 +152,10 @@ export const manifest = ({ identidad }, ficheros) => JSON.stringify({
   lang: 'es',
   start_url: '/',
   scope: '/',
-  display: 'browser',
+  // `standalone` y no `browser`: en el iPhone, los avisos para aprobar la
+  // entrada al CMS solo llegan a una web añadida a la pantalla de inicio que
+  // se abra como app. Para quien solo visita la web no cambia nada.
+  display: 'standalone',
   background_color: '#070608',
   theme_color: '#070608',
   icons: [

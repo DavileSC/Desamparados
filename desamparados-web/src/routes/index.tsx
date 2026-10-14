@@ -105,6 +105,7 @@ const GraciasApadrinamientoPage = lazy(() => import('../features/apadrinamiento/
 // Auth pages
 const AccesoPage = lazy(() => import('../features/altas/auth/AccesoPage'))
 const AccesoCmsPage = lazy(() => import('../features/altas/auth/AccesoCmsPage'))
+const AprobarEntradaPage = lazy(() => import('../features/cms/aprobar/AprobarEntradaPage'))
 const NuevaContrasenaPage = lazy(() => import('../features/altas/auth/NuevaContrasenaPage'))
 const PrimerAccesoPage = lazy(() => import('../features/areaHermano/primerAcceso/PrimerAccesoPage'))
 const RevisarFichaPage = lazy(() => import('../features/areaHermano/primerAcceso/RevisarFichaPage'))
@@ -279,6 +280,9 @@ const router = createBrowserRouter([
         path: '/cms/vista-previa/:slug', element: <ExigeRol roles={rolesPorRutaCms['paginas/:slug']}>{pagina(PaginaEnVivo, 'nucleo')}</ExigeRol>,
       },
       { path: '/cms/acceso', element: pagina(AccesoCmsPage, 'nucleo') },
+      // Lo que abre el aviso en el móvil: sin sesión del CMS (puede haber
+      // caducado allí) y fuera de <MarcoCms />; la clave del móvil es la prueba.
+      { path: '/cms/aprobar/:id', element: pagina(AprobarEntradaPage, 'avisos-en-el-movil') },
       {
         path: '/cms',
         element: <ExigeRol roles={rolesPorRutaCms.panel}><Suspense fallback={<CargandoPagina />}><MarcoCms /></Suspense></ExigeRol>,

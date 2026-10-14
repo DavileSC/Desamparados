@@ -7,6 +7,8 @@ import { ErrorDeApi } from '../../lib/api/cliente'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import CambiarContrasena from '../altas/auth/CambiarContrasena'
 import { site } from '../../config/site'
+import { useModulos } from '../../hooks/useModulos'
+import AvisosEnElMovil from './AvisosEnElMovil'
 
 function errorMessage(e: unknown, fallback: string) {
   return e instanceof ErrorDeApi ? e.message : fallback
@@ -26,6 +28,7 @@ function errorMessage(e: unknown, fallback: string) {
 export default function MiSeguridadPage() {
   const cms = useAuthStore((state) => state.cms)
   const entrarSesion = useAuthStore((state) => state.entrarSesion)
+  const { activo } = useModulos()
 
   const [codigo, setCodigo] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -105,10 +108,12 @@ export default function MiSeguridadPage() {
         </Stack>
       </Paper>
 
+      {activo('avisos-en-el-movil') && <AvisosEnElMovil />}
+
       <DialogoConfirmacion
         abierto={confirmarCambio}
         titulo="¿Cambiar de móvil?"
-        mensaje="El código de tu móvil actual dejará de valer. Antes de seguir en el CMS tendrás que escanear un QR nuevo con el otro móvil."
+        mensaje="El código de tu móvil actual dejará de valer y se quitarán los móviles apuntados para los avisos. Antes de seguir en el CMS tendrás que escanear un QR nuevo con el otro móvil."
         textoConfirmar="Cambiar de móvil"
         onConfirmar={() => { void cambiarDeMovil() }}
         onCancelar={() => setConfirmarCambio(false)}
