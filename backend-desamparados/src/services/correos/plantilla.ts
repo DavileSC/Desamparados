@@ -256,7 +256,13 @@ export function pie(para: Destinatario, identidadInstalacion: Identidad = identi
   ].join('');
 }
 
-/** El HTML completo de un correo: membrete, cabecera, carta y pie. */
+/**
+ * El HTML completo de un correo: membrete, cabecera, carta y pie.
+ *
+ * El antetítulo y la fecha van uno debajo de otro, en dos párrafos: en dos
+ * celdas de una fila, Gmail en el móvil los pegaba («SU CUENTAMálaga, 14 de
+ * octubre…»; forma A elegida el 14-10-2026).
+ */
 export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'hermano', identidad: identidadInstalacion = identidad }: Maqueta): string {
   const { negro, burdeos, fondo, papel, texto, suave } = COLORES;
   const year = new Date().getFullYear();
@@ -278,7 +284,6 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
       .marco { padding: 0 !important; }
       .caja { padding-left: 22px !important; padding-right: 22px !important; }
       .titulo { font-size: 23px !important; }
-      .fecha { display: block !important; text-align: left !important; padding-top: 4px !important; }
     }
   </style>
 </head>
@@ -314,12 +319,8 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
           </tr>
           <tr>
             <td class="caja" style="padding: 30px 44px 40px 44px; font-family: ${SERIF}; font-size: 16px; line-height: 1.65; color: ${texto};">
-              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 22px;">
-                <tr>
-                  <td style="font-family: ${SERIF}; font-size: 15px; font-variant: small-caps; letter-spacing: 0.6px; color: ${burdeos};">${esc(antetitulo)}</td>
-                  <td class="fecha" align="right" style="font-family: ${SERIF}; font-size: 14px; font-style: italic; color: ${suave};">${esc(lugarYFecha())}</td>
-                </tr>
-              </table>
+              <p style="margin: 0; font-family: ${SERIF}; font-size: 15px; font-variant: small-caps; letter-spacing: 0.6px; color: ${burdeos};">${esc(antetitulo)}</p>
+              <p style="margin: 2px 0 22px 0; font-family: ${SERIF}; font-size: 14px; font-style: italic; color: ${suave};">${esc(lugarYFecha())}</p>
               <h1 class="titulo" style="margin: 0 0 22px 0; font-family: ${SERIF}; font-size: 26px; line-height: 1.25; font-weight: normal; color: ${negro};">${esc(titulo)}</h1>
               ${contenido}
             </td>

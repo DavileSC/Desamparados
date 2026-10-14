@@ -9,6 +9,7 @@ import { buzonDePruebas, buzonPedido, type CorreoParaBuzon } from '../../utils/b
 import { AuditoriaService, ACCIONES_AUDITORIA } from '../auditoria.service.js';
 import { aTexto, imagenesDe } from './plantilla.js';
 import { esDireccionDeNadie } from '../../domain/cuenta-de-custodia.js';
+import { identidad } from '../../domain/datos-entidad.js';
 
 /**
  * Lo único que `EmailService` necesita de un transporte. Lo cumplen tanto el de
@@ -93,6 +94,15 @@ export function opcionesDelServidor(entorno: Entorno) {
  */
 export function direccionDeEnvio(entorno: Entorno = process.env): string | undefined {
   return entorno.EMAIL_FROM?.trim() || entorno.EMAIL_USER;
+}
+
+/**
+ * El nombre que se ve en la bandeja: «Desamparados · Secretaría». Con
+ * «Secretaría» a secas no se sabía de qué Secretaría era entre otros correos
+ * (14-10-2026). EMAIL_FROM_NAME manda si está.
+ */
+export function nombreDelRemitente(entorno: Entorno = process.env): string {
+  return entorno.EMAIL_FROM_NAME?.trim() || `${identidad.nombreCorto} · Secretaría`;
 }
 
 /**
@@ -195,7 +205,7 @@ export async function enviarCorreo(
   }
   try {
     await (cuenta?.transporter ?? transporte()).sendMail({
-      from: `"${process.env.EMAIL_FROM_NAME || 'Secretaría'}" <${cuenta?.usuario ?? direccionDeEnvio()}>`,
+      from: `"${nombreDelRemitente()}" <${cuenta?.usuario ?? direccionDeEnvio()}>`,
       to,
       subject,
       html,

@@ -148,7 +148,7 @@ function transporteFalso() {
 }
 
 describe('EmailService', () => {
-  const entorno = { EMAIL_USER: process.env.EMAIL_USER, EMAIL_FROM: process.env.EMAIL_FROM, CONTACT_EMAIL_USER: process.env.CONTACT_EMAIL_USER, CONTACT_EMAIL_PASS: process.env.CONTACT_EMAIL_PASS, CONTACT_EMAIL_TO: process.env.CONTACT_EMAIL_TO };
+  const entorno = { EMAIL_USER: process.env.EMAIL_USER, EMAIL_FROM: process.env.EMAIL_FROM, EMAIL_FROM_NAME: process.env.EMAIL_FROM_NAME, CONTACT_EMAIL_USER: process.env.CONTACT_EMAIL_USER, CONTACT_EMAIL_PASS: process.env.CONTACT_EMAIL_PASS, CONTACT_EMAIL_TO: process.env.CONTACT_EMAIL_TO };
 
   afterEach(() => {
     ponerTransporte(undefined);
@@ -182,10 +182,12 @@ describe('EmailService', () => {
     process.env.EMAIL_USER = '9a1b2c001@smtp-brevo.com';
     process.env.EMAIL_FROM = 'noreply@example.es';
     process.env.CONTACT_EMAIL_TO = 'secretaria@example.es';
+    delete process.env.EMAIL_FROM_NAME;
 
     await EmailService.enviarConfirmacionRegistro('hermano@example.es', 'Ana');
 
-    assert.match(general.enviados[0].from, /<noreply@example\.es>$/);
+    // Sin EMAIL_FROM_NAME, el nombre corto de la instalación y la Secretaría: «Secretaría» a secas no decía de quién.
+    assert.match(general.enviados[0].from, /^"[^"]+ · Secretaría" <noreply@example\.es>$/);
     assert.equal(general.enviados[0].replyTo, 'secretaria@example.es');
   });
 
