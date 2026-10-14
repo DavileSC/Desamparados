@@ -1,5 +1,6 @@
 import { type } from 'arktype';
 import { email, password, dni, textoRequerido, textoOpcional, telefono, idParam, codigoPostal, iban } from '../config/common';
+import { esEndpointDePush } from '../domain/aprobacion-entrada';
 
 // =================================================================
 //  1. ESQUEMAS BASE REUTILIZABLES
@@ -136,12 +137,19 @@ export const reactivacionSchema = type({
 //  3. ESQUEMAS DE LOGIN Y 2FA
 // =================================================================
 
+// El id de un móvil apuntado (MovilApuntado.id) y su clave: 32 bytes en
+// base64url, que solo guarda el móvil.
+const dispositivo = type("number.integer > 0").describe("el número de un móvil apuntado");
+const claveDelMovil = type("string").matching(/^[A-Za-z0-9_-]{43}$/).describe("la clave de este móvil");
+
 export const loginSchema = type({
     body: {
         email: email,
         password: type("string >= 1"), // Aquí no limitamos máximo para no dar pistas, solo que no esté vacío
         "recordarme?": "boolean",
-        "contexto?": "'cms' | 'hermanos'"
+        "contexto?": "'cms' | 'hermanos'",
+        // Si se entra desde un móvil apuntado: no se le manda el aviso a sí mismo.
+        "dispositivo?": dispositivo
     }
 });
 
@@ -211,4 +219,50 @@ export const deleteAccountSchema = type({
     body: {
         password: type("string >= 1").describe("tu contraseña actual")
     }
+});
+
+// =================================================================
+//  6. APROBAR LA ENTRADA DESDE EL MÓVIL
+// =================================================================
+
+/**
+ * Apuntar este móvil: la contraseña (es una acción sensible), un nombre para
+ * reconocerlo y la suscripción tal como la da `PushSubscription.toJSON()`.
+ * El endpoint, solo de un servicio de push conocido: el servidor le hace un
+ * POST, y no puede ser una dirección cualquiera.
+ */
+export const apuntarMovilSchema = type({
+    body: {
+        password: type("1 <= string <= 128").describe("tu contraseña"),
+        nombre: textoRequerido.and("string <= 60"),
+        suscripcion: {
+            endpoint: type("string <= 1000").narrow((url, ctx) => esEndpointDePush(url) || ctx.reject({ problem: 'no es de un servicio de avisos conocido' })),
+            "expirationTime?": "number | null",
+            keys: {
+                p256dh: type("string").matching(/^[A-Za-z0-9_-]{40,200}={0,2}$/),
+                auth: type("string").matching(/^[A-Za-z0-9_-]{16,100}={0,2}$/)
+            }
+        }
+    }
+});
+
+export const quitarMovilSchema = type({ params: { id: idParam } });
+
+// El id de una aprobación: 16 bytes aleatorios en base64url.
+const idDeAprobacion = type("string").matching(/^[A-Za-z0-9_-]{22}$/).describe("una aprobación");
+
+/** Lo que manda el móvil para ver o rechazar una aprobación: quién es y su clave. */
+export const movilAprobacionSchema = type({
+    params: { id: idDeAprobacion },
+    body: { dispositivo, clave: claveDelMovil }
+});
+
+export const aprobarEntradaSchema = type({
+    params: { id: idDeAprobacion },
+    body: { dispositivo, clave: claveDelMovil, numero: "10 <= number.integer <= 99" }
+});
+
+/** Entrar desde el mismo móvil apuntado: el testigo va en su cookie, como el código. */
+export const entrarDesdeEsteMovilSchema = type({
+    body: { dispositivo, clave: claveDelMovil }
 });

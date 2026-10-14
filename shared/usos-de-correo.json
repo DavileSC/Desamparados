@@ -219,6 +219,43 @@
       }
     },
     {
+      "clave": "movil_apuntado",
+      "grupo": "Cuenta",
+      "nombre": "Móvil apuntado para aprobar la entrada",
+      "descripcion": "Cuando alguien apunta un móvil en «Mi seguridad» para aprobar la entrada al CMS con un aviso.",
+      "antetitulo": "Su cuenta",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "movil",
+          "ayuda": "El nombre que se le dio al móvil",
+          "ejemplo": "iPhone de Juan"
+        },
+        {
+          "clave": "fecha",
+          "ayuda": "Cuándo se apuntó",
+          "ejemplo": "14 de octubre de 2026, a las 18:05"
+        }
+      ],
+      "bloques": [],
+      "porDefecto": {
+        "asunto": "Se ha apuntado un móvil para entrar en el CMS",
+        "titulo": "Móvil apuntado",
+        "cuerpo": "{{saludo}}\n\nEl {{fecha}} se apuntó el móvil **{{movil}}** para aprobar la entrada al CMS con su cuenta. Desde ahora, al entrar, le llegará un aviso a ese móvil.\n\n> **Si no ha sido usted**\n> Alguien ha entrado en el CMS con su cuenta. Quite ese móvil desde «Mi seguridad», cambie su contraseña y avise a la Secretaría {{de_la_corporacion}}.",
+        "despedida": ""
+      }
+    },
+    {
       "clave": "solicitud_recibida",
       "grupo": "Altas y bajas",
       "nombre": "Solicitud de ingreso recibida",

@@ -112,6 +112,23 @@ describe('validarEntorno', () => {
     assert.deepEqual(validarEntorno({ NODE_ENV: 'development', PAGO_EN_LINEA: 'simulado' }).errores, []);
   });
 
+  // Una clave a medias dejaría el módulo sin poder encenderse y sin saber por qué.
+  test('las claves VAPID van las tres juntas y con su forma', () => {
+    const buenas = {
+      VAPID_PUBLICA: 'BIZ_rrPnzaAOXe12wOvA6cZPIEqZV-VkLYhg2rIUxa6iBulTqombn1-7GLgBsGk9GIWAX4nJ2jjvpk3PJ7m21Kg',
+      VAPID_PRIVADA: 'dT3I0Q3CL6vs80FYhH9t2VehlrJ10JhjXp_F34SM4Ak',
+      VAPID_CONTACTO: 'mailto:secretaria@ejemplo.test',
+    };
+    assert.deepEqual(validarEntorno({ ...PRODUCCION_COMPLETA, ...buenas }).errores, []);
+    assert.deepEqual(validarEntorno({ ...PRODUCCION_COMPLETA, ...buenas, VAPID_CONTACTO: 'https://ejemplo.test/contacto' }).errores, []);
+    assert.deepEqual(validarEntorno(PRODUCCION_COMPLETA).errores, [], 'sin ninguna, no pasa nada: no hay avisos');
+
+    const sinPrivada = validarEntorno({ ...PRODUCCION_COMPLETA, VAPID_PUBLICA: buenas.VAPID_PUBLICA, VAPID_CONTACTO: buenas.VAPID_CONTACTO });
+    assert.ok(sinPrivada.errores.some((e) => /Falta VAPID_PRIVADA/.test(e)));
+    const malas = validarEntorno({ ...PRODUCCION_COMPLETA, VAPID_PUBLICA: 'corta', VAPID_PRIVADA: buenas.VAPID_PUBLICA, VAPID_CONTACTO: 'secretaria@ejemplo.test' });
+    assert.equal(malas.errores.length, 3);
+  });
+
   test('comprobarEntorno lanza con la lista completa', () => {
     assert.throws(() => comprobarEntorno({ NODE_ENV: 'production' }), /El servidor no arranca: el entorno tiene 9 problema\(s\)/);
     assert.doesNotThrow(() => comprobarEntorno({ NODE_ENV: 'development' }));

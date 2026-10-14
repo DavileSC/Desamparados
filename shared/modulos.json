@@ -50,7 +50,8 @@
     { "clave": "modelo-182", "nombre": "Modelo 182", "grupo": "Cuentas", "descripcion": "Los donativos del año para Hacienda y los certificados.", "requiere": [] },
     { "clave": "contabilidad", "nombre": "Contabilidad", "grupo": "Cuentas", "descripcion": "Las pantallas del libro de apuntes y la partida doble; los apuntes se registran siempre, esté o no encendida.", "requiere": [] },
     { "clave": "cabildos", "nombre": "Cabildos y actas", "grupo": "Junta", "descripcion": "Convocatorias, asistencia, votaciones y el libro de actas.", "requiere": [] },
-    { "clave": "informe-anual", "nombre": "Informe anual", "grupo": "Junta", "descripcion": "La memoria del curso en PDF, con sus textos a mano.", "requiere": [] }
+    { "clave": "informe-anual", "nombre": "Informe anual", "grupo": "Junta", "descripcion": "La memoria del curso en PDF, con sus textos a mano.", "requiere": [] },
+    { "clave": "avisos-en-el-movil", "nombre": "Aprobar la entrada desde el móvil", "grupo": "Sistema", "descripcion": "Entrar en el CMS aprobando un aviso en el móvil, sin teclear el código de la app (que sigue de reserva). Necesita las claves VAPID en el servidor.", "requiere": [] }
   ],
   "deInstalacion": [
     { "clave": "paginas-propias", "nombre": "Páginas propias", "descripcion": "Las páginas hechas a medida para una corporación concreta, con su diseño propio en vez de bloques. Solo las tiene la instalación para la que se hicieron." }

@@ -2,6 +2,7 @@ import { EstadoPedido, OrigenPago, TipoPagoEnLinea } from '@prisma/client';
 import db from '../config/db.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from './auditoria.service.js';
 import { NotFoundError } from '../utils/error.handle.js';
+import { avisosConfigurados } from './aprobacion/push.js';
 import {
   CATALOGO_MODULOS, CLAVES_MODULO, DE_INSTALACION_ENCENDIDOS, LOTE_INICIAL, dependientesActivos, esClaveDeModulo, fichaDe,
   requisitosQueFaltan, type ClaveDeInstalacion, type ClaveEncendible, type ClaveModulo, type FichaDeModulo,
@@ -66,6 +67,16 @@ const RECUENTOS: Record<ClaveModulo, () => Promise<RecuentoDeDatos[]>> = {
   contabilidad: async () => [],
   cabildos: async () => [{ uno: 'cabildo', que: 'cabildos', total: await db.cabildo.count() }],
   'informe-anual': async () => [{ uno: 'informe', que: 'informes', total: await db.informeAnual.count() }],
+  'avisos-en-el-movil': async () => [{ uno: 'móvil apuntado', que: 'móviles apuntados', total: await db.movilApuntado.count() }],
+};
+
+/**
+ * Lo que un módulo necesita del servidor y no de otro módulo: sin ello,
+ * encenderlo dejaría una función que no puede funcionar (los avisos al móvil
+ * sin claves VAPID no salen). Devuelve qué falta, o null si está todo.
+ */
+const QUE_FALTA_EN_EL_SERVIDOR: Partial<Record<ClaveModulo, () => string | null>> = {
+  'avisos-en-el-movil': () => (avisosConfigurados() ? null : 'faltan las claves VAPID del servidor (VAPID_PUBLICA, VAPID_PRIVADA y VAPID_CONTACTO; se generan con npm run gen:vapid).'),
 };
 
 const nombres = (claves: ClaveModulo[]) => claves.map((c) => `«${fichaDe(c).nombre}»`).join(', ');
@@ -164,6 +175,8 @@ export class ModulosService {
     const ficha = fichaDe(clave);
     let cambiados: ClaveModulo[];
     if (activar) {
+      const sinServidor = QUE_FALTA_EN_EL_SERVIDOR[clave]?.();
+      if (sinServidor) return { ok: false, faltan: [], dependientes: [], message: `Para encender «${ficha.nombre}» ${sinServidor}` };
       const faltan = requisitosQueFaltan(clave, antes);
       if (faltan.length && !opciones.conRequisitos) {
         return { ok: false, faltan, dependientes: [], message: `Para encender «${ficha.nombre}» hay que encender también ${nombres(faltan)}.` };

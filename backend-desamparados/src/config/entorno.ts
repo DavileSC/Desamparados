@@ -138,6 +138,25 @@ export function validarEntorno(entorno: Entorno = process.env): ResultadoEntorno
     errores.push(...leerAcreedorSepa(entorno).problemas);
   }
 
+  // Los avisos al móvil para aprobar la entrada al CMS: las tres o ninguna.
+  // Con una a medias, el módulo no se podría encender y no se sabría por qué;
+  // una clave mal copiada se descubriría con el primer cargo que no recibe el aviso.
+  const vapid = ['VAPID_PUBLICA', 'VAPID_PRIVADA', 'VAPID_CONTACTO'] as const;
+  if (vapid.some((nombre) => definida(entorno[nombre]))) {
+    for (const nombre of vapid) {
+      if (!definida(entorno[nombre])) errores.push(`Falta ${nombre}: las tres claves VAPID van juntas (npm run gen:vapid).`);
+    }
+    if (definida(entorno.VAPID_PUBLICA) && !/^[A-Za-z0-9_-]{87}$/.test(entorno.VAPID_PUBLICA.trim())) {
+      errores.push('VAPID_PUBLICA no tiene la forma de una clave pública VAPID (87 caracteres en base64url). Genera las dos con npm run gen:vapid.');
+    }
+    if (definida(entorno.VAPID_PRIVADA) && !/^[A-Za-z0-9_-]{43}$/.test(entorno.VAPID_PRIVADA.trim())) {
+      errores.push('VAPID_PRIVADA no tiene la forma de una clave privada VAPID (43 caracteres en base64url). Genera las dos con npm run gen:vapid.');
+    }
+    if (definida(entorno.VAPID_CONTACTO) && !/^mailto:\S+@\S+$/.test(entorno.VAPID_CONTACTO.trim()) && !esUrlHttps(entorno.VAPID_CONTACTO)) {
+      errores.push(`VAPID_CONTACTO="${entorno.VAPID_CONTACTO}" debe ser mailto:correo@dominio o una URL https: es a quien escribe el servicio de avisos si hay un problema.`);
+    }
+  }
+
   if (nodeEnv !== 'production') return { errores, avisos };
 
   // --- Solo en producción ---

@@ -5,11 +5,11 @@ Las librerías de producción de la API y de la web, con su licencia. El texto
 completo de cada una va dentro de su paquete, en `node_modules`. Las que hay
 que mirar están explicadas en [licencias.md](licencias.md).
 
-## La API: 301 paquetes
+## La API: 299 paquetes
 
-MIT (242), ISC (23), Apache-2.0 (13), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X11 (2), Apache-2.0 AND LGPL-3.0-or-later (1), Unlicense (1), Sin licencia (1), (MIT OR GPL-3.0-or-later) (1), BlueOak-1.0.0 (1), LGPL-2.1-or-later (1), MIT-0 (1), (MIT AND Zlib) (1), MIT (por su fichero LICENSE) (1), 0BSD (1)
+MIT (239), ISC (24), Apache-2.0 (12), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X11 (2), Apache-2.0 AND LGPL-3.0-or-later (1), Unlicense (1), Sin licencia (1), (MIT OR GPL-3.0-or-later) (1), BlueOak-1.0.0 (1), LGPL-2.1-or-later (1), MIT-0 (1), (MIT AND Zlib) (1), MIT (por su fichero LICENSE) (1), 0BSD (1), MPL-2.0 (1)
 
-**A mirar:** @img/sharp-win32-x64 0.35.4 (Apache-2.0 AND LGPL-3.0-or-later); buffers 0.1.1 (sin licencia); mariadb 3.5.3 (LGPL-2.1-or-later).
+**A mirar:** @img/sharp-win32-x64 0.35.5 (Apache-2.0 AND LGPL-3.0-or-later); buffers 0.1.1 (sin licencia); mariadb 3.5.4 (LGPL-2.1-or-later); web-push 3.6.7 (MPL-2.0).
 
 | Paquete | Versión | Licencia |
 |---|---|---|
@@ -20,7 +20,7 @@ MIT (242), ISC (23), Apache-2.0 (13), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X1
 | @fast-csv/format | 4.3.5 | MIT |
 | @fast-csv/parse | 4.3.6 | MIT |
 | @img/colour | 1.1.0 | MIT |
-| @img/sharp-win32-x64 | 0.35.4 | Apache-2.0 AND LGPL-3.0-or-later |
+| @img/sharp-win32-x64 | 0.35.5 | Apache-2.0 AND LGPL-3.0-or-later |
 | @noble/hashes | 2.0.1 | MIT |
 | @prisma/adapter-mariadb | 7.10.0 | Apache-2.0 |
 | @prisma/client | 7.10.0 | Apache-2.0 |
@@ -35,6 +35,7 @@ MIT (242), ISC (23), Apache-2.0 (13), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X1
 | @types/node | 14.18.63 | MIT |
 | @types/node | 25.2.2 | MIT |
 | accepts | 2.0.0 | MIT |
+| agent-base | 7.1.4 | MIT |
 | ansi-regex | 5.0.1 | MIT |
 | ansi-styles | 4.3.0 | MIT |
 | append-field | 1.0.0 | MIT |
@@ -43,8 +44,8 @@ MIT (242), ISC (23), Apache-2.0 (13), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X1
 | archiver-utils | 3.0.4 | MIT |
 | arkregex | 0.0.5 | MIT |
 | arktype | 2.1.29 | MIT |
+| asn1.js | 5.4.1 | MIT |
 | async | 3.2.6 | MIT |
-| aws-ssl-profiles | 1.1.2 | MIT |
 | balanced-match | 1.0.2 | MIT |
 | base64-js | 0.0.8 | MIT |
 | base64-js | 1.5.1 | MIT |
@@ -54,6 +55,7 @@ MIT (242), ISC (23), Apache-2.0 (13), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X1
 | binary | 0.3.0 | MIT |
 | bl | 4.1.0 | MIT |
 | bluebird | 3.4.7 | MIT |
+| bn.js | 4.12.5 | MIT |
 | body-parser | 2.3.0 | MIT |
 | brace-expansion | 1.1.21 | MIT |
 | brace-expansion | 2.1.7 | MIT |
@@ -134,7 +136,6 @@ MIT (242), ISC (23), Apache-2.0 (13), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X1
 | fs.realpath | 1.0.0 | ISC |
 | fstream | 1.0.12 | ISC |
 | function-bind | 1.1.2 | MIT |
-| generate-function | 2.3.1 | MIT |
 | get-caller-file | 2.0.5 | ISC |
 | get-intrinsic | 1.3.0 | MIT |
 | get-proto | 1.0.1 | MIT |
@@ -145,9 +146,10 @@ MIT (242), ISC (23), Apache-2.0 (13), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X1
 | hasown | 2.0.4 | MIT |
 | helmet | 8.1.0 | MIT |
 | htmlparser2 | 12.0.0 | MIT |
+| http_ece | 1.2.0 | MIT |
 | http-errors | 2.0.1 | MIT |
+| https-proxy-agent | 7.0.6 | MIT |
 | iconv-lite | 0.7.2 | MIT |
-| iconv-lite | 0.7.3 | MIT |
 | ieee754 | 1.2.1 | BSD-3-Clause |
 | immediate | 3.0.6 | MIT |
 | inflight | 1.0.6 | ISC |
@@ -157,7 +159,6 @@ MIT (242), ISC (23), Apache-2.0 (13), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X1
 | is-fullwidth-code-point | 3.0.0 | MIT |
 | is-plain-object | 5.0.0 | MIT |
 | is-promise | 4.0.0 | MIT |
-| is-property | 1.0.2 | MIT |
 | isarray | 1.0.0 | MIT |
 | jpeg-exif | 1.1.4 | MIT |
 | jsonwebtoken | 9.0.3 | MIT |
@@ -188,10 +189,8 @@ MIT (242), ISC (23), Apache-2.0 (13), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X1
 | lodash.once | 4.1.1 | MIT |
 | lodash.union | 4.6.0 | MIT |
 | lodash.uniq | 4.5.0 | MIT |
-| long | 5.3.2 | Apache-2.0 |
 | lru-cache | 11.5.2 | BlueOak-1.0.0 |
-| lru.min | 1.1.4 | MIT |
-| mariadb | 3.5.3 | LGPL-2.1-or-later |
+| mariadb | 3.5.4 | LGPL-2.1-or-later |
 | math-intrinsics | 1.1.0 | MIT |
 | media-typer | 0.3.0 | MIT |
 | media-typer | 1.1.0 | MIT |
@@ -200,6 +199,7 @@ MIT (242), ISC (23), Apache-2.0 (13), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X1
 | mime-db | 1.54.0 | MIT |
 | mime-types | 2.1.35 | MIT |
 | mime-types | 3.0.2 | MIT |
+| minimalistic-assert | 1.0.1 | ISC |
 | minimatch | 3.1.5 | ISC |
 | minimatch | 5.1.9 | ISC |
 | minimist | 1.2.8 | MIT |
@@ -208,8 +208,6 @@ MIT (242), ISC (23), Apache-2.0 (13), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X1
 | ms | 2.0.0 | MIT |
 | ms | 2.1.3 | MIT |
 | multer | 2.4.0 | MIT |
-| mysql2 | 3.24.2 | MIT |
-| named-placeholders | 1.1.6 | MIT |
 | nanoid | 3.3.18 | MIT |
 | negotiator | 1.0.0 | MIT |
 | nodemailer | 10.0.13 | MIT-0 |
@@ -236,7 +234,7 @@ MIT (242), ISC (23), Apache-2.0 (13), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X1
 | pngjs | 5.0.0 | MIT |
 | postcss | 8.5.26 | MIT |
 | process-nextick-args | 2.0.1 | MIT |
-| proxy-addr | 2.0.7 | MIT |
+| proxy-addr | 2.0.8 | MIT |
 | qrcode | 1.5.4 | MIT |
 | qs | 6.16.0 | BSD-3-Clause |
 | range-parser | 1.2.1 | MIT |
@@ -269,13 +267,12 @@ MIT (242), ISC (23), Apache-2.0 (13), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X1
 | set-blocking | 2.0.0 | ISC |
 | setimmediate | 1.0.5 | MIT |
 | setprototypeof | 1.2.0 | ISC |
-| sharp | 0.35.4 | Apache-2.0 |
+| sharp | 0.35.5 | Apache-2.0 |
 | side-channel | 1.1.1 | MIT |
 | side-channel-list | 1.0.1 | MIT |
 | side-channel-map | 1.0.1 | MIT |
 | side-channel-weakmap | 1.0.2 | MIT |
-| source-map-js | 1.2.1 | BSD-3-Clause |
-| sql-escaper | 1.5.1 | MIT |
+| source-map-js | 1.2.2 | BSD-3-Clause |
 | statuses | 2.0.2 | MIT |
 | streamsearch | 1.1.0 | MIT |
 | string_decoder | 1.1.1 | MIT |
@@ -306,6 +303,7 @@ MIT (242), ISC (23), Apache-2.0 (13), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X1
 | util-deprecate | 1.0.2 | MIT |
 | uuid | 11.1.1 | MIT |
 | vary | 1.1.2 | MIT |
+| web-push | 3.6.7 | MPL-2.0 |
 | which-module | 2.0.1 | ISC |
 | wrap-ansi | 6.2.0 | MIT |
 | wrappy | 1.0.2 | ISC |
@@ -319,7 +317,7 @@ MIT (242), ISC (23), Apache-2.0 (13), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X1
 
 MIT (164), ISC (10), BSD-3-Clause (6), OFL-1.1 (3), BSD-2-Clause (2), Apache-2.0 (2), (MIT OR Apache-2.0) (1), (MPL-2.0 OR Apache-2.0) (1), 0BSD (1)
 
-**A mirar:** @fontsource-variable/exo-2 5.3.0 (OFL-1.1); @fontsource-variable/saira 5.3.0 (OFL-1.1); @fontsource/cormorant-garamond 5.3.0 (OFL-1.1); dompurify 3.4.14 ((MPL-2.0 OR Apache-2.0)).
+**A mirar:** @fontsource-variable/exo-2 5.3.0 (OFL-1.1); @fontsource-variable/saira 5.3.0 (OFL-1.1); @fontsource/cormorant-garamond 5.3.0 (OFL-1.1); dompurify 3.4.16 ((MPL-2.0 OR Apache-2.0)).
 
 | Paquete | Versión | Licencia |
 |---|---|---|
@@ -428,7 +426,7 @@ MIT (164), ISC (10), BSD-3-Clause (6), OFL-1.1 (3), BSD-2-Clause (2), Apache-2.0
 | csstype | 3.2.3 | MIT |
 | debug | 4.4.3 | MIT |
 | dom-helpers | 5.2.1 | MIT |
-| dompurify | 3.4.14 | (MPL-2.0 OR Apache-2.0) |
+| dompurify | 3.4.16 | (MPL-2.0 OR Apache-2.0) |
 | earcut | 3.2.3 | ISC |
 | error-ex | 1.3.4 | MIT |
 | es-errors | 1.3.0 | MIT |

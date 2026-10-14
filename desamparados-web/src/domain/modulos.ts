@@ -12,7 +12,7 @@ export const CLAVES_MODULO = [
   'noticias', 'publicaciones', 'agenda', 'comunicados', 'alta-web', 'area-hermanos',
   'procesion', 'puerta', 'cortejo-directo', 'inventario', 'cartas', 'difuntos', 'apadrinamientos',
   'remesas', 'pago-en-linea', 'cuotas-en-linea', 'donativos', 'tienda', 'tienda-web', 'loteria', 'modelo-182', 'contabilidad',
-  'cabildos', 'informe-anual',
+  'cabildos', 'informe-anual', 'avisos-en-el-movil',
 ] as const
 export type ClaveModulo = (typeof CLAVES_MODULO)[number]
 

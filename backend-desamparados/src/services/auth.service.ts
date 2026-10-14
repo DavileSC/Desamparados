@@ -18,12 +18,19 @@ import { ipKeyGenerator } from 'express-rate-limit';
 import { ContadorFallos, RegistroReciente } from '../utils/contador-fallos.js';
 import {
   MENSAJE_CODIGO_USADO, comprobarBloqueo2FA, consumirCodigoDeRespaldo, normalizarCodigo2FA,
-  limpiarFallos2FA, pasoTotpActual, reclamarTotp, registrarFallo2FA,
+  reclamarTotp, registrarFallo2FA,
 } from './auth/codigos-2fa.js';
 import { cifrarSecretoTotp, leerSecretoTotp, SecretoTotpIlegibleError } from '../utils/cifrado-totp.js';
 import { DOMINIO_CUENTA_ELIMINADA, PREFIJO_DNI_ELIMINADO } from '../domain/cuenta-anonimizada.js';
 import { suprimirDatosPersonales } from '../domain/auditoria-supresion.js';
 import { ModulosService } from './modulos.service.js';
+import {
+  PERFILES_DE_LA_SESION, Testigo2FACaducadoError, alPasarSegundoFactor, avanzarPasoDelTestigo, comprobarTestigo, sesionDe,
+  type DatosDelTestigo,
+} from './auth/sesion-2fa.js';
+import { AprobacionEntradaService } from './aprobacion/aprobacion-entrada.service.js';
+import { describirNavegador } from '../domain/aprobacion-entrada.js';
+import { fechaYHoraParaCorreo } from '../domain/fecha-y-hora.js';
 // -------------------------------
 
 /**
@@ -55,18 +62,9 @@ export class AreaHermanosApagadaError extends HttpError {
   }
 }
 
-/**
- * El testigo del primer factor ya se gastó (o es de antes de un segundo factor
- * aceptado): hay que volver a pasar por la contraseña.
- */
-export class Testigo2FACaducadoError extends HttpError {
-  readonly codigo = 'PENDING_2FA_REQUIRED';
-  constructor() {
-    super('La verificación ha caducado. Vuelve a introducir tu email y contraseña.', 401);
-    this.name = 'Testigo2FACaducadoError';
-    Object.setPrototypeOf(this, Testigo2FACaducadoError.prototype);
-  }
-}
+// Vive con el resto del final del acceso; se reexporta porque es de aquí de
+// donde lo importan el controlador y las pruebas.
+export { Testigo2FACaducadoError };
 
 const QUINCE_MINUTOS = 15 * 60 * 1000;
 const UNA_HORA = 60 * 60 * 1000;
@@ -156,7 +154,7 @@ export class AuthService {
   // decía qué correos están registrados. Mismas rondas que `encrypt`.
   private static readonly hashSenuelo: Promise<string> = encrypt(crypto.randomBytes(16).toString('hex'));
 
-  static async loginUser({ email, password, recordarme, contexto }: LoginDto, ip = 'desconocida') {
+  static async loginUser({ email, password, recordarme, contexto, dispositivo }: LoginDto, ip = 'desconocida', userAgent?: string) {
     const emailNorm = email.trim().toLowerCase();
 
     // Con el área de hermanos apagada no se reparten sesiones de hermano a
@@ -210,14 +208,26 @@ export class AuthService {
     // El segundo factor solo se exige en el acceso al CMS. El área de hermanos
     // entra solo con contraseña, aunque la cuenta tenga 2FA activado.
     if (esCms && user.twoFactorEnabled) {
+      // Prueba de que la contraseña era correcta. El controlador lo mueve a
+      // una cookie: no debe salir nunca en el cuerpo de la respuesta.
+      // Lleva el último intervalo TOTP aceptado: en cuanto se acepte otro
+      // segundo factor, este testigo deja de valer (un solo uso).
+      const pendingToken = generatePending2FAToken(user.id, recordarme === true, origen, user.twoFactorLastStep);
+      // Con móviles apuntados, además, el aviso para aprobar desde ellos. Si
+      // eso falla, se entra con el código de la app: el aviso es una comodidad
+      // y no puede dejar a nadie fuera del CMS.
+      const movil = await AprobacionEntradaService.pedirAlEntrar(user.id, pendingToken, { dispositivo, desde: describirNavegador(userAgent) })
+        .catch((error): Awaited<ReturnType<typeof AprobacionEntradaService.pedirAlEntrar>> => {
+          console.error('[Avisos] No se pudo pedir la aprobación en el móvil:', error);
+          return {};
+        });
       return {
         status: '2FA_NEEDED' as const,
-        // Prueba de que la contraseña era correcta. El controlador lo mueve a
-        // una cookie: no debe salir nunca en el cuerpo de la respuesta.
-        // Lleva el último intervalo TOTP aceptado: en cuanto se acepte otro
-        // segundo factor, este testigo deja de valer (un solo uso).
-        pendingToken: generatePending2FAToken(user.id, recordarme === true, origen, user.twoFactorLastStep),
-        message: 'Introduce el código de tu aplicación de autenticación.'
+        pendingToken,
+        message: movil.aprobacion
+          ? 'Aprueba la entrada en tu móvil o escribe el código de tu aplicación de autenticación.'
+          : 'Introduce el código de tu aplicación de autenticación.',
+        ...movil,
       };
     }
 
@@ -265,18 +275,14 @@ export class AuthService {
    * VERIFICAR LOGIN CON OTPAUTH
    * Acepta el código TOTP de 6 dígitos o un código de respaldo (si perdió el móvil).
    *
-   * `testigo` son los datos del testigo del primer factor: `paso2fa` es el
-   * `twoFactorLastStep` de la cuenta cuando se emitió (si ya no coincide, desde
-   * entonces se ha aceptado otro segundo factor y no vale) y `emitidoMs`, cuándo
-   * (si es anterior a `tokenValidAfter`, entre medias se cambió la contraseña o
-   * se cerraron todas las sesiones).
+   * `testigo` son los datos del testigo del primer factor (ver `DatosDelTestigo`).
    */
   static async verifyLogin2FA(
     userId: number,
     token2fa: string,
     recordarme = false,
     origen: 'cms' | 'hermanos' = 'cms',
-    testigo: { paso2fa?: number | null; emitidoMs?: number } = {}
+    testigo: DatosDelTestigo = {}
   ) {
     // Bloqueo preventivo antes de gastar consultas
     comprobarBloqueo2FA(userId);
@@ -284,31 +290,12 @@ export class AuthService {
     const user = await db.user.findUnique({
       where: { id: userId },
       omit: { twoFactorSecret: false }, // Necesario para validar el TOTP
-      include: {
-        hermanos: {
-          // Mismo formato que el login normal para que el selector de perfiles funcione igual
-          where: { activo: true },
-          select: { id: true, nombre: true, esTitular: true, puesto: true }
-        }
-      }
+      // Mismo formato que el login normal para que el selector de perfiles funcione igual
+      include: { hermanos: PERFILES_DE_LA_SESION }
     });
     if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) throw new HttpError('2FA no configurado.', 401);
 
-    // Testigo de un solo uso. Se eligió atarlo a `twoFactorLastStep` en vez de
-    // apuntar su `jti` en memoria: vale igual con varias instancias o tras un
-    // reinicio, y no hay nada que barrer. El precio es que dos logins a medias
-    // de la misma cuenta se pisan: el segundo en llegar repite la contraseña.
-    if (testigo.paso2fa === undefined || user.twoFactorLastStep !== testigo.paso2fa) {
-      throw new Testigo2FACaducadoError();
-    }
-
-    // Y atado a la cuenta tal como estaba al acertar la contraseña: si desde
-    // entonces se ha desactivado, se ha cambiado la contraseña o se han cerrado
-    // todas sus sesiones, los cinco minutos del testigo no pueden saltárselo.
-    // Sin `emitidoMs` (testigos de antes de existir el claim) tampoco vale.
-    if (!user.active || typeof testigo.emitidoMs !== 'number' || testigo.emitidoMs < user.tokenValidAfter.getTime()) {
-      throw new Testigo2FACaducadoError();
-    }
+    comprobarTestigo(user, testigo);
 
     const code = normalizarCodigo2FA(token2fa);
     let backupCodesRemaining: number | undefined;
@@ -331,13 +318,8 @@ export class AuthService {
       const respaldoIncorrecto = new Error('respaldo incorrecto');
       try {
         await db.$transaction(async (tx) => {
-          // Un respaldo no gasta ningún intervalo TOTP, así que se avanza a mano:
-          // si no, el testigo seguiría vivo y admitiría otro código.
-          const { count } = await tx.user.updateMany({
-            where: { id: user.id, twoFactorLastStep: user.twoFactorLastStep },
-            data: { twoFactorLastStep: Math.max(pasoTotpActual(), (user.twoFactorLastStep ?? -1) + 1) }
-          });
-          if (count !== 1) throw new Testigo2FACaducadoError();
+          // Un respaldo no gasta ningún intervalo TOTP, así que se avanza a mano.
+          if (!(await avanzarPasoDelTestigo(tx, user))) throw new Testigo2FACaducadoError();
           if (!(await consumirCodigoDeRespaldo(user.id, code, tx))) throw respaldoIncorrecto;
         });
       } catch (e) {
@@ -352,23 +334,10 @@ export class AuthService {
       });
     }
 
-    // Login correcto: limpiamos el contador de fallos
-    limpiarFallos2FA(userId);
+    // Login correcto: fuera los fallos y las aprobaciones que esperaban al móvil
+    await alPasarSegundoFactor(userId);
 
-    const token = generateToken(user.id, user.role, recordarme, origen);
-    return {
-      status: 'OK',
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        perfiles: user.hermanos,
-        twoFactorEnabled: user.twoFactorEnabled,
-        origen,
-        ...(backupCodesRemaining !== undefined ? { backupCodesRemaining } : {})
-      }
-    };
+    return sesionDe(user, recordarme, origen, backupCodesRemaining !== undefined ? { backupCodesRemaining } : {});
   }
 
   // 1. Solicitar el reseteo (Genera token y envía email)
@@ -580,8 +549,7 @@ export class AuthService {
 
     await AuditoriaService.log(ACCIONES_AUDITORIA.CONTRASENA_CAMBIAR, { ...meta, userId }, 'user', userId, { sesionesCerradas: true });
 
-    const fecha = new Date();
-    const cuando = `${new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'long', year: 'numeric' }).format(fecha)}, a las ${new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', hour12: false }).format(fecha)}`;
+    const cuando = fechaYHoraParaCorreo(new Date());
     EmailService.enviarContrasenaCambiada(user.email, user.nombre, cuando, user.hermanos[0]?.sexo ?? undefined)
       .catch((error) => console.error('[Cuenta] No se pudo avisar del cambio de contraseña:', error));
 

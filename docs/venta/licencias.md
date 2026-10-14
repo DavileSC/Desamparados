@@ -95,6 +95,7 @@ de licencia, y ese aviso va dentro de cada paquete. Las que tienen algo más:
 | `sharp` y sus binarios `@img/sharp-*` (libvips) | Apache 2.0 y **LGPL 3.0** | La LGPL deja usar libvips sin tocarla en un programa privativo, si se puede cambiar por otra versión. Se instala con npm sin modificar, así que se cumple. No hay que modificarla ni copiarla dentro del código |
 | `mariadb`, el conector de la base de datos | **LGPL 2.1** | Lo mismo: se usa tal cual desde npm |
 | `buffers` 0.1.1 (lo trae `exceljs` → `unzipper` → `binary`) | **No declara licencia** | En rigor, sin licencia no hay permiso. Es un paquete antiguo, sin cambios desde hace años y muy extendido, así que el riesgo práctico es bajo, pero no es cero. Para quitarlo del todo, habría que buscar otra forma de leer los Excel del censo |
+| `web-push`, los avisos al móvil para aprobar la entrada al CMS | **MPL 2.0** | Copyleft por fichero: obliga a publicar los cambios que se le hagan a sus propios ficheros, no al resto del programa. Se usa tal cual desde npm, sin modificar, así que se cumple. Si alguna vez hubiera que parchearla, ese parche se publica |
 | `dompurify` | MPL 2.0 **o** Apache 2.0 | Se elige la Apache 2.0 |
 | `jszip` | MIT **o** GPL 3.0 | Se elige la MIT |
 
