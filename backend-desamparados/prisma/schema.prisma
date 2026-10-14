@@ -189,12 +189,8 @@ model User {
   // Códigos de respaldo del 2FA (de un solo uso, para perder/cambiar el móvil)
   backupCodes TwoFactorBackupCode[]
 
-  // Móviles que reciben el aviso para aprobar la entrada al CMS, y las
-  // aprobaciones que se les han pedido (ver MovilApuntado).
-  movilesApuntados    MovilApuntado[]
-  aprobacionesEntrada AprobacionEntrada[]
   // Móviles que reciben los avisos del área de hermanos (ver MovilDeAvisos).
-  movilesDeAvisos     MovilDeAvisos[]
+  movilesDeAvisos MovilDeAvisos[]
 
   // Registro de auditoría de las acciones que realiza este usuario (staff)
   auditLogs AuditLog[]
@@ -1069,35 +1065,9 @@ model TwoFactorBackupCode {
   @@index([userId])
 }
 
-// Un móvil apuntado para aprobar la entrada al CMS con un aviso (Web Push),
-// en vez de teclear el código de la app. Es otra forma del segundo factor:
-// el TOTP sigue de reserva y los rescates del 2FA borran también estos.
-model MovilApuntado {
-  id           Int       @id @default(autoincrement())
-  userId       Int
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // Lo pone quien lo apunta («iPhone de Ana»), para reconocerlo en la lista.
-  nombre       String    @db.VarChar(60)
-  // La suscripción que da el navegador. El endpoint es una URL larga del
-  // servicio de push: el índice único va sobre su hash, que cabe en la clave.
-  endpoint     String    @db.Text
-  endpointHash String    @unique @db.Char(64)
-  p256dh       String    @db.VarChar(200)
-  auth         String    @db.VarChar(100)
-  // Hash de la clave del dispositivo, que solo guarda el móvil (IndexedDB):
-  // es lo que prueba que quien aprueba es ese móvil y no una pestaña con la
-  // sesión abierta.
-  claveHash    String    @db.Char(64)
-  creadoEn     DateTime  @default(now())
-  usadoEn      DateTime?
-
-  @@index([userId])
-}
-
 /// Un móvil que recibe los avisos del área de hermanos (apertura de
-/// papeletas, avisos de la Junta). Aparte de MovilApuntado, que prueba quién
-/// aprueba la entrada al CMS: este solo recibe, y el navegador da otra
-/// suscripción para el área (el service worker se registra con otro scope).
+/// papeletas, avisos de la Junta). Solo recibe: no prueba nada de quien lo
+/// lleva, así que no pide contraseña ni guarda clave del dispositivo.
 model MovilDeAvisos {
   id           Int       @id @default(autoincrement())
   userId       Int
@@ -1112,37 +1082,6 @@ model MovilDeAvisos {
   usadoEn      DateTime?
 
   @@index([userId])
-}
-
-enum EstadoAprobacion {
-  PENDIENTE // Esperando al móvil
-  APROBADA // El móvil acertó el número; el ordenador aún no ha recogido la sesión
-  USADA // El ordenador ya recogió la sesión
-  RECHAZADA // «No he sido yo»
-  FALLADA // Número equivocado: no hay segundo intento
-  CADUCADA // Pasaron los dos minutos, o se entró por otro camino
-}
-
-// Una entrada al CMS esperando a que la apruebe un móvil apuntado. Atada al
-// testigo del primer factor (su hash): la sesión solo se la lleva el
-// navegador que acertó la contraseña.
-model AprobacionEntrada {
-  // Aleatorio: va en la URL que abre el aviso (/cms/aprobar/<id>).
-  id          String           @id @db.VarChar(32)
-  userId      Int
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // El que enseña el ordenador, y los tres que enseña el móvil («12,47,83»).
-  numero      Int
-  opciones    String           @db.VarChar(20)
-  // «Windows · Chrome»: lo que se lee en el aviso, sin datos personales.
-  desde       String           @db.VarChar(80)
-  pendienteDe String           @unique @db.Char(64)
-  estado      EstadoAprobacion @default(PENDIENTE)
-  expiraEn    DateTime
-  creadoEn    DateTime         @default(now())
-
-  @@index([userId, estado])
-  @@index([creadoEn])
 }
 
 // Registro de auditoría de acciones sensibles (dinero, roles, solicitudes, RGPD).

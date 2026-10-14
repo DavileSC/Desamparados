@@ -1,6 +1,6 @@
 import { type } from 'arktype';
 import { idParam, textoRequerido } from '../config/common';
-import { esEndpointDePush } from '../domain/aprobacion-entrada';
+import { esEndpointDePush } from '../domain/push';
 
 /** Lo que manda el navegador al activar los avisos: su suscripción y el nombre que se pone solo. */
 export const apuntarMovilDeAvisosSchema = type({

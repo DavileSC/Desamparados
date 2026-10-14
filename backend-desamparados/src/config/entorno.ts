@@ -155,9 +155,9 @@ export function validarEntorno(entorno: Entorno = process.env): ResultadoEntorno
     errores.push(...leerAcreedorSepa(entorno).problemas);
   }
 
-  // Los avisos al móvil para aprobar la entrada al CMS: las tres o ninguna.
+  // Los avisos al móvil del área de hermanos: las tres o ninguna.
   // Con una a medias, el módulo no se podría encender y no se sabría por qué;
-  // una clave mal copiada se descubriría con el primer cargo que no recibe el aviso.
+  // una clave mal copiada se descubriría con el primer hermano que no recibe el aviso.
   const vapid = ['VAPID_PUBLICA', 'VAPID_PRIVADA', 'VAPID_CONTACTO'] as const;
   if (vapid.some((nombre) => definida(entorno[nombre]))) {
     for (const nombre of vapid) {

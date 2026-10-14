@@ -2,7 +2,7 @@ import { useId, useState } from 'react'
 import { Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Switch, Typography } from '@mui/material'
 import TarjetaCristal from '../../../components/TarjetaCristal'
 import { useModulos } from '../../../hooks/useModulos'
-import { esPantallaTactil } from '../../../lib/movilApuntado'
+import { esPantallaTactil } from '../../../lib/avisosDelNavegador'
 import { PREGUNTADO, escribir, leer, useAvisosDelArea } from './avisosDelArea'
 import Boton from '../../../components/Boton'
 

@@ -1,7 +1,7 @@
 import webpush from 'web-push';
 
 /**
- * Por dónde salen los avisos al móvil (Web Push). Como el correo
+ * Por dónde salen los avisos al móvil del área de hermanos (Web Push). Como el correo
  * (`correos/envio.ts`), dentro de `node --test` nunca se sale a la red: los
  * avisos se apuntan en memoria para que las pruebas los miren, y una prueba
  * puede poner su propio envío para simular un móvil que ya no existe.
@@ -11,15 +11,6 @@ export interface SuscripcionPush {
   endpoint: string;
   p256dh: string;
   auth: string;
-}
-
-/** Lo que lee el service worker del móvil: el texto del aviso y adónde lleva. */
-export interface AvisoDeEntrada {
-  tipo: 'aprobar-entrada';
-  id: string;
-  titulo: string;
-  cuerpo: string;
-  url: string;
 }
 
 /**
@@ -34,7 +25,7 @@ export interface AvisoAHermano {
   url: string;
 }
 
-export type AvisoAlMovil = AvisoDeEntrada | AvisoAHermano;
+export type AvisoAlMovil = AvisoAHermano;
 
 /**
  * `muerta`: el servicio de push dice que esa suscripción ya no existe (404 o
@@ -55,7 +46,7 @@ function claves() {
   return publica && privada && contacto ? { publica, privada, contacto } : null;
 }
 
-/** Sin las tres claves VAPID no hay avisos: se queda solo el código de la app. */
+/** Sin las tres claves VAPID no hay avisos: todo va por correo. */
 export const avisosConfigurados = (): boolean => claves() !== null;
 
 /** La clave pública: el navegador la necesita para suscribirse. */
@@ -70,10 +61,9 @@ const enviarDeVerdad: Envio = async (suscripcion, aviso) => {
       JSON.stringify(aviso),
       {
         vapidDetails: { subject: vapid.contacto, publicKey: vapid.publica, privateKey: vapid.privada },
-        // La aprobación dura dos minutos: más tarde ya no sirve. Un aviso a un
-        // hermano con el móvil apagado sí vale unos días después.
-        TTL: aviso.tipo === 'aprobar-entrada' ? 120 : 3 * 24 * 3600,
-        urgency: aviso.tipo === 'aprobar-entrada' ? 'high' : 'normal',
+        // Un aviso a un hermano con el móvil apagado vale unos días después.
+        TTL: 3 * 24 * 3600,
+        urgency: 'normal',
         timeout: 10_000,
       },
     );

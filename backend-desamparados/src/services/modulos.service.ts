@@ -2,7 +2,7 @@ import { EstadoPedido, OrigenPago, TipoPagoEnLinea } from '@prisma/client';
 import db from '../config/db.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from './auditoria.service.js';
 import { NotFoundError } from '../utils/error.handle.js';
-import { avisosConfigurados } from './aprobacion/push.js';
+import { avisosConfigurados } from './push.js';
 import {
   CATALOGO_MODULOS, CLAVES_MODULO, DE_INSTALACION_ENCENDIDOS, LOTE_INICIAL, dependientesActivos, esClaveDeModulo, fichaDe,
   requisitosQueFaltan, type ClaveDeInstalacion, type ClaveEncendible, type ClaveModulo, type FichaDeModulo,
@@ -67,7 +67,6 @@ const RECUENTOS: Record<ClaveModulo, () => Promise<RecuentoDeDatos[]>> = {
   contabilidad: async () => [],
   cabildos: async () => [{ uno: 'cabildo', que: 'cabildos', total: await db.cabildo.count() }],
   'informe-anual': async () => [{ uno: 'informe', que: 'informes', total: await db.informeAnual.count() }],
-  'avisos-en-el-movil': async () => [{ uno: 'móvil apuntado', que: 'móviles apuntados', total: await db.movilApuntado.count() }],
   'avisos-a-los-hermanos': async () => [{ uno: 'móvil con avisos', que: 'móviles con avisos', total: await db.movilDeAvisos.count() }],
 };
 
@@ -77,7 +76,6 @@ const RECUENTOS: Record<ClaveModulo, () => Promise<RecuentoDeDatos[]>> = {
  * sin claves VAPID no salen). Devuelve qué falta, o null si está todo.
  */
 const QUE_FALTA_EN_EL_SERVIDOR: Partial<Record<ClaveModulo, () => string | null>> = {
-  'avisos-en-el-movil': () => (avisosConfigurados() ? null : 'faltan las claves VAPID del servidor (VAPID_PUBLICA, VAPID_PRIVADA y VAPID_CONTACTO; se generan con npm run gen:vapid).'),
   'avisos-a-los-hermanos': () => (avisosConfigurados() ? null : 'faltan las claves VAPID del servidor (VAPID_PUBLICA, VAPID_PRIVADA y VAPID_CONTACTO; se generan con npm run gen:vapid).'),
 };
 

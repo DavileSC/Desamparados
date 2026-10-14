@@ -1,9 +1,9 @@
 /*
- * El service worker de los avisos al móvil, y nada más: los de aprobar la
- * entrada al CMS (módulo `avisos-en-el-movil`, ámbito `/cms/`) y los del área
- * de hermanos (`avisos-a-los-hermanos`, ámbito `/area-hermano/`). Cada ámbito
- * es un registro aparte con su propia suscripción. Nada de caché offline: la
- * web no es una PWA y no quiere serlo, y nunca controla la web pública.
+ * El service worker de los avisos al móvil del área de hermanos (módulo
+ * `avisos-a-los-hermanos`), y nada más. Se registra con el ámbito
+ * `/area-hermano/` al activar los avisos en «Mi perfil», así que nunca
+ * controla la web pública. Nada de caché offline: la web no es una PWA y no
+ * quiere serlo.
  *
  * Va sin pasar por Vite (está en `public/`): JavaScript del navegador tal cual.
  * nginx lo sirve con `no-cache`, para que un cambio llegue en la siguiente visita.
@@ -18,22 +18,9 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim())
 })
 
-/** Solo se abren rutas de aprobar: el aviso no puede llevar a ningún otro sitio. */
-function rutaDeAprobar(url) {
-  return typeof url === 'string' && /^\/cms\/aprobar\/[A-Za-z0-9_-]+$/.test(url) ? url : null
-}
-
-/** Un aviso a un hermano solo lleva a su área. */
+/** Un aviso solo lleva al área de hermanos: a ningún otro sitio. */
 function rutaDelArea(url) {
   return typeof url === 'string' && /^\/area-hermano(\/[A-Za-z0-9_-]+)*$/.test(url) ? url : null
-}
-
-/** Adónde puede llevar un aviso, según de quién sea. */
-function rutaDe(aviso) {
-  if (!aviso) return null
-  if (aviso.tipo === 'aprobar-entrada') return rutaDeAprobar(aviso.url)
-  if (aviso.tipo === 'aviso') return rutaDelArea(aviso.url)
-  return null
 }
 
 self.addEventListener('push', (event) => {
@@ -43,38 +30,23 @@ self.addEventListener('push', (event) => {
   } catch {
     aviso = null
   }
-  const url = rutaDe(aviso)
+  if (!aviso || aviso.tipo !== 'aviso') return
+  const url = rutaDelArea(aviso.url)
   if (!url) return
 
-  if (aviso.tipo === 'aviso') {
-    event.waitUntil(
-      self.registration.showNotification(aviso.titulo || 'Aviso', {
-        body: aviso.cuerpo || '',
-        // Uno nuevo de lo mismo (otra vuelta del mismo aviso) sustituye al anterior.
-        tag: typeof aviso.etiqueta === 'string' ? aviso.etiqueta : 'aviso',
-        data: { url },
-      }),
-    )
-    return
-  }
-
   event.waitUntil(
-    self.registration.showNotification(aviso.titulo || '¿Eres tú?', {
-      body: aviso.cuerpo || 'Entrada al CMS',
-      // Un aviso nuevo sustituye al anterior en vez de apilarse: solo vale el último.
-      tag: 'aprobar-entrada',
-      renotify: true,
-      // Caduca en dos minutos: que no se esconda solo antes de abrirlo.
-      requireInteraction: true,
-      data: { url: aviso.url },
+    self.registration.showNotification(aviso.titulo || 'Aviso', {
+      body: aviso.cuerpo || '',
+      // Uno nuevo de lo mismo (otra vuelta del mismo aviso) sustituye al anterior.
+      tag: typeof aviso.etiqueta === 'string' ? aviso.etiqueta : 'aviso',
+      data: { url },
     }),
   )
 })
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const datos = event.notification.data || {}
-  const url = rutaDeAprobar(datos.url) || rutaDelArea(datos.url)
+  const url = rutaDelArea(event.notification.data && event.notification.data.url)
   if (!url) return
 
   event.waitUntil((async () => {

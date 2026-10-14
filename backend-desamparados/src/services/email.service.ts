@@ -116,18 +116,6 @@ export class EmailService {
   }
 
   /**
-   * Se ha apuntado un móvil para aprobar la entrada al CMS. Apuntarlo pide la
-   * contraseña, pero quien tenga una sesión abierta y la contraseña podría
-   * quedarse con un segundo factor propio: este aviso es lo que se entera.
-   */
-  static async enviarMovilApuntado(emailDestino: string, nombre: string, movil: string, fecha: string, sexo?: Sexo) {
-    const { asunto, html, uso } = await PlantillasCorreoService.correo('movil_apuntado', {
-      campos: { saludo: textoDeSaludo(nombre, sexo), nombre, movil, fecha },
-    });
-    return await enviarCorreo(emailDestino, asunto, html, { uso });
-  }
-
-  /**
    * Un alta que no se ha podido tramitar porque el correo o algún DNI ya
    * figura en una cuenta o en el censo. La web contesta lo mismo que a un alta
    * normal para no revelar quién está en el censo: este correo, que solo lee

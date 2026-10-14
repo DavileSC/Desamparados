@@ -1,13 +1,11 @@
 import { Prisma, Role } from '@prisma/client';
-import db from '../../config/db';
 import { HttpError } from '../../utils/error.handle';
 import { generateToken } from '../../utils/jwt.handle';
 import { limpiarFallos2FA, pasoTotpActual } from './codigos-2fa.js';
 
 /**
  * El final del acceso al CMS, sea cual sea el segundo factor: el código de la
- * app, un código de respaldo, la aprobación desde un móvil apuntado o entrar
- * desde ese mismo móvil. Vive aparte para que los cuatro caminos gasten el
+ * app o un código de respaldo. Vive aparte para que los caminos gasten el
  * testigo del primer factor y emitan la sesión exactamente igual: un camino
  * que se saltara una comprobación sería la puerta trasera de los demás.
  */
@@ -67,7 +65,7 @@ export function comprobarTestigo(
 }
 
 /**
- * Gasta el testigo sin gastar un intervalo TOTP (un respaldo, una aprobación):
+ * Gasta el testigo sin gastar un intervalo TOTP (un código de respaldo):
  * avanza `twoFactorLastStep` a mano, condicionado al valor leído. Si no, el
  * testigo seguiría vivo y admitiría otro segundo factor. Devuelve si ganó.
  */
@@ -82,18 +80,9 @@ export async function avanzarPasoDelTestigo(
   return count === 1;
 }
 
-/**
- * Lo que se hace al pasar el segundo factor por cualquier camino: limpiar los
- * fallos y anular las aprobaciones que quedaran esperando. El testigo al que
- * estaban atadas ya no vale, y un móvil que aprobara después enseñaría
- * «Entrada aprobada» para una entrada que no va a ocurrir.
- */
+/** Lo que se hace al pasar el segundo factor por cualquier camino: limpiar los fallos. */
 export async function alPasarSegundoFactor(userId: number): Promise<void> {
   limpiarFallos2FA(userId);
-  await db.aprobacionEntrada.updateMany({
-    where: { userId, estado: { in: ['PENDIENTE', 'APROBADA'] } },
-    data: { estado: 'CADUCADA' },
-  });
 }
 
 /** Lo que la sesión necesita de la cuenta, venga de la consulta que venga. */
@@ -125,30 +114,4 @@ export function sesionDe(
       ...extra,
     },
   };
-}
-
-/**
- * El segundo factor sin código: una aprobación desde el móvil o entrar desde
- * el móvil apuntado. `gastar` es lo propio de cada camino (marcar usada la
- * aprobación, apuntar el uso del móvil) y va en la misma transacción que el
- * testigo: si cualquiera de los dos pierde, no se gasta nada.
- */
-export async function pasarSinCodigo(
-  userId: number,
-  recordarme: boolean,
-  origen: 'cms' | 'hermanos',
-  testigo: DatosDelTestigo,
-  gastar: (tx: Prisma.TransactionClient) => Promise<boolean>,
-) {
-  const user = await db.user.findUnique({ where: { id: userId }, include: { hermanos: PERFILES_DE_LA_SESION } });
-  if (!user || !user.twoFactorEnabled) throw new Testigo2FACaducadoError();
-  comprobarTestigo(user, testigo);
-
-  await db.$transaction(async (tx) => {
-    if (!(await avanzarPasoDelTestigo(tx, user))) throw new Testigo2FACaducadoError();
-    if (!(await gastar(tx))) throw new Testigo2FACaducadoError();
-  });
-
-  await alPasarSegundoFactor(user.id);
-  return sesionDe(user, recordarme, origen);
 }

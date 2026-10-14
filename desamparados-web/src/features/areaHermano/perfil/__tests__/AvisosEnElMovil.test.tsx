@@ -8,8 +8,8 @@ const tactil = vi.hoisted(() => ({ valor: false }))
 const suscribir = vi.hoisted(() => vi.fn())
 const darDeBaja = vi.hoisted(() => vi.fn())
 
-vi.mock('../../../../lib/movilApuntado', async (original) => ({
-  ...(await original<typeof import('../../../../lib/movilApuntado')>()),
+vi.mock('../../../../lib/avisosDelNavegador', async (original) => ({
+  ...(await original<typeof import('../../../../lib/avisosDelNavegador')>()),
   admiteAvisos: () => true,
   esIphone: () => false,
   esPantallaTactil: () => tactil.valor,

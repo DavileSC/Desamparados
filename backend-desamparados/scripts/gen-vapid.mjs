@@ -1,4 +1,4 @@
-// Las claves VAPID para los avisos al móvil (aprobar la entrada al CMS). Se
+// Las claves VAPID para los avisos al móvil del área de hermanos. Se
 // pegan en el .env tal cual; VAPID_CONTACTO se rellena a mano.
 import webpush from 'web-push';
 

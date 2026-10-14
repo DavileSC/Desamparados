@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import db from '../config/db.js';
 import { HttpError, NotFoundError } from '../utils/error.handle.js';
 import { ModulosService } from './modulos.service.js';
-import { avisosConfigurados, clavePublicaVapid, enviarAviso, type AvisoAHermano, type SuscripcionPush } from './aprobacion/push.js';
+import { avisosConfigurados, clavePublicaVapid, enviarAviso, type AvisoAHermano, type SuscripcionPush } from './push.js';
 import { extractoPlano } from '../utils/sanear-html.js';
 
 /**
@@ -10,8 +10,8 @@ import { extractoPlano } from '../utils/sanear-html.js';
  * avisos de la Junta llegan al móvil en vez de por correo, que con un servicio
  * de envío gratis tiene tope diario (traspaso-2026-10-14 §5).
  *
- * No pide contraseña ni guarda clave del dispositivo, a diferencia de los
- * móviles del CMS: aquí el móvil solo recibe, no aprueba nada.
+ * No pide contraseña ni guarda clave del dispositivo: el móvil solo recibe,
+ * no prueba nada de quien lo lleva.
  */
 
 const sha256 = (texto: string) => crypto.createHash('sha256').update(texto).digest('hex');

@@ -291,6 +291,14 @@ sudo nginx -t && sudo systemctl reload nginx
 dominio principal, y lo renueva con el mismo temporizador. El sitio de
 mantenimiento no se toca.
 
+**Al volver a copiar el fichero** (un cambio en `nginx-pruebas.conf`, como el
+`sw.js` sin contraseña), el bloque https que añadió certbot se pierde: el
+fichero del repositorio es solo http, y nginx pasa a dar el certificado del
+dominio principal (`ERR_CERT_COMMON_NAME_INVALID`). Después de cada copia,
+`sudo certbot --nginx -d pruebas.desamparadosmalaga.com` y «reinstall this
+existing certificate»; luego `sudo nginx -t && sudo systemctl reload nginx`.
+(Pasó el 14-10-2026.)
+
 ### 8. El primer despliegue
 
 En GitHub, pestaña Actions → «Desplegar en el servidor» → Run workflow, sobre

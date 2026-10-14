@@ -28,8 +28,6 @@ import {
   PERFILES_DE_LA_SESION, Testigo2FACaducadoError, alPasarSegundoFactor, avanzarPasoDelTestigo, comprobarTestigo, sesionDe,
   type DatosDelTestigo,
 } from './auth/sesion-2fa.js';
-import { AprobacionEntradaService } from './aprobacion/aprobacion-entrada.service.js';
-import { describirNavegador } from '../domain/aprobacion-entrada.js';
 import { fechaYHoraParaCorreo } from '../domain/fecha-y-hora.js';
 // -------------------------------
 
@@ -154,7 +152,7 @@ export class AuthService {
   // decía qué correos están registrados. Mismas rondas que `encrypt`.
   private static readonly hashSenuelo: Promise<string> = encrypt(crypto.randomBytes(16).toString('hex'));
 
-  static async loginUser({ email, password, recordarme, contexto, dispositivo }: LoginDto, ip = 'desconocida', userAgent?: string) {
+  static async loginUser({ email, password, recordarme, contexto }: LoginDto, ip = 'desconocida') {
     const emailNorm = email.trim().toLowerCase();
 
     // Con el área de hermanos apagada no se reparten sesiones de hermano a
@@ -212,22 +210,10 @@ export class AuthService {
       // una cookie: no debe salir nunca en el cuerpo de la respuesta.
       // Lleva el último intervalo TOTP aceptado: en cuanto se acepte otro
       // segundo factor, este testigo deja de valer (un solo uso).
-      const pendingToken = generatePending2FAToken(user.id, recordarme === true, origen, user.twoFactorLastStep);
-      // Con móviles apuntados, además, el aviso para aprobar desde ellos. Si
-      // eso falla, se entra con el código de la app: el aviso es una comodidad
-      // y no puede dejar a nadie fuera del CMS.
-      const movil = await AprobacionEntradaService.pedirAlEntrar(user.id, pendingToken, { dispositivo, desde: describirNavegador(userAgent) })
-        .catch((error): Awaited<ReturnType<typeof AprobacionEntradaService.pedirAlEntrar>> => {
-          console.error('[Avisos] No se pudo pedir la aprobación en el móvil:', error);
-          return {};
-        });
       return {
         status: '2FA_NEEDED' as const,
-        pendingToken,
-        message: movil.aprobacion
-          ? 'Aprueba la entrada en tu móvil o escribe el código de tu aplicación de autenticación.'
-          : 'Introduce el código de tu aplicación de autenticación.',
-        ...movil,
+        pendingToken: generatePending2FAToken(user.id, recordarme === true, origen, user.twoFactorLastStep),
+        message: 'Introduce el código de tu aplicación de autenticación.',
       };
     }
 
@@ -334,7 +320,7 @@ export class AuthService {
       });
     }
 
-    // Login correcto: fuera los fallos y las aprobaciones que esperaban al móvil
+    // Login correcto: fuera los fallos
     await alPasarSegundoFactor(userId);
 
     return sesionDe(user, recordarme, origen, backupCodesRemaining !== undefined ? { backupCodesRemaining } : {});

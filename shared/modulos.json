@@ -51,7 +51,6 @@
     { "clave": "contabilidad", "nombre": "Contabilidad", "grupo": "Cuentas", "descripcion": "Las pantallas del libro de apuntes y la partida doble; los apuntes se registran siempre, esté o no encendida.", "requiere": [] },
     { "clave": "cabildos", "nombre": "Cabildos y actas", "grupo": "Junta", "descripcion": "Convocatorias, asistencia, votaciones y el libro de actas.", "requiere": [] },
     { "clave": "informe-anual", "nombre": "Informe anual", "grupo": "Junta", "descripcion": "La memoria del curso en PDF, con sus textos a mano.", "requiere": [] },
-    { "clave": "avisos-en-el-movil", "nombre": "Aprobar la entrada desde el móvil", "grupo": "Sistema", "descripcion": "Entrar en el CMS aprobando un aviso en el móvil, sin teclear el código de la app (que sigue de reserva). Necesita las claves VAPID en el servidor.", "requiere": [] },
     { "clave": "avisos-a-los-hermanos", "nombre": "Avisos en el móvil para los hermanos", "grupo": "Web", "descripcion": "Que los hermanos reciban en el móvil, en vez de por correo, la apertura de papeletas y los avisos de la Junta. Necesita las claves VAPID en el servidor.", "requiere": ["area-hermanos"] }
   ],
   "deInstalacion": [

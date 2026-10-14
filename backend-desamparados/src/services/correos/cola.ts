@@ -14,7 +14,7 @@ import { EstadoComunicado, EstadoEnvio, TipoComunicado } from '@prisma/client';
 import db from '../../config/db';
 import { diaMadridComoIntervalo } from '../../domain/contabilidad.js';
 import { AvisosHermanosService } from '../avisos-hermanos.service.js';
-import type { AvisoAHermano } from '../aprobacion/push.js';
+import type { AvisoAHermano } from '../push.js';
 import { enviarCorreo } from './envio.js';
 
 /**

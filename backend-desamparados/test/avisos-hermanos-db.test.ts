@@ -13,7 +13,7 @@ import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_HERMANO } from '../src/utils/cookies.js';
-import { avisosDePrueba, fijarEnvioDePrueba } from '../src/services/aprobacion/push.js';
+import { avisosDePrueba, fijarEnvioDePrueba } from '../src/services/push.js';
 import { ComunicadosService, envioTerminado } from '../src/services/comunicados.service.js';
 import { colaTerminada, despertarCola, enviadosHoy, resumenDeEnvios } from '../src/services/correos/cola.js';
 import { ponerTransporte } from '../src/services/correos/envio.js';

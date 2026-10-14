@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useModulos } from '../../../hooks/useModulos'
 import { activarAvisos, misMovilesDeAvisos, quitarMovilDeAvisos } from '../../../lib/api/avisos'
-import { admiteAvisos, darDeBajaEsteNavegador, enPantallaDeInicio, esIphone, nombreDelDispositivo, suscribirEsteNavegador } from '../../../lib/movilApuntado'
+import { admiteAvisos, darDeBajaEsteNavegador, enPantallaDeInicio, esIphone, nombreDelDispositivo, suscribirEsteNavegador } from '../../../lib/avisosDelNavegador'
 
 /**
  * El estado de los avisos al móvil del área y cómo activarlos o quitarlos. Lo
