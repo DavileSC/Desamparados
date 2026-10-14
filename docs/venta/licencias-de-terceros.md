@@ -313,9 +313,9 @@ MIT (239), ISC (24), Apache-2.0 (12), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X1
 | yargs-parser | 18.1.3 | ISC |
 | zip-stream | 4.1.1 | MIT |
 
-## La web: 190 paquetes
+## La web: 219 paquetes
 
-MIT (164), ISC (10), BSD-3-Clause (6), OFL-1.1 (3), BSD-2-Clause (2), Apache-2.0 (2), (MIT OR Apache-2.0) (1), (MPL-2.0 OR Apache-2.0) (1), 0BSD (1)
+MIT (186), ISC (17), BSD-3-Clause (6), OFL-1.1 (3), BSD-2-Clause (2), Apache-2.0 (2), (MIT OR Apache-2.0) (1), (MPL-2.0 OR Apache-2.0) (1), 0BSD (1)
 
 **A mirar:** @fontsource-variable/exo-2 5.3.0 (OFL-1.1); @fontsource-variable/saira 5.3.0 (OFL-1.1); @fontsource/cormorant-garamond 5.3.0 (OFL-1.1); dompurify 3.4.16 ((MPL-2.0 OR Apache-2.0)).
 
@@ -416,25 +416,36 @@ MIT (164), ISC (10), BSD-3-Clause (6), OFL-1.1 (3), BSD-2-Clause (2), Apache-2.0
 | @types/react-transition-group | 4.4.12 | MIT |
 | @types/trusted-types | 2.0.7 | MIT |
 | @types/use-sync-external-store | 0.0.6 | MIT |
+| ansi-regex | 5.0.1 | MIT |
+| ansi-styles | 4.3.0 | MIT |
 | babel-plugin-macros | 3.1.0 | MIT |
 | bidi-js | 1.1.0 | MIT |
 | callsites | 3.1.0 | MIT |
+| camelcase | 5.3.1 | MIT |
+| cliui | 6.0.0 | ISC |
 | clsx | 2.1.1 | MIT |
+| color-convert | 2.0.1 | MIT |
+| color-name | 1.1.4 | MIT |
 | convert-source-map | 1.9.0 | MIT |
 | cookie | 1.1.1 | MIT |
 | cosmiconfig | 7.1.0 | MIT |
 | csstype | 3.2.3 | MIT |
 | debug | 4.4.3 | MIT |
+| decamelize | 1.2.0 | MIT |
+| dijkstrajs | 1.0.3 | MIT |
 | dom-helpers | 5.2.1 | MIT |
 | dompurify | 3.4.16 | (MPL-2.0 OR Apache-2.0) |
 | earcut | 3.2.3 | ISC |
+| emoji-regex | 8.0.0 | MIT |
 | error-ex | 1.3.4 | MIT |
 | es-errors | 1.3.0 | MIT |
 | escape-string-regexp | 4.0.0 | MIT |
 | fast-equals | 5.4.2 | MIT |
 | find-root | 1.1.0 | MIT |
+| find-up | 4.1.0 | MIT |
 | framer-motion | 13.1.1 | MIT |
 | function-bind | 1.1.2 | MIT |
+| get-caller-file | 2.0.5 | ISC |
 | gl-matrix | 3.4.4 | MIT |
 | hasown | 2.0.4 | MIT |
 | hoist-non-react-statics | 3.3.2 | BSD-3-Clause |
@@ -442,6 +453,7 @@ MIT (164), ISC (10), BSD-3-Clause (6), OFL-1.1 (3), BSD-2-Clause (2), Apache-2.0
 | invariant | 2.2.4 | MIT |
 | is-arrayish | 0.2.1 | MIT |
 | is-core-module | 2.16.2 | MIT |
+| is-fullwidth-code-point | 3.0.0 | MIT |
 | js-tokens | 4.0.0 | MIT |
 | jsesc | 3.1.0 | MIT |
 | json-parse-even-better-errors | 2.3.1 | MIT |
@@ -450,6 +462,7 @@ MIT (164), ISC (10), BSD-3-Clause (6), OFL-1.1 (3), BSD-2-Clause (2), Apache-2.0
 | kdbush | 4.1.0 | ISC |
 | lines-and-columns | 1.2.4 | MIT |
 | linkifyjs | 4.3.3 | MIT |
+| locate-path | 5.0.0 | MIT |
 | loose-envify | 1.4.0 | MIT |
 | maplibre-gl | 6.11.2 | BSD-3-Clause |
 | minimist | 1.2.8 | MIT |
@@ -459,12 +472,17 @@ MIT (164), ISC (10), BSD-3-Clause (6), OFL-1.1 (3), BSD-2-Clause (2), Apache-2.0
 | murmurhash-js | 1.0.0 | MIT |
 | object-assign | 4.1.1 | MIT |
 | orderedmap | 2.1.1 | MIT |
+| p-limit | 2.3.0 | MIT |
+| p-locate | 4.1.0 | MIT |
+| p-try | 2.2.0 | MIT |
 | parent-module | 1.0.1 | MIT |
 | parse-json | 5.2.0 | MIT |
+| path-exists | 4.0.0 | MIT |
 | path-parse | 1.0.7 | MIT |
 | path-type | 4.0.0 | MIT |
 | pbf | 5.1.2 | BSD-3-Clause |
 | picocolors | 1.1.1 | ISC |
+| pngjs | 5.0.0 | MIT |
 | potpack | 2.1.0 | ISC |
 | prop-types | 15.8.1 | MIT |
 | prosemirror-changeset | 2.4.2 | MIT |
@@ -481,6 +499,7 @@ MIT (164), ISC (10), BSD-3-Clause (6), OFL-1.1 (3), BSD-2-Clause (2), Apache-2.0
 | prosemirror-transform | 1.12.1 | MIT |
 | prosemirror-view | 1.42.3 | MIT |
 | protocol-buffers-schema | 3.6.1 | MIT |
+| qrcode | 1.5.4 | MIT |
 | quickselect | 3.0.0 | ISC |
 | react | 19.2.8 | MIT |
 | react-dom | 19.2.8 | MIT |
@@ -493,21 +512,31 @@ MIT (164), ISC (10), BSD-3-Clause (6), OFL-1.1 (3), BSD-2-Clause (2), Apache-2.0
 | react-router | 7.18.2 | MIT |
 | react-router-dom | 7.18.2 | MIT |
 | react-transition-group | 4.4.5 | BSD-3-Clause |
+| require-directory | 2.1.1 | MIT |
 | require-from-string | 2.0.2 | MIT |
+| require-main-filename | 2.0.0 | ISC |
 | resolve | 1.22.12 | MIT |
 | resolve-from | 4.0.0 | MIT |
 | resolve-protobuf-schema | 2.1.0 | MIT |
 | rope-sequence | 1.3.4 | MIT |
 | scheduler | 0.27.0 | MIT |
+| set-blocking | 2.0.0 | ISC |
 | set-cookie-parser | 2.7.2 | MIT |
 | shallowequal | 1.1.0 | MIT |
 | source-map | 0.5.7 | BSD-3-Clause |
+| string-width | 4.2.3 | MIT |
+| strip-ansi | 6.0.1 | MIT |
 | stylis | 4.2.0 | MIT |
 | supports-preserve-symlinks-flag | 1.0.0 | MIT |
 | tinyqueue | 3.0.0 | ISC |
 | tslib | 2.8.1 | 0BSD |
 | use-sync-external-store | 1.7.0 | MIT |
 | w3c-keyname | 2.2.8 | MIT |
+| which-module | 2.0.1 | ISC |
+| wrap-ansi | 6.2.0 | MIT |
+| y18n | 4.0.3 | ISC |
 | yaml | 1.10.3 | ISC |
+| yargs | 15.4.1 | MIT |
+| yargs-parser | 18.1.3 | ISC |
 | zod | 4.4.3 | MIT |
 | zustand | 5.0.15 | MIT |

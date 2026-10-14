@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider, type RouteObject } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { crearQueryClientDePruebas } from '../../test/queryClient'
 import ExigeSesion from '../ExigeSesion'
 import ExigeRol from '../ExigeRol'
 import { useAuthStore } from '../../features/altas/auth/store'
@@ -26,8 +28,13 @@ function montarRuta(elemento: React.ReactElement, { ruta }: { ruta: string }) {
     { path: '/area-hermano', element: <p>área de hermanos</p> },
   ]
   const router = createMemoryRouter(rutas, { initialEntries: [ruta] })
-  // Con Helmet: la pantalla de activar el doble factor pone su título.
-  return render(<HelmetProvider><RouterProvider router={router} /></HelmetProvider>)
+  // Con Helmet y React Query: la pantalla de activar el doble factor pone su
+  // título y mira los módulos (el paso de los avisos en el móvil).
+  return render(
+    <QueryClientProvider client={crearQueryClientDePruebas()}>
+      <HelmetProvider><RouterProvider router={router} /></HelmetProvider>
+    </QueryClientProvider>,
+  )
 }
 
 describe('los guardas de ruta', () => {

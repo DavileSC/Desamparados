@@ -131,10 +131,18 @@ export default function AvisosEnElMovil() {
   )
 }
 
-/** Lo de debajo de la lista, según desde dónde se mira. */
-function ApuntarAqui({ clavePublica, alApuntar }: { clavePublica: string | null; alApuntar: (dispositivo: number) => void }) {
+/**
+ * Apuntar este navegador, según desde dónde se mira. También lo usa la
+ * activación del doble factor, que en el ordenador enseña un QR en vez de la
+ * nota (`enOrdenador`).
+ */
+export function ApuntarAqui({ clavePublica, alApuntar, enOrdenador }: {
+  clavePublica: string | null
+  alApuntar: (dispositivo: number) => void
+  enOrdenador?: React.ReactNode
+}) {
   if (!esPantallaTactil()) {
-    return (
+    return enOrdenador ?? (
       <Nota>Para apuntar un móvil, entra en «Mi seguridad» desde ese móvil y pulsa «Avisarme en este móvil».</Nota>
     )
   }

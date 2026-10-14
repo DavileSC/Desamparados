@@ -7,6 +7,8 @@ import { cerrarSesion } from './session'
 import { sesionActual, activar2FA, generarQr2FA } from '../../../lib/api/auth'
 import { ErrorDeApi } from '../../../lib/api/cliente'
 import { site } from '../../../config/site'
+import { useModulos } from '../../../hooks/useModulos'
+import PasoAvisosEnElMovil from './PasoAvisosEnElMovil'
 
 // Como en AccesoCmsPage: el tema se crea una vez, no en cada render.
 const TEMA = crearTemaCms('claro')
@@ -23,16 +25,21 @@ function mensajeDe(e: unknown, porDefecto: string) {
  * bastaba para administrar. El servidor ya rechaza todo lo demás
  * (FALTA_DOBLE_FACTOR); esta pantalla es la forma de salir de ahí.
  *
- * La sesión no se refresca al activarlo sino al pulsar «Los he guardado»: en
+ * La sesión no se refresca al activarlo sino al salir del último paso: en
  * cuanto el store sabe que está activo, `ExigeRol` cambia esta pantalla por el
  * CMS, y los códigos de respaldo, que solo se enseñan una vez, se perderían.
+ * Con los avisos en el móvil encendidos, después de los respaldos se ofrece
+ * apuntar el móvil (`PasoAvisosEnElMovil`), para dejarlo todo hecho de una vez.
  */
 export default function ActivarDobleFactor() {
   const cms = useAuthStore((state) => state.cms)
   const entrarSesion = useAuthStore((state) => state.entrarSesion)
+  const { activo } = useModulos()
 
   const [qr, setQr] = useState<{ qrCodeUrl: string; secret: string } | null>(null)
   const [respaldos, setRespaldos] = useState<string[] | null>(null)
+  // Tras guardar los respaldos, con el módulo encendido: apuntar el móvil.
+  const [pasoAvisos, setPasoAvisos] = useState(false)
   const [codigo, setCodigo] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
@@ -111,7 +118,9 @@ export default function ActivarDobleFactor() {
           <Stack spacing={2.5}>
             {error && <Alert severity="error" role="alert">{error}</Alert>}
 
-            {respaldos ? (
+            {pasoAvisos ? (
+              <PasoAvisosEnElMovil ocupado={ocupado} alSeguir={() => { void continuar() }} />
+            ) : respaldos ? (
               <>
                 <Alert severity="warning">
                   Guarda ahora estos códigos de respaldo (en papel o en un gestor de contraseñas).
@@ -123,7 +132,12 @@ export default function ActivarDobleFactor() {
                 >
                   {respaldos.map((c) => <Box component="li" key={c} sx={{ mb: 0.5 }}>{c}</Box>)}
                 </Box>
-                <Button variant="contained" disabled={ocupado} onClick={() => { void continuar() }} sx={{ alignSelf: 'flex-start' }}>
+                <Button
+                  variant="contained"
+                  disabled={ocupado}
+                  onClick={() => { if (activo('avisos-en-el-movil')) setPasoAvisos(true); else void continuar() }}
+                  sx={{ alignSelf: 'flex-start' }}
+                >
                   Los he guardado
                 </Button>
               </>
