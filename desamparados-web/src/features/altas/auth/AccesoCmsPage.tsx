@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { Box, GlobalStyles, Paper, ThemeProvider, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
@@ -25,8 +24,6 @@ export default function AccesoCmsPage() {
   const location = useLocation()
   const cms = useAuthStore((state) => state.cms)
   const entrarSesion = useAuthStore((state) => state.entrarSesion)
-  // La espera del móvil lleva el número y los pasos lado a lado (maqueta 1B).
-  const [ancha, setAncha] = useState(false)
 
   const from = (location.state as { from?: { pathname?: string } })?.from?.pathname || '/cms'
 
@@ -56,7 +53,7 @@ export default function AccesoCmsPage() {
           p: 2,
         }}
       >
-        <Paper sx={{ p: { xs: 3, md: 5 }, maxWidth: ancha ? 760 : 440, width: '100%' }}>
+        <Paper sx={{ p: { xs: 3, md: 5 }, maxWidth: 440, width: '100%' }}>
           <Typography
             variant="h3"
             component="h1"
@@ -67,7 +64,6 @@ export default function AccesoCmsPage() {
 
           <FormularioAccesoCms
             subtitulo={`Área reservada al equipo ${deLaCorporacion()}.`}
-            alCambiarDeAncho={setAncha}
             alEntrar={(user) => {
               entrarSesion('cms', user)
               navigate(from, { replace: true })

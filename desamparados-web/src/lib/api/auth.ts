@@ -1,7 +1,6 @@
 import { llamarApi, traerArchivo } from './cliente'
 import type { AuthUser } from '../../features/altas/auth/store'
 import { normalizarDni, normalizarIban, normalizarTelefono } from '../validacion/identidad'
-import type { DobleFactorPendiente } from './aprobacion'
 
 /**
  * Respuesta de POST /auth/login y POST /auth/login/2fa.
@@ -10,23 +9,18 @@ import type { DobleFactorPendiente } from './aprobacion'
  */
 export type LoginResponse =
   | { status: 'OK'; user: AuthUser }
-  | DobleFactorPendiente
+  | { status: '2FA_NEEDED'; message: string }
 
-/**
- * `dispositivo`: si este navegador es un móvil apuntado para aprobar la
- * entrada, su número; así no se le manda el aviso a sí mismo.
- */
 export function login(
   email: string,
   password: string,
   recordarme = false,
-  contexto: 'cms' | 'hermanos' = 'cms',
-  dispositivo?: number
+  contexto: 'cms' | 'hermanos' = 'cms'
 ) {
   return llamarApi<LoginResponse>('/auth/login', {
     method: 'POST',
     auth: false,
-    json: { email, password, recordarme, contexto, ...(dispositivo !== undefined ? { dispositivo } : {}) },
+    json: { email, password, recordarme, contexto },
   })
 }
 

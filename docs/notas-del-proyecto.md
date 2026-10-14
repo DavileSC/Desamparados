@@ -620,16 +620,6 @@ Una página de `paginas-publicas.json` con `modulo` apagado responde 404
 historial) y no recoge donativos; un enlace ya guardado a ella se sigue
 aceptando al guardar (lleva a «no encontrado», como una noticia borrada).
 
-**Un módulo puede necesitar algo del servidor, no solo otros módulos.**
-«Aprobar la entrada desde el móvil» (`avisos-en-el-movil`) no se enciende
-sin las tres claves VAPID del `.env`: lo dice `QUE_FALTA_EN_EL_SERVIDOR` de
-`modulos.service.ts`, que `cambiar` mira antes que los requisitos. Las
-pruebas lo encienden directo en la tabla (`encenderModulos`) y ponen unas
-claves de verdad en `process.env` (`web-push` las genera sin red). Los avisos
-nunca salen a la red dentro de `node --test`, igual que el correo: se apuntan
-en `avisosDePrueba` (`services/aprobacion/push.ts`), y `fijarEnvioDePrueba`
-simula un móvil muerto.
-
 **El estado vive en memoria en el backend, un proceso por servidor.** Se
 carga la primera vez que algo pregunta y se recarga solo al cambiarlo desde
 el CMS. En las pruebas, apagar un módulo escribiendo en la tabla `Modulo` no

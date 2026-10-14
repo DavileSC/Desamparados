@@ -25,12 +25,7 @@ import {
   deleteAccountSchema,
   cambiarContrasenaSchema,
   requestPasswordResetSchema,
-  logoutSchema,
-  apuntarMovilSchema,
-  quitarMovilSchema,
-  movilAprobacionSchema,
-  aprobarEntradaSchema,
-  entrarDesdeEsteMovilSchema
+  logoutSchema
 } from '../schemas/auth.schema';
 
 const authRoutes = Router();
@@ -84,21 +79,6 @@ authRoutes.post('/login', limitadorEntrada, validate(loginSchema), AuthControlle
 // Validación 2FA (objetivo clásico de fuerza bruta de códigos de 6 dígitos)
 authRoutes.post('/login/2fa', limitadorEntrada, validate(verify2FASchema), AuthController.loginVerify2FA);
 
-// El segundo factor sin código (módulo «Aprobar la entrada desde el móvil»).
-// Las dos, con el testigo del primer factor en su cookie, como /login/2fa. El
-// ordenador pregunta cada pocos segundos: POST y no GET porque, aprobada,
-// gasta el testigo y abre la sesión. Mientras espera responde 200, así que el
-// limitador de la entrada (que solo cuenta los fallos) no lo frena.
-authRoutes.post('/login/aprobacion', conModulo('avisos-en-el-movil'), limitadorEntrada, AuthController.esperarAprobacion);
-authRoutes.post('/login/este-movil', conModulo('avisos-en-el-movil'), limitadorEntrada, validate(entrarDesdeEsteMovilSchema), AuthController.entrarDesdeEsteMovil);
-
-// Lo que hace el móvil al abrir el aviso: ver los tres números, elegir uno o
-// decir «No he sido yo». Sin sesión: lo que prueba que es ese móvil es su
-// clave, en el cuerpo (nunca en la URL, que acaba en los registros).
-authRoutes.post('/aprobacion/:id', conModulo('avisos-en-el-movil'), limitadorEntrada, validate(movilAprobacionSchema), AuthController.verAprobacion);
-authRoutes.post('/aprobacion/:id/aprobar', conModulo('avisos-en-el-movil'), limitadorEntrada, validate(aprobarEntradaSchema), AuthController.aprobarEntrada);
-authRoutes.post('/aprobacion/:id/rechazar', conModulo('avisos-en-el-movil'), limitadorEntrada, validate(movilAprobacionSchema), AuthController.rechazarEntrada);
-
 // Cierre de sesion: sin autenticar, para que una sesion caducada pueda limpiarse.
 authRoutes.post('/logout', validate(logoutSchema), AuthController.logout);
 
@@ -132,13 +112,6 @@ authRoutes.post('/2fa/enable', authenticateToken, checkRole(rolesStaffCMS, { sin
 // entraba por el área de hermanos (que no pide 2FA) y desde esa sesión se
 // probaban códigos contra esta ruta. checkRole exige además origen 'cms'.
 authRoutes.post('/2fa/disable', authenticateToken, checkRole(rolesStaffCMS), validate(disable2FASchema), AuthController.setup2FADisable);
-
-// Los móviles apuntados para aprobar la entrada, desde «Mi seguridad». Con la
-// sesión del CMS y su doble factor: apuntar uno es añadir un segundo factor.
-// Apuntar pide además la contraseña (con el limitador de la entrada).
-authRoutes.get('/moviles', authenticateToken, checkRole(rolesStaffCMS), conModulo('avisos-en-el-movil'), AuthController.listarMoviles);
-authRoutes.post('/movil', authenticateToken, checkRole(rolesStaffCMS), conModulo('avisos-en-el-movil'), limitadorEntrada, validate(apuntarMovilSchema), AuthController.apuntarMovil);
-authRoutes.delete('/movil/:id', authenticateToken, checkRole(rolesStaffCMS), conModulo('avisos-en-el-movil'), validate(quitarMovilSchema), AuthController.quitarMovil);
 
 // Cambiar la contraseña con la sesión abierta (área de hermanos o CMS: es la
 // misma cuenta). Con el limitador de la entrada, que solo cuenta los fallos,

@@ -13,77 +13,6 @@ import { duracionSesionSegundos, verifyToken } from '../utils/jwt.handle';
 import type { AuthTokenPayload } from '../utils/jwt.handle';
 import { resolverSesiones } from '../middleware/session';
 import { manejar } from '../utils/manejar';
-import { AprobacionEntradaService } from '../services/aprobacion/aprobacion-entrada.service';
-
-/** El testigo del primer factor, leído de su cookie, con lo que el segundo paso necesita. */
-interface TestigoLeido {
-  cookie: string;
-  id: number;
-  recordarme: boolean;
-  origen: 'cms' | 'hermanos';
-  paso2fa?: number | null;
-  emitidoMs?: number;
-}
-
-/**
- * El usuario del segundo paso sale del testigo del primer factor, nunca del
- * cuerpo: así el segundo factor queda vinculado a haber superado la
- * contraseña. Sin testigo válido responde 401 y devuelve null.
- */
-function leerTestigo(req: Request, res: Response): TestigoLeido | null {
-  const cookie: string | undefined = req.cookies?.[COOKIE_2FA];
-  const payload = cookie ? verifyToken(cookie, '2fa_pending') : null;
-
-  // Solo la cookie del 2FA: la de sesión puede ser una del área de hermanos
-  // perfectamente válida, y borrarla dejaba al frontend creyéndose con
-  // sesión mientras el navegador ya no la tenía.
-  if (!cookie || !payload) {
-    limpiarCookie2FA(res);
-    res.status(401).json({
-      error: 'PENDING_2FA_REQUIRED',
-      message: 'La verificación ha caducado. Vuelve a introducir tu email y contraseña.'
-    });
-    return null;
-  }
-  return {
-    cookie,
-    id: payload.id,
-    // El "recordarme" y el origen del primer factor viajan dentro del testigo:
-    // así el segundo paso no puede inventárselos.
-    recordarme: payload.rem === true,
-    // Sin el claim no es CMS: la gracia de migración ya no tiene a quién proteger.
-    origen: payload.origen === 'cms' ? 'cms' : 'hermanos',
-    paso2fa: payload.paso2fa,
-    emitidoMs: payload.emitidoMs,
-  };
-}
-
-/**
- * El segundo factor pasado, por el camino que sea: fuera el testigo y la
- * cookie de sesión de su área. El área sale del testigo del primer factor,
- * nunca del cuerpo: si no, el segundo paso podría inventarse un origen 'cms'
- * sin haber pasado por el acceso del CMS.
- */
-function entregarSesion(
-  res: Response,
-  testigo: TestigoLeido,
-  sesion: { token: string; user: { role: string } },
-  extra: Record<string, unknown> = {},
-) {
-  limpiarCookie2FA(res);
-  ponerCookieSesion(res, testigo.origen, sesion.token, sesion.user.role, testigo.recordarme);
-  res.status(200).json({ ...extra, status: 'OK', user: sesion.user });
-}
-
-function fallarSegundoFactor(res: Response, error: unknown, mensaje: string) {
-  // Testigo ya gastado: fuera su cookie (solo esa) y el mismo código que
-  // cuando falta, para que el frontend vuelva a la contraseña.
-  if (error instanceof Testigo2FACaducadoError) {
-    limpiarCookie2FA(res);
-    return res.status(401).json({ error: error.codigo, message: error.message });
-  }
-  handleHttp(res, error, mensaje);
-}
 
 export class AuthController {
 
@@ -142,14 +71,12 @@ export class AuthController {
       const contexto = body.contexto === 'hermanos' ? 'hermanos' : 'cms';
       // La IP entra en el bloqueo por fallos: cinco intentos desde un sitio no
       // deben dejar a la cuenta fuera en todos los demás.
-      const response = await AuthService.loginUser({ ...body, recordarme, contexto }, req.ip ?? 'desconocida', req.headers['user-agent']);
+      const response = await AuthService.loginUser({ ...body, recordarme, contexto }, req.ip ?? 'desconocida');
 
       // Con 2FA activo no hay sesion todavia: solo el testigo del primer factor.
-      // Y, con móviles apuntados, el número que cuadrar con el que les llega.
       if (response.status === '2FA_NEEDED') {
-        const { pendingToken, ...respuesta } = response;
-        ponerCookie2FA(res, pendingToken);
-        return res.status(200).json(respuesta);
+        ponerCookie2FA(res, response.pendingToken);
+        return res.status(200).json({ status: '2FA_NEEDED', message: response.message });
       }
 
       // El token va en la cookie httpOnly, nunca en el cuerpo.
@@ -175,87 +102,51 @@ export class AuthController {
 
   static async loginVerify2FA(req: Request, res: Response) {
     try {
-      const testigo = leerTestigo(req, res);
-      if (!testigo) return;
+      // El usuario sale del testigo del primer factor, nunca del cuerpo: asi el
+      // segundo factor queda vinculado a haber superado la contrasena.
+      const pendiente = req.cookies?.[COOKIE_2FA];
+      const payload = pendiente ? verifyToken(pendiente, '2fa_pending') : null;
+
+      // Solo la cookie del 2FA: la de sesión puede ser una del área de hermanos
+      // perfectamente válida, y borrarla dejaba al frontend creyéndose con
+      // sesión mientras el navegador ya no la tenía.
+      if (!payload) {
+        limpiarCookie2FA(res);
+        return res.status(401).json({
+          error: 'PENDING_2FA_REQUIRED',
+          message: 'La verificación ha caducado. Vuelve a introducir tu email y contraseña.'
+        });
+      }
 
       const { token2fa } = req.body;
-      const response = await AuthService.verifyLogin2FA(testigo.id, token2fa, testigo.recordarme, testigo.origen, testigo);
-      entregarSesion(res, testigo, response);
+      // El "recordarme" y el origen del primer factor viajan dentro del testigo:
+      // así el segundo paso no puede inventárselos.
+      const recordarme = payload.rem === true;
+      // Sin el claim no es CMS: la gracia de migración ya no tiene a quién proteger.
+      const origen = payload.origen === 'cms' ? 'cms' : 'hermanos';
+      const response = await AuthService.verifyLogin2FA(payload.id, token2fa, recordarme, origen, {
+        paso2fa: payload.paso2fa,
+        emitidoMs: payload.emitidoMs
+      });
+
+      limpiarCookie2FA(res);
+      // El área sale del testigo del primer factor, nunca del cuerpo: si no,
+      // el segundo paso podría inventarse un origen 'cms' sin haber pasado
+      // por el acceso del CMS. Es la misma regla de arriba en `origen`.
+      ponerCookieSesion(res, origen, response.token, response.user.role, recordarme);
+      res.status(200).json({ status: 'OK', user: response.user });
     } catch (error) {
+      // Testigo ya gastado: fuera su cookie (solo esa, como arriba) y el mismo
+      // código que cuando falta, para que el frontend vuelva a la contraseña.
+      if (error instanceof Testigo2FACaducadoError) {
+        limpiarCookie2FA(res);
+        return res.status(401).json({ error: error.codigo, message: error.message });
+      }
       // El servicio lanza mensajes de negocio específicos ("Cuenta bloqueada temporalmente...",
       // "Código incorrecto o expirado") que deben llegar al usuario tal cual.
-      fallarSegundoFactor(res, error, 'Código 2FA incorrecto o expirado');
+      handleHttp(res, error, 'Código 2FA incorrecto o expirado');
     }
   }
-
-  // =================================================================
-  //  APROBAR LA ENTRADA DESDE EL MÓVIL
-  // =================================================================
-
-  /**
-   * El ordenador pregunta si su aprobación ya está. Mientras espera, 200 con
-   * el estado (no cuenta como fallo para el limitador); aprobada, la sesión.
-   */
-  static async esperarAprobacion(req: Request, res: Response) {
-    try {
-      const testigo = leerTestigo(req, res);
-      if (!testigo) return;
-      const resultado = await AprobacionEntradaService.consultar(testigo.cookie, testigo);
-      if (resultado.estado !== 'APROBADA') return res.status(200).json({ estado: resultado.estado });
-      entregarSesion(res, testigo, resultado, { estado: 'APROBADA' });
-    } catch (error) {
-      fallarSegundoFactor(res, error, 'No se ha podido comprobar la aprobación');
-    }
-  }
-
-  /** Entrar desde el mismo móvil apuntado: su clave hace de segundo factor. */
-  static async entrarDesdeEsteMovil(req: Request, res: Response) {
-    try {
-      const testigo = leerTestigo(req, res);
-      if (!testigo) return;
-      const { dispositivo, clave } = req.body as { dispositivo: number; clave: string };
-      const response = await AprobacionEntradaService.entrarDesdeEsteMovil(testigo, dispositivo, clave, AuditoriaService.metaFromReq(req));
-      entregarSesion(res, testigo, response);
-    } catch (error) {
-      fallarSegundoFactor(res, error, 'No se ha podido entrar desde este móvil');
-    }
-  }
-
-  // Las tres del móvil van sin sesión: el aviso puede abrirse con la del CMS
-  // caducada. Lo que prueba quién es, la clave del dispositivo, va en el cuerpo.
-  static verAprobacion = manejar('No se ha podido abrir la aprobación', async (req, res) => {
-    const { dispositivo, clave } = req.body as { dispositivo: number; clave: string };
-    res.status(200).json(await AprobacionEntradaService.ver(String(req.params.id), dispositivo, clave));
-  });
-
-  static aprobarEntrada = manejar('No se ha podido aprobar la entrada', async (req, res) => {
-    const { dispositivo, clave, numero } = req.body as { dispositivo: number; clave: string; numero: number };
-    res.status(200).json(await AprobacionEntradaService.aprobar(String(req.params.id), dispositivo, clave, numero, AuditoriaService.metaFromReq(req)));
-  });
-
-  static rechazarEntrada = manejar('No se ha podido rechazar la entrada', async (req, res) => {
-    const { dispositivo, clave } = req.body as { dispositivo: number; clave: string };
-    res.status(200).json(await AprobacionEntradaService.rechazar(String(req.params.id), dispositivo, clave, AuditoriaService.metaFromReq(req)));
-  });
-
-  static listarMoviles = manejar('No se han podido cargar tus móviles', async (req, res) => {
-    res.status(200).json(await AprobacionEntradaService.listar(req.user!.id));
-  });
-
-  static apuntarMovil = manejar('No se ha podido apuntar el móvil', async (req, res) => {
-    const { password, nombre, suscripcion } = req.body as {
-      password: string; nombre: string; suscripcion: { endpoint: string; keys: { p256dh: string; auth: string } };
-    };
-    const resultado = await AprobacionEntradaService.apuntar(req.user!.id, {
-      password, nombre, suscripcion: { endpoint: suscripcion.endpoint, p256dh: suscripcion.keys.p256dh, auth: suscripcion.keys.auth },
-    }, AuditoriaService.metaFromReq(req));
-    res.status(201).json(resultado);
-  });
-
-  static quitarMovil = manejar('No se ha podido quitar el móvil', async (req, res) => {
-    await AprobacionEntradaService.quitar(req.user!.id, Number(req.params.id), AuditoriaService.metaFromReq(req));
-    res.status(204).end();
-  });
 
   // =================================================================
   //  RECUPERACIÓN DE CONTRASEÑA

@@ -11,7 +11,6 @@ import {
   comprobarBloqueo2FA, consumirCodigoDeRespaldo, generarCodigosDeRespaldo,
   hashDeCodigoDeRespaldo, limpiarFallos2FA, normalizarCodigo2FA, reclamarTotp, registrarFallo2FA,
 } from './auth/codigos-2fa.js';
-import { AprobacionEntradaService } from './aprobacion/aprobacion-entrada.service.js';
 
 /**
  * El TOTP de una cuenta, tal como lo da de alta la app de autenticación. El
@@ -159,9 +158,6 @@ export class DobleFactorService {
         data: { ...APAGAR_2FA }
       });
       await tx.twoFactorBackupCode.deleteMany({ where: { userId } });
-      // Desactivar es también «cambiar de móvil»: los apuntados para aprobar
-      // la entrada se van con el código de la app.
-      await AprobacionEntradaService.quitarTodos(tx, userId);
       return { message: '2FA desactivado. Podrás volver a activarlo generando un QR nuevo.' };
     });
   }
@@ -184,7 +180,7 @@ export class DobleFactorService {
     // Auditoría: rescate de emergencia sobre la cuenta de otro usuario, ya confirmado
     await AuditoriaService.log(ACCIONES_AUDITORIA.TFa_RESET_ADMIN, meta ?? {}, 'user', targetUserId, {
       antes,
-      despues: { twoFactorEnabled: false, codigosRespaldoSinUsar: 0, movilesApuntados: 0 },
+      despues: { twoFactorEnabled: false, codigosRespaldoSinUsar: 0 },
       sesionesCerradas: true
     });
     return { message: '2FA desactivado por un administrador.' };
@@ -208,7 +204,7 @@ export class DobleFactorService {
       { ip: 'consola', userAgent: 'scripts/rescatar-2fa.ts' },
       'user',
       objetivo.id,
-      { via: 'consola', antes, despues: { twoFactorEnabled: false, codigosRespaldoSinUsar: 0, movilesApuntados: 0 }, sesionesCerradas: true }
+      { via: 'consola', antes, despues: { twoFactorEnabled: false, codigosRespaldoSinUsar: 0 }, sesionesCerradas: true }
     );
     return { id: objetivo.id, email: emailNorm, role: objetivo.role, antes };
   }
@@ -239,11 +235,8 @@ export class DobleFactorService {
         }
       });
       await tx.twoFactorBackupCode.deleteMany({ where: { userId: targetUserId } });
-      // Un móvil apuntado aprueba entradas igual que el código: el rescate
-      // de una cuenta perdida no puede dejarle uno vivo.
-      const movilesApuntados = await AprobacionEntradaService.quitarTodos(tx, targetUserId);
 
-      return { twoFactorEnabled: objetivo.twoFactorEnabled, codigosRespaldoSinUsar, movilesApuntados };
+      return { twoFactorEnabled: objetivo.twoFactorEnabled, codigosRespaldoSinUsar };
     });
   }
 

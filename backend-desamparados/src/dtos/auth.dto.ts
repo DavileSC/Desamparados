@@ -90,9 +90,4 @@ export interface LoginDto {
   recordarme?: boolean;
   /** De qué login viene la petición: el 2FA solo se exige en el CMS. */
   contexto?: 'cms' | 'hermanos';
-  /**
-   * El móvil apuntado desde el que se entra, si lo es: no se le manda el
-   * aviso a sí mismo, y la pantalla ofrece aprobar ahí mismo.
-   */
-  dispositivo?: number;
 }

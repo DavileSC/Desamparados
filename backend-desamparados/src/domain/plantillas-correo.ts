@@ -39,7 +39,7 @@ export const USOS: UsoDeCorreo[] = catalogo.usos as UsoDeCorreo[];
 export const CAMPOS_COMUNES: CampoDeUso[] = catalogo.comunes;
 
 export type ClaveDeUso =
-  | 'contrasena_recuperar' | 'contrasena_cuenta_nueva' | 'primer_acceso_invitacion' | 'contrasena_cambiada' | 'doble_factor_bloqueado' | 'movil_apuntado'
+  | 'contrasena_recuperar' | 'contrasena_cuenta_nueva' | 'primer_acceso_invitacion' | 'contrasena_cambiada' | 'doble_factor_bloqueado'
   | 'solicitud_recibida' | 'solicitud_no_tramitada' | 'alta_aprobada' | 'solicitud_rechazada'
   | 'baja' | 'baja_impago' | 'apertura' | 'papeleta'
   | 'papeleta_sin_recoger' | 'donativo_gracias' | 'apadrinamiento' | 'pedido_tienda' | 'certificado_donativos'
