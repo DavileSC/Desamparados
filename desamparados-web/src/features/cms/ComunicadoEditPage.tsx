@@ -5,7 +5,7 @@ import { Helmet } from 'react-helmet-async'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   borrarComunicado, comunicado, comunicados, destinatariosDe, enviarComunicado, enviarPrueba, guardarComunicado, reintentarFallidos,
-  type ComunicadoCompleto, type DatosComunicado, type Segmento, type TipoComunicado,
+  type ComunicadoCompleto, type ComunicadoEnLista, type DatosComunicado, type Segmento, type TipoComunicado,
 } from '../../lib/api/comunicados'
 import { limpiarHtml } from '../../lib/limpiarHtml'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
@@ -45,7 +45,7 @@ export default function ComunicadoEditPage() {
   const [guardando, setGuardando] = useState(false)
   const [cuenta, setCuenta] = useState<{ correos: number; sinCorreo: number; para: string } | null>(null)
   const [confirmar, setConfirmar] = useState<'enviar' | 'borrar' | null>(null)
-  const [progreso, setProgreso] = useState<{ enviados: number; fallidos: number; pendientes: number } | null>(null)
+  const [progreso, setProgreso] = useState<ComunicadoEnLista['envios'] | null>(null)
   // Las plantillas libres de Emails; si no llegan (sin permiso, o sin red), no hay desplegable.
   const [libres, setLibres] = useState<Awaited<ReturnType<typeof plantillasLibres>> | null>(null)
   useEffect(() => {
@@ -148,7 +148,8 @@ export default function ComunicadoEditPage() {
   const titulo = `${original.tipo === 'BOLETIN' ? 'Boletín' : 'Aviso'}: ${original.asunto}`
 
   if (original.estado !== 'BORRADOR') {
-    const total = progreso ? progreso.enviados + progreso.fallidos + progreso.pendientes : 0
+    const total = progreso ? progreso.enviados + progreso.fallidos + progreso.pendientes + progreso.alMovil : 0
+    const hechos = progreso ? progreso.enviados + progreso.fallidos + progreso.alMovil : 0
     return <>
       <Helmet><title>{`${original.asunto} | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <CabeceraSeccion titulo={titulo} subtitulo={original.para}>
@@ -159,10 +160,11 @@ export default function ComunicadoEditPage() {
       {progreso && (
         <Paper sx={{ p: 2.5, mb: 3, maxWidth: 760 }}>
           <Typography sx={{ fontWeight: 600, mb: 1 }}>
-            {original.estado === 'ENVIANDO' ? `Enviando: ${progreso.enviados + progreso.fallidos} de ${total}` : `Enviado a ${plural(progreso.enviados, 'dirección', 'direcciones')}`}
+            {original.estado === 'ENVIANDO' ? `Enviando: ${hechos} de ${total}` : `Enviado a ${plural(progreso.enviados + progreso.alMovil, 'dirección', 'direcciones')}`}
           </Typography>
-          <LinearProgress variant="determinate" value={total ? ((progreso.enviados + progreso.fallidos) / total) * 100 : 100} aria-label="Progreso del envío" sx={{ mb: 1.5 }} />
-          {original.estado === 'ENVIANDO' && <Typography variant="body2" color="text.secondary">Sale poco a poco para no pasar del cupo de la cuenta de correo. Se puede cerrar esta pantalla: sigue enviándose.</Typography>}
+          <LinearProgress variant="determinate" value={total ? (hechos / total) * 100 : 100} aria-label="Progreso del envío" sx={{ mb: 1.5 }} />
+          {progreso.alMovil > 0 && <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>{plural(progreso.alMovil, 'lo recibió en el móvil', 'lo recibieron en el móvil')}, sin correo.</Typography>}
+          {original.estado === 'ENVIANDO' && <Typography variant="body2" color="text.secondary">Sale poco a poco, con un tope de correos al día: lo que no quepa hoy sale mañana. Se puede cerrar esta pantalla: sigue enviándose.</Typography>}
           {progreso.fallidos > 0 && (
             <Alert severity="warning" sx={{ mt: 1.5 }} action={original.estado === 'ENVIADO' ? <Button color="inherit" size="small" onClick={() => void reintentar()}>Reintentar</Button> : undefined}>
               {plural(progreso.fallidos, 'correo no ha salido', 'correos no han salido')}. Suele ser el cupo diario de la cuenta: reinténtalo mañana.

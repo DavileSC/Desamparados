@@ -210,6 +210,11 @@ export function plazoDePapeletas(salida: string) {
   return llamarApi<PlazoDePapeletas>(`/procesion/admin/plazo?${deLaSalida(salida)}`)
 }
 
+/** Antes de abrir: a cuántas cuentas les llegaría el aviso al móvil, cuántas por correo y cuántos correos caben hoy. */
+export function avisoPrevisto() {
+  return llamarApi<{ alMovil: number; porCorreo: number; cabenHoy: number }>('/procesion/admin/plazo/aviso-previsto')
+}
+
 export function cambiarPlazo(abierto: boolean, salida: string, opciones: { avisar?: boolean; borradorNoticia?: boolean } = {}) {
   return llamarApi<{ abierto: boolean; avisados: number; noticiaId: number | null }>('/procesion/admin/plazo', {
     method: 'POST',

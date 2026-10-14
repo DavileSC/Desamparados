@@ -52,6 +52,9 @@ function plazo(horas: number): string {
   return `${horas} horas`;
 }
 
+/** Lo de la salida que dice el correo de apertura. */
+type DatosDeLaApertura = { nombre: string; cobro: 'CUOTA' | 'DONATIVO'; indicaciones: string | null; articulo: Articulo };
+
 export class EmailService {
 
   /**
@@ -366,8 +369,14 @@ export class EmailService {
    * va porque quien recibe el correo muchas veces pide también las de sus
    * menores.
    */
-  static async enviarAperturaPapeletas(emailDestino: string, nombreCuenta: string, fichas: string[], dias: string[], year: number, sexo: Sexo | undefined, salida: { nombre: string; cobro: 'CUOTA' | 'DONATIVO'; indicaciones: string | null; articulo: Articulo }) {
-    const { asunto, html, uso } = await PlantillasCorreoService.correo('apertura', {
+  static async enviarAperturaPapeletas(emailDestino: string, nombreCuenta: string, fichas: string[], dias: string[], year: number, sexo: Sexo | undefined, salida: DatosDeLaApertura) {
+    const { asunto, html, uso } = await EmailService.correoAperturaPapeletas(nombreCuenta, fichas, dias, year, sexo, salida);
+    return await enviarCorreo(emailDestino, asunto, html, { uso });
+  }
+
+  /** El correo de la apertura ya maquetado, sin enviar: la apertura lo deja en la cola de correos. */
+  static async correoAperturaPapeletas(nombreCuenta: string, fichas: string[], dias: string[], year: number, sexo: Sexo | undefined, salida: DatosDeLaApertura) {
+    return await PlantillasCorreoService.correo('apertura', {
       campos: {
         saludo: textoDeSaludo(nombreCuenta, sexo), nombre: nombreCuenta, salida: salida.nombre, anio: year, primer_dia: dias[0] ?? 'por anunciar',
         de_la_salida: deArticulo(salida.articulo, salida.nombre), la_salida: conArticulo(salida.articulo, salida.nombre),
@@ -383,7 +392,6 @@ export class EmailService {
         boton: boton('Pedir la papeleta', urlDeLaWeb('/area-hermano/procesion')),
       },
     });
-    return await enviarCorreo(emailDestino, asunto, html, { uso });
   }
 
   /**

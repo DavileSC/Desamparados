@@ -8,12 +8,12 @@ import AddIcon from '@mui/icons-material/Add'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../altas/auth/store'
 import { rolesPorRutaCms } from '../../app/cmsNavegacion'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import {
-  cambiarPlazo, crearTurno, eliminarTurno, plazoDePapeletas, turnosDeReparto, type PlazoDePapeletas, type TurnoDeReparto,
+  avisoPrevisto, cambiarPlazo, crearTurno, eliminarTurno, plazoDePapeletas, turnosDeReparto, type PlazoDePapeletas, type TurnoDeReparto,
 } from '../../lib/api/procesion'
 import AvisoSinSalidas from '../procesion/AvisoSinSalidas'
 import { useSalidaElegida } from '../procesion/useSalidas'
@@ -119,7 +119,7 @@ export default function ProcesionAdminPage() {
       const r = await cambiarPlazo(abrir, slug, abrir ? { avisar: avisar && conArea, borradorNoticia: borrador && conNoticias } : {})
       setAviso({
         texto: abrir
-          ? `Solicitud abierta.${r.avisados ? ` Se está avisando por correo a ${r.avisados} ${r.avisados === 1 ? 'cuenta' : 'cuentas'}.` : ''}`
+          ? `Solicitud abierta.${r.avisados ? ` Se está avisando a ${r.avisados} ${r.avisados === 1 ? 'cuenta' : 'cuentas'}: cómo va, en «Boletín y avisos».` : ''}`
           : 'Solicitud cerrada. Los hermanos ya no pueden pedir papeleta desde su área.',
         noticiaId: r.noticiaId,
       })
@@ -350,7 +350,8 @@ export default function ProcesionAdminPage() {
               : `Los hermanos pedirán la papeleta en la mesa de reparto, en uno de los ${plazo?.diasDeReparto ?? 0} días publicados.`}
           </DialogContentText>
           <Stack>
-            {conArea && <FormControlLabel control={<Checkbox checked={avisar} onChange={(e) => setAvisar(e.target.checked)} />} label="Avisar por correo a los hermanos activos" />}
+            {conArea && <FormControlLabel control={<Checkbox checked={avisar} onChange={(e) => setAvisar(e.target.checked)} />} label="Avisar a los hermanos activos" />}
+            {conArea && avisar && <RepartoDelAviso />}
             {conNoticias && <FormControlLabel control={<Checkbox checked={borrador} onChange={(e) => setBorrador(e.target.checked)} />} label="Dejar un borrador de noticia con los días, para publicarlo y moverlo por redes" />}
           </Stack>
         </DialogContent>
@@ -429,6 +430,28 @@ function Cifra({ titulo, valor, detalle }: { titulo: string; valor: string; deta
       <Typography sx={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'text.secondary' }}>{titulo}</Typography>
       <Typography sx={{ mt: 0.5, fontSize: 22, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{valor}</Typography>
       {detalle && <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{detalle}</Typography>}
+    </Box>
+  )
+}
+
+/**
+ * Antes de abrir: a cuántos les llega el aviso al móvil y cuántos correos
+ * salen, con el tope del día (traspaso-2026-10-14 §5). Con cientos de
+ * hermanos y un servicio de envío gratis, no todo cabe en un día.
+ */
+function RepartoDelAviso() {
+  const { data } = useQuery({ queryKey: ['aviso-previsto'], queryFn: avisoPrevisto, staleTime: 0 })
+  if (!data) return null
+  const otroDia = Math.max(0, data.porCorreo - data.cabenHoy)
+  return (
+    <Box sx={{ ml: 4, mb: 1, px: 1.75, py: 1.25, borderRadius: 1, bgcolor: 'action.hover', display: 'grid', gap: 0.5, fontVariantNumeric: 'tabular-nums' }}>
+      {data.alMovil > 0 && <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}><span>Al móvil, sin correo</span><strong>{data.alMovil}</strong></Box>}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}><span>Por correo</span><strong>{data.porCorreo}</strong></Box>
+      {otroDia > 0 && (
+        <Typography variant="body2" color="text.secondary">
+          Hoy caben {data.cabenHoy} correos: {otroDia === 1 ? 'el que falta sale' : `los ${otroDia} restantes salen`} en los días siguientes, sin hacer nada.
+        </Typography>
+      )}
     </Box>
   )
 }

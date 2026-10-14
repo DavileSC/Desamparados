@@ -21,6 +21,8 @@ const rolesComunicacion = [Role.ADMIN, Role.SECRETARIA, Role.HERMANO_MAYOR, Role
 const validateId = validate(type({ params: { id: idParam } }));
 
 comunicadosRoutes.get('/', checkRole(rolesComunicacion), ComunicadosController.listar);
+// Los envíos a muchos (comunicados y aperturas de papeletas) y el tope del día. Antes que '/:id'.
+comunicadosRoutes.get('/envios', checkRole(rolesComunicacion), ComunicadosController.envios);
 comunicadosRoutes.post('/destinatarios', checkRole(rolesComunicacion), validate(destinatariosSchema), ComunicadosController.destinatarios);
 comunicadosRoutes.post('/', checkRole(rolesComunicacion), validate(comunicadoSchema), ComunicadosController.crear);
 comunicadosRoutes.get('/:id', checkRole(rolesComunicacion), validateId, ComunicadosController.obtener);

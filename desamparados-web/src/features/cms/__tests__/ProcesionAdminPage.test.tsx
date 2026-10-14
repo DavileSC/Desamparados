@@ -91,7 +91,7 @@ describe('ProcesionAdminPage', () => {
 
     await waitFor(() => expect(llamadas.some((l) => l.metodo === 'POST')).toBe(true))
     expect(llamadas.find((l) => l.metodo === 'POST')?.cuerpo).toEqual({ abierto: true, avisar: true, borradorNoticia: true, salida: 'sabado-de-pasion' })
-    expect(await screen.findByText(/avisando por correo a 120 cuentas/i)).toBeInTheDocument()
+    expect(await screen.findByText(/avisando a 120 cuentas/i)).toBeInTheDocument()
     // El diálogo tarda en cerrarse: hasta entonces el resto de la página queda oculto.
     expect(await screen.findByRole('link', { name: 'borrador de noticia' })).toHaveAttribute('href', '/cms/noticias/33/editar')
   })

@@ -1,4 +1,5 @@
 import { manejar } from '../utils/manejar.js';
+import { resumenDeEnvios } from '../services/correos/cola.js';
 import { AuditoriaService } from '../services/auditoria.service.js';
 import { ComunicadosService, type DatosComunicado } from '../services/comunicados.service.js';
 
@@ -7,6 +8,10 @@ const id = (req: { params: { id?: string } }) => Number(req.params.id);
 export class ComunicadosController {
   static listar = manejar('Error obteniendo los comunicados', async (_req, res) => {
     res.json(await ComunicadosService.listar());
+  });
+
+  static envios = manejar('No se han podido cargar los envíos', async (_req, res) => {
+    res.json(await resumenDeEnvios());
   });
 
   static obtener = manejar('Error obteniendo el comunicado', async (req, res) => {

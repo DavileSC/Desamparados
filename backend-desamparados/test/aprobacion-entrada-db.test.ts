@@ -12,7 +12,7 @@ import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_2FA, COOKIE_CMS } from '../src/utils/cookies.js';
-import { avisosDePrueba, fijarEnvioDePrueba } from '../src/services/aprobacion/push.js';
+import { avisosDePrueba, fijarEnvioDePrueba, type AvisoDeEntrada } from '../src/services/aprobacion/push.js';
 import { DobleFactorService } from '../src/services/doble-factor.service.js';
 import { hashDeCodigoDeRespaldo } from '../src/services/auth/codigos-2fa.js';
 import { cifrarSecretoTotp } from '../src/utils/cifrado-totp.js';
@@ -116,7 +116,7 @@ async function darRespaldo(userId: number, codigo: string) {
   await db.twoFactorBackupCode.create({ data: { userId, codeHash: hashDeCodigoDeRespaldo(codigo) } });
 }
 
-const ultimoAviso = () => avisosDePrueba.at(-1)!;
+const ultimoAviso = () => avisosDePrueba.at(-1)! as (typeof avisosDePrueba)[number] & { aviso: AvisoDeEntrada };
 
 async function esperar(testigo: string) {
   const res = await pedir('/auth/login/aprobacion', { cookie: testigo });

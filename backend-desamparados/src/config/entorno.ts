@@ -102,6 +102,11 @@ export function validarEntorno(entorno: Entorno = process.env): ResultadoEntorno
   if (definida(entorno.COMUNICADOS_PAUSA_MS) && !esEnteroEnRango(entorno.COMUNICADOS_PAUSA_MS, 0, 60_000)) {
     errores.push(`COMUNICADOS_PAUSA_MS="${entorno.COMUNICADOS_PAUSA_MS}" debe ser un número entero de milisegundos entre 0 y 60000 (por defecto, 1500).`);
   }
+  // Mal escrito, la cola caería en 250 sin decir nada: con Gmail (500 al día)
+  // se quedaría corta, y con un tope menor que el del servicio se pasaría.
+  if (definida(entorno.CORREOS_MASIVOS_POR_DIA) && !esEnteroEnRango(entorno.CORREOS_MASIVOS_POR_DIA, 1, 100_000)) {
+    errores.push(`CORREOS_MASIVOS_POR_DIA="${entorno.CORREOS_MASIVOS_POR_DIA}" debe ser un número entero de correos al día (por defecto, 250).`);
+  }
   // Un servicio de envío (Brevo) en vez de Gmail. Su usuario de entrada no es
   // una dirección de nadie: sin EMAIL_FROM, los correos saldrían con ella de
   // remitente y el servicio los rechazaría todos, sin que nada fallara al arrancar.

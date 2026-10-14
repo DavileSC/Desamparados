@@ -104,9 +104,13 @@ const alEscuchar = (error?: Error) => {
 };
 const server: Server = HOST ? app.listen(PORT, HOST, alEscuchar) : app.listen(PORT, alEscuchar);
 
-// Un boletín que se quedó a medias (el servidor se reinició mientras enviaba)
-// sigue por donde iba. A nadie le llega dos veces: cada envío está apuntado.
-void import('./services/comunicados.service.js').then(({ ComunicadosService }) => ComunicadosService.reanudar());
+// La cola de correos: lo que se quedó a medias (el servidor se reinició
+// mientras enviaba) sigue por donde iba, y lo que no cupo en el tope del día
+// sale al siguiente. A nadie le llega dos veces: cada envío está apuntado.
+// Antes, comunicados.service: es quien sabe maquetar sus correos.
+void import('./services/comunicados.service.js')
+  .then(() => import('./services/correos/cola.js'))
+  .then(({ arrancarCola }) => arrancarCola());
 
 // Aviso, no barrera. Un despliegue que se salte la conversión a bloques no
 // falla: el CMS abre, `mezclarConDefectos` descarta las claves de la forma

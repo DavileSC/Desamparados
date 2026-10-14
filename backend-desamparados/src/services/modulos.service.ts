@@ -68,6 +68,7 @@ const RECUENTOS: Record<ClaveModulo, () => Promise<RecuentoDeDatos[]>> = {
   cabildos: async () => [{ uno: 'cabildo', que: 'cabildos', total: await db.cabildo.count() }],
   'informe-anual': async () => [{ uno: 'informe', que: 'informes', total: await db.informeAnual.count() }],
   'avisos-en-el-movil': async () => [{ uno: 'móvil apuntado', que: 'móviles apuntados', total: await db.movilApuntado.count() }],
+  'avisos-a-los-hermanos': async () => [{ uno: 'móvil con avisos', que: 'móviles con avisos', total: await db.movilDeAvisos.count() }],
 };
 
 /**
@@ -77,6 +78,7 @@ const RECUENTOS: Record<ClaveModulo, () => Promise<RecuentoDeDatos[]>> = {
  */
 const QUE_FALTA_EN_EL_SERVIDOR: Partial<Record<ClaveModulo, () => string | null>> = {
   'avisos-en-el-movil': () => (avisosConfigurados() ? null : 'faltan las claves VAPID del servidor (VAPID_PUBLICA, VAPID_PRIVADA y VAPID_CONTACTO; se generan con npm run gen:vapid).'),
+  'avisos-a-los-hermanos': () => (avisosConfigurados() ? null : 'faltan las claves VAPID del servidor (VAPID_PUBLICA, VAPID_PRIVADA y VAPID_CONTACTO; se generan con npm run gen:vapid).'),
 };
 
 const nombres = (claves: ClaveModulo[]) => claves.map((c) => `«${fichaDe(c).nombre}»`).join(', ');

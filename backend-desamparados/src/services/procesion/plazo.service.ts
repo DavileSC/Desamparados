@@ -21,6 +21,8 @@ import { anioDeLaSalida, diaMadrid, proximaFecha } from '../../domain/fecha-sali
 import { articuloDe, deArticulo } from '../../domain/articulos.js';
 import { reglaDe, type SalidaConActo } from './salidas.service.js';
 import { esDireccionDeNadie } from '../../domain/cuenta-de-custodia.js';
+import { AvisosHermanosService } from '../avisos-hermanos.service.js';
+import { despertarCola, enviadosHoy, topeDiario } from '../correos/cola.js';
 
 type Cliente = Prisma.TransactionClient | typeof db;
 
@@ -142,17 +144,11 @@ export class PlazoPapeletasService {
     if (abrir && opciones.avisar && conArea) {
       const destinatarios = await PlazoPapeletasService.destinatarios();
       avisados = destinatarios.length;
-      const textos = dias.map(describirTurno);
-      const salidaParaCorreo = { ...salida, articulo: articuloDe(salida) };
-      void (async () => {
-        for (const d of destinatarios) {
-          try {
-            await EmailService.enviarAperturaPapeletas(d.email, d.nombre, d.fichas, textos, year, d.sexo, salidaParaCorreo);
-          } catch (error) {
-            console.error('No se ha podido avisar de la apertura de papeletas', error);
-          }
-        }
-      })();
+      // Maquetar cientos de correos lleva unos segundos: se hace después de
+      // responder. Luego la cola los manda con el tope del día, y antes los
+      // avisos al móvil de quien los tiene.
+      void PlazoPapeletasService.ponerAvisoEnCola(destinatarios, dias.map(describirTurno), year, salida)
+        .catch((error) => console.error('No se ha podido poner en cola el aviso de apertura de papeletas', error));
     }
 
     await AuditoriaService.log(
@@ -163,12 +159,52 @@ export class PlazoPapeletasService {
     return { abierto: abrir, avisados, noticiaId };
   }
 
+  /**
+   * Un aviso por cuenta: al móvil a quien lo tiene (con el correo maquetado
+   * por si no le llega), por correo a los demás.
+   */
+  static async ponerAvisoEnCola(destinatarios: Awaited<ReturnType<typeof PlazoPapeletasService.destinatarios>>, dias: string[], year: number, salida: SalidaConActo) {
+    const articulo = articuloDe(salida);
+    const conMovil = await AvisosHermanosService.cuentasConMovil(destinatarios.map((d) => d.userId));
+    const aviso = {
+      etiqueta: `apertura-${salida.id}-${year}`,
+      titulo: 'Ya puedes pedir tu papeleta',
+      cuerpo: `Está abierta la solicitud ${deArticulo(articulo, salida.nombre)} ${year}. Toca para pedirla.`,
+      url: '/area-hermano/procesion',
+    };
+    const lote = `apertura:${salida.id}:${year}`;
+    const titulo = `Apertura de papeletas · ${salida.nombre} ${year}`.slice(0, 150);
+    const filas: Prisma.CorreoEnColaCreateManyInput[] = [];
+    for (const d of destinatarios) {
+      const { asunto, html, uso } = await EmailService.correoAperturaPapeletas(d.nombre, d.fichas, dias, year, d.sexo ?? undefined, { ...salida, articulo });
+      const porMovil = conMovil.has(d.userId);
+      filas.push({ lote, titulo, userId: d.userId, porMovil, para: d.email, asunto: asunto.slice(0, 200), html, uso, aviso: porMovil ? aviso : Prisma.JsonNull });
+    }
+    for (let i = 0; i < filas.length; i += 100) await db.correoEnCola.createMany({ data: filas.slice(i, i + 100) });
+    void despertarCola();
+  }
+
+  /** Lo que diría la casilla «Avisar» si se abriera ahora: cuántos al móvil, cuántos por correo y cuántos caben hoy. */
+  static async avisoPrevisto() {
+    const destinatarios = await PlazoPapeletasService.destinatarios();
+    const conMovil = await AvisosHermanosService.cuentasConMovil(destinatarios.map((d) => d.userId));
+    const alMovil = destinatarios.filter((d) => conMovil.has(d.userId)).length;
+    const [hoy, delante] = await Promise.all([
+      enviadosHoy(),
+      Promise.all([
+        db.correoEnCola.count({ where: { estado: 'PENDIENTE', porMovil: false } }),
+        db.comunicadoEnvio.count({ where: { estado: 'PENDIENTE', porMovil: false, comunicado: { estado: 'ENVIANDO' } } }),
+      ]).then(([a, b]) => a + b),
+    ]);
+    return { alMovil, porCorreo: destinatarios.length - alMovil, cabenHoy: Math.max(0, topeDiario() - hoy - delante) };
+  }
+
   /** Un correo por cuenta con fichas activas, nombrando las fichas. Sin las cuentas suprimidas. */
   static async destinatarios() {
     const cuentas = await db.user.findMany({
       where: { hermanos: { some: { activo: true } }, NOT: { email: { endsWith: DOMINIO_CUENTA_ELIMINADA } } },
       select: {
-        email: true, nombre: true,
+        id: true, email: true, nombre: true,
         hermanos: { where: { activo: true }, select: { nombre: true, apellidos: true, esTitular: true, sexo: true }, orderBy: { fechaNacimiento: 'asc' } },
       },
     });
@@ -177,6 +213,7 @@ export class PlazoPapeletasService {
     return cuentas
       .filter((c) => Boolean(c.email) && !esDireccionDeNadie(c.email))
       .map((c) => ({
+        userId: c.id,
         email: c.email,
         nombre: c.nombre ?? c.hermanos[0]?.nombre ?? '',
         sexo: c.hermanos.find((h) => h.esTitular)?.sexo ?? null,

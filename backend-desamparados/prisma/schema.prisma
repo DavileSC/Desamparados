@@ -191,8 +191,10 @@ model User {
 
   // Móviles que reciben el aviso para aprobar la entrada al CMS, y las
   // aprobaciones que se les han pedido (ver MovilApuntado).
-  movilesApuntados     MovilApuntado[]
-  aprobacionesEntrada  AprobacionEntrada[]
+  movilesApuntados    MovilApuntado[]
+  aprobacionesEntrada AprobacionEntrada[]
+  // Móviles que reciben los avisos del área de hermanos (ver MovilDeAvisos).
+  movilesDeAvisos     MovilDeAvisos[]
 
   // Registro de auditoría de las acciones que realiza este usuario (staff)
   auditLogs AuditLog[]
@@ -1071,23 +1073,43 @@ model TwoFactorBackupCode {
 // en vez de teclear el código de la app. Es otra forma del segundo factor:
 // el TOTP sigue de reserva y los rescates del 2FA borran también estos.
 model MovilApuntado {
-  id        Int       @id @default(autoincrement())
-  userId    Int
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Lo pone quien lo apunta («iPhone de Ana»), para reconocerlo en la lista.
-  nombre    String    @db.VarChar(60)
+  nombre       String    @db.VarChar(60)
   // La suscripción que da el navegador. El endpoint es una URL larga del
   // servicio de push: el índice único va sobre su hash, que cabe en la clave.
-  endpoint     String @db.Text
-  endpointHash String @unique @db.Char(64)
-  p256dh       String @db.VarChar(200)
-  auth         String @db.VarChar(100)
+  endpoint     String    @db.Text
+  endpointHash String    @unique @db.Char(64)
+  p256dh       String    @db.VarChar(200)
+  auth         String    @db.VarChar(100)
   // Hash de la clave del dispositivo, que solo guarda el móvil (IndexedDB):
   // es lo que prueba que quien aprueba es ese móvil y no una pestaña con la
   // sesión abierta.
-  claveHash String    @db.Char(64)
-  creadoEn  DateTime  @default(now())
-  usadoEn   DateTime?
+  claveHash    String    @db.Char(64)
+  creadoEn     DateTime  @default(now())
+  usadoEn      DateTime?
+
+  @@index([userId])
+}
+
+/// Un móvil que recibe los avisos del área de hermanos (apertura de
+/// papeletas, avisos de la Junta). Aparte de MovilApuntado, que prueba quién
+/// aprueba la entrada al CMS: este solo recibe, y el navegador da otra
+/// suscripción para el área (el service worker se registra con otro scope).
+model MovilDeAvisos {
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Se pone solo («Android · Chrome»): al hermano no se le pregunta.
+  nombre       String    @db.VarChar(60)
+  endpoint     String    @db.Text
+  endpointHash String    @unique @db.Char(64)
+  p256dh       String    @db.VarChar(200)
+  auth         String    @db.VarChar(100)
+  creadoEn     DateTime  @default(now())
+  usadoEn      DateTime?
 
   @@index([userId])
 }
@@ -1282,6 +1304,7 @@ enum EstadoEnvio {
   PENDIENTE
   ENVIADO
   FALLIDO
+  MOVIL // Le llegó el aviso al móvil: no hizo falta el correo
 }
 
 /// Un boletín o un aviso masivo por correo. El cuerpo, saneado como el resto
@@ -1319,11 +1342,43 @@ model ComunicadoEnvio {
   /// A quién saluda: el nombre si la dirección es de una sola ficha.
   nombre       String?
   sexo         Sexo?
+  /// La cuenta de esas fichas: lo que ve en «Avisos» del área y a quién va el
+  /// aviso al móvil. Sin FK: el envío sobrevive a la cuenta, como el resto.
+  userId       Int?
+  /// Decidido al ponerlo en cola: esa cuenta tenía móvil para los avisos.
+  porMovil     Boolean     @default(false)
   estado       EstadoEnvio @default(PENDIENTE)
+  creadoEn     DateTime    @default(now())
   enviadoEl    DateTime?
 
   @@unique([comunicadoId, email])
   @@index([comunicadoId, estado])
+  @@index([userId])
+  @@index([estado, enviadoEl])
+}
+
+/// Correos a muchos que no son comunicados (el aviso de apertura de papeletas):
+/// cada uno ya maquetado, para que salgan poco a poco con el tope del día.
+model CorreoEnCola {
+  id        Int         @id @default(autoincrement())
+  /// Lo que agrupa un envío («apertura:3:2027»), y cómo se llama en la lista.
+  lote      String      @db.VarChar(60)
+  titulo    String      @db.VarChar(150)
+  userId    Int?
+  porMovil  Boolean     @default(false)
+  para      String      @db.VarChar(191)
+  asunto    String      @db.VarChar(200)
+  html      String      @db.LongText
+  uso       String      @db.VarChar(60)
+  /// Título, texto y adónde lleva el aviso al móvil, si la cuenta tiene.
+  aviso     Json?
+  estado    EstadoEnvio @default(PENDIENTE)
+  creadoEn  DateTime    @default(now())
+  enviadoEl DateTime?
+
+  @@index([estado, porMovil])
+  @@index([lote])
+  @@index([estado, enviadoEl])
 }
 
 enum TipoCabildo {

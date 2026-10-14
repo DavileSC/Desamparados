@@ -12,6 +12,7 @@ import { misFichas, type ApiProfile } from '../../../lib/api/perfil'
 import { aniosCumplidos } from '../../altas/public/schema'
 import { Contacto, CuotaYPago, DatosPersonales, VidaDeHermano } from './apartados'
 import ApartadoContrasena from './ApartadoContrasena'
+import AvisosEnElMovil, { PreguntaDeAvisos } from './AvisosEnElMovil'
 import { ApartadoMisDatos } from './MisDerechos'
 import { PARENTESCO, aDia, diaLegible } from './etiquetas'
 import { site } from '../../../config/site'
@@ -134,6 +135,7 @@ export default function PerfilPage() {
         onConfirmar={() => bloqueo.proceed?.()}
         onCancelar={() => bloqueo.reset?.()}
       />
+      <PreguntaDeAvisos />
       {/* En PC, sin margen propio: el del marco del área basta, y así la ficha
           cabe en la pantalla sin desplazarse (1280×552 con el escalado al 150 %). */}
       <SeccionAnimada sx={{ py: { xs: 1, md: 0 } }}>
@@ -250,13 +252,13 @@ export default function PerfilPage() {
                 {abierta.clave === 'hermano' && <VidaDeHermano ficha={ficha} onGuardada={guardada} onSucio={setSucio} />}
                 {abierta.clave === 'cuota' && <CuotaYPago ficha={ficha} onGuardada={guardada} onSucio={setSucio} />}
                 {/* De la cuenta, no de la ficha: es la misma sea cual sea la persona elegida. */}
-                {abierta.clave === 'contrasena' && <Box sx={{ display: 'grid', gap: 2 }}><ApartadoContrasena onSucio={setSucio} /><ApartadoMisDatos /></Box>}
+                {abierta.clave === 'contrasena' && <Box sx={{ display: 'grid', gap: 2 }}><AvisosEnElMovil /><ApartadoContrasena onSucio={setSucio} /><ApartadoMisDatos /></Box>}
               </Box>
             </>
           )}
 
           {/* Sin ficha que enseñar, la contraseña de la cuenta sigue a mano. */}
-          {!cargando && !ficha && <Box sx={{ maxWidth: 640, display: 'grid', gap: 2 }}><ApartadoContrasena onSucio={setSucio} /><ApartadoMisDatos /></Box>}
+          {!cargando && !ficha && <Box sx={{ maxWidth: 640, display: 'grid', gap: 2 }}><AvisosEnElMovil /><ApartadoContrasena onSucio={setSucio} /><ApartadoMisDatos /></Box>}
         </ContenedorDePagina>
       </SeccionAnimada>
     </>

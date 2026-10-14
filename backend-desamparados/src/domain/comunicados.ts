@@ -62,6 +62,8 @@ interface FichaDestinataria {
   email: string | null;
   /** El de la cuenta de la que cuelga (el tutor, en los menores). */
   emailCuenta: string;
+  /** Esa cuenta: la de «Avisos» en el área y la del aviso al móvil. */
+  userId?: number;
 }
 
 export interface Destinatario {
@@ -69,6 +71,8 @@ export interface Destinatario {
   /** Solo si la dirección es de una ficha: con varias (una familia), saludo general. */
   nombre: string | null;
   sexo: 'HOMBRE' | 'MUJER' | null;
+  /** La cuenta, si todas las fichas de esa dirección cuelgan de la misma. */
+  userId?: number;
 }
 
 /** Las direcciones que no son de nadie: la cuenta de custodia y las de la demo. */
@@ -86,9 +90,15 @@ export function destinatariosDe(fichas: FichaDestinataria[]): { destinatarios: D
     if (!esDireccionReal(email)) { sinCorreo += 1; continue; }
     porCorreo.set(email, [...(porCorreo.get(email) ?? []), f]);
   }
-  const destinatarios = [...porCorreo.entries()].map(([email, lista]) => (
-    lista.length === 1 ? { email, nombre: lista[0].nombre, sexo: lista[0].sexo } : { email, nombre: null, sexo: null }
-  ));
+  const destinatarios = [...porCorreo.entries()].map(([email, lista]) => {
+    // Una dirección compartida por dos cuentas no es de ninguna: va por correo.
+    const cuentas = new Set(lista.map((f) => f.userId));
+    const [userId] = cuentas;
+    const deLaCuenta = cuentas.size === 1 && userId !== undefined ? { userId } : {};
+    return lista.length === 1
+      ? { email, nombre: lista[0].nombre, sexo: lista[0].sexo, ...deLaCuenta }
+      : { email, nombre: null, sexo: null, ...deLaCuenta };
+  });
   return { destinatarios, sinCorreo };
 }
 

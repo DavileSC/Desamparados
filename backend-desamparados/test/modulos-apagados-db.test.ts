@@ -49,6 +49,7 @@ const RUTAS: Record<ClaveModulo, { method?: string; ruta: string }[]> = {
   cabildos: [{ ruta: '/api/cabildos' }],
   'informe-anual': [{ ruta: '/api/datos/informe-anual/2025' }],
   'avisos-en-el-movil': [{ ruta: '/api/auth/moviles' }, { method: 'POST', ruta: '/api/auth/login/aprobacion' }, { method: 'POST', ruta: '/api/auth/aprobacion/abc' }],
+  'avisos-a-los-hermanos': [{ ruta: '/api/hermanos/mis-avisos-movil' }],
 };
 
 /** Rutas del núcleo que tienen que seguir aunque TODO esté apagado. */

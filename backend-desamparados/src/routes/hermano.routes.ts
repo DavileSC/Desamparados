@@ -3,6 +3,8 @@ import { type } from 'arktype';
 import { HermanoController } from '../controllers/hermano.controller';
 import { CensoHojaController } from '../controllers/censo-hoja.controller';
 import { PrimerAccesoController } from '../controllers/primer-acceso.controller';
+import { AvisosHermanosController } from '../controllers/avisos-hermanos.controller.js';
+import { apuntarMovilDeAvisosSchema, conIdSchema } from '../schemas/avisos-hermanos.schema.js';
 import { fichaAjenaSchema, invitarSchema, listadoPrimerAccesoSchema } from '../schemas/primer-acceso.schema';
 import { ficheroDeDatosMiddleware } from '../middleware/upload.middleware';
 import { authenticateToken, exigirAreaHermanos } from '../middleware/session';
@@ -110,7 +112,7 @@ hermanoRouter.post('/admin/:id/emancipar', checkRole(rolesGestionCenso), validat
 
 // Del área de hermanos y solo con su sesión: con el área apagada, la ficha
 // sin confirmar o solo la sesión del CMS, no se abren (ver `exigirAreaHermanos`).
-hermanoRouter.use(['/mis-perfiles', '/primer-acceso'], exigirAreaHermanos);
+hermanoRouter.use(['/mis-perfiles', '/primer-acceso', '/mis-avisos-movil', '/mis-avisos'], exigirAreaHermanos);
 
 hermanoRouter.get('/mis-perfiles', HermanoController.getMyProfiles);
 hermanoRouter.post('/mis-perfiles', validate(addProfileSchema), HermanoController.addProfile);
@@ -122,5 +124,16 @@ hermanoRouter.post('/mis-perfiles/:id/emancipar', validateId, validate(emancipat
 // Secretaría una ficha que el censo colgó de esta cuenta por error.
 hermanoRouter.post('/primer-acceso/confirmar', PrimerAccesoController.confirmar);
 hermanoRouter.post('/primer-acceso/fichas/:id/ajena', validate(fichaAjenaSchema), PrimerAccesoController.fichaAjena);
+
+// Los avisos al móvil del área (traspaso-2026-10-14 §5) y los avisos de la
+// Junta para leerlos enteros. Con su módulo cada uno: sin «Boletín y avisos»
+// no hay avisos que leer.
+hermanoRouter.use('/mis-avisos-movil', conModulo('avisos-a-los-hermanos'));
+hermanoRouter.get('/mis-avisos-movil', AvisosHermanosController.listarMoviles);
+hermanoRouter.post('/mis-avisos-movil', validate(apuntarMovilDeAvisosSchema), AvisosHermanosController.apuntarMovil);
+hermanoRouter.delete('/mis-avisos-movil/:id', validate(conIdSchema), AvisosHermanosController.quitarMovil);
+hermanoRouter.use('/mis-avisos', conModulo('comunicados'));
+hermanoRouter.get('/mis-avisos', AvisosHermanosController.listarAvisos);
+hermanoRouter.get('/mis-avisos/:id', validate(conIdSchema), AvisosHermanosController.obtenerAviso);
 
 export { hermanoRouter as hermanoRoutes };

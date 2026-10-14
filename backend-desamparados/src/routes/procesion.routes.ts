@@ -135,6 +135,8 @@ procesionRouter.delete('/admin/turnos/:id', checkRole([Role.ADMIN, Role.SECRETAR
 // El plazo de la solicitud en el área de hermanos: lo ve la Junta, lo cambia Secretaría.
 procesionRouter.get('/admin/plazo', checkRole(rolesJunta), validate(salidaQuerySchema), ProcesionController.getPlazo);
 procesionRouter.post('/admin/plazo', checkRole([Role.ADMIN, Role.SECRETARIA]), validate(plazoPapeletasSchema), ProcesionController.cambiarPlazo);
+// Antes de abrir: a cuántos les llegaría el aviso al móvil y cuántos correos, con el tope del día.
+procesionRouter.get('/admin/plazo/aviso-previsto', checkRole([Role.ADMIN, Role.SECRETARIA]), ProcesionController.avisoPrevisto);
 
 procesionRouter.get('/admin/cuadrante', checkRole(rolesJunta), ProcesionController.getCuadrante);
 procesionRouter.post('/admin/turnos/:id/apuntarme', checkRole(rolesJunta), validateId, ProcesionController.apuntarmeTurno);

@@ -37,7 +37,8 @@ let baseUrl: string;
 // ponen fecha al Rosario, y todo se devuelve al terminar.
 let previas: Salida[] = [];
 
-const avisosDeApertura = mock.method(EmailService, 'enviarAperturaPapeletas', async () => undefined);
+// El correo de apertura se maqueta al ponerlo en la cola de correos; aquí, con las fichas a la vista.
+const avisosDeApertura = mock.method(EmailService, 'correoAperturaPapeletas', async (_nombre: string, fichas: string[]) => ({ asunto: 'Apertura', html: `<p>${fichas.join('|')}</p>`, uso: 'apertura' }));
 
 before(async () => {
   server = app.listen(0);
@@ -97,6 +98,7 @@ async function escenario() {
   const recoger = async () => {
     const fichas = [titular.id, sobrino.id];
     await db.auditLog.deleteMany({ where: { OR: [{ userId: { in: [admin.id, usuario.id] } }, { entityType: 'hermano', entityId: { in: [String(titular.id), String(sobrino.id)] } }] } });
+    await db.correoEnCola.deleteMany({ where: { para: usuario.email } });
     await db.operacionMesa.deleteMany({ where: { clave: { in: claves } } });
     await db.solicitud.deleteMany({ where: { hermanoId: { in: fichas } } });
     await db.transaccion.deleteMany({ where: { hermanoId: { in: fichas } } });
@@ -211,11 +213,16 @@ test('abrir exige días de reparto; al abrir se avisa y queda un borrador de not
     assert.equal(await PlazoPapeletasService.estaAbierto(await salida(PASION)), true);
     assert.equal(noticia?.titulo, `Abierta la inscripción ${await deLaSalida(PASION)} ${PlazoPapeletasService.anioDeLaProcesion(await salida(PASION))}`);
 
-    // Los correos salen después de responder.
-    await new Promise((r) => setTimeout(r, 50));
-    const nuestro = avisosDeApertura.mock.calls.find((c) => c.arguments[0] === e.usuario.email);
+    // Los correos se ponen en la cola después de responder.
+    let nuestro = null;
+    for (let i = 0; i < 40 && !nuestro; i++) {
+      await new Promise((r) => setTimeout(r, 50));
+      nuestro = await db.correoEnCola.findFirst({ where: { para: e.usuario.email, lote: { startsWith: 'apertura:' } }, orderBy: { id: 'desc' } });
+    }
     assert.ok(nuestro, 'se avisa a la cuenta de prueba');
-    assert.deepEqual((nuestro!.arguments[2] as string[]).length, 2, 'nombra sus dos fichas');
+    assert.equal(nuestro!.html.split('|').length, 2, 'nombra sus dos fichas');
+    assert.equal(nuestro!.porMovil, false, 'sin móvil para los avisos, por correo');
+    assert.ok(avisosDeApertura.mock.callCount() >= 1);
 
     // Un hermano no puede tocar el plazo.
     const deHermano = await fetch(`${baseUrl}/api/procesion/admin/plazo`, {

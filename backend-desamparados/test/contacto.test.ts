@@ -314,6 +314,8 @@ describe('EmailService', () => {
     const crear = mock.method(nodemailer, 'createTransport', () => transporteFalso());
     const aviso = mock.method(console, 'warn', () => {});
     process.env.EMAIL_USER = 'secretaria@example.es';
+    // Sin remitente aparte (el .env de quien prueba puede tenerlo, si envía por Brevo).
+    delete process.env.EMAIL_FROM;
     delete process.env.CONTACT_EMAIL_TO;
     process.env.CONTACT_EMAIL_USER = 'contacto@example.es';
     delete process.env.CONTACT_EMAIL_PASS;

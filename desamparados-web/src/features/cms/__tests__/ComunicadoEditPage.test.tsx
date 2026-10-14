@@ -23,7 +23,7 @@ afterEach(() => { vi.unstubAllGlobals() })
 // `crearQueryClientDePruebas`, la consulta de módulos caería en el `fetch`
 // simulado de aquí abajo (pensado para las rutas del comunicado) y rompería
 // con una respuesta que no es la lista de módulos.
-function montar(comunicado: unknown, envios = { enviados: 0, fallidos: 0, pendientes: 0 }, modulos?: readonly string[]) {
+function montar(comunicado: unknown, envios = { enviados: 0, fallidos: 0, pendientes: 0, alMovil: 0 }, modulos?: readonly string[]) {
   const fetch = vi.fn().mockImplementation((url: string, init: RequestInit = {}) => {
     const ruta = String(url)
     if (esListaDeSalidas(ruta)) return Promise.resolve(json(salidasDePrueba))
@@ -148,7 +148,7 @@ describe('ComunicadoEditPage', () => {
   })
 
   it('lo enviado se enseña tal cual, con cómo fue el envío y los fallidos por reintentar', async () => {
-    montar({ ...BORRADOR, estado: 'ENVIADO', enviadoEl: '2026-09-30T11:00:00Z' }, { enviados: 8, fallidos: 2, pendientes: 0 })
+    montar({ ...BORRADOR, estado: 'ENVIADO', enviadoEl: '2026-09-30T11:00:00Z' }, { enviados: 8, fallidos: 2, pendientes: 0, alMovil: 0 })
     expect(await screen.findByText('Enviado a 8 direcciones')).toBeInTheDocument()
     expect(screen.getByText('Se convoca cabildo.')).toBeInTheDocument()
     expect(screen.getByText(/2 correos no han salido/)).toBeInTheDocument()

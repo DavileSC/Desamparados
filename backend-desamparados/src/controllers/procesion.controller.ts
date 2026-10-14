@@ -30,6 +30,10 @@ export class ProcesionController {
     res.json(salida.fecha === 'MANUAL' ? { ...plazo, fecha: SalidasService.fecha(salida) } : plazo);
   });
 
+  static avisoPrevisto = manejar('No se ha podido calcular a quién llegaría el aviso', async (_req, res) => {
+    res.status(200).json(await PlazoPapeletasService.avisoPrevisto());
+  });
+
   static cambiarPlazo = manejar('Error cambiando el plazo de papeletas', async (req, res) => {
     const { abierto, avisar, borradorNoticia } = req.body as { abierto: boolean; avisar?: boolean; borradorNoticia?: boolean };
     const resultado = await PlazoPapeletasService.cambiar(abierto, { avisar, borradorNoticia }, await salidaDe(req), AuditoriaService.metaFromReq(req));

@@ -113,6 +113,8 @@ const RevisarFichaPage = lazy(() => import('../features/areaHermano/primerAcceso
 // Brother area pages
 const PerfilPage = lazy(() => import('../features/areaHermano/perfil/PerfilPage'))
 const FamiliaPage = lazy(() => import('../features/areaHermano/familia/FamiliaPage'))
+const AvisosPage = lazy(() => import('../features/areaHermano/avisos/AvisosPage'))
+const AvisoPage = lazy(() => import('../features/areaHermano/avisos/AvisoPage'))
 const ProcesionPage = lazy(() => import('../features/areaHermano/procesion/ProcesionPage'))
 const HistoricoPage = lazy(() => import('../features/areaHermano/procesion/HistoricoPage'))
 const RecibosPage = lazy(() => import('../features/areaHermano/recibos/RecibosPage'))
@@ -269,6 +271,8 @@ const router = createBrowserRouter([
           { path: 'procesion/historico', element: pagina(HistoricoPage, 'procesion') },
           { path: 'recibos', element: pagina(RecibosPage, 'nucleo') },
           { path: 'recibos/:id', element: pagina(ReciboPage, 'nucleo') },
+          { path: 'avisos', element: pagina(AvisosPage, 'comunicados') },
+          { path: 'avisos/:id', element: pagina(AvisoPage, 'comunicados') },
           { path: '*', element: <Navigate to="/area-hermano/perfil" replace /> },
         ],
       },

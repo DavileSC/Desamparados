@@ -3,6 +3,7 @@ import PersonIcon from '@mui/icons-material/Person'
 import FamilyRestroomIcon from '@mui/icons-material/FamilyRestroom'
 import DirectionsWalkIcon from '@mui/icons-material/DirectionsWalk'
 import ReceiptIcon from '@mui/icons-material/Receipt'
+import CampaignIcon from '@mui/icons-material/Campaign'
 import type { Modulo } from '../domain/modulos'
 
 interface EntradaArea {
@@ -25,4 +26,6 @@ export const entradasDelArea: EntradaArea[] = [
   { label: 'Mi familia', href: '/area-hermano/familia', icono: FamilyRestroomIcon, modulo: 'nucleo' },
   { label: 'Procesión', href: '/area-hermano/procesion', icono: DirectionsWalkIcon, modulo: 'procesion' },
   { label: 'Recibos', href: '/area-hermano/recibos', icono: ReceiptIcon, modulo: 'nucleo' },
+  // Los avisos de la Junta enteros: el aviso del móvil solo trae dos líneas.
+  { label: 'Avisos', href: '/area-hermano/avisos', icono: CampaignIcon, modulo: 'comunicados' },
 ]

@@ -304,6 +304,7 @@ Opcionales:
 | `EMAIL_FROM_NAME` | Nombre del remitente. Por defecto «Secretaría» |
 | `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT` | Un servicio de envío en vez de Gmail (Brevo: `smtp-relay.brevo.com`, `587`). `EMAIL_USER` y `EMAIL_PASS` pasan a ser el usuario y la clave SMTP del servicio. Gmail deja unos 500 correos al día y los saca con la dirección de la cuenta de Gmail |
 | `EMAIL_FROM` | La dirección con la que salen los correos (`noreply@…`). Obligatoria con `EMAIL_SMTP_HOST`; por defecto, `EMAIL_USER`. Tiene que estar dada de alta como remitente en el servicio, con el dominio autenticado (DKIM) |
+| `CORREOS_MASIVOS_POR_DIA` | Cuántos correos de los envíos a muchos (comunicados, aviso de apertura de papeletas) salen al día; lo que no cabe sale al siguiente, solo. Por defecto `250`, por debajo de los 300 de Brevo gratis: los correos sueltos no cuentan y necesitan margen. Con Gmail se puede subir a unos `450` |
 | `CONTACT_EMAIL_TO` | Destinatario del formulario de contacto y del aviso de solicitudes, y «Responder a» de todos los correos. Por defecto, `EMAIL_FROM` o `EMAIL_USER` |
 | `CONTACT_EMAIL_USER`, `CONTACT_EMAIL_PASS` | Cuenta aparte para el formulario de contacto |
 | `TOTP_ENC_KEY_ANTERIOR` | Solo durante una rotación de `TOTP_ENC_KEY`. Ver «Rotar `TOTP_ENC_KEY`» |

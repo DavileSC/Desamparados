@@ -85,9 +85,10 @@ describe('PerfilPage', () => {
     const simulado = responder([ficha(1, 'Ana'), ficha(2, 'Bruno', { esTitular: false }), ficha(3, 'Carla', { esTitular: false })])
     renderWithProviders(<PerfilPage />, { routerDeDatos: true })
 
-    await waitFor(() => expect(simulado.mock.calls.length).toBeGreaterThan(0))
-    const pedida = new URL(String(simulado.mock.calls[0]?.[0]), 'http://localhost')
-    expect(pedida.pathname).toContain('/hermanos/mis-perfiles')
+    // Junto a la familia se pide también lo de los avisos del móvil: se busca la de la familia.
+    const deLaFamilia = () => simulado.mock.calls.find(([url]) => String(url).includes('/hermanos/mis-perfiles'))
+    await waitFor(() => expect(deLaFamilia()).toBeDefined())
+    const pedida = new URL(String(deLaFamilia()![0]), 'http://localhost')
     expect(Number(pedida.searchParams.get('limit'))).toBe(FICHAS_POR_FAMILIA)
     expect(pedida.searchParams.get('page')).toBe('1')
   })

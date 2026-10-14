@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { comunicados, crearComunicado, type ComunicadoEnLista, type TipoComunicado } from '../../lib/api/comunicados'
 import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
+import EnviosEnMarcha from './EnviosEnMarcha'
 import { fechaCorta } from './contabilidad/formato'
 import { site } from '../../config/site'
 import { deLaCorporacion } from '../../domain/articulos'
@@ -58,13 +59,14 @@ export default function ComunicadosAdminPage() {
       <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setNuevo({ tipo: 'BOLETIN', asunto: '' }); setErrorNuevo(null); setAbierta(true) }}>Nuevo</Button>
     </CabeceraSeccion>
     {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+    <EnviosEnMarcha />
 
     {!lista && !error && <CircularProgress aria-label="Cargando los comunicados" />}
     {lista?.length === 0 && <Alert severity="info">Todavía no se ha escrito ninguno.</Alert>}
     {lista && lista.length > 0 && (
       <Paper component="ul" sx={{ m: 0, p: 0, listStyle: 'none' }}>
         {lista.map((c, i) => {
-          const total = c.envios.enviados + c.envios.fallidos + c.envios.pendientes
+          const total = c.envios.enviados + c.envios.fallidos + c.envios.pendientes + c.envios.alMovil
           return (
             <Box component="li" key={c.id} sx={{ borderTop: i === 0 ? 'none' : '1px solid', borderColor: 'divider' }}>
               <Box component={Link} to={`/cms/comunicados/${c.id}`} sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center', px: 2.5, py: 2, color: 'inherit', textDecoration: 'none', '&:hover': { bgcolor: 'action.hover' } }}>
@@ -76,7 +78,7 @@ export default function ComunicadosAdminPage() {
                 </Box>
                 <Typography variant="body2" color="text.secondary" sx={{ minWidth: 150 }}>
                   {c.enviadoEl ? `Enviado el ${fechaCorta(c.enviadoEl)}` : `Escrito el ${fechaCorta(c.updatedAt)}`}
-                  {total > 0 && <><br />{c.envios.enviados} de {total} enviados{c.envios.fallidos ? ` · ${c.envios.fallidos} fallidos` : ''}</>}
+                  {total > 0 && <><br />{c.envios.enviados + c.envios.alMovil} de {total} enviados{c.envios.alMovil ? ` (${c.envios.alMovil} al móvil)` : ''}{c.envios.fallidos ? ` · ${c.envios.fallidos} fallidos` : ''}</>}
                 </Typography>
                 <Chip size="small" label={ESTADO[c.estado].texto} color={ESTADO[c.estado].color} variant={c.estado === 'BORRADOR' ? 'outlined' : 'filled'} />
               </Box>

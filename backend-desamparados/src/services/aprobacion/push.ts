@@ -23,12 +23,26 @@ export interface AvisoDeEntrada {
 }
 
 /**
+ * Un aviso del área de hermanos (la apertura de papeletas, un aviso de la
+ * Junta). `etiqueta` agrupa: uno nuevo con la misma sustituye al anterior.
+ */
+export interface AvisoAHermano {
+  tipo: 'aviso';
+  etiqueta: string;
+  titulo: string;
+  cuerpo: string;
+  url: string;
+}
+
+export type AvisoAlMovil = AvisoDeEntrada | AvisoAHermano;
+
+/**
  * `muerta`: el servicio de push dice que esa suscripción ya no existe (404 o
  * 410: se desinstaló la web o se quitó el permiso). Se borra el móvil.
  */
 export type ResultadoDeEnvio = 'enviado' | 'muerta' | 'fallo';
 
-type Envio = (suscripcion: SuscripcionPush, aviso: AvisoDeEntrada) => Promise<ResultadoDeEnvio>;
+type Envio = (suscripcion: SuscripcionPush, aviso: AvisoAlMovil) => Promise<ResultadoDeEnvio>;
 
 /**
  * Las tres variables, leídas en cada llamada: las pruebas las ponen después de
@@ -56,9 +70,10 @@ const enviarDeVerdad: Envio = async (suscripcion, aviso) => {
       JSON.stringify(aviso),
       {
         vapidDetails: { subject: vapid.contacto, publicKey: vapid.publica, privateKey: vapid.privada },
-        // Lo que dura la aprobación: un aviso que llega más tarde ya no sirve.
-        TTL: 120,
-        urgency: 'high',
+        // La aprobación dura dos minutos: más tarde ya no sirve. Un aviso a un
+        // hermano con el móvil apagado sí vale unos días después.
+        TTL: aviso.tipo === 'aprobar-entrada' ? 120 : 3 * 24 * 3600,
+        urgency: aviso.tipo === 'aprobar-entrada' ? 'high' : 'normal',
         timeout: 10_000,
       },
     );
@@ -72,7 +87,7 @@ const enviarDeVerdad: Envio = async (suscripcion, aviso) => {
 };
 
 /** Los avisos que se habrían mandado dentro de las pruebas, en orden. */
-export const avisosDePrueba: { suscripcion: SuscripcionPush; aviso: AvisoDeEntrada }[] = [];
+export const avisosDePrueba: { suscripcion: SuscripcionPush; aviso: AvisoAlMovil }[] = [];
 
 const apuntarDePrueba: Envio = async (suscripcion, aviso) => {
   avisosDePrueba.push({ suscripcion, aviso });
@@ -86,7 +101,7 @@ export function fijarEnvioDePrueba(envio: Envio | null = null): void {
   envioDePrueba = envio;
 }
 
-export function enviarAviso(suscripcion: SuscripcionPush, aviso: AvisoDeEntrada): Promise<ResultadoDeEnvio> {
+export function enviarAviso(suscripcion: SuscripcionPush, aviso: AvisoAlMovil): Promise<ResultadoDeEnvio> {
   if (process.env.NODE_TEST_CONTEXT !== undefined) return (envioDePrueba ?? apuntarDePrueba)(suscripcion, aviso);
   return enviarDeVerdad(suscripcion, aviso);
 }

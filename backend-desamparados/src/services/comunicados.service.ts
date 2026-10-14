@@ -2,11 +2,10 @@
  * El boletín y los avisos masivos por correo: el borrador, a quién va, la
  * prueba, el envío y la baja del boletín.
  *
- * Enviar no manda nada en el acto: apunta a cada destinatario y un proceso en
- * segundo plano los va mandando uno a uno, con una pausa entre correos. La
- * cuenta de Gmail tiene un cupo diario y corta a quien manda de golpe; así, un
- * boletín a cuatrocientos hermanos tarda unos minutos, pero llega. Si el
- * servidor se reinicia a medias, al arrancar sigue por donde iba.
+ * Enviar no manda nada en el acto: apunta a cada destinatario y la cola de
+ * correos (`correos/cola.ts`) los va mandando uno a uno, con pausa y con el
+ * tope del día; un aviso a quien tiene móvil para los avisos le llega ahí en
+ * vez de por correo. Si el servidor se reinicia a medias, sigue por donde iba.
  */
 import { EstadoComunicado, EstadoEnvio, EstadoPago, EstadoSolicitud, Prisma, TipoComunicado, TipoRecibo } from '@prisma/client';
 import db from '../config/db';
@@ -14,6 +13,8 @@ import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearContenidoCms, extractoPlano } from '../utils/sanear-html.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
 import { enviarCorreo } from './correos/envio.js';
+import { colaTerminada, despertarCola, ponerMaquetaDeComunicados } from './correos/cola.js';
+import { AvisosHermanosService } from './avisos-hermanos.service.js';
 import { firma, maquetar, parrafo, saludo, urlDeLaWeb } from './correos/plantilla.js';
 import { anioDeLaMesa } from './procesion/zonas.service.js';
 import { SalidasService } from './procesion/salidas.service.js';
@@ -33,14 +34,7 @@ export interface DatosComunicado {
   segmento: Segmento;
 }
 
-/** Entre correo y correo: por debajo de lo que Gmail tolera sin cortar. Se puede cambiar con COMUNICADOS_PAUSA_MS. */
-const pausa = () => {
-  const ms = Number(process.env.COMUNICADOS_PAUSA_MS ?? 1500);
-  // El arranque ya la valida (config/entorno.ts); por si acaso, nunca sin pausa por un valor roto.
-  return Number.isFinite(ms) && ms >= 0 ? ms : 1500;
-};
 const secreto = () => process.env.JWT_SECRET ?? '';
-const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Solo los filtros que se conocen, para guardar lo que se eligió y nada más. */
 function segmentoLimpio(s: Segmento): Segmento {
@@ -96,10 +90,10 @@ async function fichasDelSegmento(tipo: TipoComunicado, s: Segmento) {
   };
   const fichas = await db.hermano.findMany({
     where,
-    select: { nombre: true, sexo: true, email: true, user: { select: { email: true } } },
+    select: { nombre: true, sexo: true, email: true, user: { select: { id: true, email: true } } },
     orderBy: [{ apellidos: 'asc' }, { id: 'asc' }],
   });
-  return fichas.map((f) => ({ nombre: f.nombre, sexo: f.sexo, email: f.email, emailCuenta: f.user.email }));
+  return fichas.map((f) => ({ nombre: f.nombre, sexo: f.sexo, email: f.email, emailCuenta: f.user.email, userId: f.user.id }));
 }
 
 /** El correo de un comunicado para un destinatario. */
@@ -135,46 +129,13 @@ const resumen = async (c: { id: number; tipo: TipoComunicado; asunto: string; es
   createdAt: c.createdAt, updatedAt: c.updatedAt,
 });
 
-// --- El envío en segundo plano ---------------------------------------------
+// --- El envío: lo hace la cola de correos ----------------------------------
 
-let enMarcha: Promise<void> | null = null;
-
-/**
- * Manda lo pendiente, de uno en uno, hasta que no quede nada. Solo hay uno en
- * marcha a la vez: si ya está corriendo, devuelve el mismo.
- */
-function procesarPendientes(): Promise<void> {
-  enMarcha ??= (async () => {
-    try {
-      for (;;) {
-        const envio = await db.comunicadoEnvio.findFirst({
-          where: { estado: EstadoEnvio.PENDIENTE, comunicado: { estado: EstadoComunicado.ENVIANDO } },
-          include: { comunicado: { select: { id: true, tipo: true, asunto: true, cuerpo: true } } },
-          orderBy: { id: 'asc' },
-        });
-        if (!envio) break;
-        const ok = await enviarCorreo(envio.email, envio.comunicado.asunto, correoPara(envio.comunicado, envio), { uso: 'comunicado' });
-        await db.comunicadoEnvio.update({
-          where: { id: envio.id },
-          data: { estado: ok ? EstadoEnvio.ENVIADO : EstadoEnvio.FALLIDO, enviadoEl: new Date() },
-        });
-        const quedan = await db.comunicadoEnvio.count({ where: { comunicadoId: envio.comunicadoId, estado: EstadoEnvio.PENDIENTE } });
-        if (quedan === 0) {
-          await db.comunicado.update({ where: { id: envio.comunicadoId }, data: { estado: EstadoComunicado.ENVIADO } });
-        } else if (pausa() > 0) {
-          await esperar(pausa());
-        }
-      }
-    } catch (error) {
-      // Un fallo de la base no debe tumbar el servidor: lo pendiente sigue
-      // apuntado y se retoma al volver a enviar o al arrancar.
-      console.error('❌ [Comunicados] El envío se ha detenido:', error);
-    } finally {
-      enMarcha = null;
-    }
-  })();
-  return enMarcha;
+/** Lo que dice el aviso al móvil: el asunto y el principio, y abre el aviso entero en el área. */
+function avisoDe(c: { id: number; asunto: string; cuerpo: string }) {
+  return { etiqueta: `comunicado-${c.id}`, titulo: c.asunto, cuerpo: extractoPlano(c.cuerpo).slice(0, 140), url: `/area-hermano/avisos/${c.id}` };
 }
+ponerMaquetaDeComunicados({ correo: correoPara, aviso: avisoDe });
 
 export class ComunicadosService {
   static async listar() {
@@ -185,7 +146,7 @@ export class ComunicadosService {
     const nombres = await nombresDeSalidas();
     return Promise.all(lista.map(async (c) => ({
       ...(await resumen(c, nombres)),
-      envios: { enviados: de(c.id, EstadoEnvio.ENVIADO), fallidos: de(c.id, EstadoEnvio.FALLIDO), pendientes: de(c.id, EstadoEnvio.PENDIENTE) },
+      envios: { enviados: de(c.id, EstadoEnvio.ENVIADO), fallidos: de(c.id, EstadoEnvio.FALLIDO), pendientes: de(c.id, EstadoEnvio.PENDIENTE), alMovil: de(c.id, EstadoEnvio.MOVIL) },
     })));
   }
 
@@ -257,6 +218,12 @@ export class ComunicadosService {
     if (c.estado !== EstadoComunicado.BORRADOR) throw new HttpError('Este comunicado ya se envió.', 409);
     const { destinatarios } = destinatariosDe(await fichasDelSegmento(c.tipo, c.segmento as Segmento));
     if (destinatarios.length === 0) throw new HttpError('Nadie del segmento tiene correo: no hay a quién mandarlo.', 409);
+    // Al móvil, solo los avisos: el boletín es para leerlo con calma, y una
+    // convocatoria de cabildo tiene que quedar por escrito en el correo.
+    const esConvocatoria = (await db.cabildo.count({ where: { convocatoriaId: id } })) > 0;
+    const conMovil = c.tipo === TipoComunicado.AVISO && !esConvocatoria
+      ? await AvisosHermanosService.cuentasConMovil(destinatarios.flatMap((d) => (d.userId === undefined ? [] : [d.userId])))
+      : new Set<number>();
 
     await db.$transaction(async (tx) => {
       const pasa = await tx.comunicado.updateMany({
@@ -265,13 +232,16 @@ export class ComunicadosService {
       });
       if (pasa.count === 0) throw new HttpError('Este comunicado ya se envió.', 409);
       await tx.comunicadoEnvio.createMany({
-        data: destinatarios.map((d) => ({ comunicadoId: id, email: d.email, nombre: d.nombre, sexo: d.sexo })),
+        data: destinatarios.map((d) => ({
+          comunicadoId: id, email: d.email, nombre: d.nombre, sexo: d.sexo,
+          userId: d.userId ?? null, porMovil: d.userId !== undefined && conMovil.has(d.userId),
+        })),
       });
     });
     await AuditoriaService.log(ACCIONES_AUDITORIA.COMUNICADO_ENVIAR, meta ?? {}, 'comunicado', id, {
       despues: { tipo: c.tipo, asunto: c.asunto, destinatarios: destinatarios.length },
     });
-    void procesarPendientes();
+    void despertarCola();
     return { message: `Enviando a ${destinatarios.length === 1 ? '1 dirección' : `${destinatarios.length} direcciones`}. Tarda unos minutos: se ve aquí cómo avanza.`, destinatarios: destinatarios.length };
   }
 
@@ -282,13 +252,8 @@ export class ComunicadosService {
       db.comunicado.updateMany({ where: { id, estado: EstadoComunicado.ENVIADO }, data: { estado: EstadoComunicado.ENVIANDO } }),
     ]);
     if (r[0].count === 0) throw new HttpError('No hay envíos fallidos que reintentar.', 409);
-    void procesarPendientes();
+    void despertarCola();
     return { message: `Reintentando ${r[0].count === 1 ? '1 envío' : `${r[0].count} envíos`}.` };
-  }
-
-  /** Al arrancar el servidor: si se quedó algo a medias, sigue. */
-  static reanudar() {
-    return procesarPendientes();
   }
 
   /** La baja del boletín desde el enlace del correo: todas las fichas con esa dirección. */
@@ -305,4 +270,4 @@ export class ComunicadosService {
 }
 
 /** Para las pruebas: esperar a que el envío en segundo plano termine. */
-export const envioTerminado = () => enMarcha ?? Promise.resolve();
+export const envioTerminado = () => colaTerminada();

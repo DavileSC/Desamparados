@@ -33,7 +33,8 @@ interface Comunicado {
 }
 
 export interface ComunicadoEnLista extends Comunicado {
-  envios: { enviados: number; fallidos: number; pendientes: number }
+  /** `alMovil`: los que recibieron el aviso en el móvil en vez del correo. */
+  envios: { enviados: number; fallidos: number; pendientes: number; alMovil: number }
 }
 
 export interface ComunicadoCompleto extends Comunicado {
@@ -59,6 +60,23 @@ export const destinatariosDe = (tipo: TipoComunicado, segmento: Segmento) =>
 
 export const enviarPrueba = (id: number) => llamarApi<{ message: string }>(`/comunicados/${id}/prueba`, { method: 'POST' })
 export const enviarComunicado = (id: number) => llamarApi<{ message: string; destinatarios: number }>(`/comunicados/${id}/enviar`, { method: 'POST' })
+/** Cómo va un envío a muchos (un comunicado o la apertura de papeletas). */
+export interface EnvioEnMarcha {
+  clave: string
+  tipo: 'comunicado' | 'apertura'
+  titulo: string
+  desde: string
+  alMovil: number
+  enviados: number
+  fallidos: number
+  pendientes: number
+  total: number
+  estado: 'EN_COLA' | 'ENVIANDO' | 'SIGUE_MANANA' | 'TERMINADO'
+}
+
+/** Los correos de hoy frente al tope, y los envíos en marcha y de la última semana. */
+export const enviosEnMarcha = () => llamarApi<{ hoy: { enviados: number; tope: number }; envios: EnvioEnMarcha[] }>('/comunicados/envios')
+
 export const reintentarFallidos = (id: number) => llamarApi<{ message: string }>(`/comunicados/${id}/reintentar`, { method: 'POST' })
 
 /**
