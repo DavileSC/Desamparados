@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { screen, waitForElementToBeRemoved } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import type { BloqueItinerario as Datos, PaginaDeBloques } from '../../../lib/api/contenido'
 import { cargarBarrio } from '../barrio'
@@ -66,7 +66,10 @@ describe('sin mapa del barrio', () => {
     renderWithProviders(<BloqueItinerario bloque={ITINERARIO} />)
     // El mapa llega a montarse (no se sabe que no hay barrio hasta pedirlo) y se retira.
     const mapa = await screen.findByRole('img', { name: /Mapa del recorrido/ }, { timeout: 15000 })
-    await waitForElementToBeRemoved(mapa, { timeout: 15000 })
+    // No waitForElementToBeRemoved: sin barrio el mapa se retira enseguida, y si
+    // ya se había ido al empezar a esperar, la librería mira el trozo suelto
+    // (donde «sigue dentro») y agota el tiempo; falló así en la verificación.
+    await waitFor(() => expect(mapa.isConnected).toBe(false), { timeout: 15000 })
     const lista = screen.getByRole('list')
     expect(lista.textContent).toContain('Salida del templo')
     expect(lista.textContent).toContain('Regreso al templo')
@@ -83,7 +86,10 @@ describe('sin mapa del barrio', () => {
     // Con margen: el mapa espera al navegador libre y baja su trozo aparte antes
     // de pedir el barrio; con la suite entera en la verificación pasó de 5 s (13-10-2026).
     const mapa = await screen.findByRole('img', { name: /Mapa del recorrido/ }, { timeout: 15000 })
-    await waitForElementToBeRemoved(mapa, { timeout: 15000 })
+    // No waitForElementToBeRemoved: sin barrio el mapa se retira enseguida, y si
+    // ya se había ido al empezar a esperar, la librería mira el trozo suelto
+    // (donde «sigue dentro») y agota el tiempo; falló así en la verificación.
+    await waitFor(() => expect(mapa.isConnected).toBe(false), { timeout: 15000 })
     expect(screen.getByRole('heading', { level: 1, name: 'Esta calle no está en el recorrido' })).toBeInTheDocument()
   })
 })
