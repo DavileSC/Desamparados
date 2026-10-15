@@ -14,7 +14,7 @@ import ListaDeAgenda, { ListaDeAgendaEsqueleto } from './ListaDeAgenda'
 import EnCarga from '../../components/esqueleto/EnCarga'
 import { inicioDeMes, nombreDelMes, sumarMeses } from './agenda'
 import { comienzoEnMadrid, diaDelCalendario, hoyDelCalendario } from '../../lib/horaDeMadrid'
-import { PAPEL, SERIF, TINTA, ceja, enlaceBloque } from './estilos'
+import { PAPEL, SERIF, TACTIL, TINTA, enlaceBloque } from './estilos'
 import { propsDeFoto } from '../../lib/fotoSubida'
 import { useModulos } from '../../hooks/useModulos'
 
@@ -178,15 +178,12 @@ export default function AgendaYDirecto() {
             cada título salía palabra por palabra. Ahí, el texto va encima. */}
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '300px 1fr' }, gap: { xs: 4, lg: 7 }, alignItems: 'start' }}>
           <Box>
-            <Revela>
-              <Typography component="span" sx={ceja}><TextoDePortada anchos={['5em']}>{textos.agenda.ceja}</TextoDePortada></Typography>
-            </Revela>
-            <Revela efecto="cortina" orden={1}>
+            <Revela efecto="cortina">
               <Typography id="agenda-title" variant="h2" component="h2" sx={{ fontFamily: SERIF, color: '#fff', m: 0 }}>
                 <TextoDePortada anchos={['7em']}>{textos.agenda.titulo}</TextoDePortada>
               </Typography>
             </Revela>
-            <Revela orden={2}>
+            <Revela orden={1}>
               <Typography sx={{ mt: 2.75, mb: 3.5, maxWidth: 420, fontSize: 15, lineHeight: 1.7, color: '#e4e2df' }}>
                 <TextoDePortada anchos={['26em', '22em', '12em']}>{textos.agenda.parrafo}</TextoDePortada>
               </Typography>
@@ -203,6 +200,8 @@ export default function AgendaYDirecto() {
               sx={{
                 display: 'grid',
                 gridTemplateColumns: { xs: '1fr', sm: '280px 1fr' },
+                // En la tableta, el calendario más ancho para que cada día mida 44 px.
+                [TACTIL]: { gridTemplateColumns: { xs: '1fr', sm: '340px 1fr' } },
                 gridTemplateRows: { xs: 'auto 1fr', sm: '1fr' },
                 backgroundColor: PAPEL,
                 color: '#1b1c1a',

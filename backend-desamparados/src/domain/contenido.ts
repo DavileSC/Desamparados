@@ -46,6 +46,10 @@ export const CLAVES_RETIRADAS: ReadonlySet<string> = new Set([
   // El aviso de retransmisión de la portada (WP12, 13-10-2026): nunca llegó a pintarse.
   'portada.agenda.directoTitulo',
   'portada.agenda.directoTexto',
+  // Las cejas que repetían su título (auditoría antislop, 16-10-2026).
+  'portada.actualidad.ceja',
+  'portada.agenda.ceja',
+  'portada.accesos.placa.ceja',
 ]);
 
 /** Copia nueva de los textos de siempre. Nunca se devuelve el objeto original. */

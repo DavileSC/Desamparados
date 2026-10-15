@@ -71,7 +71,7 @@ export default function CuentaAtrasDeSalida({ forma }: { forma: 'hero' | 'franja
           px: '20px', pt: 2.5, pb: 2.75, bgcolor: '#0c0b0d', borderBottom: '1px solid rgba(236, 230, 232, 0.12)',
         }}
     >
-      <Typography component="p" sx={{ fontSize: enHero ? 12 : 11, letterSpacing: '0.26em', textTransform: 'uppercase', color: GOLD, fontWeight: 600 }}>
+      <Typography component="p" sx={{ fontSize: enHero ? 12 : 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: GOLD, fontWeight: 600 }}>
         {proxima.hoy ? 'Hoy' : `${proxima.nombre} · ${fechaDe(proxima.dia, ahora)}`}
       </Typography>
       {proxima.hoy ? (

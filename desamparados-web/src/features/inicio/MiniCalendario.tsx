@@ -4,7 +4,7 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import type { ApiEvent, EventoCalendario } from '../../lib/api/agenda'
 import { TIPOS, cubreElDia, diasDeLaRejilla, inicioDelDia, nombreDelMes } from './agenda'
-import { GRANATE, PANTALLA_ALTA } from './estilos'
+import { GRANATE, PANTALLA_ALTA, TACTIL } from './estilos'
 import { CORMORANT } from '../actualidad/agenda/letraAlmanaque'
 
 const DIAS_SEMANA = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
@@ -25,6 +25,7 @@ interface MiniCalendarioProps {
 const navSx = {
   width: 36,
   height: 36,
+  [TACTIL]: { width: 44, height: 44 },
   color: '#7b6f5e',
   '&:hover': { backgroundColor: alpha(GRANATE, 0.08), color: GRANATE },
   '&.Mui-disabled': { color: 'rgba(27, 28, 26, 0.22)' },
@@ -72,6 +73,8 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
             width: 31,
             height: 31,
             [PANTALLA_ALTA]: { width: 36, height: 36 },
+            // Con el dedo, todo el ancho de la casilla (hasta 44) y 44 de alto.
+            [TACTIL]: { width: '100%', maxWidth: 44, height: 44 },
             mx: 'auto',
             borderRadius: '50%',
             display: 'grid',

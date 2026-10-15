@@ -112,15 +112,14 @@ describe('NoticiasDestacadas', () => {
     expect(new Set(tonos).size).toBe(3)
   })
 
-  it('enseña la ceja, el título y el enlace que vienen del CMS', async () => {
+  it('enseña el título y el enlace que vienen del CMS', async () => {
     const textos = textosDePrueba()
-    textos.actualidad = { ceja: 'Lo último', titulo: 'Novedades', enlace: 'Ver el archivo' }
+    textos.actualidad = { titulo: 'Novedades', enlace: 'Ver el archivo' }
     responderPortada(textos)
 
     renderWithProviders(<NoticiasDestacadas />)
 
-    expect(await screen.findByText('Lo último')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Novedades' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Novedades' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /ver el archivo/i })).toBeInTheDocument()
   })
 })

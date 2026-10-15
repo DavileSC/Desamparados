@@ -4,17 +4,15 @@
       "ceja": "Bienvenidos",
       "titulo": "Fe, tradición y comunidad",
       "parrafo": "Devoción, historia y patrimonio al servicio de nuestra comunidad. Acompáñanos a lo largo de todo el año.",
-      "botonPrincipal": "Conócenos",
+      "botonPrincipal": "Nuestra historia",
       "enlaceSecundario": "Agenda y cultos",
       "video": ""
     },
     "actualidad": {
-      "ceja": "Actualidad",
       "titulo": "Últimas noticias",
       "enlace": "Ver todas"
     },
     "agenda": {
-      "ceja": "Cultos",
       "titulo": "Agenda y Cultos",
       "parrafo": "La vida de oración de la corporación a lo largo del año litúrgico: cultos, formación y convivencia.",
       "enlace": "Calendario completo",
@@ -22,7 +20,6 @@
     },
     "accesos": {
       "placa": {
-        "ceja": "Hazte hermano",
         "titulo": "Forma parte de nuestra historia",
         "texto": "Una comunidad de fe que vive la devoción a su imagen titular y trabaja por el bien común.",
         "boton": "Quiero ser hermano"

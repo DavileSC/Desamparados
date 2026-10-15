@@ -29,11 +29,11 @@ export interface TextosPortada {
   /** `video`: el vídeo de fondo (`/storage/public/….mp4`), o vacío para que roten las fotos. */
   /** `cuentaAtras`: la cuenta atrás hasta la próxima salida; sin el campo (portadas de antes), sale. */
   hero: { ceja: string; titulo: string; parrafo: string; botonPrincipal: string; enlaceSecundario: string; video: string; cuentaAtras?: boolean }
-  actualidad: { ceja: string; titulo: string; enlace: string }
+  actualidad: { titulo: string; enlace: string }
   /** `imagenUrl`: la foto velada del fondo; vacía, fondo oscuro liso. */
-  agenda: { ceja: string; titulo: string; parrafo: string; enlace: string; imagenUrl: string }
+  agenda: { titulo: string; parrafo: string; enlace: string; imagenUrl: string }
   accesos: {
-    placa: { ceja: string; titulo: string; texto: string; boton: string }
+    placa: { titulo: string; texto: string; boton: string }
     teselas: { clave: string; titulo: string; descripcion: string }[]
   }
   sabadoDePasion: { ceja: string; titulo: string; parrafo: string; enlace: string; destino: string; imagenUrl: string; imagenAlt: string }

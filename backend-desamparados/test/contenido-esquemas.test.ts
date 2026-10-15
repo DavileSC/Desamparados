@@ -136,3 +136,21 @@ test('una portada guardada con los textos del directo sigue valiendo y se depura
   const leida = mezclarConDefectos('portada', vieja) as { agenda: Record<string, unknown> };
   assert.ok(!('directoTitulo' in leida.agenda) && !('directoTexto' in leida.agenda));
 });
+
+// Auditoría antislop: Noticias, Agenda y la placa ya no llevan ceja. Una
+// portada guardada antes, con ellas, se sigue pudiendo guardar, y al leerla ya
+// no las trae.
+test('una portada guardada con las cejas retiradas sigue valiendo y se depura al leer', () => {
+  type Portada = { actualidad: Record<string, unknown>; agenda: Record<string, unknown>; accesos: { placa: Record<string, unknown> } };
+  const portada = porDefecto('portada') as Portada;
+  assert.ok(!('ceja' in portada.actualidad) && !('ceja' in portada.agenda) && !('ceja' in portada.accesos.placa), 'el contenido de partida ya no las trae');
+  const vieja = {
+    ...portada,
+    actualidad: { ...portada.actualidad, ceja: 'Actualidad' },
+    agenda: { ...portada.agenda, ceja: 'Cultos' },
+    accesos: { ...portada.accesos, placa: { ...portada.accesos.placa, ceja: 'Hazte hermano' } },
+  };
+  assert.ok(!(esquemaDeSlug('portada')(vieja) instanceof ArkErrors));
+  const leida = mezclarConDefectos('portada', vieja) as Portada;
+  assert.ok(!('ceja' in leida.actualidad) && !('ceja' in leida.agenda) && !('ceja' in leida.accesos.placa));
+});

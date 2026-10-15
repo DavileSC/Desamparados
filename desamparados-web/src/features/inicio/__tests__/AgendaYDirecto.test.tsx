@@ -114,7 +114,6 @@ describe('AgendaYDirecto', () => {
   it('enseña los textos de la agenda que vienen del CMS', async () => {
     const textos = textosDePrueba()
     textos.agenda = {
-      ceja: 'Vida litúrgica',
       titulo: 'Próximos cultos',
       parrafo: 'Un párrafo distinto sobre la vida de oración.',
       enlace: 'Ver toda la agenda',
@@ -124,8 +123,7 @@ describe('AgendaYDirecto', () => {
 
     renderWithProviders(<AgendaYDirecto />)
 
-    expect(await screen.findByText('Vida litúrgica')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Próximos cultos' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Próximos cultos' })).toBeInTheDocument()
     expect(screen.getByText('Un párrafo distinto sobre la vida de oración.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /ver toda la agenda/i })).toBeInTheDocument()
   })

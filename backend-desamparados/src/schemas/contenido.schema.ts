@@ -45,9 +45,12 @@ const heroSchema = type({
 
 const portadaSchema = type({
   hero: heroSchema,
-  actualidad: { ceja: ETIQUETA, titulo: TITULO, enlace: ETIQUETA },
+  // Noticias, Agenda y la placa ya no llevan ceja: repetía su título («Actualidad»
+  // sobre «Últimas noticias»). Una portada guardada con ella sigue pasando, y
+  // `mezclarConDefectos` la tira al leerla.
+  actualidad: { titulo: TITULO, enlace: ETIQUETA },
   agenda: {
-    ceja: ETIQUETA, titulo: TITULO, parrafo: PARRAFO, enlace: ETIQUETA,
+    titulo: TITULO, parrafo: PARRAFO, enlace: ETIQUETA,
     // `directoTitulo` y `directoTexto` ya no existen (el aviso de retransmisión
     // no se pintaba nunca): una portada guardada con ellos sigue pasando, y
     // `mezclarConDefectos` los tira al leerla.
@@ -56,7 +59,7 @@ const portadaSchema = type({
     imagenUrl: sinFoto.or(rutaImagenPublica),
   },
   accesos: {
-    placa: { ceja: ETIQUETA, titulo: TITULO, texto: PARRAFO, boton: ETIQUETA },
+    placa: { titulo: TITULO, texto: PARRAFO, boton: ETIQUETA },
     teselas: type({ clave: ETIQUETA, titulo: TITULO, descripcion: PARRAFO }).array().atMostLength(12),
   },
   sabadoDePasion: {

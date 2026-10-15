@@ -202,13 +202,6 @@ export default function PortadaAdminPage() {
 
         <SeccionPlegable titulo="Actualidad" vistaPrevia={vista(<NoticiasDestacadas />)}>
           <CampoTexto
-            etiqueta="Antetítulo"
-            valor={textos.actualidad.ceja}
-            onCambio={(ceja) => cambiarActualidad({ ceja })}
-            maxLength={60}
-            ayuda="El texto pequeño en versalitas, sobre el título del bloque de noticias."
-          />
-          <CampoTexto
             etiqueta="Título"
             valor={textos.actualidad.titulo}
             onCambio={(titulo) => cambiarActualidad({ titulo })}
@@ -225,13 +218,6 @@ export default function PortadaAdminPage() {
         </SeccionPlegable>
 
         <SeccionPlegable titulo="Agenda y Cultos" vistaPrevia={vista(<AgendaYDirecto />)}>
-          <CampoTexto
-            etiqueta="Antetítulo"
-            valor={textos.agenda.ceja}
-            onCambio={(ceja) => cambiarAgenda({ ceja })}
-            maxLength={60}
-            ayuda="El texto pequeño en versalitas, sobre el título del bloque."
-          />
           <CampoTexto
             etiqueta="Título"
             valor={textos.agenda.titulo}
@@ -264,13 +250,6 @@ export default function PortadaAdminPage() {
         </SeccionPlegable>
 
         <SeccionPlegable titulo="Accesos directos" vistaPrevia={vista(<AccesosRapidos />)}>
-          <CampoTexto
-            etiqueta="Antetítulo de la placa"
-            valor={textos.accesos.placa.ceja}
-            onCambio={(ceja) => cambiarPlaca({ ceja })}
-            maxLength={60}
-            ayuda="El texto pequeño en versalitas de la placa granate, la grande del mosaico."
-          />
           <CampoTexto
             etiqueta="Título de la placa"
             valor={textos.accesos.placa.titulo}

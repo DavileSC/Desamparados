@@ -202,7 +202,8 @@ export default function Hero() {
               // los lados para llenar el alto, y lo que manda es ese alto (una
               // foto apaisada necesita ~1,5 veces el alto de ancho).
               {...propsDeFoto(imagen.url, '(orientation: portrait) 150vh, 100vw', () => setRotas((r) => new Set(r).add(imagen.url)))}
-              alt={imagen.descripcion}
+              // Sin descripción en el CMS, decorativa: sin `alt`, el lector leería el nombre del fichero.
+              alt={imagen.descripcion ?? ''}
               aria-hidden={activa ? undefined : true}
               fetchPriority={primera ? 'high' : 'low'}
               loading={primera ? 'eager' : 'lazy'}
@@ -263,8 +264,9 @@ export default function Hero() {
             top: { xs: 'auto', md: 96 },
             bottom: { xs: 24, md: 'auto' },
             right: { xs: 16, md: 28 },
-            width: 40,
-            height: 40,
+            // 44 px: el mínimo para el dedo.
+            width: 44,
+            height: 44,
             color: 'rgba(255,255,255,0.8)',
             border: '1px solid rgba(255,255,255,0.3)',
             bgcolor: 'rgba(7,6,8,0.35)',
@@ -301,7 +303,7 @@ export default function Hero() {
             En dos grupos: por debajo del PC, uno va arriba y el otro al pie. */}
         <Box sx={GRUPO}>
           <Revela alMontar retraso={RETRASO_TEXTOS_S}>
-            <Typography variant="overline" sx={{ color: '#ded3bd', letterSpacing: '0.2em', fontSize: { xs: 11, md: 12 }, mb: 2 }}>
+            <Typography variant="overline" sx={{ color: '#ded3bd', letterSpacing: '0.14em', fontSize: { xs: 11, md: 12 }, mb: 2 }}>
               <TextoDePortada anchos={['14em']}>{textos.hero.ceja}</TextoDePortada>
             </Typography>
           </Revela>

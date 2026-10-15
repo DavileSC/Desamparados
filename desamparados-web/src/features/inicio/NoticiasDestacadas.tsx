@@ -11,7 +11,7 @@ import { useDatosDePortada } from './useDatosDePortada'
 import { useTextosPortada } from './useContenidoPortada'
 import TextoDePortada from './TextoDePortada'
 import AvisosDeInicio from './AvisosDeInicio'
-import { SERIF, ceja, enlaceBloque } from './estilos'
+import { SERIF, enlaceBloque } from './estilos'
 import { useModulos } from '../../hooks/useModulos'
 
 // En portada caben tres noticias; el resto está en el archivo.
@@ -45,16 +45,13 @@ export default function NoticiasDestacadas() {
       <ContenedorDePagina>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: 2, mb: { xs: 4, md: 5.5 } }}>
           <Box>
-            <Revela>
-              <Typography component="span" sx={ceja}><TextoDePortada anchos={['7em']}>{textos.actualidad.ceja}</TextoDePortada></Typography>
-            </Revela>
-            <Revela efecto="cortina" orden={1}>
+            <Revela efecto="cortina">
               <Typography id="actualidad-titulo" variant="h2" component="h2" sx={{ fontFamily: SERIF, color: '#fff', m: 0 }}>
                 <TextoDePortada anchos={['8em']}>{textos.actualidad.titulo}</TextoDePortada>
               </Typography>
             </Revela>
           </Box>
-          <Revela orden={2}>
+          <Revela orden={1}>
             <Box component={Link} to="/noticias" sx={enlaceBloque}>
               <TextoDePortada anchos={['5em']}>{textos.actualidad.enlace}</TextoDePortada> <span className="home-visually-hidden">las noticias</span> <ArrowForwardIcon />
             </Box>

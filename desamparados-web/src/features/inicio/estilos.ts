@@ -24,12 +24,20 @@ export const CONSULTA_ALTA = '(min-width: 900px) and (min-height: 820px)'
 export const CONSULTA_MUY_ALTA = '(min-width: 900px) and (min-height: 1000px)'
 export const PANTALLA_ALTA = `@media ${CONSULTA_ALTA}`
 
+/**
+ * Con el dedo, los botones pequeños (los días del calendario, sus flechas)
+ * crecen hasta los 44 px. Con ratón se quedan como están: en el portátil la
+ * tarjeta de la agenda tiene que caber entera.
+ */
+export const TACTIL = '@media (pointer: coarse)'
+
 /** Antetítulo en versalitas espaciadas, sobre fondo oscuro o foto. */
 export const ceja = {
   display: 'block',
   mb: 1.75,
   fontSize: 11,
-  letterSpacing: '0.24em',
+  // Espaciado justo para leerse en versalitas: con 0,24 em era la etiqueta de plantilla.
+  letterSpacing: '0.14em',
   textTransform: 'uppercase',
   color: '#e3d8bf',
 } as const

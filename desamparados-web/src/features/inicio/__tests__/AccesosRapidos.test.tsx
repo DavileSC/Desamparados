@@ -65,7 +65,7 @@ describe('AccesosRapidos', () => {
     const [primero] = within(lista).getAllByRole('link')
 
     expect(primero).toHaveAttribute('href', '/hazte-hermano')
-    expect(primero).toHaveAccessibleName(/hazte hermano.*forma parte de nuestra historia.*quiero ser hermano/i)
+    expect(primero).toHaveAccessibleName(/forma parte de nuestra historia.*quiero ser hermano/i)
     expect(primero).toHaveAccessibleDescription(/comunidad de fe/i)
   })
 

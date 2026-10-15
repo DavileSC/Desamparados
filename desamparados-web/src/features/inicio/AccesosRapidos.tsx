@@ -3,17 +3,12 @@ import { Box, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
 import SeccionAnimada, { Revela } from '../../components/SeccionAnimada'
-import ChurchOutlinedIcon from '@mui/icons-material/ChurchOutlined'
-import VolunteerActivismOutlinedIcon from '@mui/icons-material/VolunteerActivismOutlined'
-import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
-import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
-import MailOutlinedIcon from '@mui/icons-material/MailOutlined'
-import PlayCircleOutlinedIcon from '@mui/icons-material/PlayCircleOutlined'
+import { IconoBoletines, IconoCaridad, IconoContacto, IconoHistoria, IconoSede, IconoVideo } from './IconosDeAcceso'
 import { BOTON, VELO_SOBRE_GRANATE } from '../../components/estiloDeBoton'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import NorthEastIcon from '@mui/icons-material/NorthEast'
 import { useContacto } from '../../hooks/useContacto'
-import { GOLD, GRANATE, SERIF, TINTA, ceja } from './estilos'
+import { GOLD, GRANATE, SERIF, TINTA } from './estilos'
 import { useTextosPortada, TEXTOS_POR_DEFECTO } from './useContenidoPortada'
 import TextoDePortada from './TextoDePortada'
 import type { TextosPortada } from '../../lib/api/portada'
@@ -46,13 +41,13 @@ const HAZTE_HERMANO = { href: '/hazte-hermano' }
 // Tampoco la agenda ni el recorrido: tienen bloque propio en la portada, y los
 // accesos son para lo que no se ve en ella.
 const ACCESOS: Acceso[] = [
-  { clave: 'sede', icon: <ChurchOutlinedIcon fontSize="inherit" />, href: '/parroquia' },
-  { clave: 'caridad', icon: <VolunteerActivismOutlinedIcon fontSize="inherit" />, href: '/nuestros-fines/caridad' },
-  { clave: 'historia', icon: <HistoryEduOutlinedIcon fontSize="inherit" />, href: '/historia' },
-  { clave: 'boletines', icon: <ArticleOutlinedIcon fontSize="inherit" />, href: '/publicaciones/boletines' },
+  { clave: 'sede', icon: <IconoSede />, href: '/parroquia' },
+  { clave: 'caridad', icon: <IconoCaridad />, href: '/nuestros-fines/caridad' },
+  { clave: 'historia', icon: <IconoHistoria />, href: '/historia' },
+  { clave: 'boletines', icon: <IconoBoletines />, href: '/publicaciones/boletines' },
 ]
 
-const CONTACTO: Acceso = { clave: 'contacto', icon: <MailOutlinedIcon fontSize="inherit" />, href: '/contacto' }
+const CONTACTO: Acceso = { clave: 'contacto', icon: <IconoContacto />, href: '/contacto' }
 
 const FONDO_TESELA = '#121113'
 
@@ -63,7 +58,7 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
     <Box
       component={Link}
       to={HAZTE_HERMANO.href}
-      aria-labelledby={`${id}-ceja ${id}-titulo ${id}-boton`}
+      aria-labelledby={`${id}-titulo ${id}-boton`}
       aria-describedby={`${id}-texto`}
       sx={{
         position: 'relative',
@@ -103,9 +98,6 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
       >
         {INICIAL}
       </Box>
-      <Typography component="span" id={`${id}-ceja`} sx={{ ...ceja, position: 'relative', color: MARCA.sobrePrincipalSuave }}>
-        <TextoDePortada anchos={['7em']}>{placa.ceja}</TextoDePortada>
-      </Typography>
       <Typography
         component="span"
         id={`${id}-titulo`}
@@ -148,7 +140,7 @@ interface TeselaProps {
   ancha: boolean
 }
 
-/** Tesela del mosaico. La ancha ocupa una fila entera y cambia la flecha por «Escríbenos». */
+/** Tesela del mosaico. La ancha ocupa una fila entera y lleva «Escríbenos»; la que abre otra web, su flecha ↗. */
 function Tesela({ icon, title, description, href, ancha }: TeselaProps) {
   const externo = href.startsWith('http')
 
@@ -182,7 +174,7 @@ function Tesela({ icon, title, description, href, ancha }: TeselaProps) {
         // El texto va justo debajo del icono, no empujado al fondo: así todos los
         // títulos de una fila quedan a la misma altura, sea cual sea el largo de
         // su descripción (con el texto abajo, «Historia» y «Boletines» no casaban).
-        sx={{ display: 'flex', color: GOLD, fontSize: { xs: 22, md: 26 }, ...(ancha ? {} : { pb: { xs: 2.25, md: 3.5 } }) }}
+        sx={{ display: 'flex', color: GOLD, fontSize: { xs: 26, md: 30 }, ...(ancha ? {} : { pb: { xs: 2.25, md: 3.5 } }) }}
       >
         {icon}
       </Box>
@@ -208,7 +200,8 @@ function Tesela({ icon, title, description, href, ancha }: TeselaProps) {
         >
           Escríbenos <ArrowForwardIcon />
         </Box>
-      ) : (
+      ) : externo && (
+        // La flecha en diagonal dice «otra web» (YouTube): en las internas no va, la tesela entera ya es el enlace.
         <NorthEastIcon
           aria-hidden="true"
           className="tesela-flecha"
@@ -246,7 +239,7 @@ export default function AccesosRapidos() {
   const teselas: Acceso[] = [
     ...ACCESOS.filter((a) => a.clave !== 'boletines' || sigueEncendido('publicaciones')),
     ...(youtube
-      ? [{ clave: 'youtube', icon: <PlayCircleOutlinedIcon fontSize="inherit" />, href: youtube }]
+      ? [{ clave: 'youtube', icon: <IconoVideo />, href: youtube }]
       : []),
     CONTACTO,
   ]
