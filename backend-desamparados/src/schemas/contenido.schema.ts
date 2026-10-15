@@ -75,6 +75,10 @@ const portadaSchema = type({
     imagenAlt: DESCRIPCION,
   },
   publicaciones: { boton: ETIQUETA, marcaDeAgua: ETIQUETA },
+  // Lo opaco que es el fondo del menú del móvil y la tableta, en %: por debajo
+  // de 100 deja ver la foto de detrás. No baja de 40: con menos, las letras del
+  // menú se pierden sobre una foto clara.
+  menuMovil: { opacidad: '40 <= number.integer <= 100' },
 });
 
 /**

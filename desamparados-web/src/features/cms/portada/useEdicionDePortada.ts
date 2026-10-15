@@ -99,6 +99,8 @@ export function useEdicionDePortada() {
     setTextos((t) => t && { ...t, sabadoDePasion: { ...t.sabadoDePasion, ...cambios } })
   const cambiarPublicaciones = (cambios: Partial<TextosPortada['publicaciones']>) =>
     setTextos((t) => t && { ...t, publicaciones: { ...t.publicaciones, ...cambios } })
+  const cambiarMenuMovil = (cambios: Partial<TextosPortada['menuMovil']>) =>
+    setTextos((t) => t && { ...t, menuMovil: { ...t.menuMovil, ...cambios } })
 
   const fotosSucias = !!filas && JSON.stringify(sinClave(filas)) !== JSON.stringify(inicialFotos)
   const textosSucios = !!textos && JSON.stringify(textos) !== inicialTextos
@@ -162,7 +164,7 @@ export function useEdicionDePortada() {
     filas, textos, error, guardado, guardando, sucio,
     cambiar, quitar, mover, anadir, descartar, guardar,
     cambiarHero, cambiarActualidad, cambiarAgenda, cambiarPlaca, cambiarTesela,
-    cambiarSabado, cambiarPublicaciones,
+    cambiarSabado, cambiarPublicaciones, cambiarMenuMovil,
     borrador: filas && textos ? { imagenes: sinClave(filas), textos } : null,
   }
 }

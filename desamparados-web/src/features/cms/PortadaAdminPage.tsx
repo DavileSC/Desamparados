@@ -19,6 +19,7 @@ import PublicacionesDestacadas from '../inicio/PublicacionesDestacadas'
 import EdicionTesela from './portada/EdicionTesela'
 import AvisoFotoDeCabecera from './portada/AvisoFotoDeCabecera'
 import EncuadreEnElMovil from './portada/EncuadreEnElMovil'
+import FondoDelMenuMovil from './portada/FondoDelMenuMovil'
 import { MAX_FOTOS_PORTADA, useEdicionDePortada } from './portada/useEdicionDePortada'
 import { site } from '../../config/site'
 import { deLaCorporacion } from '../../domain/articulos'
@@ -40,7 +41,7 @@ export default function PortadaAdminPage() {
     filas, textos, error, guardado, guardando, sucio, borrador,
     cambiar, quitar, mover, anadir, descartar, guardar,
     cambiarHero, cambiarActualidad, cambiarAgenda, cambiarPlaca, cambiarTesela,
-    cambiarSabado, cambiarPublicaciones,
+    cambiarSabado, cambiarPublicaciones, cambiarMenuMovil,
   } = useEdicionDePortada()
 
   if (error && (!filas || !textos)) return <Alert severity="error">{error}</Alert>
@@ -362,6 +363,15 @@ export default function PortadaAdminPage() {
             onCambio={(marcaDeAgua) => cambiarPublicaciones({ marcaDeAgua })}
             maxLength={60}
             ayuda="La palabra grande y tenue del fondo del bloque."
+          />
+        </SeccionPlegable>
+
+        {/* No es un bloque de la portada, pero lo que se ve detrás al abrir el menú es su cabecera. */}
+        <SeccionPlegable titulo="Menú del móvil">
+          <FondoDelMenuMovil
+            valor={textos.menuMovil.opacidad}
+            onCambio={(opacidad) => cambiarMenuMovil({ opacidad })}
+            foto={filas[0]?.url}
           />
         </SeccionPlegable>
       </PantallaEdicion>

@@ -172,7 +172,7 @@ export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encu
         }}
       />
 
-      <ContenedorDePagina sx={textoSx}>
+      <ContenedorDePagina className="sobre-la-foto" sx={textoSx}>
         {ceja.length > 0 && (
           <Revela alMontar>
             <Typography component="p" sx={cejaSx}>

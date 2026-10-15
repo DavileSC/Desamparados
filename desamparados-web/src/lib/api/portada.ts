@@ -38,6 +38,8 @@ export interface TextosPortada {
   }
   sabadoDePasion: { ceja: string; titulo: string; parrafo: string; enlace: string; destino: string; imagenUrl: string; imagenAlt: string }
   publicaciones: { boton: string; marcaDeAgua: string }
+  /** `opacidad`: lo opaco del fondo del menú del móvil y la tableta, de 40 a 100 (%). Vale para toda la web. */
+  menuMovil: { opacidad: number }
 }
 
 export interface Portada {

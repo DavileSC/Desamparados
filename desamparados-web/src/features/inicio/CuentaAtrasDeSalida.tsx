@@ -59,6 +59,7 @@ export default function CuentaAtrasDeSalida({ forma }: { forma: 'hero' | 'franja
   return (
     <Box
       component="section"
+      className={enHero ? 'sobre-la-foto' : undefined}
       aria-label={`Cuenta atrás para ${lo}`}
       sx={enHero
         ? {

@@ -27,3 +27,8 @@ img {
   max-width: 100%;
   display: block;
 }
+
+/* Con el menú del móvil abierto (CajonMovil), de lo que va sobre una foto solo
+   queda la foto: el panel es translúcido y las letras se pisarían con las suyas. */
+.sobre-la-foto { transition: opacity .3s ease; }
+html[data-menu-abierto] .sobre-la-foto { opacity: 0; }

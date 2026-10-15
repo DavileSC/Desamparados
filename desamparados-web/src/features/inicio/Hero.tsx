@@ -250,6 +250,7 @@ export default function Hero() {
 
       {(conVideo || rotan) && (
         <IconButton
+          className="sobre-la-foto"
           onClick={alternarPausa}
           aria-label={conVideo
             ? (pausado ? 'Reanudar el vídeo de fondo' : 'Pausar el vídeo de fondo')
@@ -278,6 +279,7 @@ export default function Hero() {
       )}
       <CuentaAtrasDeSalida forma="hero" />
       <Box
+        className="sobre-la-foto"
         sx={{
           position: 'relative',
           zIndex: 2,

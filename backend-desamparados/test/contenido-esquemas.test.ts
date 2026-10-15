@@ -154,3 +154,14 @@ test('una portada guardada con las cejas retiradas sigue valiendo y se depura al
   const leida = mezclarConDefectos('portada', vieja) as Portada;
   assert.ok(!('ceja' in leida.actualidad) && !('ceja' in leida.agenda) && !('ceja' in leida.accesos.placa));
 });
+
+// La opacidad del menú del móvil: de 40 a 100 y entera. Por debajo, las letras
+// del menú se pierden sobre una foto clara.
+test('la opacidad del menú del móvil va de 40 a 100, entera, y sin ella se pone la de partida', () => {
+  const portada = porDefecto('portada') as { menuMovil: { opacidad: unknown } };
+  assert.equal(portada.menuMovil.opacidad, 97);
+  for (const buena of [40, 97, 100]) assert.ok(valida('portada', { ...portada, menuMovil: { opacidad: buena } }), String(buena));
+  for (const mala of [39, 101, 85.5, '90']) assert.ok(!valida('portada', { ...portada, menuMovil: { opacidad: mala } }), String(mala));
+  const { menuMovil: _, ...vieja } = portada;
+  assert.equal((mezclarConDefectos('portada', vieja) as typeof portada).menuMovil.opacidad, 97, 'una portada guardada antes, con la de partida');
+});

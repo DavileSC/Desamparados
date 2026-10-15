@@ -5,6 +5,7 @@ import { renderWithProviders } from '../../test/test-utils'
 import BarraDeNavegacion from '../BarraDeNavegacion'
 import { DATOS } from '../../test/instalacion'
 import { TODOS_CON_PAGINAS_PROPIAS } from '../../test/queryClient'
+import { responderPortada, textosDePrueba } from '../../features/inicio/__tests__/ayudas'
 
 // El ejemplo no tiene redes (son null): una, para ver que el menú la enlaza.
 // Las redes llegan de la API (no de la instalación), y las pruebas las siembran
@@ -243,6 +244,22 @@ describe('BarraDeNavegacion en móvil', () => {
     await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
     await user.keyboard('{Escape}')
     await waitFor(() => expect(screen.queryByRole('navigation', { name: 'Menú' })).not.toBeInTheDocument())
+  })
+
+  it('el fondo lleva la opacidad del CMS y, mientras está abierto, apaga los textos sobre las fotos', async () => {
+    // Se rompe si el panel vuelve a ser opaco sin mirar el CMS, o si los textos
+    // de la cabecera se quedan encima de la foto, pisándose con los del menú.
+    const textos = textosDePrueba()
+    textos.menuMovil = { opacidad: 60 }
+    responderPortada(textos)
+    const user = userEvent.setup()
+    renderWithProviders(<BarraDeNavegacion />)
+    await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
+
+    await waitFor(() => expect(screen.getByRole('navigation', { name: 'Menú' })).toHaveStyle({ backgroundColor: 'rgba(12, 11, 13, 0.6)' }))
+    expect(document.documentElement).toHaveAttribute('data-menu-abierto')
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(document.documentElement).not.toHaveAttribute('data-menu-abierto'))
   })
 
   it('al pie, el acceso de hermanos y las redes', async () => {

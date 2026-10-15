@@ -10,9 +10,10 @@
  * Se gobierna solo: quien lo usa le dice si está abierto y cómo cerrarlo, y el
  * resto —qué secciones están desplegadas— se queda aquí dentro.
  */
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Box, Collapse, IconButton, List, ListItem, ListItemButton, Modal, Toolbar, useTheme } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { AnimatePresence, MotionConfig, m, useIsPresent, type Variants } from 'framer-motion'
 import EscudoDelGrupo from '../EscudoDelGrupo'
@@ -28,6 +29,7 @@ import { GOLD, GRANATE, TINTA } from '../../features/inicio/estilos'
 // La serif de la agenda: importarla de ahí trae también sus ficheros de letra.
 import { CORMORANT } from '../../features/actualidad/agenda/letraAlmanaque'
 import { MARCA } from '../../theme/marca'
+import { useTextosPortada } from '../../features/inicio/useContenidoPortada'
 
 /** La curva de las capas: arranca y frena con suavidad, como una cortina. */
 const CURVA_CAPA = [0.76, 0, 0.24, 1] as const
@@ -52,6 +54,25 @@ const capa: Variants = {
     transform: 'translateX(100%)',
     transition: { duration: 0.6, ease: CURVA_CAPA, delay: SALIDA_SECCIONES + (CAPAS.length - 1 - i) * PASO_CAPA },
   }),
+}
+
+/**
+ * Las capas de color son solo la cortina de entrada: cuando el panel ya las
+ * tapa, se apagan. Con el panel translúcido (el CMS deja bajar su opacidad
+ * para que se vea la foto de detrás) lo que asomaría sería el granate. Al
+ * cerrar sale solo el panel.
+ */
+const cortina: Variants = {
+  oculta: { transform: 'translateX(100%)', opacity: 1 },
+  visible: (i: number) => ({
+    transform: 'translateX(0%)',
+    opacity: 0,
+    transition: {
+      transform: { duration: 0.7, ease: CURVA_CAPA, delay: i * PASO_CAPA },
+      opacity: { duration: 0.2, delay: 0.7 + (CAPAS.length - 1) * PASO_CAPA },
+    },
+  }),
+  saliendo: { opacity: 0 },
 }
 
 // `custom` es [posición, total]: al cerrar, la última sección es la primera en irse.
@@ -107,6 +128,15 @@ function Panel({ alCerrar }: { alCerrar: () => void }) {
   const nombreDelAcceso = useNombreEnMenu('/acceso')
   // Mientras sale, las rayas vuelven a su sitio a la vez que se van las capas.
   const presente = useIsPresent()
+  const opacidad = useTextosPortada().menuMovil?.opacidad ?? 97
+  // Con el menú abierto, lo que va escrito sobre una foto se apaga (`.sobre-la-foto`,
+  // index.css): por detrás del panel translúcido solo se ve la foto, sin letras que
+  // se pisen con las del menú. Vuelve en cuanto empieza a cerrarse.
+  useEffect(() => {
+    if (!presente) return
+    document.documentElement.setAttribute('data-menu-abierto', '')
+    return () => document.documentElement.removeAttribute('data-menu-abierto')
+  }, [presente])
   const estaActiva = (entrada: EntradaMenu) => seccionActiva(location.pathname, entrada)
   const [seccionesAbiertas, setSeccionesAbiertas] = useState<Record<string, boolean>>(() => {
     const seccionActual = menu.find((entrada) => entrada.href !== '/' && estaActiva(entrada))
@@ -155,7 +185,7 @@ function Panel({ alCerrar }: { alCerrar: () => void }) {
 
       <Box sx={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
         {CAPAS.slice(0, -1).map((color, i) => (
-          <Box key={color} component={m.div} variants={capa} custom={i} sx={{ position: 'absolute', inset: 0, bgcolor: color }} />
+          <Box key={color} component={m.div} variants={cortina} custom={i} sx={{ position: 'absolute', inset: 0, bgcolor: color }} />
         ))}
         <Box
           component={m.nav}
@@ -165,7 +195,7 @@ function Panel({ alCerrar }: { alCerrar: () => void }) {
           sx={{
             position: 'absolute',
             inset: 0,
-            bgcolor: CAPAS[CAPAS.length - 1],
+            bgcolor: alpha(CAPAS[CAPAS.length - 1], opacidad / 100),
             overflowY: 'auto',
             overscrollBehavior: 'contain',
             display: 'flex',
