@@ -1084,6 +1084,33 @@ model MovilDeAvisos {
   @@index([userId])
 }
 
+// Intentos fallidos con bloqueo (login por red y por correo, 2FA, cambio de
+// contraseña, DNI desde el área): ver `utils/contador-fallos.ts`. En la base y
+// no en memoria para que un reinicio o un despliegue no levante los bloqueos.
+// `contador` separa cada uso: la clave de uno («7») podría ser la de otro.
+model FalloDeAcceso {
+  contador       String   @db.VarChar(40)
+  clave          String   @db.VarChar(320)
+  fallos         Int      @default(0)
+  ultimoFallo    DateTime
+  bloqueadoHasta DateTime
+  /// Bloqueos desde el último acierto: cada tanda dura más (2FA).
+  tandas         Int      @default(0)
+
+  @@id([contador, clave])
+  @@index([contador, ultimoFallo])
+}
+
+// Redes desde las que cada cuenta acertó la contraseña hace poco: a ellas no
+// les afecta el bloqueo global por correo. Va con `FalloDeAcceso`: si solo
+// durara el bloqueo, tras un reinicio el dueño quedaría fuera con él.
+model RedConfiada {
+  clave   String   @id @db.VarChar(320)
+  vistaEn DateTime
+
+  @@index([vistaEn])
+}
+
 // Registro de auditoría de acciones sensibles (dinero, roles, solicitudes, RGPD).
 // Es la prueba forense de quién hizo qué, cuándo y desde qué IP.
 model AuditLog {

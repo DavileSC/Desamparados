@@ -168,19 +168,19 @@ describe('el bloqueo del doble factor', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const u = await usuario(Role.SECRETARIA);
     enviados.length = 0;
-    for (let i = 0; i < 4; i++) registrarFallo2FA(u.id);
+    for (let i = 0; i < 4; i++) await registrarFallo2FA(u.id);
     await esperarCorreos();
     assert.equal(enviados.filter((c) => c.to === u.email).length, 0, 'cuatro fallos no bloquean ni avisan');
 
-    registrarFallo2FA(u.id);
+    await registrarFallo2FA(u.id);
     await esperarCorreos();
     const avisos = enviados.filter((c) => c.to === u.email);
     assert.equal(avisos.length, 1);
     assert.match(avisos[0].html, /15 minutos/);
-    assert.throws(() => comprobarBloqueo2FA(u.id), (e: unknown) => e instanceof HttpError && e.status === 429 && /15 minutos/.test(e.message));
+    await assert.rejects(comprobarBloqueo2FA(u.id), (e: unknown) => e instanceof HttpError && e.status === 429 && /15 minutos/.test(e.message));
 
     // Un acierto lo deja a cero.
-    limpiarFallos2FA(u.id);
-    assert.doesNotThrow(() => comprobarBloqueo2FA(u.id));
+    await limpiarFallos2FA(u.id);
+    await assert.doesNotReject(comprobarBloqueo2FA(u.id));
   });
 });

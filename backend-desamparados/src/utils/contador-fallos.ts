@@ -1,17 +1,23 @@
+import crypto from 'node:crypto';
+import { Prisma } from '@prisma/client';
+import db from '../config/db.js';
+import { transactionWithRetry } from './transaction-retry.js';
+
 /**
- * Contador de intentos fallidos con bloqueo temporal, en memoria.
+ * Contador de intentos fallidos con bloqueo temporal, en la base
+ * (`FalloDeAcceso`).
  *
- * Lo usan el login (por email + IP y por email) y el segundo factor (por
- * cuenta). Antes eran `Map` sueltos sin límite: cada email inventado dejaba
- * una entrada para siempre, así que bastaba un bucle de emails aleatorios para
- * hacer crecer la memoria del proceso sin freno. Aquí las entradas caducan y
- * el total tiene tope.
- *
- * En memoria: suficiente para una instancia. Con varias habría que moverlo a
- * Redis o a la base de datos.
+ * Lo usan el login (por email + IP y por email), el segundo factor y el cambio
+ * de contraseña (por cuenta) y los DNI del área. Estuvo en memoria: cada
+ * reinicio o despliegue levantaba todos los bloqueos, y quien estuviera
+ * probando contraseñas volvía a tener sus cinco intentos (15-10-2026). Antes
+ * aún eran `Map` sueltos sin límite que un bucle de emails inventados hacía
+ * crecer sin freno: de ahí que las filas caduquen y cada contador tenga tope.
  */
 
 interface OpcionesContador {
+  /** Nombre del contador en la tabla: separa las claves de cada uso. Hasta 40 letras. */
+  nombre: string;
   /** Fallos que disparan el bloqueo. */
   maxFallos: number;
   /** Cuánto dura el bloqueo. */
@@ -28,7 +34,7 @@ interface OpcionesContador {
   olvidoTandasMs?: number;
   /** Un fallo más antiguo que esto ya no suma: el contador vuelve a cero. */
   ventanaMs: number;
-  /** Máximo de claves vivas a la vez. */
+  /** Máximo de claves sin bloqueo vivo que se guardan (ver `barrer`). */
   tope: number;
   /** Reloj inyectable para los tests. */
   ahora?: () => number;
@@ -42,12 +48,25 @@ interface Estado {
   tandas: number;
 }
 
-// Cada cuántos fallos se barre aunque no se haya llegado al tope, para que las
-// entradas caducadas no se queden esperando a que el mapa se llene.
+// Cada cuántos fallos de este proceso se barre: contar las filas en cada fallo
+// sería una consulta más por intento, y pasarse del tope un rato no importa en
+// disco como importaba en memoria.
 const BARRER_CADA = 100;
 
+/**
+ * La columna admite 320 letras. Una clave más larga solo sale de un email que
+ * no puede existir (el máximo es 254): se guarda su huella, que cuenta igual.
+ */
+function claveGuardada(clave: string): string {
+  return clave.length <= 300 ? clave : `sha256:${crypto.createHash('sha256').update(clave).digest('hex')}`;
+}
+
+/** Otra petición creó la misma fila a la vez: repetir ya la encuentra. */
+function esClaveRepetida(e: unknown): boolean {
+  return e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002';
+}
+
 export class ContadorFallos {
-  private readonly estados = new Map<string, Estado>();
   private fallosDesdeBarrido = 0;
   private readonly ahora: () => number;
 
@@ -55,26 +74,66 @@ export class ContadorFallos {
     this.ahora = opciones.ahora ?? Date.now;
   }
 
+  private donde(clave: string) {
+    return { contador_clave: { contador: this.opciones.nombre, clave: claveGuardada(clave) } };
+  }
+
   /** Milisegundos de bloqueo que le quedan a la clave; 0 si puede intentarlo. */
-  restanteBloqueo(clave: string): number {
-    const estado = this.estados.get(clave);
-    if (!estado) return 0;
-    return Math.max(0, estado.bloqueadoHasta - this.ahora());
+  async restanteBloqueo(clave: string): Promise<number> {
+    const fila = await db.falloDeAcceso.findUnique({ where: this.donde(clave), select: { bloqueadoHasta: true } });
+    if (!fila) return 0;
+    return Math.max(0, fila.bloqueadoHasta.getTime() - this.ahora());
   }
 
   /**
    * Apunta un fallo. Devuelve los milisegundos del bloqueo que acaba de
    * empezar, o 0 si este fallo no ha bloqueado: así quien llama sabe cuándo
    * avisar al titular, una vez por tanda y no a cada fallo.
+   *
+   * Leer y escribir van en una transacción con reintento: dos fallos a la vez
+   * sobre la misma clave (un ataque en paralelo) no pueden contar por uno.
    */
-  registrarFallo(clave: string): number {
-    const ahora = this.ahora();
-    let estado = this.estados.get(clave);
-    if (!estado || this.caducado(estado, ahora)) {
+  async registrarFallo(clave: string): Promise<number> {
+    const donde = this.donde(clave);
+    let bloqueo = 0;
+    for (let intento = 1; ; intento += 1) {
+      try {
+        bloqueo = await transactionWithRetry(async (tx) => {
+          const ahora = this.ahora();
+          const fila = await tx.falloDeAcceso.findUnique({ where: donde });
+          const antes: Estado | null = fila && {
+            fallos: fila.fallos, ultimoFallo: fila.ultimoFallo.getTime(),
+            bloqueadoHasta: fila.bloqueadoHasta.getTime(), tandas: fila.tandas,
+          };
+          const { estado, bloqueo } = this.conUnFalloMas(antes, ahora);
+          const datos = {
+            fallos: estado.fallos, tandas: estado.tandas,
+            ultimoFallo: new Date(estado.ultimoFallo), bloqueadoHasta: new Date(estado.bloqueadoHasta),
+          };
+          if (fila) await tx.falloDeAcceso.update({ where: donde, data: datos });
+          else await tx.falloDeAcceso.create({ data: { ...donde.contador_clave, ...datos } });
+          return bloqueo;
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+        break;
+      } catch (e) {
+        if (!esClaveRepetida(e) || intento >= 3) throw e;
+      }
+    }
+
+    this.fallosDesdeBarrido += 1;
+    if (this.fallosDesdeBarrido >= BARRER_CADA) await this.barrer();
+    return bloqueo;
+  }
+
+  /** La cuenta de la clave tras un fallo más, y el bloqueo que empieza con él. */
+  private conUnFalloMas(antes: Estado | null, ahora: number): { estado: Estado; bloqueo: number } {
+    let estado: Estado;
+    if (!antes || this.caducado(antes, ahora)) {
       estado = { fallos: 0, ultimoFallo: 0, bloqueadoHasta: 0, tandas: 0 };
-    } else if (estado.bloqueadoHasta <= ahora && ahora - estado.ultimoFallo > this.opciones.ventanaMs) {
+    } else {
+      estado = { ...antes };
       // Los fallos sueltos caducan con la ventana; las tandas, no.
-      estado.fallos = 0;
+      if (estado.bloqueadoHasta <= ahora && ahora - estado.ultimoFallo > this.opciones.ventanaMs) estado.fallos = 0;
     }
 
     estado.fallos += 1;
@@ -87,53 +146,60 @@ export class ContadorFallos {
       estado.fallos = 0;
       estado.tandas += 1;
     }
-
-    // Borrar y volver a meter: el Map conserva el orden de inserción, así la
-    // primera clave es siempre la de actividad más antigua.
-    this.estados.delete(clave);
-    this.estados.set(clave, estado);
-
-    this.fallosDesdeBarrido += 1;
-    if (this.estados.size > this.opciones.tope || this.fallosDesdeBarrido >= BARRER_CADA) {
-      this.barrer(ahora);
-    }
-    return bloqueo;
+    return { estado, bloqueo };
   }
 
-  limpiar(clave: string): void {
-    this.estados.delete(clave);
+  async limpiar(clave: string): Promise<void> {
+    await db.falloDeAcceso.deleteMany({ where: this.donde(clave).contador_clave });
   }
 
   /** Borra todas las claves que empiezan así: las de una cuenta en cualquier red. */
-  limpiarPrefijo(prefijo: string): void {
-    for (const clave of this.estados.keys()) {
-      if (clave.startsWith(prefijo)) this.estados.delete(clave);
-    }
+  async limpiarPrefijo(prefijo: string): Promise<void> {
+    // `startsWith` es un LIKE, y en él `_` vale por cualquier letra: un email
+    // con guion bajo se llevaría por delante los contadores de otras cuentas.
+    // Se buscan con LIKE y se filtran aquí con la comparación exacta.
+    const filas = await db.falloDeAcceso.findMany({
+      where: { contador: this.opciones.nombre, clave: { startsWith: prefijo } },
+      select: { clave: true },
+    });
+    const claves = filas.map((f) => f.clave).filter((c) => c.startsWith(prefijo));
+    if (claves.length) await db.falloDeAcceso.deleteMany({ where: { contador: this.opciones.nombre, clave: { in: claves } } });
   }
 
-  get tamano(): number {
-    return this.estados.size;
+  /** Filas vivas de este contador (para los tests). */
+  async contar(): Promise<number> {
+    return db.falloDeAcceso.count({ where: { contador: this.opciones.nombre } });
   }
 
-  /** Quita lo caducado y, si aun así sobra, lo más antiguo. */
-  barrer(ahora = this.ahora()): void {
+  /**
+   * Quita lo caducado y, si aun así pasa del tope, las claves sin bloqueo vivo
+   * más antiguas. Un bloqueo vivo no se quita nunca: si se fuera, inundar la
+   * tabla de emails inventados serviría para desbloquear la cuenta atacada; ya
+   * caducará.
+   */
+  async barrer(ahora = this.ahora()): Promise<void> {
     this.fallosDesdeBarrido = 0;
-    for (const [clave, estado] of this.estados) {
-      if (this.caducado(estado, ahora)) this.estados.delete(clave);
-    }
-    if (this.estados.size <= this.opciones.tope) return;
+    const { nombre: contador, ventanaMs, olvidoTandasMs, tope } = this.opciones;
+    const hecho = new Date(ahora);
+    // Caducada: sin bloqueo vivo, y su último fallo y su último bloqueo, más
+    // viejos que el plazo de olvido (el de las tandas si las tiene).
+    const caducadas = (olvido: number, tandas: Prisma.IntFilter) => {
+      const limite = new Date(ahora - olvido);
+      return { contador, tandas, bloqueadoHasta: { lte: hecho, lt: limite }, ultimoFallo: { lt: limite } };
+    };
+    await db.falloDeAcceso.deleteMany({
+      where: { OR: [caducadas(ventanaMs, { equals: 0 }), caducadas(olvidoTandasMs ?? ventanaMs, { gt: 0 })] },
+    });
 
-    // Una ráfaga de claves distintas dentro de la ventana. Primero se sacrifican
-    // las que no están bloqueadas: si se fuera un bloqueo vivo, inundar el mapa
-    // de emails inventados serviría para desbloquear la cuenta atacada.
-    for (const [clave, estado] of this.estados) {
-      if (this.estados.size <= this.opciones.tope) return;
-      if (estado.bloqueadoHasta <= ahora) this.estados.delete(clave);
-    }
-    for (const clave of this.estados.keys()) {
-      if (this.estados.size <= this.opciones.tope) return;
-      this.estados.delete(clave);
-    }
+    const sobran = (await db.falloDeAcceso.count({ where: { contador } })) - tope;
+    if (sobran <= 0) return;
+    const antiguas = await db.falloDeAcceso.findMany({
+      where: { contador, bloqueadoHasta: { lte: hecho } },
+      orderBy: { ultimoFallo: 'asc' },
+      take: sobran,
+      select: { clave: true },
+    });
+    await db.falloDeAcceso.deleteMany({ where: { contador, clave: { in: antiguas.map((f) => f.clave) } } });
   }
 
   private caducado(estado: Estado, ahora: number): boolean {
@@ -143,48 +209,45 @@ export class ContadorFallos {
 }
 
 /**
- * Recuerda, durante un plazo, claves que han hecho algo bien. Lo usa el login
- * para saber desde qué redes ha entrado de verdad cada cuenta: el bloqueo
- * global por email no debe cerrarle la puerta a su dueño.
+ * Recuerda, durante un plazo, las redes desde las que cada cuenta ha acertado
+ * la contraseña (`RedConfiada`): el bloqueo global por email no debe cerrarle
+ * la puerta a su dueño. Va en la base por lo mismo que el contador: si el
+ * bloqueo sobreviviera a un reinicio y esto no, el dueño se quedaría fuera.
  *
  * Solo se apunta tras acertar la contraseña, así que un atacante no puede
- * llenarlo con claves inventadas; el tope es por si acaso. Mismo criterio que
- * el contador: al pasar del tope se va la de actividad más antigua.
+ * llenarlo con claves inventadas: basta con barrer lo caducado de vez en cuando.
  */
 export class RegistroReciente {
-  private readonly vistas = new Map<string, number>();
+  private apuntesDesdeBarrido = 0;
   private readonly ahora: () => number;
 
-  constructor(private readonly opciones: { vigenciaMs: number; tope: number; ahora?: () => number }) {
+  constructor(private readonly opciones: { vigenciaMs: number; ahora?: () => number }) {
     this.ahora = opciones.ahora ?? Date.now;
   }
 
-  apuntar(clave: string): void {
-    this.vistas.delete(clave);
-    this.vistas.set(clave, this.ahora());
-    if (this.vistas.size > this.opciones.tope) {
-      const limite = this.ahora() - this.opciones.vigenciaMs;
-      for (const [k, cuando] of this.vistas) {
-        if (cuando < limite) this.vistas.delete(k);
-      }
-      for (const k of this.vistas.keys()) {
-        if (this.vistas.size <= this.opciones.tope) break;
-        this.vistas.delete(k);
-      }
+  async apuntar(clave: string): Promise<void> {
+    const guardada = claveGuardada(clave);
+    const vistaEn = new Date(this.ahora());
+    try {
+      await db.redConfiada.upsert({ where: { clave: guardada }, create: { clave: guardada, vistaEn }, update: { vistaEn } });
+    } catch (e) {
+      // Dos entradas buenas a la vez desde la misma red: la otra ya la creó.
+      if (!esClaveRepetida(e)) throw e;
+      await db.redConfiada.update({ where: { clave: guardada }, data: { vistaEn } });
     }
+    this.apuntesDesdeBarrido += 1;
+    if (this.apuntesDesdeBarrido >= BARRER_CADA) await this.barrer();
   }
 
-  tiene(clave: string): boolean {
-    const cuando = this.vistas.get(clave);
-    if (cuando === undefined) return false;
-    if (this.ahora() - cuando > this.opciones.vigenciaMs) {
-      this.vistas.delete(clave);
-      return false;
-    }
-    return true;
+  async tiene(clave: string): Promise<boolean> {
+    const fila = await db.redConfiada.findUnique({ where: { clave: claveGuardada(clave) } });
+    if (!fila) return false;
+    return this.ahora() - fila.vistaEn.getTime() <= this.opciones.vigenciaMs;
   }
 
-  get tamano(): number {
-    return this.vistas.size;
+  /** Quita las redes que llevan más de la vigencia sin entrar. */
+  async barrer(): Promise<void> {
+    this.apuntesDesdeBarrido = 0;
+    await db.redConfiada.deleteMany({ where: { vistaEn: { lt: new Date(this.ahora() - this.opciones.vigenciaMs) } } });
   }
 }

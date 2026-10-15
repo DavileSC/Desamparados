@@ -108,10 +108,10 @@ export class AuthService {
   // Cuentan también los emails que no existen: si solo se bloquearan los
   // reales, el propio bloqueo diría qué correos están registrados.
   private static readonly fallosLoginPorIp = new ContadorFallos({
-    maxFallos: 5, bloqueoMs: QUINCE_MINUTOS, ventanaMs: UNA_HORA, tope: 10_000
+    nombre: 'login-por-ip', maxFallos: 5, bloqueoMs: QUINCE_MINUTOS, ventanaMs: UNA_HORA, tope: 10_000
   });
   private static readonly fallosLoginPorEmail = new ContadorFallos({
-    maxFallos: 50, bloqueoMs: QUINCE_MINUTOS, ventanaMs: UNA_HORA, tope: 10_000
+    nombre: 'login-por-email', maxFallos: 50, bloqueoMs: QUINCE_MINUTOS, ventanaMs: UNA_HORA, tope: 10_000
   });
 
   // Redes desde las que cada cuenta ha acertado la contraseña hace poco. El
@@ -119,9 +119,8 @@ export class AuthService {
   // muchas IP; sin esta excepción, ese mismo ataque bastaba para dejar fuera a
   // voluntad al dueño de la cuenta. Quien entró bien desde una red en los
   // últimos 30 días no es el atacante repartido: el bloqueo global no le afecta
-  // (el de su propia IP, sí). En memoria: tras reiniciar, hasta que cada cargo
-  // vuelva a entrar, rige el bloqueo global a secas.
-  private static readonly redesConfiadas = new RegistroReciente({ vigenciaMs: 30 * 24 * UNA_HORA, tope: 10_000 });
+  // (el de su propia IP, sí).
+  private static readonly redesConfiadas = new RegistroReciente({ vigenciaMs: 30 * 24 * UNA_HORA });
 
   /**
    * La IP como la agrupa el limitador: una IPv6 se reduce a su /56. Con la
@@ -132,19 +131,19 @@ export class AuthService {
     return `${email}|${ipKeyGenerator(ip)}`;
   }
 
-  private static checkLockoutLogin(email: string, ip: string): void {
+  private static async checkLockoutLogin(email: string, ip: string): Promise<void> {
     const clave = this.claveIp(email, ip);
-    const global = this.redesConfiadas.tiene(clave) ? 0 : this.fallosLoginPorEmail.restanteBloqueo(email);
-    const restante = Math.max(this.fallosLoginPorIp.restanteBloqueo(clave), global);
+    const global = (await this.redesConfiadas.tiene(clave)) ? 0 : await this.fallosLoginPorEmail.restanteBloqueo(email);
+    const restante = Math.max(await this.fallosLoginPorIp.restanteBloqueo(clave), global);
     if (restante > 0) {
       const mins = Math.ceil(restante / 60000);
       throw new HttpError(`Demasiados intentos fallidos. Cuenta bloqueada temporalmente: espera ${mins} minuto(s).`, 429);
     }
   }
 
-  private static registerFailLogin(email: string, ip: string): void {
-    this.fallosLoginPorIp.registrarFallo(this.claveIp(email, ip));
-    this.fallosLoginPorEmail.registrarFallo(email);
+  private static async registerFailLogin(email: string, ip: string): Promise<void> {
+    await this.fallosLoginPorIp.registrarFallo(this.claveIp(email, ip));
+    await this.fallosLoginPorEmail.registrarFallo(email);
   }
 
   // Hash contra el que se compara cuando el email no existe. Sin él, un email
@@ -162,7 +161,7 @@ export class AuthService {
     }
 
     // Bloqueo preventivo antes de gastar una consulta (defensa contra fuerza bruta)
-    this.checkLockoutLogin(emailNorm, ip);
+    await this.checkLockoutLogin(emailNorm, ip);
 
     const user = await db.user.findUnique({
       where: { email: emailNorm },
@@ -180,7 +179,7 @@ export class AuthService {
     // compara igualmente contra el señuelo, para que las dos respuestas tarden lo mismo.
     const isMatch = await verified(password, user ? user.password : await this.hashSenuelo);
     if (!user || !isMatch) {
-      this.registerFailLogin(emailNorm, ip);
+      await this.registerFailLogin(emailNorm, ip);
       throw new HttpError('Credenciales incorrectas.', 401);
     }
 
@@ -193,9 +192,9 @@ export class AuthService {
     }
 
     // Contraseña correcta: limpiamos los contadores de fallos y apuntamos la red
-    this.fallosLoginPorIp.limpiar(this.claveIp(emailNorm, ip));
-    this.fallosLoginPorEmail.limpiar(emailNorm);
-    this.redesConfiadas.apuntar(this.claveIp(emailNorm, ip));
+    await this.fallosLoginPorIp.limpiar(this.claveIp(emailNorm, ip));
+    await this.fallosLoginPorEmail.limpiar(emailNorm);
+    await this.redesConfiadas.apuntar(this.claveIp(emailNorm, ip));
 
     const esCms = contexto === 'cms';
     const origen = esCms ? 'cms' : 'hermanos';
@@ -271,7 +270,7 @@ export class AuthService {
     testigo: DatosDelTestigo = {}
   ) {
     // Bloqueo preventivo antes de gastar consultas
-    comprobarBloqueo2FA(userId);
+    await comprobarBloqueo2FA(userId);
 
     const user = await db.user.findUnique({
       where: { id: userId },
@@ -291,7 +290,7 @@ export class AuthService {
       // que es el del testigo: gana una sola petición aunque lleguen a la vez.
       const { resultado } = await reclamarTotp(user, code);
       if (resultado !== 'ok') {
-        registrarFallo2FA(userId);
+        await registrarFallo2FA(userId);
         throw new HttpError(resultado === 'usado' ? MENSAJE_CODIGO_USADO : 'Código incorrecto o expirado.', 401);
       }
     } else {
@@ -310,7 +309,7 @@ export class AuthService {
         });
       } catch (e) {
         if (e !== respaldoIncorrecto) throw e;
-        registrarFallo2FA(userId);
+        await registrarFallo2FA(userId);
         throw new HttpError('Código incorrecto o expirado.', 401);
       }
 
@@ -454,8 +453,8 @@ export class AuthService {
     // prueba que la cuenta es suya, así que se le quita en todas las redes.
     if (cuenta) {
       const email = cuenta.email.trim().toLowerCase();
-      this.fallosLoginPorEmail.limpiar(email);
-      this.fallosLoginPorIp.limpiarPrefijo(`${email}|`);
+      await this.fallosLoginPorEmail.limpiar(email);
+      await this.fallosLoginPorIp.limpiarPrefijo(`${email}|`);
     }
 
     // El corte, para quien abra una sesión justo después (`estrenar`): tiene
@@ -468,7 +467,7 @@ export class AuthService {
   // sin pasar por el login y sus bloqueos; el limitador por IP no basta si la
   // sesión se usa desde varias redes.
   private static readonly fallosCambioContrasena = new ContadorFallos({
-    maxFallos: 5, bloqueoMs: QUINCE_MINUTOS, ventanaMs: UNA_HORA, tope: 10_000
+    nombre: 'cambio-de-contrasena', maxFallos: 5, bloqueoMs: QUINCE_MINUTOS, ventanaMs: UNA_HORA, tope: 10_000
   });
 
   /**
@@ -487,7 +486,7 @@ export class AuthService {
     meta: MetaDeAuditoria = {},
   ): Promise<{ message: string; sesiones: { area: AreaSesion; token: string; role: Role; recordarme: boolean }[] }> {
     const clave = String(userId);
-    const restante = this.fallosCambioContrasena.restanteBloqueo(clave);
+    const restante = await this.fallosCambioContrasena.restanteBloqueo(clave);
     if (restante > 0) {
       throw new HttpError(`Demasiados intentos con la contraseña actual equivocada: espera ${Math.ceil(restante / 60000)} minuto(s).`, 429);
     }
@@ -501,10 +500,10 @@ export class AuthService {
     // 400 y no 401: la sesión es buena, lo que falla es un dato del formulario,
     // y un 401 haría creer a la web que la sesión ha caducado.
     if (!(await verified(actual, user.password))) {
-      this.fallosCambioContrasena.registrarFallo(clave);
+      await this.fallosCambioContrasena.registrarFallo(clave);
       throw new HttpError('La contraseña actual no es correcta.');
     }
-    this.fallosCambioContrasena.limpiar(clave);
+    await this.fallosCambioContrasena.limpiar(clave);
     if (await verified(nueva, user.password)) {
       throw new HttpError('La contraseña nueva es igual que la actual: elige otra.');
     }
@@ -524,8 +523,8 @@ export class AuthService {
     });
 
     const email = user.email.trim().toLowerCase();
-    this.fallosLoginPorEmail.limpiar(email);
-    this.fallosLoginPorIp.limpiarPrefijo(`${email}|`);
+    await this.fallosLoginPorEmail.limpiar(email);
+    await this.fallosLoginPorIp.limpiarPrefijo(`${email}|`);
 
     // La sesión nueva tiene que nacer después del corte, o la cortaría él.
     while (Date.now() < corte.getTime()) await new Promise((r) => setTimeout(r, 1));

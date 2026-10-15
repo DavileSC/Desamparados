@@ -53,7 +53,7 @@ export const APAGAR_2FA = { twoFactorEnabled: false, twoFactorSecret: null, twoF
 // Las tandas se olvidan con un acierto o tras un día entero sin fallar
 // después del último bloqueo.
 const fallos2FA = new ContadorFallos({
-  maxFallos: 5, bloqueoMs: ESCALADA_BLOQUEO_2FA[0], escaladaMs: ESCALADA_BLOQUEO_2FA,
+  nombre: 'doble-factor', maxFallos: 5, bloqueoMs: ESCALADA_BLOQUEO_2FA[0], escaladaMs: ESCALADA_BLOQUEO_2FA,
   ventanaMs: UNA_HORA, olvidoTandasMs: 24 * UNA_HORA, tope: 10_000
 });
 
@@ -65,8 +65,8 @@ export function textoDePlazo(ms: number): string {
   return horas === 1 ? '1 hora' : `${horas} horas`;
 }
 
-export function comprobarBloqueo2FA(userId: number): void {
-  const restante = fallos2FA.restanteBloqueo(String(userId));
+export async function comprobarBloqueo2FA(userId: number): Promise<void> {
+  const restante = await fallos2FA.restanteBloqueo(String(userId));
   if (restante > 0) {
     throw new HttpError(`Demasiados intentos fallidos. Cuenta bloqueada temporalmente: espera ${textoDePlazo(restante)}.`, 429);
   }
@@ -77,8 +77,8 @@ export function comprobarBloqueo2FA(userId: number): void {
  * titular por correo (uno por tanda, no uno por fallo), sin esperar: el
  * aviso no puede retrasar ni tumbar la respuesta.
  */
-export function registrarFallo2FA(userId: number): void {
-  const bloqueo = fallos2FA.registrarFallo(String(userId));
+export async function registrarFallo2FA(userId: number): Promise<void> {
+  const bloqueo = await fallos2FA.registrarFallo(String(userId));
   if (bloqueo > 0) {
     avisarBloqueo2FA(userId, bloqueo).catch((error) => console.error('[2FA] No se pudo avisar del bloqueo:', error));
   }
@@ -93,8 +93,8 @@ async function avisarBloqueo2FA(userId: number, bloqueoMs: number): Promise<bool
   return EmailService.enviarDobleFactorBloqueado(user.email, user.nombre, textoDePlazo(bloqueoMs), user.hermanos[0]?.sexo ?? undefined);
 }
 
-export function limpiarFallos2FA(userId: number): void {
-  fallos2FA.limpiar(String(userId));
+export async function limpiarFallos2FA(userId: number): Promise<void> {
+  await fallos2FA.limpiar(String(userId));
 }
 
 // Alfabeto sin caracteres ambiguos (sin 0/O, 1/I/L)

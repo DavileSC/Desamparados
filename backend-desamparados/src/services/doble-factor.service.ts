@@ -129,7 +129,7 @@ export class DobleFactorService {
    * caducada y echaría al usuario por teclear mal un código.
    */
   static async disable2FA(userId: number, code: string) {
-    comprobarBloqueo2FA(userId);
+    await comprobarBloqueo2FA(userId);
 
     const user = await db.user.findUnique({ where: { id: userId }, omit: { twoFactorSecret: false } });
     if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) throw new HttpError('2FA no está activado.');
@@ -139,18 +139,18 @@ export class DobleFactorService {
     if (/^[0-9]{6}$/.test(normalized)) {
       const { resultado } = await reclamarTotp(user, normalized);
       if (resultado !== 'ok') {
-        registrarFallo2FA(userId);
+        await registrarFallo2FA(userId);
         throw new HttpError(resultado === 'usado' ? MENSAJE_CODIGO_USADO : 'Código incorrecto.');
       }
     } else {
       const consumed = await consumirCodigoDeRespaldo(userId, normalized);
       if (!consumed) {
-        registrarFallo2FA(userId);
+        await registrarFallo2FA(userId);
         throw new HttpError('Código incorrecto.');
       }
     }
 
-    limpiarFallos2FA(userId);
+    await limpiarFallos2FA(userId);
 
     return await db.$transaction(async (tx) => {
       await tx.user.update({

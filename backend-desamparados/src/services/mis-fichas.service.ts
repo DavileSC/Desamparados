@@ -39,15 +39,15 @@ export const MENSAJE_DNI_NO_GUARDADO = 'No se ha podido guardar ese DNI. Si es c
  * mal: también un DNI que se guarda dice algo (que no estaba en el censo). Una
  * familia que apunta a sus hijos no llega ni de lejos.
  */
-const intentosDeDni = new ContadorFallos({ maxFallos: 10, bloqueoMs: UN_DIA, ventanaMs: UN_DIA, tope: 10_000 });
+const intentosDeDni = new ContadorFallos({ nombre: 'dni-desde-el-area', maxFallos: 10, bloqueoMs: UN_DIA, ventanaMs: UN_DIA, tope: 10_000 });
 
 /** Cuenta un DNI escrito desde el área de hermanos y frena a quien escribe demasiados. */
-function contarIntentoDeDni(userId: number) {
+async function contarIntentoDeDni(userId: number) {
   const clave = String(userId);
-  if (intentosDeDni.restanteBloqueo(clave) > 0) {
+  if ((await intentosDeDni.restanteBloqueo(clave)) > 0) {
     throw new HttpError('Has cambiado demasiados DNI por hoy. Si necesitas corregir alguno, habla con Secretaría.', 429);
   }
-  intentosDeDni.registrarFallo(clave);
+  await intentosDeDni.registrarFallo(clave);
 }
 
 /**
@@ -107,7 +107,7 @@ export class MisFichasService {
 
   static async createDependentProfile(managerUserId: number, data: CreateHermanoDto, meta?: MetaDeAuditoria) {
     if (data.dni) {
-      contarIntentoDeDni(managerUserId);
+      await contarIntentoDeDni(managerUserId);
       await exigirDniLibreSinDelatar(data.dni, null, meta);
     }
 
@@ -198,7 +198,7 @@ export class MisFichasService {
       throw new HttpError('Para domiciliar los recibos hace falta el IBAN de la cuenta.');
     }
     if (typeof dataToUpdate.dni === 'string' && dataToUpdate.dni !== hermano.dni) {
-      contarIntentoDeDni(managerUserId);
+      await contarIntentoDeDni(managerUserId);
       await exigirDniLibreSinDelatar(dataToUpdate.dni, hermanoId, meta);
     }
     const detalles = diferenciasFicha(hermano, dataToUpdate);
@@ -322,7 +322,7 @@ export class MisFichasService {
 
     // Cada intento gasta uno de los DNI del día, también si solo cambia el
     // correo: los dos dicen si alguien tiene cuenta.
-    contarIntentoDeDni(managerUserId);
+    await contarIntentoDeDni(managerUserId);
     if (dto.newDni && !hermano.dni) await exigirDniLibreSinDelatar(dto.newDni, hermanoId, meta);
     return await emanciparFicha(hermano, dto.newEmail, dto.newDni, await encrypt(dto.newPassword), false, meta, true);
   }

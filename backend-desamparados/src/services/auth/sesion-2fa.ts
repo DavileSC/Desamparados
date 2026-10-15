@@ -82,7 +82,7 @@ export async function avanzarPasoDelTestigo(
 
 /** Lo que se hace al pasar el segundo factor por cualquier camino: limpiar los fallos. */
 export async function alPasarSegundoFactor(userId: number): Promise<void> {
-  limpiarFallos2FA(userId);
+  await limpiarFallos2FA(userId);
 }
 
 /** Lo que la sesión necesita de la cuenta, venga de la consulta que venga. */
