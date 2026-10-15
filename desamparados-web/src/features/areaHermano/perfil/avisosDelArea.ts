@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useModulos } from '../../../hooks/useModulos'
 import { activarAvisos, misMovilesDeAvisos, quitarMovilDeAvisos } from '../../../lib/api/avisos'
-import { admiteAvisos, darDeBajaEsteNavegador, enPantallaDeInicio, esIphone, nombreDelDispositivo, suscribirEsteNavegador } from '../../../lib/avisosDelNavegador'
+import { admiteAvisos, darDeBajaEsteNavegador, enPantallaDeInicio, esIphone, esPantallaTactil, nombreDelDispositivo, suscribirEsteNavegador } from '../../../lib/avisosDelNavegador'
 
 /**
  * El estado de los avisos al móvil del área y cómo activarlos o quitarlos. Lo
@@ -27,10 +27,15 @@ export function escribir(clave: string, valor: string | null) {
   }
 }
 
-/** Qué se puede hacer en este navegador. */
-export type Posible = 'si' | 'pantalla-de-inicio' | 'no'
+/**
+ * Qué se puede hacer en este navegador. Solo se activan en el móvil o la
+ * tableta (decidido el 15-10-2026): el aviso es para llevarlo encima, y uno
+ * en el ordenador de casa se quedaría sin ver y se tomaría por leído.
+ */
+export type Posible = 'si' | 'pantalla-de-inicio' | 'solo-movil' | 'no'
 function queSePuede(): Posible {
   if (esIphone() && !enPantallaDeInicio()) return 'pantalla-de-inicio'
+  if (!esPantallaTactil()) return 'solo-movil'
   return admiteAvisos() ? 'si' : 'no'
 }
 
@@ -55,7 +60,9 @@ export function useAvisosDelArea() {
       escribir(ESTE_MOVIL, String(movil.id))
       escribir(PREGUNTADO, 'si')
       setEsteId(movil.id)
-      void queryClient.invalidateQueries({ queryKey: CLAVE })
+      // Se devuelve la promesa para que la mutación siga «en curso» hasta
+      // tener la lista nueva: si no, el interruptor vuelve un momento a apagado.
+      return queryClient.invalidateQueries({ queryKey: CLAVE })
     },
   })
 
@@ -69,7 +76,7 @@ export function useAvisosDelArea() {
         escribir(ESTE_MOVIL, null)
         setEsteId(null)
       }
-      void queryClient.invalidateQueries({ queryKey: CLAVE })
+      return queryClient.invalidateQueries({ queryKey: CLAVE })
     },
   })
 

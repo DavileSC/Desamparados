@@ -1,5 +1,5 @@
 import { useId, useState } from 'react'
-import { Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Switch, Typography } from '@mui/material'
+import { Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Switch, Typography } from '@mui/material'
 import TarjetaCristal from '../../../components/TarjetaCristal'
 import { useModulos } from '../../../hooks/useModulos'
 import { esPantallaTactil } from '../../../lib/avisosDelNavegador'
@@ -57,6 +57,10 @@ export default function AvisosEnElMovil() {
 
       {a.posible === 'pantalla-de-inicio' && !a.esteMovil ? (
         <PasosDelIphone />
+      ) : a.posible === 'solo-movil' && !a.esteMovil ? (
+        <Typography sx={{ fontSize: 15, color: 'text.secondary' }}>
+          Los avisos se activan desde el móvil o la tableta: entra en «Mi perfil» desde allí.
+        </Typography>
       ) : a.posible === 'no' && !a.esteMovil ? (
         <Typography sx={{ fontSize: 15, color: 'text.secondary' }}>
           Este navegador no puede recibir avisos. Prueba desde el móvil, con Chrome o Safari.
@@ -67,9 +71,19 @@ export default function AvisosEnElMovil() {
             <Typography component="label" htmlFor={`${idTitulo}-interruptor`} sx={{ fontSize: 16, fontWeight: 600, display: 'block' }}>
               {tactil ? 'Avisos en este móvil' : 'Avisos en este ordenador'}
             </Typography>
-            <Typography sx={{ fontSize: 13.5, color: a.esteMovil ? 'success.light' : 'text.secondary' }}>
-              {a.esteMovil ? 'Activados' : 'Desactivados'}
-            </Typography>
+            {ocupado ? (
+              // La primera vez el móvil pide permiso, instala el service worker
+              // y se da de alta en el servicio de avisos (Google, Apple): son
+              // unos segundos sin nada que ver, y sin esto parece colgado.
+              <Typography role="status" sx={{ fontSize: 13.5, color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CircularProgress size={14} color="inherit" aria-hidden />
+                {a.activar.isPending ? 'Activando… puede tardar unos segundos' : 'Quitando…'}
+              </Typography>
+            ) : (
+              <Typography sx={{ fontSize: 13.5, color: a.esteMovil ? 'success.light' : 'text.secondary' }}>
+                {a.esteMovil ? 'Activados' : 'Desactivados'}
+              </Typography>
+            )}
           </Box>
           <Switch
             id={`${idTitulo}-interruptor`}
@@ -134,6 +148,12 @@ export function PreguntaDeAvisos() {
         </Typography>
         {a.posible === 'pantalla-de-inicio' && <PasosDelIphone />}
         {a.activar.error && <Typography role="alert" sx={{ fontSize: 14, color: 'error.light' }}>{mensaje(a.activar.error)}</Typography>}
+        {a.activar.isPending && (
+          <Typography role="status" sx={{ fontSize: 14, color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CircularProgress size={14} color="inherit" aria-hidden />
+            Activando… puede tardar unos segundos
+          </Typography>
+        )}
         <Typography sx={{ fontSize: 13.5, color: 'text.secondary' }}>
           Puedes cambiarlo cuando quieras en «Cuenta».
         </Typography>
