@@ -42,3 +42,9 @@ arranca nada (las pruebas usan el ejemplo, `shared/datos-entidad.ejemplo.json`).
 
 `backend`, `frontend`, `cms`, `database`, `testing`, `revision` y `git`, en
 `.claude/skills/`. La auditoría de seguridad es la skill global `security-audit`.
+
+También en `.claude/skills/`, las de antislop (filtro contra diseño, textos y
+comentarios genéricos): `antislop` (la base, va siempre), `antislop-ui`,
+`antislop-copywriting`, `antislop-human`, `antislop-layoutmobile` y
+`antislop-code`. Son de terceros: no se editan, se actualizan copiando la
+versión nueva.
