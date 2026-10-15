@@ -19,6 +19,12 @@
 backend-desamparados/storage/*
 !backend-desamparados/storage/.gitkeep
 
+# Estadísticas de visitas: el registro de nginx y el informe de GoAccess
+# (docs/servidor.md, «Estadísticas de visitas»)
+/registros/
+/estadisticas/
+backend-desamparados/estadisticas/
+
 # Local tooling and operating-system files
 .vscode/
 .idea/

@@ -33,6 +33,7 @@ import { portadaRoutes } from './routes/portada.routes.js';
 import { contenidoRoutes } from './routes/contenido.routes.js';
 import { seccionesRoutes } from './routes/secciones.routes.js';
 import { modulosRoutes, modulosCmsRoutes } from './routes/modulos.routes.js';
+import estadisticasDeVisitasRoutes from './routes/estadisticas-de-visitas.routes.js';
 import { corporacionRoutes, corporacionCmsRoutes } from './routes/corporacion.routes.js';
 import { menuRoutes, menuCmsRoutes } from './routes/menu.routes.js';
 import { conModulo, nucleo } from './middleware/modulos.js';
@@ -195,6 +196,7 @@ app.use('/api/modulos', nucleo, modulosRoutes);         // Qué módulos están 
 app.use('/api/cms/modulos', nucleo, modulosCmsRoutes);  // Encenderlos y apagarlos, desde Sistema → Módulos
 app.use('/api/corporacion', nucleo, corporacionRoutes);         // Secretaría, sede y redes, para la web
 app.use('/api/cms/corporacion', nucleo, corporacionCmsRoutes);  // Cambiarlos, desde Sistema → Datos de la corporación
+app.use('/api/estadisticas-de-visitas', conModulo('estadisticas-de-visitas'), estadisticasDeVisitasRoutes); // El informe de GoAccess, en el CMS
 app.use('/api/menu', nucleo, menuRoutes);         // Nombres de las páginas en el menú público, para la web
 app.use('/api/cms/menu', nucleo, menuCmsRoutes);  // Cambiarlos, desde el índice de Páginas del CMS
 

@@ -8,10 +8,12 @@ import TransicionDePagina from '../components/TransicionDePagina'
 import { designTokens } from '../theme'
 import { useFocoAlCambiarDePagina } from '../hooks/useFocoAlCambiarDePagina'
 import SaltarAlContenido from '../components/SaltarAlContenido'
+import { useContarVisitas } from '../hooks/useContarVisitas'
 
 export default function MarcoPublico() {
   const principal = useRef<HTMLElement>(null)
   useFocoAlCambiarDePagina(principal)
+  useContarVisitas()
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>

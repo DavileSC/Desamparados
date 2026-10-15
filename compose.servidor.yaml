@@ -41,3 +41,4 @@ services:
       # !override sustituye la lista entera: sin repetirlo aquí, la web no
       # tendría los datos de la corporación y no arrancaría.
       - ./instalacion:/app/instalacion:ro
+      - ./registros/visitas:/var/log/nginx/visitas

@@ -51,7 +51,8 @@
     { "clave": "contabilidad", "nombre": "Contabilidad", "grupo": "Cuentas", "descripcion": "Las pantallas del libro de apuntes y la partida doble; los apuntes se registran siempre, esté o no encendida.", "requiere": [] },
     { "clave": "cabildos", "nombre": "Cabildos y actas", "grupo": "Junta", "descripcion": "Convocatorias, asistencia, votaciones y el libro de actas.", "requiere": [] },
     { "clave": "informe-anual", "nombre": "Informe anual", "grupo": "Junta", "descripcion": "La memoria del curso en PDF, con sus textos a mano.", "requiere": [] },
-    { "clave": "avisos-a-los-hermanos", "nombre": "Avisos en el móvil para los hermanos", "grupo": "Web", "descripcion": "Que los hermanos reciban en el móvil, en vez de por correo, la apertura de papeletas y los avisos de la Junta. Necesita las claves VAPID en el servidor.", "requiere": ["area-hermanos"] }
+    { "clave": "avisos-a-los-hermanos", "nombre": "Avisos en el móvil para los hermanos", "grupo": "Web", "descripcion": "Que los hermanos reciban en el móvil, en vez de por correo, la apertura de papeletas y los avisos de la Junta. Necesita las claves VAPID en el servidor.", "requiere": ["area-hermanos"] },
+    { "clave": "estadisticas-de-visitas", "nombre": "Estadísticas de visitas", "grupo": "Web", "descripcion": "Cuántas visitas tiene la web pública, qué páginas se ven y de dónde llegan, sin cookies. El informe lo prepara GoAccess en el servidor (docs/servidor.md).", "requiere": [] }
   ],
   "deInstalacion": [
     { "clave": "paginas-propias", "nombre": "Páginas propias", "descripcion": "Las páginas hechas a medida para una corporación concreta, con su diseño propio en vez de bloques. Solo las tiene la instalación para la que se hicieron." }

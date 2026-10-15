@@ -24,6 +24,7 @@ import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlin
 import WebOutlinedIcon from '@mui/icons-material/WebOutlined'
 import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined'
 import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined'
+import QueryStatsOutlinedIcon from '@mui/icons-material/QueryStatsOutlined'
 import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
 import MailOutlinedIcon from '@mui/icons-material/MailOutlined'
 import DraftsOutlinedIcon from '@mui/icons-material/DraftsOutlined'
@@ -105,6 +106,8 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Boletín y avisos', href: '/cms/comunicados', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR', 'REDES'], grupo: 'Web', icono: EmailOutlinedIcon, modulo: 'comunicados' },
   // Las plantillas de los correos que manda la web: Secretaría, el Hermano Mayor y Administración.
   { label: 'Emails', href: '/cms/emails', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Web', icono: DraftsOutlinedIcon, modulo: 'nucleo' },
+  // Las visitas de la web pública (GoAccess): la guarda de /api/estadisticas-de-visitas.
+  { label: 'Estadísticas de visitas', href: '/cms/estadisticas', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Web', icono: QueryStatsOutlinedIcon, modulo: 'estadisticas-de-visitas' },
   { label: 'Agenda', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Web', icono: CalendarMonthOutlinedIcon, modulo: 'agenda' },
   { label: 'Hermanos', href: '/cms/hermanos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: GroupsOutlinedIcon, contador: { de: 'hermanosSinNumero', tono: 'aviso' }, modulo: 'nucleo' },
   // Los días de reparto y el plazo de la papeleta: los ve la Junta del censo, los cambia Secretaría.

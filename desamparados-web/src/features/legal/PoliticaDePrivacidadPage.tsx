@@ -122,6 +122,17 @@ export default function PoliticaDePrivacidadPage() {
           </P>
         </Subapartado>
 
+        {activo('estadisticas-de-visitas') && (
+          <Subapartado titulo="Estadísticas de visitas">
+            <P>
+              Para saber qué se lee y cómo se llega a la web, se cuentan las páginas vistas: la página, el sitio del que se
+              viene, el navegador y la hora, con la dirección IP recortada (sin su último número), de modo que no identifica a
+              nadie. No se usan cookies ni se guarda nada en el navegador, los datos no salen del servidor y no se cuenta a
+              quien pide en su navegador no ser seguido. La base es el interés legítimo en mejorar la web (art. 6.1.f del RGPD).
+            </P>
+          </Subapartado>
+        )}
+
         {activo('area-hermanos') && (
           <Subapartado titulo="Área de hermanos">
             <P>
@@ -162,6 +173,7 @@ export default function PoliticaDePrivacidadPage() {
           {(tienda || donativos) && <li>Los de pedidos y donativos, el tiempo que obligan las normas contables y fiscales.</li>}
           <li>Los mensajes del formulario de contacto, el tiempo necesario para atenderlos.</li>
           <li>El registro de lo que hace el personal con los datos, dos años.</li>
+          {activo('estadisticas-de-visitas') && <li>Las páginas vistas, ocho semanas; las cifras de visitas que se sacan de ellas, sin datos de nadie, dos años.</li>}
         </Lista>
       </Apartado>
 

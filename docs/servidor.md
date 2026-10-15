@@ -702,6 +702,91 @@ La última línea del volcado tiene que ser «Dump completed», `storage` traer
 las fotos e `instalacion` sus datos (las copias anteriores al 13-10-2026 no la
 llevan). Para volcarla en una base, `despliegue.md`, «Restaurar».
 
+## Estadísticas de visitas
+
+El módulo «Estadísticas de visitas» (Sistema → «Módulos») cuenta las páginas
+vistas de la web pública sin cookies y las enseña en el CMS, en Web →
+«Estadísticas de visitas» (Administración y el Hermano Mayor). Va en tres
+piezas:
+
+- **La web** avisa de cada página vista con `/visita?ruta=…` (es una SPA: sin
+  eso, el servidor solo vería la primera página de cada visita).
+- **El nginx del contenedor** la apunta en `registros/visitas/visitas.log`,
+  con la IP recortada y sin la consulta de la URL (`docker/nginx/comun.conf`).
+  Más de dos por segundo desde una misma IP no se apuntan.
+- **GoAccess**, en el sistema, lee ese registro cada hora y escribe
+  `estadisticas/informe.html`, que la API sirve al CMS aislado de la sesión.
+  Guarda lo leído en `/var/lib/desamparados-estadisticas`: el histórico (dos
+  años) sigue aunque el registro rote, y releer no cuenta dos veces.
+
+Una vez, después del primer despliegue que lo trae, desde `/srv/desamparados`:
+
+```bash
+sudo apt install goaccess
+# El informe sale en castellano si el sistema tiene el idioma.
+sudo locale-gen es_ES.UTF-8
+sudo install -o root -g root -m 755 /srv/desamparados/docker/servidor/estadisticas.sh /usr/local/sbin/desamparados-estadisticas
+sudo tee /etc/systemd/system/desamparados-estadisticas.service >/dev/null <<'EOF'
+[Unit]
+Description=Informe de visitas de la web (GoAccess)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/desamparados-estadisticas
+Nice=10
+IOSchedulingClass=idle
+EOF
+sudo tee /etc/systemd/system/desamparados-estadisticas.timer >/dev/null <<'EOF'
+[Unit]
+Description=Rehacer el informe de visitas cada hora
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=300
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+# El registro rota cada semana y se guardan ocho (lo que dice la política de
+# privacidad). Antes de rotar se rehace el informe: si no, se perdería lo
+# apuntado desde la última hora. copytruncate: nginx lo tiene abierto desde
+# el contenedor y no se entera de un fichero nuevo.
+sudo tee /etc/logrotate.d/desamparados-visitas >/dev/null <<'EOF'
+/srv/desamparados/registros/visitas/visitas.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+    su root root
+    prerotate
+        /usr/local/sbin/desamparados-estadisticas >/dev/null 2>&1 || true
+    endscript
+}
+EOF
+sudo systemctl daemon-reload
+sudo systemctl enable --now desamparados-estadisticas.timer
+sudo logrotate -d /etc/logrotate.d/desamparados-visitas
+```
+
+Después: encender el módulo, ver unas cuantas páginas de la web y comprobar
+que se apuntan y que sale el informe:
+
+```bash
+sudo tail -n 3 registros/visitas/visitas.log
+sudo systemctl start desamparados-estadisticas.service
+ls -l estadisticas/informe.html
+```
+
+Si cambia `estadisticas.sh`, se vuelve a copiar con el mismo `install`. Para
+pararlo: `sudo systemctl disable --now desamparados-estadisticas.timer` (y
+apagar el módulo, para que la web deje de avisar). La base de GoAccess no va
+en las copias de seguridad: si se pierde, el histórico vuelve a empezar desde
+lo que quede en los registros.
+
 ## El día de la presentación
 
 Pendiente de preparar. En esencia: la base buena con su propia `TOTP_ENC_KEY`,

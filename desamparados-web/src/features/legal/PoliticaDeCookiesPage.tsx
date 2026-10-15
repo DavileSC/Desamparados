@@ -17,7 +17,7 @@ export default function PoliticaDeCookiesPage() {
   const { decision, volverAPreguntar } = useConsentimientoDeCookies()
 
   const filas = [
-    ['desamparados-cookies-consent', 'Almacenamiento local', 'Recordar si se aceptaron o se rechazaron los contenidos de terceros.', 'Hasta que se cambie la decisión o se borren los datos del navegador.', PROPIA],
+    ['desamparados-cookies-consent, desamparados-cookies-consent-fecha', 'Almacenamiento local', 'Recordar si se aceptaron o se rechazaron los contenidos de terceros, y cuándo.', '24 meses: después se vuelve a preguntar. Antes, si se cambia la decisión o se borran los datos del navegador.', PROPIA],
     ...(activo('tienda-web') ? [['tienda-cesta', 'Almacenamiento local', 'Guardar la cesta de la tienda entre visitas, hasta pagarla.', 'Hasta que se pague, se vacíe o se borren los datos del navegador.', PROPIA]] : []),
     ['desamparados:porPagina', 'Almacenamiento de sesión', 'Recordar cuántos elementos se ven por página en los listados.', 'Hasta cerrar la pestaña.', PROPIA],
     ...(activo('area-hermanos') ? [['desamparados_hermano', 'Cookie técnica', 'Mantener abierta la sesión del área de hermanos.', '4 horas (7 días si se marca «Recuérdame»).', PROPIA]] : []),

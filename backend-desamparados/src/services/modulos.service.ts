@@ -68,6 +68,8 @@ const RECUENTOS: Record<ClaveModulo, () => Promise<RecuentoDeDatos[]>> = {
   cabildos: async () => [{ uno: 'cabildo', que: 'cabildos', total: await db.cabildo.count() }],
   'informe-anual': async () => [{ uno: 'informe', que: 'informes', total: await db.informeAnual.count() }],
   'avisos-a-los-hermanos': async () => [{ uno: 'móvil con avisos', que: 'móviles con avisos', total: await db.movilDeAvisos.count() }],
+  // El informe vive en el disco del servidor, no en la base.
+  'estadisticas-de-visitas': async () => [],
 };
 
 /**

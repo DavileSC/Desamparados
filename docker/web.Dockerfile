@@ -110,7 +110,7 @@ RUN mv /var/www/desamparados/dist/index.html /app/desamparados-web/index.plantil
 
 # Punto de montaje de los archivos subidos (llega en solo lectura desde el
 # disco del servidor) y carpeta del desafío de Let's Encrypt.
-RUN mkdir -p /srv/storage/public /var/www/certbot
+RUN mkdir -p /srv/storage/public /var/www/certbot /var/log/nginx/visitas
 
 # Tiene que empezar por `nginx`: si no, el docker-entrypoint.sh oficial no
 # lanza /docker-entrypoint.d/ y la web arrancaría sin los datos. La recarga del

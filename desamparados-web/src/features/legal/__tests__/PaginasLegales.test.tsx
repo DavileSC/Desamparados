@@ -14,7 +14,7 @@ describe('páginas legales', () => {
   it('la política de cookies: una tabla con lo que guarda la web; lo de la tienda, solo con la tienda', () => {
     const { unmount } = renderWithProviders(<PoliticaDeCookiesPage />, { modulos: ['tienda-web', 'area-hermanos'] })
     const tablas = screen.getAllByRole('table')
-    expect(within(tablas[0]).getByText('desamparados-cookies-consent')).toBeInTheDocument()
+    expect(within(tablas[0]).getByText('desamparados-cookies-consent, desamparados-cookies-consent-fecha')).toBeInTheDocument()
     expect(within(tablas[0]).getByText('tienda-cesta')).toBeInTheDocument()
     expect(within(tablas[0]).getByText('desamparados_hermano')).toBeInTheDocument()
     // Lo de terceros, aparte y diciendo cuándo se carga cada uno.

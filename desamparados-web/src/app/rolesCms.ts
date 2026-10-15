@@ -59,6 +59,8 @@ export const rolesPorRutaCms = {
   accesos: ['ADMIN'],
   // Los módulos de la instalación: solo Administración, como los accesos.
   modulos: ['ADMIN'],
+  // Las visitas de la web pública: la guarda de /api/estadisticas-de-visitas.
+  estadisticas: ['ADMIN', 'HERMANO_MAYOR'],
   // Los datos de contacto: la guarda de /api/cms/corporacion.
   corporacion: ['ADMIN', 'SECRETARIA'],
   auditoria: ['ADMIN', 'HERMANO_MAYOR'],
