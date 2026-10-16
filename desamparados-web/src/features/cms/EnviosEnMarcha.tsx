@@ -60,7 +60,7 @@ export default function EnviosEnMarcha() {
                       <TableCell sx={{ minWidth: 220 }}>{e.titulo}</TableCell>
                       <TableCell align="right" sx={{ fontVariantNumeric: 'tabular-nums' }}>{e.alMovil || '—'}</TableCell>
                       <TableCell align="right" sx={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                        {porCorreo ? `${e.enviados} de ${porCorreo}` : '—'}
+                        {porCorreo ? `${e.enviados + e.rebotados} de ${porCorreo}` : '—'}
                         {e.fallidos > 0 && <Typography component="span" variant="body2" color="error"> · {e.fallidos} fallidos</Typography>}
                         {e.rebotados > 0 && <Typography component="span" variant="body2" color="text.secondary"> · {e.rebotados} rebotados</Typography>}
                       </TableCell>

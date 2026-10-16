@@ -26,7 +26,7 @@ describe('EnviosEnMarcha', () => {
     expect(screen.getByText(/Lo que falta sale mañana/)).toBeInTheDocument()
   })
 
-  it('los que rebotaron cuentan en el total por correo y se dicen aparte', async () => {
+  it('los que rebotaron salieron: cuentan como enviados y se dicen aparte', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta({
       hoy: { enviados: 40, tope: 250 },
       envios: [{
@@ -36,7 +36,7 @@ describe('EnviosEnMarcha', () => {
     })))
     renderWithProviders(<EnviosEnMarcha />)
 
-    expect(await screen.findByText('38 de 40')).toBeInTheDocument()
+    expect(await screen.findByText('40 de 40')).toBeInTheDocument()
     expect(screen.getByText(/2 rebotados/)).toBeInTheDocument()
   })
 })

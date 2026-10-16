@@ -160,7 +160,9 @@ describe('ComunicadoEditPage', () => {
   it('los que rebotaron se cuentan aparte, sin reintentar, y Secretaría va al censo a verlos', async () => {
     useAuthStore.setState({ status: 'listo', cms: { id: 1, email: 'secre@ejemplo.es', role: 'SECRETARIA', perfiles: [], origen: 'cms' }, hermano: null })
     montar({ ...BORRADOR, tipo: 'BOLETIN', estado: 'ENVIADO', enviadoEl: '2026-09-30T11:00:00Z' }, { enviados: 9, fallidos: 0, rebotados: 1, pendientes: 0, alMovil: 0 })
-    expect(await screen.findByText(/1 correo rebotó/)).toBeInTheDocument()
+    // Salió a las diez: la que rebotó también se envió.
+    expect(await screen.findByText('Enviado a 10 direcciones')).toBeInTheDocument()
+    expect(screen.getByText(/1 correo rebotó/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Ver quiénes' })).toHaveAttribute('href', '/cms/hermanos?correo=rebota')
   })

@@ -78,7 +78,7 @@ export default function ComunicadosAdminPage() {
                 </Box>
                 <Typography variant="body2" color="text.secondary" sx={{ minWidth: 150 }}>
                   {c.enviadoEl ? `Enviado el ${fechaCorta(c.enviadoEl)}` : `Escrito el ${fechaCorta(c.updatedAt)}`}
-                  {total > 0 && <><br />{c.envios.enviados + c.envios.alMovil} de {total} enviados{c.envios.alMovil ? ` (${c.envios.alMovil} al móvil)` : ''}{c.envios.fallidos ? ` · ${c.envios.fallidos} fallidos` : ''}{c.envios.rebotados ? ` · ${c.envios.rebotados} rebotados` : ''}</>}
+                  {total > 0 && <><br />{c.envios.enviados + c.envios.rebotados + c.envios.alMovil} de {total} enviados{c.envios.alMovil ? ` (${c.envios.alMovil} al móvil)` : ''}{c.envios.fallidos ? ` · ${c.envios.fallidos} fallidos` : ''}{c.envios.rebotados ? ` · ${c.envios.rebotados} rebotados` : ''}</>}
                 </Typography>
                 <Chip size="small" label={ESTADO[c.estado].texto} color={ESTADO[c.estado].color} variant={c.estado === 'BORRADOR' ? 'outlined' : 'filled'} />
               </Box>
