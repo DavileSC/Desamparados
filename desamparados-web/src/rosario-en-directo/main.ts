@@ -1,7 +1,7 @@
 import * as maplibregl from 'maplibre-gl'
 import type { GeoJSONSource, StyleSpecification } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import '@fontsource-variable/exo-2'
+import '@fontsource-variable/montserrat'
 import '../components/mapa/trabajador'
 import { ATRIBUCION, centroDe, edificioDelTemplo, hayWebGL, type Barrio } from '../components/mapa/barrio'
 import { estiloDelMapa } from '../components/mapa/estilo'
