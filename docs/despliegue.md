@@ -362,17 +362,28 @@ del censo lo dice, «Más filtros → Correo → Que rebota» las saca todas, la
 no gasta cupo en ellas y el boletín cuenta ese envío como «rebotó». Una queja
 de spam también da de baja del boletín.
 
-1. Generar la clave y ponerla en el `.env` como `CORREO_AVISOS_SECRETO`:
-   `openssl rand -hex 24`. Reiniciar la API.
+1. La clave, `CORREO_AVISOS_SECRETO` en el `.env`. Una instalación nueva ya
+   la trae (la genera `instalar.sh`). En una de antes, generarla con
+   `openssl rand -hex 24`, ponerla en su propia línea y **recrear** la API:
+   `docker compose … up -d api`. Un `restart` no basta: el contenedor solo lee
+   el `.env` al crearse.
 2. En Brevo: Transactional → Settings → Webhook → «Add a new webhook».
-   - URL: `https://avisos:CLAVE@DOMINIO/api/correo/avisos` (la clave como
-     contraseña; el usuario da igual). Si la pantalla ofrece «Bearer token»,
-     vale también: URL sin usuario ni clave, y la clave como token.
-   - Eventos: *Hard bounce*, *Invalid email*, *Blocked*, *Complaint (spam)* y
-     *Unsubscribed*. El resto no se usa.
+   En la pantalla nueva de Brevo es el menú de la cuenta → Settings →
+   Webhooks → «Create outbound webhook» (octubre de 2026).
+   - URL: `https://DOMINIO/api/correo/avisos`.
+   - Authentication method: **Bearer token**, con la clave. (O Basic, con
+     cualquier usuario y la clave de contraseña.)
+   - Event category: **Transactional email**. Encendidos solo *Hard Bounced*,
+     *Complaint*, *Unsubscribed*, *Blocked* e *Invalid*. *Soft Bounced* no:
+     Brevo lo reintenta y, si no llega, acaba en *Hard Bounced*.
    - Sin «batched» (por lotes): el cuerpo pasaría del tope de 100 KB de la API.
-3. Comprobarlo: `curl -i -X POST https://DOMINIO/api/correo/avisos` responde
-   **401** (con la clave puesta) y no 404 (sin ella).
+3. Comprobarlo: `curl -s -X POST https://DOMINIO/api/correo/avisos` responde
+   `{"message":"Falta la clave del aviso."}` (401). Con «Endpoint no
+   encontrado» (404), la API no ve la clave: falta recrearla.
+4. Probarlo de verdad: un boletín a una sola ficha de prueba con un correo de
+   Gmail que no exista. A los pocos minutos la ficha avisa de que el buzón no
+   existe y el boletín cuenta «1 correo rebotó». Probado así en pruebas el
+   16-10-2026.
 
 En la web de pruebas, la contraseña de nginx tapa la ruta: el bloque
 `location = /api/correo/avisos` de `docker/servidor/nginx-pruebas.conf` la deja
@@ -1632,5 +1643,8 @@ docker compose -f compose.yaml -f compose.local.yaml down -v
       la IP del visitante y no la de la puerta de enlace de Docker
       (`172.x.0.1`). Si fuera la de Docker, los limitadores de intentos
       tratarían a todos los visitantes como uno solo.
+- [ ] Si el correo sale por Brevo: dar de alta el webhook de los rebotes y
+      probarlo («Rebotes de correo»). Sin él, un correo que rebota sigue
+      saliendo como enviado y la ficha no avisa.
 - [ ] Rellenar los datos legales en `desamparados-web/src/config/site.ts`: hasta
       entonces, el aviso legal muestra «pendiente de confirmar».

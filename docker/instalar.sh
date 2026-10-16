@@ -111,6 +111,7 @@ else
     -e "s|^DATABASE_ROOT_PASSWORD=.*|DATABASE_ROOT_PASSWORD=$(clave)|" \
     -e "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -hex 64)|" \
     -e "s|^TOTP_ENC_KEY=.*|TOTP_ENC_KEY=$(openssl rand -hex 32)|" \
+    -e "s|^CORREO_AVISOS_SECRETO=.*|CORREO_AVISOS_SECRETO=$(openssl rand -hex 24)|" \
     -e "s|^FRONTEND_URL=.*|FRONTEND_URL=$URL|" \
     -e "s|^API_URL=.*|API_URL=$URL|" \
     -e "s|^SEED_ADMIN_EMAIL=.*|SEED_ADMIN_EMAIL=$CORREO|" \
@@ -234,6 +235,9 @@ cat <<EOF
 Hecho. Lo que queda, a mano (docs/despliegue.md):
   - Copias de seguridad: /etc/desamparados/copia.env y el timer de systemd.
   - Si va a cobrar en línea o por domiciliación: REDSYS_* y SEPA_ACREEDOR_*.
+  - Si el correo sale por Brevo: el webhook de los rebotes, a
+    https://$DOMINIO/api/correo/avisos con la clave CORREO_AVISOS_SECRETO del
+    .env como «Bearer token» («Rebotes de correo» en docs/despliegue.md).
   - Guarda fuera del servidor TOTP_ENC_KEY (está en .env): sin ella, todos los
     cargos tienen que volver a activar el doble factor.
   - Entra en https://$DOMINIO/cms con $CORREO y la contraseña de arriba.
