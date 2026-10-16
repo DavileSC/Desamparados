@@ -140,6 +140,34 @@ html, body {
   border-radius: 50%;
 }
 
+/* Dentro del trono, que MapLibre ya pone en `position: absolute`: no hay que tocarle la posición. */
+.calle-del-trono {
+  position: absolute;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  /* Con la cámara siguiéndolo, el trono va en el centro: cabe lo que queda a su derecha. */
+  max-width: calc(50vw - 40px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 2px 7px;
+  font-size: 12px;
+  color: #fff;
+  background: rgba(7, 6, 8, 0.82);
+  border-left: 2px solid var(--oro);
+}
+
+.calle-del-trono:empty {
+  display: none;
+}
+
+/* Los cruces, como en la lista de la Pasión: en cursiva y más pequeños. */
+.calle-del-trono[data-cruce='true'] {
+  font-style: italic;
+  font-size: 11px;
+}
+
 .rotulo-salida {
   display: block;
   font-size: 11px;

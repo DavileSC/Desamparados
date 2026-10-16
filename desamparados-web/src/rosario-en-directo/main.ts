@@ -9,7 +9,7 @@ import { DISTANCIA_MAXIMA_M, acumulados, metros, tramoHasta } from '../component
 import { horaEnMadrid } from '../lib/horaDeMadrid'
 import type { Coordenada } from '../lib/api/contenido'
 import { MARCA, alfa } from '../theme/marca'
-import { RUTA } from './ruta'
+import { CALLES, RUTA } from './ruta'
 import './rosario.css'
 
 /**
@@ -38,6 +38,9 @@ interface Posicion { enDirecto: boolean; lng?: number; lat?: number; actualizado
 
 const hechos = acumulados(RUTA)
 const total = hechos[hechos.length - 1]
+
+/** La calle de ese punto del recorrido (en metros andados): la última que ha empezado. */
+const calleEn = (andado: number) => CALLES.findLast((c) => hechos[c.esquina] <= andado) ?? CALLES[0]
 
 /** Los metros andados del recorrido en ese punto, y a qué distancia de la línea queda. */
 function sobreLaRuta(p: Coordenada, anterior: number): { recorrido: number; distancia: number } {
@@ -115,6 +118,10 @@ async function arrancar() {
     background: MARCA.principal, border: `2px solid ${MARCA.principalClaro}`,
     boxShadow: `0 0 0 7px ${alfa(MARCA.principalClaro, 0.22)}, 0 0 18px ${alfa(MARCA.principalClaro, 0.5)}`,
   })
+  // La calle por la que va, pequeña y al lado del trono: no tapa el mapa.
+  const rotuloCalle = document.createElement('span')
+  rotuloCalle.className = 'calle-del-trono'
+  punto.appendChild(rotuloCalle)
   const trono = new maplibregl.Marker({ element: punto }).setLngLat(RUTA[0])
 
   let camara: 'sigue' | 'entero' | 'libre' = 'entero'
@@ -161,9 +168,12 @@ async function arrancar() {
     ultima = aqui
     botonSeguir.disabled = false
     const queda = Math.max(0, total - andado)
-    avisar('El Rosario está en la calle', queda < 40 && metros(aqui, RUTA[0]) < 40
-      ? `Llegando al Templo. Posición de las ${hora}.`
-      : `El punto granate es por donde va. Posición de las ${hora}; se actualiza sola.`, true)
+    const calle = calleEn(andado)
+    rotuloCalle.textContent = calle.nombre
+    rotuloCalle.dataset.cruce = String(Boolean(calle.cruce))
+    const llegando = queda < 40 && metros(aqui, RUTA[0]) < 40
+    avisar(llegando ? 'Llegando al Templo' : calle.cruce ? calle.nombre :`Ahora por ${calle.nombre}`,
+      `El punto granate es por donde va. Posición de las ${hora}; se actualiza sola.`, true)
     if (primera) ponerCamara('sigue')
     else if (camara === 'sigue') mapa.easeTo({ center: aqui, duration: 1500 })
   }
