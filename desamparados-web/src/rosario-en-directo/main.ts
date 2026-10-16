@@ -5,7 +5,7 @@ import '@fontsource-variable/exo-2'
 import '../components/mapa/trabajador'
 import { ATRIBUCION, centroDe, edificioDelTemplo, hayWebGL, type Barrio } from '../components/mapa/barrio'
 import { estiloDelMapa } from '../components/mapa/estilo'
-import { DISTANCIA_MAXIMA_M, acumulados, metros, tramoHasta } from '../components/bloques/recorrido'
+import { DISTANCIA_MAXIMA_M, acumulados, metros, puntoEn, tramoHasta } from '../components/bloques/recorrido'
 import { horaEnMadrid } from '../lib/horaDeMadrid'
 import type { Coordenada } from '../lib/api/contenido'
 import { MARCA, alfa } from '../theme/marca'
@@ -23,6 +23,25 @@ import './rosario.css'
 const BASE = import.meta.env.BASE_URL
 /** Lo mismo que el mapa de la web: la posición no cambia más deprisa (el móvil la manda cada 15 s). */
 const SONDEO_MS = 20_000
+
+/**
+ * `?simulacro`: la página no pregunta al servidor y anda ella sola todo el
+ * recorrido en unos minutos, con el temblor de un GPS entre fachadas, para
+ * ver antes de salir cómo se comporta (calles, cruces, cámara, llegada).
+ */
+const SIMULACRO = new URLSearchParams(window.location.search).has('simulacro')
+const SIMULACRO_MS = 3 * 60_000
+const SIMULACRO_CADA_MS = 2_000
+const TEMBLOR_M = 8
+const empiezaSimulacro = Date.now()
+
+function posicionSimulada(): Posicion {
+  const t = (Date.now() - empiezaSimulacro) / SIMULACRO_MS
+  if (t > 1) return { enDirecto: false }
+  const [lng, lat] = puntoEn(RUTA, t)
+  const temblor = () => ((Math.random() * 2 - 1) * TEMBLOR_M) / 111320
+  return { enDirecto: true, lng: lng + temblor() / Math.cos((lat * Math.PI) / 180), lat: lat + temblor(), actualizadoEl: new Date().toISOString() }
+}
 const CAMARA_CERCA = { zoom: 17, pitch: 52, bearing: -12 }
 const MARGEN = { top: 110, right: 32, left: 32, bottom: 150 }
 /**
@@ -81,7 +100,8 @@ const botonEntero = $<HTMLButtonElement>('entero')
 function avisar(titulo: string, texto: string, vivo = false) {
   estado.textContent = titulo
   estado.dataset.vivo = String(vivo)
-  detalle.textContent = texto
+  // Que nadie tome el simulacro por el Rosario de verdad.
+  detalle.textContent = SIMULACRO ? `Simulacro, no es el Rosario de verdad. ${texto}` : texto
 }
 
 async function arrancar() {
@@ -180,6 +200,7 @@ async function arrancar() {
 
   const preguntar = async () => {
     try {
+      if (SIMULACRO) { pintar(posicionSimulada()); return }
       const r = await fetch(`${BASE}posicion`, { cache: 'no-store' })
       if (!r.ok) throw new Error(String(r.status))
       pintar(await r.json() as Posicion)
@@ -188,7 +209,7 @@ async function arrancar() {
     }
   }
   await preguntar()
-  window.setInterval(() => { if (!document.hidden) void preguntar() }, SONDEO_MS)
+  window.setInterval(() => { if (!document.hidden) void preguntar() }, SIMULACRO ? SIMULACRO_CADA_MS : SONDEO_MS)
   // Al volver a la pestaña (el móvil en el bolsillo), la posición al momento y no a los 20 s.
   document.addEventListener('visibilitychange', () => { if (!document.hidden) void preguntar() })
 }
