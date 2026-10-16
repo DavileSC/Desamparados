@@ -772,6 +772,11 @@ sudo systemctl enable --now desamparados-estadisticas.timer
 sudo logrotate -d /etc/logrotate.d/desamparados-visitas
 ```
 
+Al pegarlo de una vez en el terminal, los bloques `<<'EOF'` largos pueden no
+llegar (el 16-10-2026 no se crearon ni el `.service` ni el `.timer`, y sí el
+de logrotate): comprobar con `ls -l /etc/systemd/system/desamparados-estadisticas.*`
+y, si faltan, pegarlos por partes.
+
 Después: encender el módulo, ver unas cuantas páginas de la web y comprobar
 que se apuntan y que sale el informe:
 
