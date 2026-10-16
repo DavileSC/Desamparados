@@ -10,6 +10,8 @@
     "marca": "node scripts/preparar-marca.mjs",
     "prebuild": "node scripts/generar-sitemap.mjs",
     "build": "tsc -b && vite build",
+    "rosario:construir": "vite build --config vite.rosario.config.ts",
+    "rosario:dev": "vite --config vite.rosario.config.ts",
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",

@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+dist-rosario
 *.local
 
 # Variables de entorno. Vite solo ignora *.local, asi que un .env se subiria.

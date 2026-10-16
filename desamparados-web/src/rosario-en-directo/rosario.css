@@ -1,0 +1,167 @@
+/* El mapa a toda la pantalla, con el título arriba y el estado abajo, sobre el mismo negro del mapa. */
+:root {
+  color-scheme: dark;
+  --fondo: #0b0a0c;
+  --tinta: #f4efe6;
+  --tinta-suave: #b9b0aa;
+  --velo: rgba(7, 6, 8, 0.86);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--fondo);
+  color: var(--tinta);
+  font-family: 'Exo 2 Variable', 'Exo 2', system-ui, sans-serif;
+}
+
+#mapa {
+  position: fixed;
+  inset: 0;
+}
+
+.cabecera,
+.pie {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  padding: 14px 16px;
+  pointer-events: none;
+}
+
+.cabecera {
+  top: 0;
+  background: linear-gradient(var(--velo) 55%, transparent);
+  padding-bottom: 28px;
+}
+
+.cabecera p {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--oro);
+}
+
+.cabecera h1 {
+  margin: 4px 0 0;
+  font-size: clamp(22px, 5vw, 30px);
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.pie {
+  bottom: 0;
+  background: var(--velo);
+  border-top: 1px solid var(--oro-tenue);
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+  pointer-events: auto;
+}
+
+.pie-dentro {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+#estado {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* El punto que late solo cuando hay posición en directo. */
+#estado[data-vivo='true']::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--granate);
+  animation: latido 1.6s ease-in-out infinite;
+  flex: none;
+}
+
+@keyframes latido {
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #estado[data-vivo='true']::before { animation: none; }
+}
+
+#detalle {
+  margin: 4px 0 12px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--tinta-suave);
+}
+
+.botones {
+  display: flex;
+  gap: 8px;
+}
+
+.botones button {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--tinta);
+  background: transparent;
+  border: 1px solid var(--oro-tenue);
+  cursor: pointer;
+}
+
+.botones button[aria-pressed='true'] {
+  color: var(--fondo);
+  background: var(--oro);
+  border-color: var(--oro);
+}
+
+.botones button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.botones button:focus-visible {
+  outline: 2px solid var(--oro);
+  outline-offset: 2px;
+}
+
+.trono {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+}
+
+.rotulo-salida {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--oro);
+  background: rgba(7, 6, 8, 0.85);
+  padding: 3px 8px;
+  border: 1px solid var(--oro-tenue);
+  white-space: nowrap;
+}
+
+/* La atribución de OpenStreetMap, legible sobre oscuro y por encima del pie. */
+.maplibregl-ctrl-bottom-right {
+  bottom: 150px;
+}
+
+.maplibregl-ctrl.maplibregl-ctrl-attrib {
+  background: rgba(7, 6, 8, 0.75);
+  color: var(--tinta-suave);
+}
+
+.maplibregl-ctrl.maplibregl-ctrl-attrib a {
+  color: var(--tinta);
+}

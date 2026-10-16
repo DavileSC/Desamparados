@@ -792,6 +792,61 @@ apagar el módulo, para que la web deje de avisar). La base de GoAccess no va
 en las copias de seguridad: si se pierde, el histórico vuelve a empezar desde
 lo que quede en los registros.
 
+## Rosario en directo
+
+Prueba del 17-10-2026: el Rosario vespertino con el GPS, en
+`desamparadosmalaga.com/Rosario`, mientras el dominio principal sigue en
+mantenimiento. Es una página suelta (`desamparados-web/src/rosario-en-directo/`,
+con la línea del recorrido en `ruta.json`) y no la web: el dominio solo abre
+esa página y la posición del cortejo (`docker/servidor/nginx-rosario.conf`).
+Los contenedores no se tocan ni se despliega nada.
+
+La posición la manda quien va en el cortejo desde el CMS de pruebas,
+`pruebas.desamparadosmalaga.com/cms/procesion/directo`, con su cuenta (Admin,
+Secretaría, Albacería o Hermano Mayor) y el módulo «cortejo-directo»
+encendido. Esa pantalla compara con el recorrido de la Pasión: sus avisos de
+«lejos del recorrido» y su lista de calles no valen para el Rosario y se
+ignoran. La página del Rosario no pinta una posición a más de 150 m de su
+línea.
+
+**En el PC** (desde la raíz del repositorio):
+
+```bash
+cd desamparados-web && npm run rosario:construir && cd ..
+scp -r desamparados-web/dist-rosario docker/servidor/nginx-rosario.conf ubuntu@51.255.45.220:/tmp/
+```
+
+**En el servidor:**
+
+```bash
+# La página y el trozo de nginx.
+sudo rm -rf /var/www/rosario && sudo mv /tmp/dist-rosario /var/www/rosario
+sudo chown -R root:root /var/www/rosario && sudo chmod -R a+rX /var/www/rosario
+sudo mv /tmp/nginx-rosario.conf /etc/nginx/snippets/rosario.conf
+
+# Dentro del bloque 443 del dominio principal. Antes, mirar que sale UNA línea:
+grep -n "listen 443 ssl;" /etc/nginx/sites-available/desamparadosmalaga.com
+sudo cp /etc/nginx/sites-available/desamparadosmalaga.com /root/desamparadosmalaga.com.antes-del-rosario
+sudo sed -i '/listen 443 ssl;/a\    include /etc/nginx/snippets/rosario.conf;' /etc/nginx/sites-available/desamparadosmalaga.com
+sudo nginx -t && sudo systemctl reload nginx
+
+# Comprobar: la posición (con {"enDirecto":false,...} si nadie la manda) y que el resto sigue cerrado.
+curl -s https://desamparadosmalaga.com/Rosario/posicion; echo
+curl -s -o /dev/null -w "%{http_code}\n" https://desamparadosmalaga.com/Rosario/
+curl -s -o /dev/null -w "%{http_code}\n" https://desamparadosmalaga.com/api/cortejo-directo
+```
+
+Un cambio en la página se sube igual (construir, `scp`, el `rm`/`mv` de
+`/var/www/rosario`); nginx no hace falta recargarlo.
+
+**Para quitarlo** después del Rosario:
+
+```bash
+sudo sed -i '\|include /etc/nginx/snippets/rosario.conf;|d' /etc/nginx/sites-available/desamparadosmalaga.com
+sudo nginx -t && sudo systemctl reload nginx
+sudo rm -rf /var/www/rosario /etc/nginx/snippets/rosario.conf
+```
+
 ## El día de la presentación
 
 Pendiente de preparar. En esencia: la base buena con su propia `TOTP_ENC_KEY`,
