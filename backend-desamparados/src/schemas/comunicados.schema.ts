@@ -25,3 +25,8 @@ export const destinatariosSchema = type({ body: { tipo: comunicado.tipo, segment
 export const bajaBoletinSchema = type({
     body: { token: type("string <= 400").describe("el enlace de baja del correo") }
 });
+
+/** La baja en un clic: el token en la dirección. El cuerpo (List-Unsubscribe=One-Click) no se mira. */
+export const bajaDirectaSchema = type({
+    query: { t: type("string <= 400").describe("el enlace de baja del correo") }
+});

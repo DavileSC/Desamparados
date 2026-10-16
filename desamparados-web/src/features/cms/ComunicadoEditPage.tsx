@@ -17,6 +17,8 @@ import { site } from '../../config/site'
 import { useSalidas } from '../procesion/useSalidas'
 import { aArticulo, deArticulo } from '../../domain/articulos'
 import { useModulos } from '../../hooks/useModulos'
+import { useAuthStore } from '../altas/auth/store'
+import { rolesPorRutaCms } from '../../app/rolesCms'
 
 const LISTADO = '/cms/comunicados'
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
@@ -46,6 +48,9 @@ export default function ComunicadoEditPage() {
   const [cuenta, setCuenta] = useState<{ correos: number; sinCorreo: number; para: string } | null>(null)
   const [confirmar, setConfirmar] = useState<'enviar' | 'borrar' | null>(null)
   const [progreso, setProgreso] = useState<ComunicadoEnLista['envios'] | null>(null)
+  // «Ver quiénes» lleva al censo: solo a quien puede abrirlo (Redes escribe comunicados, pero no ve fichas).
+  const role = useAuthStore((state) => state.cms?.role ?? 'USER')
+  const veElCenso = rolesPorRutaCms.hermanos.includes(role)
   // Las plantillas libres de Emails; si no llegan (sin permiso, o sin red), no hay desplegable.
   const [libres, setLibres] = useState<Awaited<ReturnType<typeof plantillasLibres>> | null>(null)
   useEffect(() => {
@@ -148,8 +153,8 @@ export default function ComunicadoEditPage() {
   const titulo = `${original.tipo === 'BOLETIN' ? 'Boletín' : 'Aviso'}: ${original.asunto}`
 
   if (original.estado !== 'BORRADOR') {
-    const total = progreso ? progreso.enviados + progreso.fallidos + progreso.pendientes + progreso.alMovil : 0
-    const hechos = progreso ? progreso.enviados + progreso.fallidos + progreso.alMovil : 0
+    const total = progreso ? progreso.enviados + progreso.fallidos + progreso.rebotados + progreso.pendientes + progreso.alMovil : 0
+    const hechos = progreso ? progreso.enviados + progreso.fallidos + progreso.rebotados + progreso.alMovil : 0
     return <>
       <Helmet><title>{`${original.asunto} | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <CabeceraSeccion titulo={titulo} subtitulo={original.para}>
@@ -168,6 +173,11 @@ export default function ComunicadoEditPage() {
           {progreso.fallidos > 0 && (
             <Alert severity="warning" sx={{ mt: 1.5 }} action={original.estado === 'ENVIADO' ? <Button color="inherit" size="small" onClick={() => void reintentar()}>Reintentar</Button> : undefined}>
               {plural(progreso.fallidos, 'correo no ha salido', 'correos no han salido')}. Suele ser el cupo diario de la cuenta: reinténtalo mañana.
+            </Alert>
+          )}
+          {progreso.rebotados > 0 && (
+            <Alert severity="info" sx={{ mt: 1.5 }} action={veElCenso ? <Button color="inherit" size="small" component={Link} to="/cms/hermanos?correo=rebota">Ver quiénes</Button> : undefined}>
+              {plural(progreso.rebotados, 'correo rebotó', 'correos rebotaron')}: la dirección no existe o no admite correo. No se vuelve a intentar; hay que corregirla en la ficha.
             </Alert>
           )}
         </Paper>

@@ -66,7 +66,7 @@ export default function ComunicadosAdminPage() {
     {lista && lista.length > 0 && (
       <Paper component="ul" sx={{ m: 0, p: 0, listStyle: 'none' }}>
         {lista.map((c, i) => {
-          const total = c.envios.enviados + c.envios.fallidos + c.envios.pendientes + c.envios.alMovil
+          const total = c.envios.enviados + c.envios.fallidos + c.envios.rebotados + c.envios.pendientes + c.envios.alMovil
           return (
             <Box component="li" key={c.id} sx={{ borderTop: i === 0 ? 'none' : '1px solid', borderColor: 'divider' }}>
               <Box component={Link} to={`/cms/comunicados/${c.id}`} sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center', px: 2.5, py: 2, color: 'inherit', textDecoration: 'none', '&:hover': { bgcolor: 'action.hover' } }}>
@@ -78,7 +78,7 @@ export default function ComunicadosAdminPage() {
                 </Box>
                 <Typography variant="body2" color="text.secondary" sx={{ minWidth: 150 }}>
                   {c.enviadoEl ? `Enviado el ${fechaCorta(c.enviadoEl)}` : `Escrito el ${fechaCorta(c.updatedAt)}`}
-                  {total > 0 && <><br />{c.envios.enviados + c.envios.alMovil} de {total} enviados{c.envios.alMovil ? ` (${c.envios.alMovil} al móvil)` : ''}{c.envios.fallidos ? ` · ${c.envios.fallidos} fallidos` : ''}</>}
+                  {total > 0 && <><br />{c.envios.enviados + c.envios.alMovil} de {total} enviados{c.envios.alMovil ? ` (${c.envios.alMovil} al móvil)` : ''}{c.envios.fallidos ? ` · ${c.envios.fallidos} fallidos` : ''}{c.envios.rebotados ? ` · ${c.envios.rebotados} rebotados` : ''}</>}
                 </Typography>
                 <Chip size="small" label={ESTADO[c.estado].texto} color={ESTADO[c.estado].color} variant={c.estado === 'BORRADOR' ? 'outlined' : 'filled'} />
               </Box>

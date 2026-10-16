@@ -34,7 +34,8 @@ interface Comunicado {
 
 export interface ComunicadoEnLista extends Comunicado {
   /** `alMovil`: los que recibieron el aviso en el móvil en vez del correo. */
-  envios: { enviados: number; fallidos: number; pendientes: number; alMovil: number }
+  /** `rebotados`: salieron, pero el servicio de envío avisó después de que no llegaron. */
+  envios: { enviados: number; fallidos: number; rebotados: number; pendientes: number; alMovil: number }
 }
 
 export interface ComunicadoCompleto extends Comunicado {
@@ -69,6 +70,7 @@ export interface EnvioEnMarcha {
   alMovil: number
   enviados: number
   fallidos: number
+  rebotados: number
   pendientes: number
   total: number
   estado: 'EN_COLA' | 'ENVIANDO' | 'SIGUE_MANANA' | 'TERMINADO'

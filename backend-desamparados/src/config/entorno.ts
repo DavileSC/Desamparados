@@ -119,6 +119,12 @@ export function validarEntorno(entorno: Entorno = process.env): ResultadoEntorno
   if (definida(entorno.EMAIL_FROM) && !/^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(entorno.EMAIL_FROM.trim())) {
     errores.push(`EMAIL_FROM="${entorno.EMAIL_FROM}" debe ser solo una dirección de correo (el nombre va en EMAIL_FROM_NAME).`);
   }
+  // La clave de los avisos de rebote de Brevo: va en la URL del webhook o en
+  // su token. Corta, se adivina; con «:» o «@», rompe la URL con usuario y
+  // contraseña (https://avisos:CLAVE@…) que es como se da de alta en Brevo.
+  if (definida(entorno.CORREO_AVISOS_SECRETO) && !/^[A-Za-z0-9_-]{24,200}$/.test(entorno.CORREO_AVISOS_SECRETO.trim())) {
+    errores.push('CORREO_AVISOS_SECRETO debe tener al menos 24 caracteres, solo letras, cifras, «-» y «_» (genera una con: openssl rand -hex 24).');
+  }
   if (definida(entorno.AUDIT_RETENTION_DAYS) && !esEnteroEnRango(entorno.AUDIT_RETENTION_DAYS, 30, 100000)) {
     errores.push(`AUDIT_RETENTION_DAYS="${entorno.AUDIT_RETENTION_DAYS}" debe ser un número entero de días, 30 o más.`);
   }

@@ -54,7 +54,7 @@ export default function EnviosEnMarcha() {
               </TableHead>
               <TableBody>
                 {envios.map((e) => {
-                  const porCorreo = e.enviados + e.fallidos + e.pendientes
+                  const porCorreo = e.enviados + e.fallidos + e.rebotados + e.pendientes
                   return (
                     <TableRow key={e.clave}>
                       <TableCell sx={{ minWidth: 220 }}>{e.titulo}</TableCell>
@@ -62,6 +62,7 @@ export default function EnviosEnMarcha() {
                       <TableCell align="right" sx={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
                         {porCorreo ? `${e.enviados} de ${porCorreo}` : '—'}
                         {e.fallidos > 0 && <Typography component="span" variant="body2" color="error"> · {e.fallidos} fallidos</Typography>}
+                        {e.rebotados > 0 && <Typography component="span" variant="body2" color="text.secondary"> · {e.rebotados} rebotados</Typography>}
                       </TableCell>
                       <TableCell><Chip size="small" label={ESTADO[e.estado].texto} color={ESTADO[e.estado].color} /></TableCell>
                     </TableRow>

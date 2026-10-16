@@ -23,7 +23,7 @@ import { reemitidosDe } from './recibos/comunes.js';
 import { diaDeHoy } from '../domain/fechas-hermano.js';
 import { articuloDe, deLaCorporacion } from '../domain/articulos.js';
 import {
-  adaptarAlCorreo, describirSegmento, destinatariosDe, emailDeToken, tokenDeBaja,
+  adaptarAlCorreo, cabecerasDeBaja, describirSegmento, destinatariosDe, emailDeToken, tokenDeBaja,
   type Destinatario, type Segmento, type SalidaDelSegmento,
 } from '../domain/comunicados.js';
 
@@ -135,7 +135,11 @@ const resumen = async (c: { id: number; tipo: TipoComunicado; asunto: string; es
 function avisoDe(c: { id: number; asunto: string; cuerpo: string }) {
   return { etiqueta: `comunicado-${c.id}`, titulo: c.asunto, cuerpo: extractoPlano(c.cuerpo).slice(0, 140), url: `/area-hermano/avisos/${c.id}` };
 }
-ponerMaquetaDeComunicados({ correo: correoPara, aviso: avisoDe });
+/** La baja en un clic, solo en el boletín: a los avisos no se suscribe nadie. */
+function cabecerasPara(c: { tipo: TipoComunicado }, email: string) {
+  return c.tipo === TipoComunicado.BOLETIN ? cabecerasDeBaja(email, secreto(), process.env.API_URL || 'http://localhost:3001') : undefined;
+}
+ponerMaquetaDeComunicados({ correo: correoPara, aviso: avisoDe, cabeceras: cabecerasPara });
 
 export class ComunicadosService {
   static async listar() {
@@ -146,7 +150,7 @@ export class ComunicadosService {
     const nombres = await nombresDeSalidas();
     return Promise.all(lista.map(async (c) => ({
       ...(await resumen(c, nombres)),
-      envios: { enviados: de(c.id, EstadoEnvio.ENVIADO), fallidos: de(c.id, EstadoEnvio.FALLIDO), pendientes: de(c.id, EstadoEnvio.PENDIENTE), alMovil: de(c.id, EstadoEnvio.MOVIL) },
+      envios: { enviados: de(c.id, EstadoEnvio.ENVIADO), fallidos: de(c.id, EstadoEnvio.FALLIDO), rebotados: de(c.id, EstadoEnvio.REBOTADO), pendientes: de(c.id, EstadoEnvio.PENDIENTE), alMovil: de(c.id, EstadoEnvio.MOVIL) },
     })));
   }
 
@@ -203,7 +207,7 @@ export class ComunicadosService {
     if (!c) throw new NotFoundError('Comunicado no encontrado.');
     const yo = meta?.userId ? await db.user.findUnique({ where: { id: meta.userId }, select: { email: true, nombre: true } }) : null;
     if (!yo) throw new HttpError('No se sabe a quién mandar la prueba.');
-    const ok = await enviarCorreo(yo.email, `[Prueba] ${c.asunto}`, correoPara(c, { email: yo.email, nombre: yo.nombre, sexo: null }), { uso: 'comunicado_prueba' });
+    const ok = await enviarCorreo(yo.email, `[Prueba] ${c.asunto}`, correoPara(c, { email: yo.email, nombre: yo.nombre, sexo: null }), { uso: 'comunicado_prueba', cabeceras: cabecerasPara(c, yo.email) });
     if (!ok) throw new HttpError('La prueba no ha salido: revisa la cuenta de correo del servidor.', 502);
     return { message: `Prueba enviada a ${yo.email}.` };
   }

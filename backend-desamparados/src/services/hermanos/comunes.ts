@@ -60,8 +60,8 @@ export interface SearchHermanoQuery {
   estado?: 'activo' | 'baja' | 'pendiente';
   /** Con número de hermano o todavía sin él. */
   numero?: 'con' | 'sin';
-  /** Con correo donde escribirle o sin él (a quien hay que mandarle las cartas por correo postal). */
-  correo?: 'con' | 'sin';
+  /** Con correo donde escribirle o sin él (a quien hay que mandarle las cartas por correo postal), o con uno que rebota. */
+  correo?: 'con' | 'sin' | 'rebota';
   /** Con cuenta bancaria para domiciliar o sin ella. */
   cuenta?: 'con' | 'sin';
   /** Menores de 18 años o adultos, a día de hoy. */

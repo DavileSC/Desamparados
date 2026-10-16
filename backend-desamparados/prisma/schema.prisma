@@ -1271,6 +1271,29 @@ enum EstadoEnvio {
   ENVIADO
   FALLIDO
   MOVIL // Le llegó el aviso al móvil: no hizo falta el correo
+  REBOTADO // Salió, pero el servicio de envío avisó después de que no llegó
+}
+
+/// Por qué una dirección no recibe correo, según el aviso del servicio de envío.
+enum MotivoRebote {
+  REBOTE    // El buzón no existe o el dominio no recibe correo
+  INVALIDO  // La dirección está mal escrita
+  BLOQUEADO // El servicio ya no le envía (rebotó antes o se quejó)
+  SPAM      // Quien la usa marcó un correo nuestro como correo no deseado
+}
+
+/// Una dirección a la que no llegan los correos. Por dirección y no por ficha:
+/// varias fichas comparten la de la familia, y al corregirla en la ficha la
+/// nueva ya no está aquí, sin tener que acordarse de quitar nada.
+model CorreoQueRebota {
+  id            Int          @id @default(autoincrement())
+  /// En minúsculas, como la guarda la cola de correos.
+  email         String       @unique @db.VarChar(191)
+  motivo        MotivoRebote
+  /// Lo que contestó el servidor del destinatario, si lo dice.
+  detalle       String?      @db.VarChar(250)
+  creadoEn      DateTime     @default(now())
+  actualizadoEn DateTime     @updatedAt
 }
 
 /// Un boletín o un aviso masivo por correo. El cuerpo, saneado como el resto

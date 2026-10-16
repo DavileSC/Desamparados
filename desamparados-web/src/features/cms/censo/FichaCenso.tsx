@@ -3,7 +3,7 @@ import { Alert, Box, Button, CircularProgress, Paper, Typography } from '@mui/ma
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { Link } from 'react-router-dom'
-import { MOTIVOS_BAJA, fichaDeHermano, type FichaDeLaCuenta, type FichaDelCenso } from '../../../lib/api/hermanos'
+import { MOTIVOS_BAJA, MOTIVOS_REBOTE, fichaDeHermano, quitarRebote, type FichaDeLaCuenta, type FichaDelCenso } from '../../../lib/api/hermanos'
 import { urlDocumentoPrivado } from '../../../lib/api/cliente'
 import { PARENTESCOS } from '../../../lib/api/auth'
 import { useModulos } from '../../../hooks/useModulos'
@@ -48,6 +48,8 @@ const papelEnLaCuenta = (f: FichaDeLaCuenta) =>
 export default function FichaCenso({ id, puedeGestionar, volver, enlace, onCerrar }: Props) {
   const [ficha, setFicha] = useState<FichaDelCenso | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [quitando, setQuitando] = useState(false)
+  const [errorRebote, setErrorRebote] = useState<string | null>(null)
   const { activo } = useModulos()
 
   useEffect(() => {
@@ -68,6 +70,19 @@ export default function FichaCenso({ id, puedeGestionar, volver, enlace, onCerra
 
   if (error) return <Paper sx={{ p: 3 }}>{cerrar}<Alert severity="error">{error}</Alert></Paper>
   if (!ficha) return <Paper sx={{ p: 3, display: 'grid', placeItems: 'center', minHeight: 240 }}><CircularProgress aria-label="Cargando la ficha" /></Paper>
+
+  const volverAEscribirle = async () => {
+    setQuitando(true)
+    setErrorRebote(null)
+    try {
+      await quitarRebote(ficha.id)
+      setFicha({ ...ficha, correoRebota: null })
+    } catch (e) {
+      setErrorRebote(e instanceof Error ? e.message : 'No se ha podido quitar la marca.')
+    } finally {
+      setQuitando(false)
+    }
+  }
 
   const situacion = situacionDe(ficha)
   const correo = ficha.email ?? ficha.user?.email ?? null
@@ -150,6 +165,22 @@ export default function FichaCenso({ id, puedeGestionar, volver, enlace, onCerra
           </Button>
         )}
       </Box>
+
+      {ficha.correoRebota && (
+        <Alert
+          severity="warning"
+          sx={{ mt: 2.5 }}
+          action={puedeGestionar && (
+            <Button color="inherit" size="small" disabled={quitando} onClick={() => void volverAEscribirle()}>
+              {quitando ? 'Quitando…' : 'Volver a escribirle'}
+            </Button>
+          )}
+        >
+          A {correo} no le llegan nuestros correos desde el {dia(ficha.correoRebota.desde)}: {MOTIVOS_REBOTE[ficha.correoRebota.motivo]}.
+          {ficha.correoRebota.motivo !== 'SPAM' && ' Pide al hermano uno que funcione y corrígelo en la ficha.'}
+          {errorRebote && <Box component="span" sx={{ display: 'block', mt: 0.5, fontWeight: 600 }}>{errorRebote}</Box>}
+        </Alert>
+      )}
 
       <Box component="dl" sx={{ m: 0, mt: 3, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(3, minmax(0, 1fr))' }, gap: '20px 24px' }}>
         {campos.map(([etiqueta, valor]) => (

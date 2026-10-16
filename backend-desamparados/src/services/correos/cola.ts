@@ -16,6 +16,7 @@ import { diaMadridComoIntervalo } from '../../domain/contabilidad.js';
 import { AvisosHermanosService } from '../avisos-hermanos.service.js';
 import type { AvisoAHermano } from '../push.js';
 import { enviarCorreo } from './envio.js';
+import { RebotesService } from './rebotes.service.js';
 
 /**
  * Dentro de `node --test`, sin tope ni pausa salvo que la prueba los ponga: la
@@ -57,6 +58,8 @@ export async function enviadosHoy(ahora: Date = new Date()): Promise<number> {
  */
 export interface DelComunicado {
   correo(c: { tipo: TipoComunicado; asunto: string; cuerpo: string }, d: { email: string; nombre: string | null; sexo: 'HOMBRE' | 'MUJER' | null }): string;
+  /** Las cabeceras propias de ese correo (la baja en un clic, solo en el boletín). */
+  cabeceras(c: { tipo: TipoComunicado }, email: string): Record<string, string> | undefined;
   aviso(c: { id: number; asunto: string; cuerpo: string }): Omit<AvisoAHermano, 'tipo'>;
 }
 let delComunicado: DelComunicado | null = null;
@@ -107,6 +110,10 @@ async function cerrarSiTermino(comunicadoId: number): Promise<void> {
 /**
  * El siguiente correo, el más antiguo de las dos tablas: una apertura puesta
  * en cola antes que un comunicado sale antes. false si no queda ninguno.
+ *
+ * A una dirección que el servicio de envío dio por perdida no se le manda: el
+ * servicio la tiene bloqueada y el intento solo gastaría cupo. Queda como
+ * «Rebotó» y no cuenta para el tope del día.
  */
 async function siguienteCorreo(): Promise<boolean> {
   const [comunicado, otro] = await Promise.all([
@@ -118,14 +125,20 @@ async function siguienteCorreo(): Promise<boolean> {
     db.correoEnCola.findFirst({ where: { estado: EstadoEnvio.PENDIENTE, porMovil: false }, orderBy: [{ creadoEn: 'asc' }, { id: 'asc' }] }),
   ]);
   if (comunicado && delComunicado && (!otro || comunicado.creadoEn <= otro.creadoEn)) {
-    const ok = await enviarCorreo(comunicado.email, comunicado.comunicado.asunto, delComunicado.correo(comunicado.comunicado, comunicado), { uso: 'comunicado' });
-    await db.comunicadoEnvio.update({ where: { id: comunicado.id }, data: { estado: ok ? EstadoEnvio.ENVIADO : EstadoEnvio.FALLIDO, enviadoEl: new Date() } });
+    const estado = (await RebotesService.rebota(comunicado.email))
+      ? EstadoEnvio.REBOTADO
+      : (await enviarCorreo(comunicado.email, comunicado.comunicado.asunto, delComunicado.correo(comunicado.comunicado, comunicado), {
+        uso: 'comunicado', cabeceras: delComunicado.cabeceras(comunicado.comunicado, comunicado.email),
+      })) ? EstadoEnvio.ENVIADO : EstadoEnvio.FALLIDO;
+    await db.comunicadoEnvio.update({ where: { id: comunicado.id }, data: { estado, enviadoEl: new Date() } });
     await cerrarSiTermino(comunicado.comunicadoId);
     return true;
   }
   if (otro) {
-    const ok = await enviarCorreo(otro.para, otro.asunto, otro.html, { uso: otro.uso });
-    await db.correoEnCola.update({ where: { id: otro.id }, data: { estado: ok ? EstadoEnvio.ENVIADO : EstadoEnvio.FALLIDO, enviadoEl: new Date() } });
+    const estado = (await RebotesService.rebota(otro.para))
+      ? EstadoEnvio.REBOTADO
+      : (await enviarCorreo(otro.para, otro.asunto, otro.html, { uso: otro.uso })) ? EstadoEnvio.ENVIADO : EstadoEnvio.FALLIDO;
+    await db.correoEnCola.update({ where: { id: otro.id }, data: { estado, enviadoEl: new Date() } });
     return true;
   }
   return false;
@@ -176,7 +189,7 @@ export function despertarCola(): Promise<void> {
 /** Lo ya enviado de la cola se borra al mes: lleva el correo entero maquetado. */
 async function limpiar(ahora: Date = new Date()): Promise<void> {
   await db.correoEnCola.deleteMany({
-    where: { estado: { in: [EstadoEnvio.ENVIADO, EstadoEnvio.MOVIL] }, enviadoEl: { lt: new Date(ahora.getTime() - 30 * 24 * 3600 * 1000) } },
+    where: { estado: { in: [EstadoEnvio.ENVIADO, EstadoEnvio.MOVIL, EstadoEnvio.REBOTADO] }, enviadoEl: { lt: new Date(ahora.getTime() - 30 * 24 * 3600 * 1000) } },
   });
 }
 
@@ -200,17 +213,17 @@ export const colaTerminada = (): Promise<void> => enMarcha ?? Promise.resolve();
 
 export type EstadoDelEnvio = 'EN_COLA' | 'ENVIANDO' | 'SIGUE_MANANA' | 'TERMINADO';
 
-interface Cuentas { alMovil: number; enviados: number; fallidos: number; pendientes: number }
+interface Cuentas { alMovil: number; enviados: number; fallidos: number; rebotados: number; pendientes: number }
 
 function estadoDe(c: Cuentas, cupoAgotado: boolean): EstadoDelEnvio {
   if (c.pendientes === 0) return 'TERMINADO';
   if (cupoAgotado) return 'SIGUE_MANANA';
-  return c.alMovil + c.enviados + c.fallidos === 0 ? 'EN_COLA' : 'ENVIANDO';
+  return c.alMovil + c.enviados + c.fallidos + c.rebotados === 0 ? 'EN_COLA' : 'ENVIANDO';
 }
 
 const contar = (filas: { estado: EstadoEnvio; _count: { _all: number } }[]): Cuentas => {
   const de = (e: EstadoEnvio) => filas.find((f) => f.estado === e)?._count._all ?? 0;
-  return { alMovil: de(EstadoEnvio.MOVIL), enviados: de(EstadoEnvio.ENVIADO), fallidos: de(EstadoEnvio.FALLIDO), pendientes: de(EstadoEnvio.PENDIENTE) };
+  return { alMovil: de(EstadoEnvio.MOVIL), enviados: de(EstadoEnvio.ENVIADO), fallidos: de(EstadoEnvio.FALLIDO), rebotados: de(EstadoEnvio.REBOTADO), pendientes: de(EstadoEnvio.PENDIENTE) };
 };
 
 /**
@@ -255,7 +268,7 @@ export async function resumenDeEnvios(ahora: Date = new Date()) {
   ].map(({ desde, ...e }) => ({
     ...e,
     desde: desde.toISOString(),
-    total: e.alMovil + e.enviados + e.fallidos + e.pendientes,
+    total: e.alMovil + e.enviados + e.fallidos + e.rebotados + e.pendientes,
     estado: estadoDe(e, cupoAgotado),
   }));
   envios.sort((a, b) => Number(a.estado === 'TERMINADO') - Number(b.estado === 'TERMINADO') || b.desde.localeCompare(a.desde));

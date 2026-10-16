@@ -1,4 +1,5 @@
 import { manejar } from '../utils/manejar.js';
+import { urlDeLaWeb } from '../services/correos/plantilla.js';
 import { resumenDeEnvios } from '../services/correos/cola.js';
 import { AuditoriaService } from '../services/auditoria.service.js';
 import { ComunicadosService, type DatosComunicado } from '../services/comunicados.service.js';
@@ -50,5 +51,13 @@ export class ComunicadosController {
 
   static bajaBoletin = manejar('Error dando de baja del boletín', async (req, res) => {
     res.json(await ComunicadosService.bajaDelBoletin((req.body as { token: string }).token));
+  });
+
+  static bajaDirecta = manejar('Error dando de baja del boletín', async (req, res) => {
+    res.json(await ComunicadosService.bajaDelBoletin(String(req.query.t)));
+  });
+
+  static irABaja = manejar('Error abriendo la baja del boletín', async (req, res) => {
+    res.redirect(303, urlDeLaWeb(`/boletin/baja?t=${encodeURIComponent(String(req.query.t))}`));
   });
 }

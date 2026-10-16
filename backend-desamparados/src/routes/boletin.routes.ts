@@ -1,8 +1,8 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import { ComunicadosController } from '../controllers/comunicados.controller.js';
 import { validate } from '../config/validate.js';
 import { limitadorContacto } from '../config/limiter.js';
-import { bajaBoletinSchema } from '../schemas/comunicados.schema.js';
+import { bajaBoletinSchema, bajaDirectaSchema } from '../schemas/comunicados.schema.js';
 
 /**
  * La baja del boletín desde el enlace del correo, fuera del módulo «Boletín y
@@ -20,5 +20,23 @@ import { bajaBoletinSchema } from '../schemas/comunicados.schema.js';
 const boletinRoutes = Router();
 
 boletinRoutes.post('/baja', limitadorContacto, validate(bajaBoletinSchema), ComunicadosController.bajaBoletin);
+
+/**
+ * La baja en un clic de la cabecera List-Unsubscribe (RFC 8058,
+ * `domain/comunicados.ts`): `POST /api/boletin/baja-directa?t=…` con el
+ * formulario `List-Unsubscribe=One-Click`, que manda el servidor de Gmail o de
+ * Outlook, no un navegador. El token va en la dirección porque así lo pide la
+ * norma; el registro de accesos no guarda la consulta. Sin el limitador del
+ * contacto: todas las bajas de Gmail llegan desde unas pocas IP de Google.
+ * Con GET (un programa de correo antiguo que abre la dirección), a la página
+ * de la web que pide confirmar: un GET no puede dar de baja, lo hacen también
+ * los antivirus que revisan los enlaces.
+ */
+boletinRoutes.post('/baja-directa',
+  express.urlencoded({ extended: false, limit: '1kb' }),
+  validate(bajaDirectaSchema),
+  ComunicadosController.bajaDirecta,
+);
+boletinRoutes.get('/baja-directa', validate(bajaDirectaSchema), ComunicadosController.irABaja);
 
 export { boletinRoutes };

@@ -159,3 +159,20 @@ export function emailDeToken(token: string, secreto: string): string | null {
   if (firma.length !== esperada.length || !timingSafeEqual(Buffer.from(firma), Buffer.from(esperada))) return null;
   return email;
 }
+
+/**
+ * Las cabeceras de la baja en un clic (RFC 8058): con ellas Gmail, Outlook o
+ * Yahoo ponen su propio «Cancelar suscripción» junto al remitente y, al
+ * pulsarlo, el servidor del correo hace un POST a esta dirección sin abrir
+ * nada. Sin ellas, quien no encuentra el enlace del pie marca el boletín como
+ * no deseado, y eso es lo que hunde la entrega de todos los demás correos.
+ * La dirección es de la API (no de la web) porque la llamada no la hace un
+ * navegador; con un GET, en cambio, lleva a la página de la web que confirma.
+ */
+export function cabecerasDeBaja(email: string, secreto: string, api: string): Record<string, string> {
+  const url = `${api.replace(/\/+$/, '')}/api/boletin/baja-directa?t=${encodeURIComponent(tokenDeBaja(email, secreto))}`;
+  return {
+    'List-Unsubscribe': `<${url}>`,
+    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+  };
+}

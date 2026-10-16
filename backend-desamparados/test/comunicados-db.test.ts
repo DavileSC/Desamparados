@@ -108,7 +108,7 @@ test('el boletín va solo a los suscritos activos, un correo por dirección, y l
 
     const lista = (await ComunicadosService.listar()).find((x) => x.id === c.id)!;
     assert.equal(lista.estado, 'ENVIADO');
-    assert.deepEqual(lista.envios, { enviados: 2, fallidos: 0, pendientes: 0, alMovil: 0 });
+    assert.deepEqual(lista.envios, { enviados: 2, fallidos: 0, rebotados: 0, pendientes: 0, alMovil: 0 });
 
     await assert.rejects(ComunicadosService.enviar(c.id, { userId: e.staff.id }), (err: unknown) => err instanceof HttpError && err.status === 409);
     await assert.rejects(ComunicadosService.actualizar(c.id, { tipo: 'BOLETIN', asunto: 'Otro', cuerpo: '<p>x</p>', segmento: {} }), (err: unknown) => err instanceof HttpError && err.status === 409);
@@ -162,14 +162,14 @@ test('los fallidos se reintentan, y la prueba llega a quien la pide', async (t) 
     ponerTransporte({ sendMail: async () => { throw new Error('cupo agotado'); } });
     await ComunicadosService.enviar(c.id, { userId: e.staff.id });
     await envioTerminado();
-    assert.deepEqual((await ComunicadosService.listar()).find((x) => x.id === c.id)!.envios, { enviados: 0, fallidos: 1, pendientes: 0, alMovil: 0 });
+    assert.deepEqual((await ComunicadosService.listar()).find((x) => x.id === c.id)!.envios, { enviados: 0, fallidos: 1, rebotados: 0, pendientes: 0, alMovil: 0 });
 
     enviados.length = 0;
     ponerTransporte({ sendMail: async (m) => { enviados.push(m as { to: string; subject: string; html: string }); } });
     await ComunicadosService.reintentarFallidos(c.id);
     await envioTerminado();
     assert.deepEqual(enviados.map((m) => m.to), ['ana.fallo@ejemplo.test']);
-    assert.deepEqual((await ComunicadosService.listar()).find((x) => x.id === c.id)!.envios, { enviados: 1, fallidos: 0, pendientes: 0, alMovil: 0 });
+    assert.deepEqual((await ComunicadosService.listar()).find((x) => x.id === c.id)!.envios, { enviados: 1, fallidos: 0, rebotados: 0, pendientes: 0, alMovil: 0 });
   } finally {
     await e.recoger();
   }

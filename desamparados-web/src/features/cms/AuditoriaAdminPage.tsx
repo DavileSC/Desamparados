@@ -136,6 +136,8 @@ const ACCIONES: Record<string, string> = {
   REACTIVACION_DESCARTAR: 'Descartar una reactivación',
   CENSO_CERRAR_HUECOS: 'Cerrar los huecos del censo',
   EMAIL_FALLIDO: 'Correo que no se pudo enviar',
+  CORREO_REBOTA: 'Correo que rebota (aviso del servicio de envío)',
+  CORREO_REBOTA_QUITAR: 'Quitar la marca de correo que rebota',
   ALTA_NO_TRAMITADA: 'Alta por la web no tramitada (datos ya registrados)',
   FAMILIAR_DNI_OCUPADO: 'DNI de otra ficha escrito desde el área de hermanos',
   CONTRASENA_CAMBIAR: 'Cambiar su contraseña',

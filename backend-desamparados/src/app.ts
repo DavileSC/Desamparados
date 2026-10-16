@@ -38,6 +38,7 @@ import { corporacionRoutes, corporacionCmsRoutes } from './routes/corporacion.ro
 import { menuRoutes, menuCmsRoutes } from './routes/menu.routes.js';
 import { conModulo, nucleo } from './middleware/modulos.js';
 import { roperoRoutes } from './routes/ropero.routes.js';
+import { correoRoutes } from './routes/correo.routes.js';
 import { SitemapController } from './controllers/sitemap.controller.js';
 import helmetConfig from './config/helmet'; // Configuración de seguridad
 import { globalLimiter } from './config/limiter'; // Rate Limiting
@@ -183,6 +184,7 @@ app.use('/api/panel', nucleo, panelRoutes);      // Panel del CMS
 app.use('/api/datos', nucleo, datosRoutes);      // Datos e informes de la junta (el Informe anual lleva dentro su guarda)
 app.use('/api/comunicados', conModulo('comunicados'), comunicadosRoutes); // Boletín y avisos por correo
 app.use('/api/boletin', nucleo, boletinRoutes); // La baja desde el enlace del correo: vale aunque se apague el boletín
+app.use('/api/correo', nucleo, correoRoutes);   // Avisos del servicio de envío (rebotes, spam), sin sesión
 app.use('/api/cabildos', conModulo('cabildos'), cabildosRoutes); // Cabildos y libro de actas
 app.use('/api/tienda', conModulo('tienda'), tiendaRoutes); // Tienda: la caja y los productos (la compra desde la web, dentro con tienda-web)
 app.use('/api/plantillas-correo', nucleo, plantillasCorreoRoutes); // Emails: las plantillas de los correos

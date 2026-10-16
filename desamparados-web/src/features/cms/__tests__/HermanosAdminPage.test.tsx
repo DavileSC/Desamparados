@@ -413,6 +413,35 @@ describe('HermanosAdminPage', () => {
     expect(screen.queryByText('Del ropero')).not.toBeInTheDocument()
   })
 
+  it('si el correo rebota, la ficha lo dice y Secretaría puede volver a escribirle', async () => {
+    const user = userEvent.setup()
+    const rocio = {
+      id: 5, nombre: 'Rocío', apellidos: 'Gómez Marín', numeroHermano: 118, dni: '12345678Z', email: 'rocio@ejemplo.invalido', activo: true, fechaBaja: null,
+      fechaNacimiento: '1980-02-10T00:00:00.000Z', fechaAlta: '2009-03-14T10:00:00.000Z', esTitular: true, tieneTunicaPropia: false,
+      tunica: 'L', alturaHombro: null, puesto: null, telefono: null, direccion: null, poblacion: null, codigoPostal: null,
+    }
+    const ficha = {
+      ...rocio, user: { email: 'rocio@ejemplo.invalido', telefono: null, hermanos: [] }, recibos: [], papeletas: [], prendas: [],
+      correoRebota: { motivo: 'REBOTE', detalle: '550 User unknown', desde: '2026-10-12T09:00:00.000Z' },
+    }
+    const borrados: string[] = []
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string, init: RequestInit = {}) => {
+      if (init.method === 'DELETE') {
+        borrados.push(String(url))
+        return Promise.resolve(new Response(JSON.stringify({ message: 'Hecho' }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+      }
+      return Promise.resolve(/\/hermanos\/admin\/5$/.test(String(url))
+        ? new Response(JSON.stringify(ficha), { status: 200, headers: { 'Content-Type': 'application/json' } })
+        : respuestaCenso(String(url).includes('solicitudes') ? [] : [rocio]))
+    }))
+    renderWithProviders(<HermanosAdminPage />, { ruta: '/cms/hermanos?ficha=5' })
+
+    expect(await screen.findByText(/a rocio@ejemplo\.invalido no le llegan nuestros correos desde el 12\/10\/2026: el buzón no existe/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Volver a escribirle' }))
+    await waitFor(() => expect(screen.queryByText(/no le llegan nuestros correos/i)).not.toBeInTheDocument())
+    expect(borrados).toEqual([expect.stringMatching(/\/hermanos\/admin\/5\/correo-rebota$/)])
+  })
+
   it('con Difuntos apagado no hay esa pestaña, y una URL guardada con ?vista=difuntos cae en el censo', async () => {
     responderCenso(censoVacio, [])
     renderWithProviders(<HermanosAdminPage />, { ruta: '/cms/hermanos?vista=difuntos', modulos: [] })
@@ -448,6 +477,15 @@ describe('los filtros de más y las listas guardadas', () => {
     await user.click(screen.getByRole('combobox', { name: 'Edad' }))
     await user.click(await screen.findByRole('option', { name: 'Menores de 18' }))
     await waitFor(() => expect(buscadas(llamadas).some((p) => p.get('edad') === 'menores')).toBe(true))
+  })
+
+  it('el filtro de correo saca también los que rebotan, y el enlace del boletín llega con él puesto', async () => {
+    const llamadas = servidor()
+    renderWithProviders(<HermanosAdminPage />, { ruta: '/cms/hermanos?correo=rebota' })
+
+    // Con un filtro de más puesto, «Más filtros» ya viene abierto.
+    expect(await screen.findByRole('combobox', { name: 'Correo' })).toHaveTextContent('Correo que rebota')
+    await waitFor(() => expect(buscadas(llamadas).some((p) => p.get('correo') === 'rebota')).toBe(true))
   })
 
   it('guarda la búsqueda de ahora con un nombre, y una guardada se aplica entera', async () => {

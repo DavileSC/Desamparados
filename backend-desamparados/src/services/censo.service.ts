@@ -23,6 +23,7 @@ import { ORDENES_CENSO, ordenDe } from '../domain/ordenacion.js';
 import { EmailService } from './email.service';
 import { PapeletasService, type SolicitudConRecibo } from './procesion/papeletas.service.js';
 import { idCategoriaDevoluciones } from './recibos/comunes.js';
+import { RebotesService } from './correos/rebotes.service.js';
 
 /**
  * El censo entero, como lo ve Secretaría: buscarlo, leer una ficha, corregirla,
@@ -38,7 +39,7 @@ export class CensoService {
    * listado y lo que se hace con una búsqueda entera (las cartas a quienes
    * salen en ella). Un solo sitio para que las dos elijan a los mismos.
    */
-  static whereDelCenso(query: SearchHermanoQuery): Prisma.HermanoWhereInput {
+  static async whereDelCenso(query: SearchHermanoQuery): Promise<Prisma.HermanoWhereInput> {
     // Un número suelto busca también al hermano con ese número: en la
     // secretaría a un hermano se le conoce tanto por el número como por el nombre.
     const texto = query.q?.trim() ?? '';
@@ -57,14 +58,14 @@ export class CensoService {
     if (query.numero) where.numeroHermano = query.numero === 'con' ? { not: null } : null;
     // Se suman a las de la búsqueda, que también van en AND: asignarlas encima
     // borraba lo buscado.
-    const avanzados = filtrosAvanzados(query, new Date());
+    const avanzados = filtrosAvanzados(query, new Date(), query.correo === 'rebota' ? await RebotesService.direcciones() : []);
     if (avanzados.length) where.AND = [...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []), ...avanzados];
     return where;
   }
 
   static async searchHermanos(query: SearchHermanoQuery) {
     const paginacion = sanearPaginacion(query);
-    const where = CensoService.whereDelCenso(query);
+    const where = await CensoService.whereDelCenso(query);
 
     const [data, total] = await db.$transaction([
       db.hermano.findMany({
@@ -162,7 +163,23 @@ export class CensoService {
     // pantalla caía en ellos si la ficha no traía los suyos) y sus otras
     // fichas no son familia. `enCensoImportado` le dice al CMS por qué no hay cuenta.
     const enCensoImportado = esCuentaDeCustodia(ficha.user);
-    return { ...ficha, user: enCensoImportado ? null : ficha.user, enCensoImportado };
+    // El correo que usa la ficha (el suyo, o el de su cuenta) y si el servicio
+    // de envío avisó de que no llega.
+    const correoRebota = await RebotesService.de(ficha.email?.trim() || (enCensoImportado ? null : ficha.user.email));
+    return { ...ficha, user: enCensoImportado ? null : ficha.user, enCensoImportado, correoRebota };
+  }
+
+  /**
+   * Secretaría da por bueno otra vez el correo de la ficha: el buzón ya
+   * funciona, o el hermano lo arregló. Si lo que pasa es que está mal escrito,
+   * basta con corregirlo en la ficha: la dirección nueva no está marcada.
+   */
+  static async quitarRebote(id: number, meta: MetaDeAuditoria) {
+    const ficha = await db.hermano.findUnique({ where: { id }, select: { email: true, user: { select: { email: true } } } });
+    if (!ficha) throw new NotFoundError('Hermano no encontrado.');
+    const email = ficha.email?.trim() || (esCuentaDeCustodia(ficha.user) ? null : ficha.user.email);
+    if (!email || !(await RebotesService.quitar(email, meta))) throw new HttpError('El correo de esta ficha no estaba marcado.', 409);
+    return { message: 'Hecho: se le vuelve a escribir a este correo.' };
   }
 
   /**

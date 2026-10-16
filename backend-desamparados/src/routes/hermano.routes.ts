@@ -104,6 +104,8 @@ hermanoRouter.put('/admin/:id', checkRole(rolesGestionCenso), validateId, valida
 // La baja admite un cuerpo opcional con la fecha ({ fechaBaja: 'AAAA-MM-DD' }).
 hermanoRouter.delete('/admin/:id/baja', checkRole(rolesGestionCenso), validateId, validate(bajaHermanoSchema), HermanoController.darDeBajaHermano);
 hermanoRouter.post('/admin/:id/reactivar', checkRole(rolesGestionCenso), validateId, HermanoController.reactivarHermano);
+// El correo de la ficha rebotaba y ya no (ver correos/rebotes.service).
+hermanoRouter.delete('/admin/:id/correo-rebota', checkRole(rolesGestionCenso), validateId, HermanoController.quitarRebote);
 hermanoRouter.post('/admin/:id/emancipar', checkRole(rolesGestionCenso), validateId, validate(emancipateByStaffSchema), HermanoController.emancipateByStaff);
 
 // ==========================================

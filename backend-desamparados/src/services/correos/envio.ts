@@ -165,6 +165,8 @@ interface OpcionesDeEnvio {
    * puede llevar el nombre del destinatario.
    */
   uso?: string;
+  /** Cabeceras propias del correo (la baja en un clic del boletín). */
+  cabeceras?: Record<string, string>;
 }
 
 /**
@@ -192,7 +194,7 @@ export async function enviarCorreo(
   to: string,
   subject: string,
   html: string,
-  { replyTo, cuenta, adjuntos = [], uso = 'sin_clasificar' }: OpcionesDeEnvio = {},
+  { replyTo, cuenta, adjuntos = [], uso = 'sin_clasificar', cabeceras }: OpcionesDeEnvio = {},
 ): Promise<boolean> {
   // Todos los correos pasan por aquí, y muchos caen en la dirección de la
   // cuenta cuando la ficha no trae una (el aviso de baja, la papeleta, el
@@ -212,6 +214,7 @@ export async function enviarCorreo(
       text: aTexto(html),
       // El escudo y la cabecera de la marca van dentro del correo, no enlazados a la web.
       attachments: [...imagenesDe(html), ...adjuntos],
+      ...(cabeceras ? { headers: cabeceras } : {}),
       // Sin Reply-To propio, las respuestas van al buzón de Secretaría si es
       // otro distinto de la cuenta que envía.
       ...(replyTo || process.env.CONTACT_EMAIL_TO ? { replyTo: replyTo || process.env.CONTACT_EMAIL_TO } : {}),

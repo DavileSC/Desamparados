@@ -32,6 +32,8 @@ export interface CorreoParaBuzon {
    * .html, y archivos adjuntos (la papeleta en PDF), que deja a su lado.
    */
   attachments?: ({ path: string; cid: string; contentType: string } | { filename: string; content: Buffer; contentType: string })[];
+  /** Cabeceras propias (la baja en un clic del boletín). */
+  headers?: Record<string, string>;
 }
 
 /**

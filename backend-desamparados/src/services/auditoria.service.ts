@@ -198,7 +198,11 @@ export const ACCIONES_AUDITORIA = {
   // Correo que no salió. No es una acción de nadie, pero se guarda aquí porque
   // es el único sitio del CMS donde el staff puede enterarse: antes el fallo
   // moría en un console.error y el alta se daba por buena sin avisar a nadie.
-  EMAIL_FALLIDO: 'EMAIL_FALLIDO'
+  EMAIL_FALLIDO: 'EMAIL_FALLIDO',
+  // El servicio de envío avisa de que una dirección no recibe (rebote, spam…),
+  // y Secretaría la da por buena otra vez desde la ficha
+  CORREO_REBOTA: 'CORREO_REBOTA',
+  CORREO_REBOTA_QUITAR: 'CORREO_REBOTA_QUITAR'
 } as const;
 
 export class AuditoriaService {

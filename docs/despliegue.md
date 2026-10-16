@@ -305,6 +305,7 @@ Opcionales:
 | `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT` | Un servicio de envío en vez de Gmail (Brevo: `smtp-relay.brevo.com`, `587`). `EMAIL_USER` y `EMAIL_PASS` pasan a ser el usuario y la clave SMTP del servicio. Gmail deja unos 500 correos al día y los saca con la dirección de la cuenta de Gmail |
 | `EMAIL_FROM` | La dirección con la que salen los correos (`noreply@…`). Obligatoria con `EMAIL_SMTP_HOST`; por defecto, `EMAIL_USER`. Tiene que estar dada de alta como remitente en el servicio, con el dominio autenticado (DKIM) |
 | `CORREOS_MASIVOS_POR_DIA` | Cuántos correos de los envíos a muchos (comunicados, aviso de apertura de papeletas) salen al día; lo que no cabe sale al siguiente, solo. Por defecto `250`, por debajo de los 300 de Brevo gratis: los correos sueltos no cuentan y necesitan margen. Con Gmail se puede subir a unos `450` |
+| `CORREO_AVISOS_SECRETO` | La clave de los avisos de rebote de Brevo (ver «Rebotes de correo»). Sin ella, `/api/correo/avisos` responde 404 y los rebotes no se apuntan. Al menos 24 caracteres: `openssl rand -hex 24` |
 | `CONTACT_EMAIL_TO` | Destinatario del formulario de contacto y del aviso de solicitudes, y «Responder a» de todos los correos. Por defecto, `EMAIL_FROM` o `EMAIL_USER` |
 | `CONTACT_EMAIL_USER`, `CONTACT_EMAIL_PASS` | Cuenta aparte para el formulario de contacto |
 | `TOTP_ENC_KEY_ANTERIOR` | Solo durante una rotación de `TOTP_ENC_KEY`. Ver «Rotar `TOTP_ENC_KEY`» |
@@ -351,6 +352,31 @@ Tres cosas que no se ven:
   `FRONTEND_URL` con el puerto de Vite (el banco devuelve ahí al hermano).
   Bizum no se puede terminar con el terminal público de Redsys (error SIS0475
   al autenticarse): hace falta el de pruebas del banco con Bizum activado.
+
+### Rebotes de correo (Brevo)
+
+Brevo acepta el correo y es el servidor del destinatario quien lo devuelve
+minutos después (buzón que no existe, dirección mal escrita, queja de spam).
+Para enterarse, Brevo avisa a la API y la dirección queda marcada: la ficha
+del censo lo dice, «Más filtros → Correo → Que rebota» las saca todas, la cola
+no gasta cupo en ellas y el boletín cuenta ese envío como «rebotó». Una queja
+de spam también da de baja del boletín.
+
+1. Generar la clave y ponerla en el `.env` como `CORREO_AVISOS_SECRETO`:
+   `openssl rand -hex 24`. Reiniciar la API.
+2. En Brevo: Transactional → Settings → Webhook → «Add a new webhook».
+   - URL: `https://avisos:CLAVE@DOMINIO/api/correo/avisos` (la clave como
+     contraseña; el usuario da igual). Si la pantalla ofrece «Bearer token»,
+     vale también: URL sin usuario ni clave, y la clave como token.
+   - Eventos: *Hard bounce*, *Invalid email*, *Blocked*, *Complaint (spam)* y
+     *Unsubscribed*. El resto no se usa.
+   - Sin «batched» (por lotes): el cuerpo pasaría del tope de 100 KB de la API.
+3. Comprobarlo: `curl -i -X POST https://DOMINIO/api/correo/avisos` responde
+   **401** (con la clave puesta) y no 404 (sin ella).
+
+En la web de pruebas, la contraseña de nginx tapa la ruta: el bloque
+`location = /api/correo/avisos` de `docker/servidor/nginx-pruebas.conf` la deja
+pasar, como el aviso del banco.
 
 ### El Modelo 182 (donativos)
 

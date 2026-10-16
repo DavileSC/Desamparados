@@ -177,6 +177,10 @@ export class HermanoController {
     res.status(200).json(result);
   });
 
+  static quitarRebote = manejar('Error quitando la marca del correo', async (req, res) => {
+    res.status(200).json(await CensoService.quitarRebote(Number(req.params.id), AuditoriaService.metaFromReq(req)));
+  });
+
   static reactivarHermano = manejar('Error reactivando al hermano', async (req, res) => {
     const result = await CensoService.reactivarHermano(Number(req.params.id), AuditoriaService.metaFromReq(req));
     res.status(200).json(result);

@@ -55,7 +55,7 @@ export class CartasService {
   static async destinatarios(consulta: string, tope = MAX_CARTAS): Promise<DestinatarioPostal[]> {
     const query = Object.fromEntries(new URLSearchParams(consultaLimpia('censo', consulta))) as SearchHermanoQuery;
     const hermanos = await db.hermano.findMany({
-      where: { AND: [CensoService.whereDelCenso(query), NO_DIFUNTO] },
+      where: { AND: [await CensoService.whereDelCenso(query), NO_DIFUNTO] },
       orderBy: [{ apellidos: 'asc' }, { nombre: 'asc' }, { id: 'asc' }],
       take: tope,
       select: {

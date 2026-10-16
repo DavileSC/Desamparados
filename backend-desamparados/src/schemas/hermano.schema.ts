@@ -155,7 +155,7 @@ export const searchHermanoSchema = type({
         "tieneTunicaPropia?": "'true' | 'false'",
         "estado?": "'activo' | 'baja' | 'pendiente'",
         "numero?": "'con' | 'sin'",
-        "correo?": "'con' | 'sin'",
+        "correo?": "'con' | 'sin' | 'rebota'",
         "cuenta?": "'con' | 'sin'",
         "edad?": "'menores' | 'adultos'",
         "medalla?": "'con' | 'sin'",

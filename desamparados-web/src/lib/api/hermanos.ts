@@ -200,9 +200,26 @@ export interface FichaDelCenso extends AdminBrother {
   user?: { email: string | null; telefono: string | null; hermanos?: FichaDeLaCuenta[] } | null
   /** Si cuelga de la cuenta de custodia del censo importado, a la espera de saber de quién es. */
   enCensoImportado?: boolean
+  /** El servicio de envío avisó de que a su correo no le llegan los nuestros. */
+  correoRebota?: { motivo: MotivoRebote; detalle: string | null; desde: string } | null
   recibos?: { id: number; year: number; concepto: string; estado: ReceiptStatus; fechaPago: string | null }[]
   papeletas?: { id: number; year: number; puesto: string; tramo: string | null }[]
   prendas?: { id: number; numero: string; tipo: Prenda['tipo']; talla: string | null }[]
+}
+
+export type MotivoRebote = 'REBOTE' | 'INVALIDO' | 'BLOQUEADO' | 'SPAM'
+
+/** Qué le pasa a ese correo, para la ficha: termina la frase «El correo … no recibe nada: …». */
+export const MOTIVOS_REBOTE: Record<MotivoRebote, string> = {
+  REBOTE: 'el buzón no existe o no admite correo',
+  INVALIDO: 'la dirección está mal escrita',
+  BLOQUEADO: 'el servicio de envío la tiene bloqueada porque rebotó antes',
+  SPAM: 'quien lo usa marcó un correo nuestro como no deseado, y ya no recibe el boletín',
+}
+
+/** El correo de la ficha vuelve a darse por bueno: el buzón ya funciona. */
+export function quitarRebote(id: number) {
+  return llamarApi<{ message: string }>(`/hermanos/admin/${id}/correo-rebota`, { method: 'DELETE' })
 }
 
 export function fichaDeHermano(id: number) {
