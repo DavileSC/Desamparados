@@ -7,7 +7,7 @@ import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
 import CabeceraSeccion from './CabeceraSeccion'
 import { cortejoParaLaJunta, enviarPosicion, terminarDirecto, type CortejoParaLaJunta, type PosicionCortejo } from '../../lib/api/cortejoDirecto'
-import { DISTANCIA_MAXIMA_M, posicionesEnRuta, puntoEn, sobreElRecorrido } from '../../components/bloques/recorrido'
+import { DISTANCIA_MAXIMA_M, lecturaDelRecorrido, puntoEn, sobreElRecorrido } from '../../components/bloques/recorrido'
 import { site } from '../../config/site'
 
 /** Cada cuánto, como poco, se manda la posición: el GPS avisa a cada paso y el servidor no lo necesita. */
@@ -49,6 +49,11 @@ export default function CortejoDirectoPage() {
   // El servidor busca el itinerario con mapa entre las páginas encendidas:
   // no va fijo a una página propia que otra corporación no tiene.
   const itinerario = estado?.recorrido ?? null
+  // Lo que se marca a mano: las calles si el recorrido las tiene (como la lista
+  // de la web); si no, las paradas, como antes.
+  const lectura = itinerario
+    ? lecturaDelRecorrido({ paradas: itinerario.paradas, recorrido: { esquinas: [], linea: itinerario.linea, pegado: true, calles: itinerario.calles ?? [] } })
+    : null
 
   const mandar = useCallback(async (p: PosicionCortejo) => {
     ultima.current = { p, enviadaEn: Date.now() }
@@ -105,8 +110,12 @@ export default function CortejoDirectoPage() {
   }
 
   const marcarParada = (i: number) => {
-    if (!itinerario) return
-    const [lng, lat] = puntoEn(itinerario.linea, posicionesEnRuta(itinerario.paradas)[i])
+    if (!itinerario || !lectura) return
+    const { posiciones, porCalles } = lectura
+    // Una calle se marca un poco dentro de ella: en su comienzo exacto, la web
+    // podría leer la anterior por un metro.
+    const f = porCalles ? posiciones[i] + ((posiciones[i + 1] ?? 1) - posiciones[i]) * 0.2 : posiciones[i]
+    const [lng, lat] = puntoEn(itinerario.linea, f)
     void mandar({ lng, lat, precision: null })
   }
 
@@ -148,11 +157,11 @@ export default function CortejoDirectoPage() {
       {itinerario && (
         <Box>
           <Typography component="h2" sx={{ fontWeight: 600, mb: 0.5 }}>Si el GPS falla: estamos en…</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>Pulsa la parada por la que va el cortejo y el mapa lo pone allí.</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>Pulsa la {lectura?.porCalles ? 'calle' : 'parada'} por la que va el cortejo y el mapa lo pone allí.</Typography>
           <Box sx={{ display: 'grid', gap: 1, gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'repeat(2, minmax(0, 1fr))' } }}>
-            {itinerario.paradas.map((parada, i) => (
-              <Button key={`${parada.lugar}-${i}`} variant="outlined" onClick={() => marcarParada(i)} sx={{ justifyContent: 'flex-start', textAlign: 'left', textTransform: 'none' }}>
-                {parada.hora ? `${parada.hora} · ` : ''}{parada.lugar}
+            {lectura?.filas.map((fila, i) => (
+              <Button key={`${fila.lugar}-${i}`} variant="outlined" onClick={() => marcarParada(i)} sx={{ justifyContent: 'flex-start', textAlign: 'left', textTransform: 'none' }}>
+                {fila.hora ? `${fila.hora} · ` : ''}{fila.lugar}
               </Button>
             ))}
           </Box>

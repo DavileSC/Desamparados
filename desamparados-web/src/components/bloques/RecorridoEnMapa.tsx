@@ -17,7 +17,7 @@ import { useModoEdicion } from './modoEdicion'
 import { useModulos } from '../../hooks/useModulos'
 import { anchoMaximo } from './presentacion'
 import { ALTO_LISTA, ALTO_MAPA, ALTO_MINIMO, ALTO_MINIMO_LISTA } from './EsqueletoDelRecorrido'
-import { DISTANCIA_MAXIMA_M, acumulados, metros, paradaAlcanzada, posicionesEnRuta, sobreElRecorrido, tramoHasta } from './recorrido'
+import { DISTANCIA_MAXIMA_M, acumulados, lecturaDelRecorrido, metros, paradaAlcanzada, sobreElRecorrido, tramoHasta, type SitioDelRecorrido } from './recorrido'
 import { cortejoEnDirecto } from '../../lib/api/cortejoDirecto'
 import type { BloqueItinerario, Coordenada, RecorridoEnMapa as Recorrido } from '../../lib/api/contenido'
 import { MARCA, alfa } from '../../theme/marca'
@@ -34,6 +34,8 @@ const CAMARA_CERCA = { zoom: 16.6, pitch: 52, bearing: -12 }
 const GRANATE_CLARO = MARCA.principalClaro
 /** El granate de la marca, aclarado para leerse sobre el fondo oscuro (5,4:1). */
 const BURDEOS_LEGIBLE = MARCA.principalLegible
+/** Un sitio de interés se marca «ahora» mientras el trono está a menos de esta fracción pasado él. */
+const SITIO_AHORA = 0.03
 /** El recorrido entero, con aire abajo: ahí van el play y los botones de la cámara. */
 const MARGEN_ENTERO = { top: 48, right: 48, left: 48, bottom: 88 }
 
@@ -51,9 +53,12 @@ function cajaDe(linea: Coordenada[]) {
  * propia web). A un lado el mapa, quieto mientras se lee; al otro, las paradas.
  *
  * El recorrido anda solo con el play, despacio (un minuto entero): la línea
- * se dibuja por las calles, el trono (un punto granate) llega a cada parada y
- * la lista de al lado se desliza a su par, con la calle por la que va en el
- * centro. Se puede pausar, volver a empezar y elegir si la cámara sigue al
+ * se dibuja por las calles, el trono (un punto granate) avanza y la lista de al
+ * lado se desliza a su par, con la calle por la que va en el centro. Con las
+ * calles guardadas (16-10-2026), la lista son las calles y cambia cuando el
+ * trono entra en otra; las paradas pasan a sitios de interés, numerados en el
+ * mapa y en una fila debajo (`lecturaDelRecorrido`). Sin calles, la lista son
+ * las paradas, como antes. Se puede pausar, volver a empezar y elegir si la cámara sigue al
  * trono o enseña el recorrido entero. Antes iba con el scroll de la página,
  * pero se pasaba en un momento: ahora el scroll solo mueve la página.
  *
@@ -65,7 +70,11 @@ export default function RecorridoEnMapa({ bloque, onSinMapa }: {
   /** Esta instalación no tiene mapa del barrio: quien lo pinta enseña las paradas de otra forma. */
   onSinMapa?: () => void
 }) {
-  const { paradas } = bloque
+  // Las filas de la lista (calles o paradas), dónde empieza cada una, los sitios y sus horas.
+  const { filas, posiciones, sitios, porCalles } = useMemo(
+    () => lecturaDelRecorrido({ paradas: bloque.paradas, recorrido: bloque.recorrido }),
+    [bloque.paradas, bloque.recorrido],
+  )
   // Por una referencia: el mapa se crea una vez y no debe rehacerse porque
   // cambie la función.
   const avisarSinMapa = useRef(onSinMapa)
@@ -77,7 +86,10 @@ export default function RecorridoEnMapa({ bloque, onSinMapa }: {
 
   const [camara, setCamara] = useState<Camara>(reducir || enConstructor ? 'entero' : 'sigue')
   const [reproduciendo, setReproduciendo] = useState(false)
-  const [alcanzada, setAlcanzada] = useState(enConstructor ? paradas.length - 1 : -1)
+  const [alcanzada, setAlcanzada] = useState(enConstructor ? filas.length - 1 : -1)
+  /** Los sitios ya alcanzados, y el que el trono acaba de alcanzar (−1 si ninguno). */
+  const [sitiosPasados, setSitiosPasados] = useState(enConstructor ? sitios.length : 0)
+  const [sitioAhora, setSitioAhora] = useState(-1)
   const [listo, setListo] = useState(false)
   const [error, setError] = useState(false)
 
@@ -116,7 +128,7 @@ export default function RecorridoEnMapa({ bloque, onSinMapa }: {
   }, [listo, enCalle])
 
   const hechos = useMemo(() => acumulados(linea), [linea])
-  const posiciones = useMemo(() => posicionesEnRuta(paradas), [paradas])
+  const posicionesSitios = useMemo(() => sitios.map((sitio) => sitio.posicion), [sitios])
   const circular = linea.length > 1 && metros(linea[0], linea[linea.length - 1]) < 40
 
   const contenedor = useRef<HTMLDivElement>(null)
@@ -126,7 +138,7 @@ export default function RecorridoEnMapa({ bloque, onSinMapa }: {
   const mapa = useRef<Mapa | null>(null)
   const trono = useRef<Marker | null>(null)
   // Lo que cambia en cada fotograma va en refs: repintar el bloque 60 veces por
-  // segundo sobraría. El estado solo cambia al alcanzar otra parada.
+  // segundo sobraría. El estado solo cambia al alcanzar otra fila o sitio.
   const fraccion = useRef(enConstructor ? 1 : 0)
   const objetivo = useRef<Coordenada>(linea[0])
   const centro = useRef<Coordenada>(linea[0])
@@ -153,10 +165,13 @@ export default function RecorridoEnMapa({ bloque, onSinMapa }: {
     trono.current?.setLngLat(objetivo.current)
     const hasta = paradaAlcanzada(posiciones, f)
     setAlcanzada(hasta)
+    const sitio = paradaAlcanzada(posicionesSitios, f)
+    setSitiosPasados(sitio + 1)
+    setSitioAhora(sitio >= 0 && f - posicionesSitios[sitio] < SITIO_AHORA ? sitio : -1)
     // Con el trono cerca de la salida y el nombre de su calle al lado, los dos
     // rótulos se pisarían: el de la salida se aparta hasta que el trono se aleja.
     if (rotuloSalida.current) rotuloSalida.current.style.opacity = hasta >= 0 && metros(objetivo.current, linea[0]) < 70 ? '0' : '1'
-  }, [linea, hechos, posiciones])
+  }, [linea, hechos, posiciones, posicionesSitios])
 
   /**
    * Desliza la lista a la par del trono: entre dos paradas, a la altura
@@ -191,7 +206,7 @@ export default function RecorridoEnMapa({ bloque, onSinMapa }: {
         avisarSinMapa.current?.()
         return
       }
-      // La iglesia de la que sale y a la que vuelve: se destaca, y la cruz va encima.
+      // La iglesia de la que sale y a la que vuelve: se destaca, con el rótulo encima.
       const templo = edificioDelTemplo(barrio, linea[0])
       const m = new maplibregl.Map({
         container: contenedor.current,
@@ -216,7 +231,8 @@ export default function RecorridoEnMapa({ bloque, onSinMapa }: {
 
       const salida = document.createElement('div')
       salida.setAttribute('aria-hidden', 'true')
-      salida.innerHTML = `<svg viewBox="0 0 20 20" width="20" height="20" style="display:block;margin:0 auto 3px;fill:${GOLD};filter:drop-shadow(0 0 6px ${alfa(MARCA.acento, .8)})"><path d="M8.5 1h3v5h5v3h-5v10h-3V9h-5V6h5z"/></svg><span style="display:block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:${GOLD};background:rgba(7,6,8,.85);padding:3px 8px;border:1px solid ${alfa(MARCA.acento, .5)};white-space:nowrap;transition:opacity .4s">${circular ? 'Salida y entrada' : 'Salida'}</span>`
+      // Sin la cruz encima (16-10-2026): la iglesia ya va iluminada.
+      salida.innerHTML = `<span style="display:block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:${GOLD};background:rgba(7,6,8,.85);padding:3px 8px;border:1px solid ${alfa(MARCA.acento, .5)};white-space:nowrap;transition:opacity .4s">${circular ? 'Salida y entrada' : 'Salida'}</span>`
       // Un poco por encima del punto: al salir y al volver, el trono está
       // justo ahí con el nombre de su calle al lado, y no deben pisarse.
       new maplibregl.Marker({ element: salida, anchor: 'bottom', offset: [0, -16] }).setLngLat(templo ? centroDe(templo) : linea[0]).addTo(m)
@@ -261,23 +277,47 @@ export default function RecorridoEnMapa({ bloque, onSinMapa }: {
   useEffect(() => {
     const el = etiqueta.current
     if (!el) return
-    const parada = alcanzada >= 0 ? paradas[alcanzada] : null
-    el.textContent = parada ? `${parada.hora ? `${parada.hora} · ` : ''}${parada.lugar}` : ''
-    el.style.display = parada ? 'block' : 'none'
-  }, [alcanzada, paradas, listo])
+    const fila = alcanzada >= 0 ? filas[alcanzada] : null
+    el.textContent = fila ? `${fila.hora ? `${fila.hora} · ` : ''}${fila.lugar}` : ''
+    el.style.display = fila ? 'block' : 'none'
+  }, [alcanzada, filas, listo])
 
-  // Las paradas en el mapa: encendidas hasta la alcanzada.
+  // Las paradas en el mapa: encendidas hasta la alcanzada. Con calles no hay
+  // un punto en cada cambio de calle (no gustaron): solo los sitios, numerados.
   useEffect(() => {
     if (!listo || !mapaVivo(mapa.current)) return
-    const hechas = enConstructor ? paradas.length - 1 : alcanzada
+    const hechas = enConstructor ? filas.length - 1 : alcanzada
     ;(mapa.current?.getSource('paradas') as GeoJSONSource | undefined)?.setData({
       type: 'FeatureCollection',
-      features: posiciones.map((f, i) => ({
+      features: porCalles ? [] : posiciones.map((f, i) => ({
         type: 'Feature', properties: { hecha: i <= hechas },
         geometry: { type: 'Point', coordinates: tramoHasta(linea, f, hechos).at(-1)! },
       })),
     })
-  }, [listo, alcanzada, posiciones, linea, hechos, paradas.length, enConstructor])
+  }, [listo, alcanzada, posiciones, linea, hechos, filas.length, enConstructor, porCalles])
+
+  // Los sitios de interés en el mapa: su número en oro, el mismo que en la fila de debajo.
+  const marcasSitios = useRef<HTMLDivElement[]>([])
+  useEffect(() => {
+    const m = mapa.current
+    if (!listo || !m || !mapaVivo(m)) return
+    const marcas = posicionesSitios.map((f, i) => {
+      const el = document.createElement('div')
+      el.setAttribute('aria-hidden', 'true')
+      el.textContent = String(i + 1)
+      Object.assign(el.style, {
+        width: '24px', height: '24px', borderRadius: '50%', display: 'grid', placeItems: 'center',
+        fontSize: '12px', fontWeight: '700', lineHeight: '1', color: GOLD, background: 'rgba(7,6,8,.9)', border: `2px solid ${GOLD}`,
+        transition: 'box-shadow .4s ease',
+      })
+      return { el, marca: new maplibregl.Marker({ element: el }).setLngLat(tramoHasta(linea, f, hechos).at(-1)!).addTo(m) }
+    })
+    marcasSitios.current = marcas.map((x) => x.el)
+    return () => { marcas.forEach((x) => x.marca.remove()); marcasSitios.current = [] }
+  }, [listo, posicionesSitios, linea, hechos])
+  useEffect(() => {
+    marcasSitios.current.forEach((el, i) => { el.style.boxShadow = i === sitioAhora ? `0 0 0 6px ${alfa(MARCA.acento, 0.25)}, 0 0 16px ${alfa(MARCA.acento, 0.6)}` : 'none' })
+  }, [sitioAhora, listo, posicionesSitios])
 
   // Primera pintura: el trono en la salida (en el constructor, el recorrido entero).
   useEffect(() => {
@@ -351,10 +391,10 @@ export default function RecorridoEnMapa({ bloque, onSinMapa }: {
     if (camaraActual.current === 'sigue') mapa.current?.jumpTo({ center: linea[0] })
   }
 
-  const actual = alcanzada >= 0 ? paradas[alcanzada] : null
+  const actual = alcanzada >= 0 ? filas[alcanzada] : null
   // Sin ninguna hora, «hora por confirmar» en cada calle recargaba la lista:
   // se dice una vez arriba y la lista va solo con las calles.
-  const sinHoras = paradas.every((parada) => parada.hora === '')
+  const sinHoras = filas.every((fila) => fila.hora === '')
   const botonMapa = {
     width: 34, height: 34, color: '#fff', backgroundColor: 'rgba(7, 6, 8, .85)', border: '1px solid rgba(204, 196, 201, .3)',
     '&:hover': { backgroundColor: 'rgba(7, 6, 8, .95)', borderColor: GOLD },
@@ -366,7 +406,7 @@ export default function RecorridoEnMapa({ bloque, onSinMapa }: {
         <PlayArrowIcon sx={{ fontSize: 20, color: GOLD }} aria-hidden="true" />
         {enCalle
           ? 'El cortejo está en la calle: el punto granate es por donde va ahora, y se actualiza solo.'
-          : <>Dale al play para ver el recorrido andar por las calles.{sinHoras && ' Las horas, por confirmar.'}</>}
+          : <>Dale al play para ver el recorrido andar por las calles.{sinHoras ? ' Las horas, por confirmar.' : porCalles && ' Las horas son aproximadas.'}</>}
       </Typography>
     <Box
       sx={{
@@ -397,7 +437,7 @@ export default function RecorridoEnMapa({ bloque, onSinMapa }: {
         </Box>
         {!listo && (
           <Typography sx={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: '#a9a3a7', fontSize: 13 }}>
-            {error ? 'No se pudo cargar el mapa. Las paradas están al lado.' : 'Cargando el mapa…'}
+            {error ? `No se pudo cargar el mapa. ${porCalles ? 'Las calles' : 'Las paradas'} están al lado.` : 'Cargando el mapa…'}
           </Typography>
         )}
         {listo && enCalle && (
@@ -444,7 +484,7 @@ export default function RecorridoEnMapa({ bloque, onSinMapa }: {
         height: ALTO_LISTA, minHeight: ALTO_MINIMO_LISTA,
       }}>
       <Box component="ol" ref={lista} sx={{ listStyle: 'none', m: 0, p: 0 }}>
-        {paradas.map((parada, i) => {
+        {filas.map((fila, i) => {
           // Solo se enciende la calle por la que va el trono, en granate; las
           // ya pasadas se apagan como las que faltan. En el constructor, todas.
           const encendida = !enConstructor && i === alcanzada
@@ -452,31 +492,68 @@ export default function RecorridoEnMapa({ bloque, onSinMapa }: {
           <Box
             component="li"
             // El itinerario repite lugares: la clave necesita el índice.
-            key={`${parada.hora}-${parada.lugar}-${i}`}
+            key={`${fila.hora}-${fila.lugar}-${i}`}
             sx={{
-              display: 'grid', gridTemplateColumns: sinHoras ? 'minmax(0, 1fr)' : '84px minmax(0, 1fr)', columnGap: 2, alignItems: 'center',
-              py: 2.25, alignContent: 'center', borderBottom: '1px solid rgba(204, 196, 201, 0.14)',
+              // Compacta (16-10-2026): con las calles son casi treinta filas, y a
+              // 28 px la hora pesaba más que la calle.
+              display: 'grid', gridTemplateColumns: sinHoras ? 'minmax(0, 1fr)' : '64px minmax(0, 1fr)', columnGap: 2, alignItems: 'center',
+              py: 1.5, alignContent: 'center', borderBottom: '1px solid rgba(204, 196, 201, 0.14)',
               opacity: enConstructor || encendida ? 1 : 0.4, transition: 'opacity .5s ease',
               // Solo el texto va en burdeos, aclarado para que se lea sobre el fondo oscuro.
               '& > span': { transition: 'color .5s ease', ...(encendida && { color: BURDEOS_LEGIBLE }) },
             }}
           >
-            {sinHoras ? null : parada.hora !== '' ? (
-              <Typography component="span" sx={{ fontSize: { xs: 24, md: 28 }, fontWeight: 300, lineHeight: 1.1, color: '#e3d8bf', fontVariantNumeric: 'tabular-nums' }}>
-                {parada.hora}
+            {sinHoras ? null : fila.hora !== '' ? (
+              <Typography component="span" sx={{ fontSize: { xs: 18, md: 20 }, fontWeight: 300, lineHeight: 1.1, color: '#e3d8bf', fontVariantNumeric: 'tabular-nums' }}>
+                {fila.hora}
               </Typography>
             ) : (
               <Typography component="span" sx={{ fontSize: 12, lineHeight: 1.3, color: '#a9a3a7', letterSpacing: '.04em' }}>
                 hora por confirmar
               </Typography>
             )}
-            <Typography component="span" sx={{ fontSize: { xs: 17, md: 19 }, lineHeight: 1.3, color: 'text.primary' }}>{parada.lugar}</Typography>
+            {/* Un cruce se pasa, no se recorre: más bajo y en cursiva. */}
+            <Typography component="span" sx={{ fontSize: fila.cruce ? { xs: 13.5, md: 14 } : { xs: 15, md: 16 }, fontStyle: fila.cruce ? 'italic' : 'normal', lineHeight: 1.3, color: 'text.primary' }}>{fila.lugar}</Typography>
           </Box>
           )
         })}
       </Box>
       </Box>
     </Box>
+    {sitios.length > 0 && <SitiosDeInteres sitios={sitios} pasados={enConstructor ? sitios.length : sitiosPasados} ahora={sitioAhora} />}
+    </Box>
+  )
+}
+
+/**
+ * Los sitios de interés debajo del mapa, con su número (el mismo que en el
+ * mapa), su hora aproximada y lo que pasa allí. El que el trono acaba de
+ * alcanzar se marca en oro; los ya pasados se apagan.
+ */
+function SitiosDeInteres({ sitios, pasados, ahora }: { sitios: SitioDelRecorrido[]; pasados: number; ahora: number }) {
+  return (
+    <Box component="section" aria-label="Sitios de interés" sx={{ mt: 3 }}>
+      <Typography component="h3" sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '.14em', textTransform: 'uppercase', color: '#a9a3a7', mb: 1.25 }}>
+        Sitios de interés
+      </Typography>
+      <Box component="ol" sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid', gap: 1.25, gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 240px), 1fr))' }}>
+        {sitios.map((sitio, i) => (
+          <Box component="li" key={`${sitio.lugar}-${i}`} sx={{
+            display: 'grid', gridTemplateColumns: '28px minmax(0, 1fr)', columnGap: 1.25, alignItems: 'start',
+            px: 1.5, py: 1.25, backgroundColor: 'rgba(26, 24, 27, 0.72)', borderRadius: '6px',
+            border: '1px solid', borderColor: i === ahora ? GOLD : 'transparent',
+            opacity: i < pasados && i !== ahora ? 0.55 : 1, transition: 'opacity .4s ease, border-color .4s ease',
+          }}>
+            <Box aria-hidden="true" sx={{ width: 26, height: 26, borderRadius: '50%', border: `2px solid ${GOLD}`, color: GOLD, display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 700 }}>{i + 1}</Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ fontSize: 15, fontWeight: 600, lineHeight: 1.25 }}>{sitio.lugar}</Typography>
+              <Typography sx={{ fontSize: 13, color: '#a9a3a7' }}>
+                {[sitio.hora && `Hacia las ${sitio.hora}`, sitio.nota].filter(Boolean).join(' · ')}
+              </Typography>
+            </Box>
+          </Box>
+        ))}
+      </Box>
     </Box>
   )
 }

@@ -5,6 +5,7 @@ import { hayWebGL } from '../mapa/barrio'
 import { GOLD } from '../../features/inicio/estilos'
 import { anchoMaximo, valorDe } from './presentacion'
 import EsqueletoDelRecorrido from './EsqueletoDelRecorrido'
+import { lecturaDelRecorrido } from './recorrido'
 import type { BloqueItinerario as Datos } from '../../lib/api/contenido'
 import { MARCA, alfa } from '../../theme/marca'
 
@@ -29,19 +30,29 @@ const soloLector = { position: 'absolute', width: 1, height: 1, overflow: 'hidde
  * El itinerario repite lugares (la procesión pasa dos veces por la misma
  * plaza): las claves necesitan el índice o React se lía al reordenar.
  */
-export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
-  const disposicion = valorDe(bloque, 'disposicion')
+export default function BloqueItinerario({ bloque: guardado }: { bloque: Datos }) {
+  const disposicion = valorDe(guardado, 'disposicion')
+  // «Sobre el mapa» sin mapa (sin WebGL o sin el del barrio) se pinta como la
+  // línea: con calles, la línea lleva las calles con sus horas, como la lista
+  // de al lado del mapa, y no las paradas, que allí son sitios de interés.
+  const lectura = disposicion === 'plano' && guardado.recorrido?.calles?.length ? lecturaDelRecorrido(guardado) : null
+  const bloque = lectura ? { ...guardado, paradas: lectura.filas.map((fila) => ({ hora: fila.hora, lugar: fila.lugar })) } : guardado
   const ultima = bloque.paradas.length - 1
+  // Sin ninguna hora (el Rosario: solo se sabe que sale al acabar la misa),
+  // «Por confirmar» en cada calle recargaba la lista: va solo con las calles,
+  // como hace ya el mapa (RecorridoEnMapa).
+  const sinHoras = bloque.paradas.every((parada) => parada.hora === '')
 
   // Sin el fichero del barrio (instalacion/mapas) no se sabe hasta pedirlo:
   // el mapa avisa y se pasa a la línea, que enseña las mismas paradas.
   const [sinMapa, setSinMapa] = useState(false)
 
-  const { recorrido } = bloque
+  // El mapa recibe lo guardado: él mismo lee calles y sitios.
+  const { recorrido } = guardado
   if (disposicion === 'plano' && recorrido && recorrido.linea.length >= 2 && !sinMapa && hayWebGL()) {
     return (
-      <Suspense fallback={<EsqueletoDelRecorrido bloque={bloque} />}>
-        <RecorridoEnMapa bloque={{ ...bloque, recorrido }} onSinMapa={() => setSinMapa(true)} />
+      <Suspense fallback={<EsqueletoDelRecorrido bloque={guardado} />}>
+        <RecorridoEnMapa bloque={{ ...guardado, recorrido }} onSinMapa={() => setSinMapa(true)} />
       </Suspense>
     )
   }
@@ -51,10 +62,12 @@ export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
       <Box component="ol" sx={{ listStyle: 'none', m: 0, p: 0, maxWidth: anchoMaximo(bloque, '720px'), mx: 'auto' }}>
         {bloque.paradas.map((parada, i) => (
           <Box component="li" key={`${parada.hora}-${parada.lugar}-${i}`}
-            sx={{ display: 'grid', gridTemplateColumns: '72px 24px minmax(0, 1fr)', alignItems: 'start', columnGap: 2 }}>
-            <Typography sx={{ color: parada.hora ? 'secondary.main' : 'text.secondary', fontWeight: parada.hora ? 700 : 400, fontSize: parada.hora ? undefined : 12, fontVariantNumeric: 'tabular-nums', textAlign: 'right', pt: '2px' }}>
-              {parada.hora || SIN_HORA}
-            </Typography>
+            sx={{ display: 'grid', gridTemplateColumns: sinHoras ? '24px minmax(0, 1fr)' : '72px 24px minmax(0, 1fr)', alignItems: 'start', columnGap: 2 }}>
+            {!sinHoras && (
+              <Typography sx={{ color: parada.hora ? 'secondary.main' : 'text.secondary', fontWeight: parada.hora ? 700 : 400, fontSize: parada.hora ? undefined : 12, fontVariantNumeric: 'tabular-nums', textAlign: 'right', pt: '2px' }}>
+                {parada.hora || SIN_HORA}
+              </Typography>
+            )}
             <Box aria-hidden sx={{ position: 'relative', alignSelf: 'stretch', display: 'flex', justifyContent: 'center' }}>
               <Box sx={{ position: 'absolute', top: i === 0 ? 12 : 0, bottom: i === ultima ? 'calc(100% - 12px)' : 0, width: '2px', backgroundColor: alfa(MARCA.acento, 0.35) }} />
               <Box sx={{ position: 'relative', mt: '6px', width: 12, height: 12, borderRadius: '50%', border: `2px solid ${GOLD}`, backgroundColor: 'background.default' }} />
@@ -85,15 +98,20 @@ export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
             <Typography component="span" sx={{ color: 'text.primary', fontWeight: i === 0 || i === ultima ? 600 : 400 }}>
               {parada.lugar}
             </Typography>
-            <Box component="span" aria-hidden
-              sx={{ flex: '1 1 24px', minWidth: 24, borderBottom: `1px dotted ${alfa(MARCA.acento, 0.4)}`, transform: 'translateY(-4px)' }} />
-            <Typography component="span" sx={{
-              flexShrink: 0, fontVariantNumeric: 'tabular-nums',
-              color: parada.hora ? 'secondary.main' : 'text.secondary',
-              fontWeight: parada.hora ? 600 : 400, fontSize: parada.hora ? undefined : 12,
-            }}>
-              {parada.hora || SIN_HORA}
-            </Typography>
+            {/* Sin horas, ni puntos: no llevarían a nada. */}
+            {!sinHoras && (
+              <>
+                <Box component="span" aria-hidden
+                  sx={{ flex: '1 1 24px', minWidth: 24, borderBottom: `1px dotted ${alfa(MARCA.acento, 0.4)}`, transform: 'translateY(-4px)' }} />
+                <Typography component="span" sx={{
+                  flexShrink: 0, fontVariantNumeric: 'tabular-nums',
+                  color: parada.hora ? 'secondary.main' : 'text.secondary',
+                  fontWeight: parada.hora ? 600 : 400, fontSize: parada.hora ? undefined : 12,
+                }}>
+                  {parada.hora || SIN_HORA}
+                </Typography>
+              </>
+            )}
           </Box>
         ))}
       </Box>
@@ -103,12 +121,12 @@ export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
     return (
       <Box component="table" sx={{ width: '100%', maxWidth: anchoMaximo(bloque, '720px'), mx: 'auto', borderCollapse: 'collapse' }}>
         <Box component="thead" sx={soloLector}>
-          <tr><th scope="col">Hora</th><th scope="col">Lugar</th></tr>
+          <tr>{!sinHoras && <th scope="col">Hora</th>}<th scope="col">Lugar</th></tr>
         </Box>
         <tbody>
           {bloque.paradas.map((parada, i) => (
             <Box component="tr" key={`${parada.hora}-${parada.lugar}-${i}`} sx={{ borderTop: i === 0 ? 0 : '1px solid', borderColor: 'divider' }}>
-              <Box component="td" sx={{ py: 1.25, pr: 3, width: 80, color: 'secondary.main', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{parada.hora || '—'}</Box>
+              {!sinHoras && <Box component="td" sx={{ py: 1.25, pr: 3, width: 80, color: 'secondary.main', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{parada.hora || '—'}</Box>}
               <Box component="td" sx={{ py: 1.25, color: 'text.primary' }}>{parada.lugar}</Box>
             </Box>
           ))}
@@ -122,14 +140,16 @@ export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
       {bloque.paradas.map((parada, i) => (
         <Grid key={`${parada.hora}-${parada.lugar}-${i}`} size={{ xs: 12, md: 6 }}>
           <TarjetaCristal sx={{ display: 'flex', alignItems: 'center', gap: 3, p: 3 }}>
-            <Box
-              sx={{
-                minWidth: '80px', textAlign: 'center', px: 1.5, py: 1, borderRadius: '8px',
-                backgroundColor: alfa(MARCA.principal, 0.25), color: 'secondary.main', fontWeight: 600,
-              }}
-            >
-              {parada.hora || SIN_HORA}
-            </Box>
+            {!sinHoras && (
+              <Box
+                sx={{
+                  minWidth: '80px', textAlign: 'center', px: 1.5, py: 1, borderRadius: '8px',
+                  backgroundColor: alfa(MARCA.principal, 0.25), color: 'secondary.main', fontWeight: 600,
+                }}
+              >
+                {parada.hora || SIN_HORA}
+              </Box>
+            )}
             <Typography variant="body1" sx={{ color: 'text.primary' }}>{parada.lugar}</Typography>
           </TarjetaCristal>
         </Grid>

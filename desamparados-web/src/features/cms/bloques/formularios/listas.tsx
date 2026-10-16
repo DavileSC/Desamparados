@@ -18,6 +18,7 @@ import { intercambiar, type Props } from './comunes'
 
 // El editor del mapa lleva MapLibre: se descarga solo al abrir un itinerario.
 const EditorDeRecorrido = lazy(() => import('./EditorDeRecorrido'))
+const CallesDelRecorrido = lazy(() => import('./CallesDelRecorrido'))
 import type { BloqueTarjetas, BloqueDatos, BloqueItinerario, TarjetaEnlace, IconoTarjeta } from '../../../../lib/api/contenido'
 
 const TARJETA_NUEVA = { titulo: '', descripcion: '', enlace: '' }
@@ -99,8 +100,14 @@ export function FormularioDatos({ bloque, onCambio }: Props<BloqueDatos>) {
 const PARADA_NUEVA = { hora: '17:30', lugar: '' }
 
 export function FormularioItinerario({ bloque, onCambio }: Props<BloqueItinerario>) {
-  const cambiar = (indice: number, campo: 'hora' | 'lugar', texto: string) =>
+  const cambiar = (indice: number, campo: 'hora' | 'lugar' | 'nota', texto: string) =>
     onCambio({ paradas: bloque.paradas.map((p, i) => (i === indice ? { ...p, [campo]: texto } : p)) })
+  const cambiarMinutos = (indice: number, texto: string) => {
+    const minutos = texto === '' ? undefined : Math.max(0, Math.min(topes.minutosDeParada, Math.round(Number(texto) || 0)))
+    onCambio({ paradas: bloque.paradas.map((p, i) => (i === indice ? { ...p, minutos } : p)) })
+  }
+  // Con calles, las paradas son los sitios de interés: llevan qué pasa allí y cuánto se para el trono.
+  const porCalles = (bloque.recorrido?.calles?.length ?? 0) > 0
 
   const anadir = () => onCambio({ paradas: [...bloque.paradas, { ...PARADA_NUEVA }] })
   const quitar = (indice: number) => onCambio({ paradas: bloque.paradas.filter((_, i) => i !== indice) })
@@ -117,11 +124,17 @@ export function FormularioItinerario({ bloque, onCambio }: Props<BloqueItinerari
 
   return (
     <Stack spacing={1.5}>
+      {porCalles && (
+        <Typography variant="body2" color="text.secondary">
+          El recorrido va por calles: estas paradas son los sitios de interés (una peña, una petalada). Sitúalos en el mapa; la hora puede quedar vacía y se calcula sola.
+        </Typography>
+      )}
       {bloque.paradas.map((parada, indice) => (
         // Clave posicional: una parada no tiene identificador y el itinerario
         // repite lugares. Aquí no importa como en la galería, porque ninguno de
-        // estos campos guarda estado propio: son dos cuadros de texto.
-        <Stack key={indice} direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignItems: { sm: 'center' } }}>
+        // estos campos guarda estado propio: son cuadros de texto.
+        <Stack key={indice} spacing={1}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignItems: { sm: 'center' } }}>
           <TextField
             label={`Hora ${indice + 1}`} value={parada.hora}
             onChange={(e) => cambiar(indice, 'hora', e.target.value)}
@@ -156,13 +169,28 @@ export function FormularioItinerario({ bloque, onCambio }: Props<BloqueItinerari
             </span></Tooltip>
           </Stack>
         </Stack>
+        {porCalles && (
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ pl: { sm: '136px' } }}>
+            <TextField
+              label="Qué pasa allí" value={parada.nota ?? ''} placeholder="Saetas a la Virgen"
+              onChange={(e) => cambiar(indice, 'nota', e.target.value)}
+              size="small" fullWidth slotProps={{ htmlInput: { maxLength: topes.lugar } }}
+            />
+            <TextField
+              label="Minutos parado" value={parada.minutos ?? ''} type="number"
+              onChange={(e) => cambiarMinutos(indice, e.target.value)}
+              size="small" sx={{ width: { sm: 150 } }} slotProps={{ htmlInput: { min: 0, max: topes.minutosDeParada } }}
+            />
+          </Stack>
+        )}
+        </Stack>
       ))}
       <Button startIcon={<AddIcon />} onClick={anadir} disabled={!cabenMas} sx={{ alignSelf: 'flex-start' }}>
-        Añadir parada
+        {porCalles ? 'Añadir sitio de interés' : 'Añadir parada'}
       </Button>
       <Typography variant="caption" color="text.secondary">
         {cabenMas
-          ? 'La hora va en formato de 24 horas, como 17:30. Puede quedar vacía mientras no se sepa: la web dice «por confirmar».'
+          ? 'La hora va en formato de 24 horas, como 17:30. Puede quedar vacía mientras no se sepa: la web dice «por confirmar». Si no lleva ninguna, solo se ven las calles.'
           : `Son ya ${topes.paradasPorItinerario} paradas, el máximo de un itinerario.`}
       </Typography>
 
@@ -193,6 +221,12 @@ function RecorridoDelMapa({ bloque, onCambio }: Props<BloqueItinerario>) {
           onRecorrido={(recorrido) => onCambio({ recorrido })}
           onParadas={(paradas) => onCambio({ paradas })}
         />
+        {bloque.recorrido && bloque.recorrido.linea.length >= 2 && (
+          <>
+            <Divider sx={{ pt: 1 }} />
+            <CallesDelRecorrido bloque={{ ...bloque, recorrido: bloque.recorrido }} onRecorrido={(recorrido) => onCambio({ recorrido })} />
+          </>
+        )}
       </Suspense>
     </Stack>
   )

@@ -54,9 +54,20 @@ export default function EditorDeRecorrido({ recorrido, paradas, onRecorrido, onP
   const ultimo = useRef({ actual, modo, parada, paradas, grafo, onRecorrido, onParadas })
   ultimo.current = { actual, modo, parada, paradas, grafo, onRecorrido, onParadas }
 
-  /** Guarda unas esquinas nuevas y la línea que sale de ellas. */
-  const conEsquinas = (esquinas: Coordenada[], pegado = ultimo.current.actual.pegado) => {
-    ultimo.current.onRecorrido({ esquinas, linea: lineaDelRecorrido(esquinas, pegado, ultimo.current.grafo), pegado })
+  /**
+   * Guarda unas esquinas nuevas y la línea que sale de ellas. Las calles, la
+   * salida y la entrada se quedan: con una esquina retocada, la Junta vuelve a
+   * sacar las calles si hace falta (lo dice el apartado de las calles).
+   */
+  const conEsquinas = (esquinas: Coordenada[], pegado = ultimo.current.actual.pegado, rectosPedidos = ultimo.current.actual.rectos ?? []) => {
+    // Un tramo recto que ya no existe (se quitó su esquina) no se guarda.
+    const rectos = rectosPedidos.filter((i) => i < esquinas.length - 1)
+    ultimo.current.onRecorrido({ ...ultimo.current.actual, esquinas, rectos, linea: lineaDelRecorrido(esquinas, pegado, ultimo.current.grafo, rectos), pegado })
+  }
+  /** El tramo que sale de esa esquina, recto o por las calles. */
+  const alternarRecto = (i: number) => {
+    const actuales = ultimo.current.actual.rectos ?? []
+    conEsquinas(ultimo.current.actual.esquinas, ultimo.current.actual.pegado, actuales.includes(i) ? actuales.filter((r) => r !== i) : [...actuales, i].sort((x, y) => x - y))
   }
 
   useEffect(() => {
@@ -139,18 +150,30 @@ export default function EditorDeRecorrido({ recorrido, paradas, onRecorrido, onP
     marcas.current.forEach((marca) => marca.remove())
     marcas.current = []
     if (modo === 'dibujar') {
+      const rectos = actual.rectos ?? []
       actual.esquinas.forEach((esquina, i) => {
         const el = document.createElement('div')
         const ultima = i === actual.esquinas.length - 1
+        const recto = rectos.includes(i)
+        // Cuadrada si el tramo que sale de ella va recto.
         Object.assign(el.style, {
-          width: ultima ? '14px' : '11px', height: ultima ? '14px' : '11px', borderRadius: '50%', cursor: 'grab',
+          width: ultima ? '14px' : '11px', height: ultima ? '14px' : '11px', borderRadius: recto ? '2px' : '50%', cursor: 'grab',
           background: i === 0 ? MARCA.principalClaro : ORO, border: '2px solid #070608',
         })
-        el.title = i === 0 ? 'Salida' : `Esquina ${i + 1}`
+        const nombre = i === 0 ? 'Salida' : `Esquina ${i + 1}`
+        el.title = ultima ? nombre : `${nombre} · ${recto ? 'el tramo siguiente va recto' : 'pulsa para que el tramo siguiente vaya recto'}`
         const marca = new maplibregl.Marker({ element: el, draggable: true }).setLngLat(esquina).addTo(m)
+        // Pulsarla sin arrastrar cambia el tramo que sale de ella: recto o por las calles.
+        let arrastrada = false
+        marca.on('dragstart', () => { arrastrada = true })
         marca.on('dragend', () => {
           const { lng, lat } = marca.getLngLat()
           conEsquinas(ultimo.current.actual.esquinas.map((q, j) => (j === i ? redondea([lng, lat]) : q)))
+        })
+        el.addEventListener('click', (evento) => {
+          evento.stopPropagation()
+          if (arrastrada) { arrastrada = false; return }
+          if (!ultima) alternarRecto(i)
         })
         marcas.current.push(marca)
       })
@@ -168,7 +191,7 @@ export default function EditorDeRecorrido({ recorrido, paradas, onRecorrido, onP
         marcas.current.push(new maplibregl.Marker({ element: el }).setLngLat(puntoEn(actual.linea, f)).addTo(m))
       })
     }
-  }, [listo, actual.linea, actual.esquinas, modo, parada, paradas])
+  }, [listo, actual.linea, actual.esquinas, actual.rectos, modo, parada, paradas])
 
   const situadas = paradas.filter((p) => typeof p.enRuta === 'number').length
   const hayLinea = actual.linea.length >= 2
@@ -182,7 +205,7 @@ export default function EditorDeRecorrido({ recorrido, paradas, onRecorrido, onP
 
       <Typography variant="body2" color="text.secondary">
         {modo === 'dibujar'
-          ? 'Pulsa en el mapa cada esquina del recorrido, en el orden en que anda la procesión: de la salida a la entrada. La línea va sola por las calles de una esquina a la siguiente. Arrastra una esquina para corregirla; con la rueda del ratón te acercas.'
+          ? 'Pulsa en el mapa cada esquina del recorrido, en el orden en que anda la procesión: de la salida a la entrada. La línea va sola por las calles de una esquina a la siguiente. Arrastra una esquina para corregirla; con la rueda del ratón te acercas. Si un tramo hace un zigzag (un cruce), pulsa la esquina de la que sale y irá recto: la esquina se vuelve cuadrada.'
           : 'Elige la parada y pulsa en su sitio del recorrido: se engancha a la línea. Las que no sitúes se reparten solas entre las demás.'}
       </Typography>
 

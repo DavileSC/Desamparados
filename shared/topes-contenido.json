@@ -11,6 +11,8 @@
   "lineasPorBloque": 20,
   "textoTarjeta": 400,
   "paradasPorItinerario": 60,
+  "callesPorRecorrido": 80,
+  "minutosDeParada": 180,
   "hitosPorCronologia": 30,
   "botonesPorBloque": 4,
   "preguntasPorBloque": 30,

@@ -1,0 +1,11 @@
+-- El itinerario real del Rosario vespertino (16-10-2026), en lugar del de
+-- partida, que era inventado. Sin horas: solo se sabe que sale al terminar la
+-- misa de las 19:00, y eso va escrito en la primera fila (un itinerario sin
+-- ninguna hora se lee como lista de calles). Se toca solo si sigue el de
+-- antes: si alguien lo cambió en el CMS, se queda el suyo. El historial no se
+-- toca: es lo que hubo. En otra instalación no casa nada y no hace nada.
+
+UPDATE `ContenidoPagina` SET `datos` = REPLACE(`datos`,
+  '"titulo":"Itinerario y horarios aproximados","paradas":[{"hora":"19:30","lugar":"Salida desde el Templo"},{"hora":"19:40","lugar":"C. Corregidor Antonio de Bobadilla"},{"hora":"19:50","lugar":"C. Corregidor Ruiz de Pereda"},{"hora":"20:00","lugar":"C. Corregidor Francisco de Molina"},{"hora":"20:10","lugar":"C. Pedro Zapata"},{"hora":"20:25","lugar":"C. Villalón"},{"hora":"20:40","lugar":"C. Juan Gris"},{"hora":"20:50","lugar":"C. de Alozaina"},{"hora":"21:00","lugar":"C. Periana"},{"hora":"21:10","lugar":"Plaza de Nuestra Señora del Carmen"},{"hora":"21:20","lugar":"C. Corregidor Paz y Guzmán"},{"hora":"21:30","lugar":"Regreso al Templo"}]',
+  '"titulo":"Itinerario","paradas":[{"hora":"","lugar":"Salida del Templo, al terminar la misa de las 19:00"},{"hora":"","lugar":"C. Antonio de Bobadilla"},{"hora":"","lugar":"Cruce de Ortega y Gasset"},{"hora":"","lugar":"C. Iznate"},{"hora":"","lugar":"C. Coronel Osuna"},{"hora":"","lugar":"C. Abdalajís"},{"hora":"","lugar":"C. Alozaina"},{"hora":"","lugar":"C. Ciudad de Andújar"},{"hora":"","lugar":"C. Río Duratón"},{"hora":"","lugar":"Plaza Río Trabancos"},{"hora":"","lugar":"C. Río Águeda"},{"hora":"","lugar":"C. Alozaina"},{"hora":"","lugar":"C. Ciudad de Andújar"},{"hora":"","lugar":"C. Coronel Osuna"},{"hora":"","lugar":"C. Mijas"},{"hora":"","lugar":"Cruce de Ortega y Gasset"},{"hora":"","lugar":"C. Corregidor Ruiz de Pereda"},{"hora":"","lugar":"C. Río Cabrera"},{"hora":"","lugar":"Plaza de Nuestra Señora del Carmen"},{"hora":"","lugar":"C. Río Boeza"},{"hora":"","lugar":"C. Corregidor Ruiz de Pereda"},{"hora":"","lugar":"C. Corregidor Paz y Guzmán"},{"hora":"","lugar":"Regreso al Templo"}]')
+WHERE `slug` = 'rosario';

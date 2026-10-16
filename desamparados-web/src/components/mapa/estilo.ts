@@ -80,10 +80,18 @@ export function estiloDelMapa(barrio: Barrio, templo: Feature<Polygon> | null = 
         id: 'templo', type: 'fill-extrusion', source: 'templo',
         paint: { 'fill-extrusion-color': MARCA.acentoRelieve, 'fill-extrusion-height': ['get', 'alto'], 'fill-extrusion-opacity': 0.95, 'fill-extrusion-vertical-gradient': true },
       },
+      // Lo que falta por andar: crema a trazos sobre un borde oscuro. Sin el
+      // borde, al 35 % y sobre la calzada gris apenas se veía (16-10-2026).
+      // Sigue a trazos para no confundirse con lo andado, en oro continuo.
+      {
+        id: 'ruta-entera-borde', type: 'line', source: 'rutaEntera',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': '#070608', 'line-width': 6, 'line-opacity': 0.85 },
+      },
       {
         id: 'ruta-entera', type: 'line', source: 'rutaEntera',
         layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': 'rgba(227, 216, 191, 0.35)', 'line-width': 2, 'line-dasharray': [1.5, 2] },
+        paint: { 'line-color': 'rgba(227, 216, 191, 0.85)', 'line-width': 2.5, 'line-dasharray': [1.5, 1.6] },
       },
       {
         id: 'ruta-brillo', type: 'line', source: 'rutaHecha',

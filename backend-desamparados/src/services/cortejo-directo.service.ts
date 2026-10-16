@@ -15,8 +15,12 @@ export interface PosicionEnviada { lng: number; lat: number; precision: number |
 
 type Punto = [number, number];
 
-/** El itinerario por el que va el cortejo: la página que lo enseña, sus paradas y la línea del mapa. */
-export interface RecorridoDelCortejo { ruta: string; paradas: unknown[]; linea: Punto[] }
+/**
+ * El itinerario por el que va el cortejo: la página que lo enseña, sus paradas,
+ * la línea del mapa y, si las tiene, sus calles (con ellas, la Junta marca a
+ * mano por calles y no por paradas).
+ */
+export interface RecorridoDelCortejo { ruta: string; paradas: unknown[]; linea: Punto[]; calles: unknown[] }
 
 interface CortejoPublico {
   enDirecto: boolean;
@@ -35,14 +39,14 @@ interface CortejoParaLaJunta extends CortejoPublico {
   enMarcha: boolean;
   precision: number | null;
   autorNombre: string | null;
-  /** Las paradas, para marcarlas a mano, y la línea, para avisar de «lejos del recorrido». */
+  /** Las paradas o las calles, para marcarlas a mano, y la línea, para avisar de «lejos del recorrido». */
   recorrido: Omit<RecorridoDelCortejo, 'ruta'> | null;
 }
 
 const ID = 1;
 
 /** El primer itinerario con mapa de un documento, esté donde esté (también dentro de otro bloque). */
-export function itinerarioConMapa(documento: unknown): { paradas: unknown[]; linea: Punto[] } | null {
+export function itinerarioConMapa(documento: unknown): Omit<RecorridoDelCortejo, 'ruta'> | null {
   if (!documento || typeof documento !== 'object') return null;
   if (Array.isArray(documento)) {
     for (const x of documento) {
@@ -52,9 +56,10 @@ export function itinerarioConMapa(documento: unknown): { paradas: unknown[]; lin
     return null;
   }
   const o = documento as Record<string, unknown>;
-  const linea = (o.recorrido as { linea?: unknown } | undefined)?.linea;
+  const recorrido = o.recorrido as { linea?: unknown; calles?: unknown } | undefined;
+  const linea = recorrido?.linea;
   if (o.tipo === 'itinerario' && Array.isArray(o.paradas) && Array.isArray(linea) && linea.length > 1) {
-    return { paradas: o.paradas, linea: linea as Punto[] };
+    return { paradas: o.paradas, linea: linea as Punto[], calles: Array.isArray(recorrido?.calles) ? recorrido.calles : [] };
   }
   return itinerarioConMapa(Object.values(o));
 }
@@ -119,7 +124,7 @@ export class CortejoDirectoService {
   /** Lo que ve la Junta en el CMS: además, si se quedó en marcha sin renovarse y quién la mandaba. */
   static async paraLaJunta(ahora = new Date()): Promise<CortejoParaLaJunta> {
     const [fila, r] = await Promise.all([leer(), recorrido()]);
-    const deLaRuta = { ruta: r?.ruta ?? null, recorrido: r ? { paradas: r.paradas, linea: r.linea } : null };
+    const deLaRuta = { ruta: r?.ruta ?? null, recorrido: r ? { paradas: r.paradas, linea: r.linea, calles: r.calles } : null };
     if (!fila) return { enDirecto: false, enMarcha: false, precision: null, autorNombre: null, ...deLaRuta };
     return {
       ...deLaRuta,

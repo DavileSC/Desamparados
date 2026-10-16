@@ -195,7 +195,27 @@ const hora = type('string').matching(/^(([01]\d|2[0-3]):[0-5]\d)?$/)
  * entre sus vecinas. La hora puede ir vacía mientras no se sepa: la web dice
  * «hora por confirmar».
  */
-const paradaSchema = type({ hora, lugar: texto(topes.lugar), 'enRuta?': '0 <= number <= 1' });
+const paradaSchema = type({
+  hora,
+  lugar: texto(topes.lugar),
+  'enRuta?': '0 <= number <= 1',
+  // Con el recorrido por calles, la parada es un sitio de interés: lo que pasa
+  // allí y los minutos que se para el trono (se descuentan al repartir las horas).
+  'nota?': texto(topes.lugar),
+  'minutos?': type('number.integer').atLeast(0).atMost(topes.minutosDeParada),
+});
+
+/**
+ * Un tramo del recorrido por una sola calle (o el paso de un cruce): empieza
+ * en `desde`, la fracción de la línea, y acaba donde empieza el siguiente. La
+ * hora escrita a mano manda sobre la que se reparte entre salida y entrada.
+ */
+const calleSchema = type({
+  nombre: texto(topes.lugar),
+  desde: '0 <= number <= 1',
+  'cruce?': 'boolean',
+  'hora?': hora,
+});
 
 /** Un punto del mapa: [longitud, latitud], como en GeoJSON. */
 const coordenada = type(['-180 <= number <= 180', '-90 <= number <= 90']);
@@ -212,6 +232,11 @@ const itinerarioSchema = type({
     esquinas: coordenada.array().atMostLength(topes.puntosPorTrazado),
     linea: coordenada.array().atMostLength(topes.puntosPorLinea),
     pegado: 'boolean',
+    // Los tramos que van rectos aunque se pegue a las calles (un cruce): el número de la esquina de la que salen.
+    'rectos?': type('number.integer >= 0').array().atMostLength(topes.puntosPorTrazado),
+    'calles?': calleSchema.array().atMostLength(topes.callesPorRecorrido),
+    'salida?': hora,
+    'entrada?': hora,
   },
 }).narrow((datos, ctx) => {
   // Una parada sin lugar es una hora suelta: no dice por dónde pasa la
@@ -222,6 +247,13 @@ const itinerarioSchema = type({
   if (datos.recorrido && datos.recorrido.linea.length === 1) {
     return ctx.reject({ path: ['recorrido', 'linea'], problem: 'necesita al menos dos puntos' });
   }
+  // Las calles van en el orden del camino: una que empezara antes que la
+  // anterior pondría al trono a andar hacia atrás.
+  const calles = datos.recorrido?.calles ?? [];
+  const enBlanco = calles.findIndex((calle) => calle.nombre.trim() === '');
+  if (enBlanco !== -1) return ctx.reject({ path: ['recorrido', 'calles', enBlanco, 'nombre'], problem: 'no puede quedar en blanco' });
+  const desordenada = calles.findIndex((calle, i) => i > 0 && calle.desde < calles[i - 1].desde);
+  if (desordenada !== -1) return ctx.reject({ path: ['recorrido', 'calles', desordenada, 'desde'], problem: 'tiene que ir después de la calle anterior' });
   return true;
 });
 

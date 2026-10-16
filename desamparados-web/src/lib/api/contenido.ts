@@ -21,6 +21,13 @@ export interface ParadaRecorrido {
   lugar: string
   /** Dónde cae en el recorrido del mapa, de 0 (salida) a 1 (entrada). Sin ella, se reparte entre sus vecinas. */
   enRuta?: number
+  /**
+   * Con el recorrido por calles, las paradas son los sitios de interés: lo que
+   * pasa allí («Saetas a la Virgen») y cuánto se para el trono, en minutos,
+   * que se descuenta del andar al calcular las horas.
+   */
+  nota?: string
+  minutos?: number
 }
 
 /** Un punto del mapa: [longitud, latitud], como en GeoJSON. */
@@ -30,7 +37,37 @@ export type Coordenada = [number, number]
  * El recorrido sobre el mapa: las esquinas que se pulsaron en el CMS y la línea
  * que sale de ellas (pegada a las calles si `pegado`).
  */
-export interface RecorridoEnMapa { esquinas: Coordenada[]; linea: Coordenada[]; pegado: boolean }
+export interface RecorridoEnMapa {
+  esquinas: Coordenada[]
+  linea: Coordenada[]
+  pegado: boolean
+  /**
+   * Los tramos que van rectos aunque la línea vaya pegada a las calles: el
+   * número de la esquina de la que salen. Para un cruce, que por el mapa
+   * haría un zigzag por los pasos de peatones (16-10-2026).
+   */
+  rectos?: number[]
+  /**
+   * Las calles por las que va el trono, en orden (16-10-2026): con ellas, la
+   * lista de al lado del mapa cambia cuando el trono entra en otra calle y las
+   * paradas pasan a sitios de interés. Sin ellas, todo como antes.
+   */
+  calles?: CalleDelRecorrido[]
+  /** HH:mm de salida y de entrada: las horas de cada calle se reparten entre las dos. Vacías, sin horas. */
+  salida?: string
+  entrada?: string
+}
+
+/** Un tramo del recorrido por una sola calle, o el paso de un cruce. */
+export interface CalleDelRecorrido {
+  nombre: string
+  /** Dónde empieza en la línea, de 0 (salida) a 1 (entrada); acaba donde empieza la siguiente. */
+  desde: number
+  /** Se cruza, no se recorre («Cruce de Av. de José Ortega y Gasset»). */
+  cruce?: boolean
+  /** HH:mm escrita a mano: manda sobre la calculada. */
+  hora?: string
+}
 
 /**
  * Un medio de la galería. `url` es una ruta nuestra si es foto, y la dirección

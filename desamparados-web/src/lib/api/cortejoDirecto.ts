@@ -1,5 +1,5 @@
 import { llamarApi } from './cliente'
-import type { BloqueItinerario } from './contenido'
+import type { BloqueItinerario, CalleDelRecorrido } from './contenido'
 
 /** Lo que ve la web: la posición solo si está en la calle y es reciente. */
 interface CortejoPublico {
@@ -16,8 +16,8 @@ export interface CortejoParaLaJunta extends CortejoPublico {
   enMarcha: boolean
   precision: number | null
   autorNombre: string | null
-  /** Las paradas y la línea de ese itinerario. */
-  recorrido: { paradas: BloqueItinerario['paradas']; linea: [number, number][] } | null
+  /** Las paradas, la línea y, si las tiene, las calles de ese itinerario. */
+  recorrido: { paradas: BloqueItinerario['paradas']; linea: [number, number][]; calles?: CalleDelRecorrido[] } | null
 }
 
 export interface PosicionCortejo { lng: number; lat: number; precision: number | null }

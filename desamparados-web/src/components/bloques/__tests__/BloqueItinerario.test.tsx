@@ -26,3 +26,23 @@ describe('BloqueItinerario, índice de devocionario', () => {
     ])
   })
 })
+
+// El Rosario: solo se sabe que sale al acabar la misa, sin hora de cada calle.
+describe('BloqueItinerario sin ninguna hora', () => {
+  const sinHoras = (disposicion: string): Datos => ({
+    ...bloque(disposicion),
+    paradas: bloque(disposicion).paradas.map((parada) => ({ ...parada, hora: '' })),
+  })
+
+  it.each(['indice', 'linea', 'tarjetas'])('en «%s» va solo con las calles, sin «Por confirmar»', (disposicion) => {
+    renderWithProviders(<BloqueItinerario bloque={sinHoras(disposicion)} />)
+    expect(screen.queryByText('Por confirmar')).not.toBeInTheDocument()
+    expect(screen.getByText('C. Villalón')).toBeInTheDocument()
+  })
+
+  it('en tabla no lleva la columna de la hora', () => {
+    renderWithProviders(<BloqueItinerario bloque={sinHoras('tabla')} />)
+    expect(screen.queryByRole('columnheader', { name: 'Hora' })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('cell')).toHaveLength(3)
+  })
+})

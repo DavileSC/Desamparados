@@ -98,5 +98,8 @@ test('el recorrido del cortejo es el primer itinerario con mapa, también dentro
   assert.equal(itinerarioConMapa({ bloques: [sinMapa] }), null);
   // Una línea de un solo punto no es un mapa.
   assert.equal(itinerarioConMapa({ bloques: [{ ...conMapa, recorrido: { linea: [linea[0]] } }] }), null);
-  assert.deepEqual(itinerarioConMapa({ bloques: [sinMapa, { tipo: 'combinado', hijos: [conMapa] }] }), { paradas: conMapa.paradas, linea });
+  assert.deepEqual(itinerarioConMapa({ bloques: [sinMapa, { tipo: 'combinado', hijos: [conMapa] }] }), { paradas: conMapa.paradas, linea, calles: [] });
+  // Con calles, van también: la Junta marca a mano por calles.
+  const calles = [{ nombre: 'C. Mayor', desde: 0 }, { nombre: 'Cruce de la avenida', desde: 0.5, cruce: true }];
+  assert.deepEqual(itinerarioConMapa({ bloques: [{ ...conMapa, recorrido: { linea, calles } }] })?.calles, calles);
 });

@@ -138,8 +138,13 @@ const largo = (camino: Coordenada[]) => camino.reduce((s, p, i) => (i === 0 ? 0 
  * La línea del recorrido a partir de sus esquinas. Pegada a las calles, cada
  * tramo va de una esquina a la siguiente por el camino más corto; si una
  * esquina cae lejos de toda calle, o no hay camino, ese tramo va recto.
+ *
+ * `rectos`: los tramos que se piden rectos (por la esquina de la que salen),
+ * como un cruce que por el mapa haría un zigzag por los pasos de peatones.
+ * Van de calle a calle, entre los mismos puntos en que se engancharían sus
+ * vecinos, para que la línea no se corte.
  */
-export function lineaDelRecorrido(esquinas: Coordenada[], pegado: boolean, grafo: Grafo | null): Coordenada[] {
+export function lineaDelRecorrido(esquinas: Coordenada[], pegado: boolean, grafo: Grafo | null, rectos: readonly number[] = []): Coordenada[] {
   // Con una sola esquina todavía no hay línea (y el servidor no guarda líneas de un punto).
   if (esquinas.length < 2) return []
   if (!pegado || !grafo || grafo.nodos.length === 0) return [...esquinas]
@@ -153,7 +158,12 @@ export function lineaDelRecorrido(esquinas: Coordenada[], pegado: boolean, grafo
   }
   for (let i = 1; i < esquinas.length; i++) {
     const a = cercanos[i - 1], b = cercanos[i]
-    let camino = a.metros <= MAXIMO_PARA_PEGAR && b.metros <= MAXIMO_PARA_PEGAR ? caminoMasCorto(grafo, a.nodo, b.nodo) : null
+    const pegables = a.metros <= MAXIMO_PARA_PEGAR && b.metros <= MAXIMO_PARA_PEGAR
+    if (rectos.includes(i - 1)) {
+      anade(pegables ? [grafo.nodos[a.nodo], grafo.nodos[b.nodo]] : [esquinas[i - 1], esquinas[i]])
+      continue
+    }
+    let camino = pegables ? caminoMasCorto(grafo, a.nodo, b.nodo) : null
     if (camino) {
       const recto = metros(grafo.nodos[a.nodo], grafo.nodos[b.nodo])
       if (recto <= SALTO_CORTO && largo(camino) > recto * RODEO) camino = [grafo.nodos[a.nodo], grafo.nodos[b.nodo]]

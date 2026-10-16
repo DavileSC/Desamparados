@@ -251,6 +251,28 @@ describe('bloque de itinerario', () => {
     assert.ok(!falla('itinerario', conMapa));
   });
 
+  test('acepta el recorrido por calles, con salida, entrada y sitios de interés con su parada', () => {
+    const porCalles = {
+      ...doc([{ hora: '', lugar: 'Peña', enRuta: 0.7, nota: 'Saetas a la Virgen', minutos: 10 }]),
+      recorrido: {
+        esquinas: [], linea: [[-4.4487, 36.7122], [-4.4492, 36.7136]], pegado: true,
+        salida: '18:00', entrada: '00:00',
+        calles: [{ nombre: 'C. Mayor', desde: 0 }, { nombre: 'Cruce de la avenida', desde: 0.4, cruce: true }, { nombre: 'C. Real', desde: 0.5, hora: '21:00' }],
+      },
+    };
+    assert.ok(!falla('itinerario', porCalles));
+  });
+
+  test('las calles van en orden, con nombre y sin desbordar; la parada no dura un día', () => {
+    const conCalles = (calles: unknown[]) => ({ ...doc([PARADA]), recorrido: { esquinas: [], linea: [[-4.44, 36.71], [-4.45, 36.72]], pegado: false, calles } });
+    assert.ok(falla('itinerario', conCalles([{ nombre: 'C. Real', desde: 0.5 }, { nombre: 'C. Mayor', desde: 0.2 }])), 'el trono no anda hacia atrás');
+    assert.ok(falla('itinerario', conCalles([{ nombre: '  ', desde: 0 }])));
+    assert.ok(falla('itinerario', conCalles([{ nombre: 'C. Mayor', desde: 0, hora: 'luego' }])));
+    assert.ok(falla('itinerario', conCalles(Array.from({ length: topes.callesPorRecorrido + 1 }, (_, i) => ({ nombre: `C. ${i}`, desde: 0 })))));
+    assert.ok(falla('itinerario', doc([{ ...PARADA, minutos: topes.minutosDeParada + 1 }])));
+    assert.ok(falla('itinerario', doc([{ ...PARADA, minutos: 2.5 }])));
+  });
+
   test('una línea de un punto, una coordenada imposible o una parada fuera del recorrido no valen', () => {
     const base = doc([PARADA]);
     const recorrido = (linea: unknown[]) => ({ ...base, recorrido: { esquinas: [], linea, pegado: false } });

@@ -1,4 +1,4 @@
-import type { Coordenada, ParadaRecorrido } from '../../lib/api/contenido'
+import type { BloqueItinerario, Coordenada, ParadaRecorrido } from '../../lib/api/contenido'
 
 /**
  * Las cuentas del recorrido sobre el mapa. Las comparten la web, que dibuja la
@@ -126,4 +126,76 @@ export function paradaAlcanzada(posiciones: number[], fraccion: number): number 
   let ultima = -1
   posiciones.forEach((p, i) => { if (p <= fraccion + 1e-6) ultima = i })
   return ultima
+}
+
+/** 'HH:mm' → minutos desde medianoche; `null` si está vacía o no lo parece. */
+export function aMinutos(hora: string | undefined): number | null {
+  const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(hora ?? '')
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null
+}
+
+/** Minutos desde medianoche → 'HH:mm', redondeado a 5 minutos (las horas son aproximadas) y pasada la medianoche, del día siguiente. */
+export function aHora(minutos: number): string {
+  const t = ((Math.round(minutos / 5) * 5) % 1440 + 1440) % 1440
+  return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`
+}
+
+/** Una fila de la lista de al lado del mapa: una calle (o un cruce) o, sin calles, una parada. */
+export interface FilaDelRecorrido { hora: string; lugar: string; cruce: boolean }
+
+/** Un sitio de interés: una parada, cuando el recorrido va por calles. */
+export interface SitioDelRecorrido { lugar: string; nota: string; hora: string; posicion: number }
+
+export interface LecturaDelRecorrido {
+  /** Lo que lleva la lista: las calles si las hay; si no, las paradas, como siempre. */
+  filas: FilaDelRecorrido[]
+  /** Dónde empieza cada fila en la línea, de 0 a 1 y sin decrecer. */
+  posiciones: number[]
+  /** Con calles, las paradas pasan aquí, numeradas en el mapa; sin calles, vacía. */
+  sitios: SitioDelRecorrido[]
+  porCalles: boolean
+}
+
+/**
+ * Cómo se lee un itinerario con mapa (16-10-2026). Con calles, la lista son las
+ * calles y la calle cambia cuando el trono entra en otra; las paradas quedan
+ * como sitios de interés. Las horas que no se escribieron a mano se reparten
+ * entre la salida y la entrada a ritmo constante, descontando los minutos que
+ * el trono se para en cada sitio (las saetas de una peña), y se redondean a 5
+ * minutos. Sin salida o sin entrada, solo las escritas a mano.
+ */
+export function lecturaDelRecorrido(bloque: Pick<BloqueItinerario, 'paradas' | 'recorrido'>): LecturaDelRecorrido {
+  const { paradas, recorrido } = bloque
+  const calles = recorrido?.calles ?? []
+  if (calles.length === 0) {
+    return {
+      filas: paradas.map((p) => ({ hora: p.hora, lugar: p.lugar, cruce: false })),
+      posiciones: posicionesEnRuta(paradas),
+      sitios: [],
+      porCalles: false,
+    }
+  }
+
+  const enRuta = posicionesEnRuta(paradas)
+  const salida = aMinutos(recorrido?.salida)
+  const entrada = aMinutos(recorrido?.entrada)
+  // La entrada puede ser pasada la medianoche: de 18:00 a 00:00 son seis horas.
+  const total = salida === null || entrada === null ? null : ((entrada - salida + 1440) % 1440) || 1440
+  const parado = paradas.reduce((suma, p) => suma + (p.minutos ?? 0), 0)
+  const andando = total === null ? 0 : Math.max(0, total - parado)
+  /** La hora al llegar a esa fracción: lo andado más las paradas que quedan detrás. */
+  const calculada = (f: number) => {
+    if (salida === null || total === null) return ''
+    const detras = paradas.reduce((suma, p, i) => suma + (enRuta[i] < f - 1e-9 ? (p.minutos ?? 0) : 0), 0)
+    return aHora(salida + f * andando + detras)
+  }
+
+  const posiciones: number[] = []
+  calles.forEach((c, i) => posiciones.push(Math.max(posiciones[i - 1] ?? 0, Math.min(1, Math.max(0, c.desde)))))
+  return {
+    filas: calles.map((c, i) => ({ hora: c.hora || calculada(posiciones[i]), lugar: c.nombre, cruce: c.cruce === true })),
+    posiciones,
+    sitios: paradas.map((p, i) => ({ lugar: p.lugar, nota: p.nota ?? '', hora: p.hora || calculada(enRuta[i]), posicion: enRuta[i] })),
+    porCalles: true,
+  }
 }

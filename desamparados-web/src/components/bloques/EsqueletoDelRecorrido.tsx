@@ -25,7 +25,8 @@ export const ALTO_MINIMO_LISTA = { xs: 170, md: ALTO_MINIMO.md }
  */
 export default function EsqueletoDelRecorrido({ bloque }: { bloque: BloqueItinerario }) {
   // No más filas de las que caben en la lista: sobran y no se verían.
-  const filas = Math.min(bloque.paradas.length, 9)
+  // Con calles, la lista son las calles; si no, las paradas.
+  const filas = Math.min(bloque.recorrido?.calles?.length || bloque.paradas.length, 14)
   return (
     <Box aria-busy="true" aria-label="Cargando el mapa del recorrido" sx={{ maxWidth: anchoMaximo(bloque, '1200px'), mx: 'auto' }}>
       <Hueso sx={{ height: 20, width: { xs: '85%', md: 420 }, mb: 2.5 }} />
@@ -40,8 +41,8 @@ export default function EsqueletoDelRecorrido({ bloque }: { bloque: BloqueItiner
         }} />
         <Box sx={{ height: ALTO_LISTA, minHeight: ALTO_MINIMO_LISTA, overflow: 'hidden' }}>
           {Array.from({ length: filas }, (_, i) => (
-            <Box key={i} sx={{ py: 2.25, borderBottom: '1px solid rgba(204, 196, 201, 0.14)' }}>
-              <Hueso sx={{ height: 22, width: `${55 + ((i * 17) % 35)}%` }} />
+            <Box key={i} sx={{ py: 1.5, borderBottom: '1px solid rgba(204, 196, 201, 0.14)' }}>
+              <Hueso sx={{ height: 21, width: `${55 + ((i * 17) % 35)}%` }} />
             </Box>
           ))}
         </Box>
