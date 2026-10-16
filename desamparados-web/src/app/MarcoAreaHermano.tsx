@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Outlet, Link, useLocation } from 'react-router-dom'
+import { Outlet, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Box,
   AppBar,
@@ -16,7 +16,7 @@ import {
 } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import LogoutIcon from '@mui/icons-material/Logout'
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import KeyOutlinedIcon from '@mui/icons-material/KeyOutlined'
 import EscudoDelGrupo from '../components/EscudoDelGrupo'
 import TransicionDePagina from '../components/TransicionDePagina'
 import SaltarAlContenido from '../components/SaltarAlContenido'
@@ -27,6 +27,8 @@ import { site } from '../config/site'
 import { entradasDelArea } from './areaHermanoNavegacion'
 import { useModulos } from '../hooks/useModulos'
 import VentanaSesionCaducada from './VentanaSesionCaducada'
+import SelectorDeFicha from '../features/areaHermano/perfil/SelectorDeFicha'
+import { useFichasDeLaCuenta } from '../features/areaHermano/perfil/fichasDeLaCuenta'
 
 const ANCHO_CAJON = 260
 
@@ -41,6 +43,26 @@ export default function MarcoAreaHermano() {
   const entradas = entradasDelArea.filter((e) => activo(e.modulo))
 
   const alternarCajon = () => setCajonAbierto(!cajonAbierto)
+
+  // La ficha que se ve en «Mi perfil» va en su dirección (?ficha=). Fuera de
+  // él, el menú recuerda la última elegida, para que al volver se abra la misma.
+  const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const { data: fichas = [] } = useFichasDeLaCuenta()
+  const enPerfil = location.pathname === '/area-hermano/perfil'
+  const pedida = Number(params.get('ficha'))
+  const deLaDireccion = fichas.some((f) => f.id === pedida) ? pedida : null
+  const [ultima, setUltima] = useState<number | null>(null)
+  if (enPerfil && deLaDireccion !== ultima) setUltima(deLaDireccion)
+  const elegida = enPerfil ? deLaDireccion : ultima
+  const elegir = (id: number) => {
+    setCajonAbierto(false)
+    // En «Mi perfil» se queda en la misma pestaña; desde otra pantalla, va a él.
+    const siguientes = new URLSearchParams(enPerfil ? params : undefined)
+    siguientes.set('ficha', String(id))
+    navigate(`/area-hermano/perfil?${siguientes.toString()}`)
+  }
+  const hrefDe = (href: string) => (href === '/area-hermano/perfil' && ultima ? `${href}?ficha=${ultima}` : href)
 
   const esActiva = (href: string) =>
     location.pathname === href || location.pathname.startsWith(`${href}/`)
@@ -79,7 +101,7 @@ export default function MarcoAreaHermano() {
             <ListItem key={item.label} disablePadding>
               <ListItemButton
                 component={Link}
-                to={item.href}
+                to={hrefDe(item.href)}
                 selected={activa}
                 onClick={() => setCajonAbierto(false)}
                 sx={{
@@ -113,21 +135,29 @@ export default function MarcoAreaHermano() {
         })}
       </List>
       <Box sx={{ position: 'absolute', bottom: 0, width: '100%', p: 2, display: 'grid', gap: 0.5 }}>
-        {/* El área es parte de la web: siempre se puede volver a ella. */}
+        {fichas.length > 0 && (
+          <Box sx={{ pt: 2, pb: 1.5, mb: 0.5, borderTop: '1px solid rgba(204, 196, 201, 0.2)' }}>
+            <SelectorDeFicha variante="cajon" fichas={fichas} elegida={elegida} onElegir={elegir} />
+          </Box>
+        )}
+        {/* Lo de la cuenta, junto a «Cerrar sesión» (16-10-2026): ocupa el sitio
+            de «Volver a la web», que ya lo hace el escudo de arriba. */}
         <Button
           fullWidth
           component={Link}
-          to="/"
-          startIcon={<ArrowBackIcon />}
+          to="/area-hermano/cuenta"
+          startIcon={<KeyOutlinedIcon />}
           onClick={() => setCajonAbierto(false)}
+          aria-current={esActiva('/area-hermano/cuenta') ? 'page' : undefined}
           sx={{
             justifyContent: 'flex-start',
-            color: 'text.secondary',
-            textTransform: 'none', letterSpacing: 0, fontSize: 15, fontWeight: 500,
+            color: esActiva('/area-hermano/cuenta') ? 'text.primary' : 'text.secondary',
+            backgroundColor: esActiva('/area-hermano/cuenta') ? 'rgba(255,255,255,0.08)' : 'transparent',
+            textTransform: 'none', letterSpacing: 0, fontSize: 15, fontWeight: esActiva('/area-hermano/cuenta') ? 600 : 500,
             '&:hover': { color: 'text.primary', backgroundColor: 'rgba(255,255,255,0.05)' },
           }}
         >
-          Volver a la web
+          Cuenta y contraseña
         </Button>
         <Button
           fullWidth
@@ -167,9 +197,14 @@ export default function MarcoAreaHermano() {
             aria-label={cajonAbierto ? 'Cerrar el menú' : 'Abrir el menú'} aria-expanded={cajonAbierto} aria-controls="menu-del-area">
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" sx={{ fontFamily: designTokens.fonts.heading }}>
-            Área de hermanos
-          </Typography>
+          {/* En el móvil el menú no se ve: la ficha elegida ocupa el sitio del título. */}
+          {fichas.length > 0
+            ? <Box sx={{ minWidth: 0, display: 'flex' }}><SelectorDeFicha variante="barra" fichas={fichas} elegida={elegida} onElegir={elegir} /></Box>
+            : (
+              <Typography variant="h6" sx={{ fontFamily: designTokens.fonts.heading }}>
+                Área de hermanos
+              </Typography>
+            )}
         </Toolbar>
       </AppBar>
 

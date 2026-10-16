@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type FormEvent, type ReactNode, type RefObject } from 'react'
+import { createContext, useContext, useEffect, useId, useRef, type FormEvent, type ReactNode, type RefObject } from 'react'
 import { Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/material'
 import { visuallyHidden } from '@mui/utils'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -6,6 +6,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import TarjetaCristal from '../../../components/TarjetaCristal'
 import Boton from '../../../components/Boton'
 import { MARCA, alfa } from '../../../theme/marca'
+import { SERIFA } from '../procesion/papeleta-estilo'
 
 interface Props {
   titulo: string
@@ -28,6 +29,17 @@ interface Props {
   /** El formulario, para que quien valida pueda llevar el foco al campo que falla. */
   refFormulario?: RefObject<HTMLFormElement | null>
 }
+
+/**
+ * Cómo se pinta un apartado. «tarjeta», la de siempre (el primer acceso).
+ * «perfil», la de «Mi perfil» bajo la credencial (forma B, 16-10-2026): la
+ * misma tarjeta, sin líneas dentro, con el título en serifa como el nombre de
+ * la credencial, lo de Secretaría debajo y «Editar» con su palabra a su
+ * altura. Los datos, en una rejilla con aire en lugar de filetes.
+ */
+export type FormaDeApartado = 'tarjeta' | 'perfil'
+const Forma = createContext<FormaDeApartado>('tarjeta')
+export const FormaDeApartados = Forma.Provider
 
 /** Lo primero que se puede escribir o elegir; el `input` oculto de un desplegable de MUI no cuenta. */
 const PRIMER_CAMPO = 'input:not([type="hidden"]):not([disabled]):not([aria-hidden="true"]):not([tabindex="-1"]), textarea:not([disabled]), [role="combobox"]'
@@ -55,23 +67,48 @@ export default function Apartado({ titulo, vista, formulario, editando, onEditar
     else botonEditar.current?.focus()
   }, [editando, formularioRef])
 
+  const perfil = useContext(Forma) === 'perfil'
+  const lapiz = !editando && formulario && onEditar && (perfil ? (
+    // En «Mi perfil», con su palabra también en el móvil: el lápiz solo no se entendía (16-10-2026).
+    <Button ref={botonEditar} variant="outlined" startIcon={<EditOutlinedIcon />} onClick={onEditar} aria-label={`Editar ${titulo.toLowerCase()}`} sx={{
+      color: 'text.primary', borderColor: 'rgba(204, 196, 201, 0.32)', textTransform: 'none', letterSpacing: 0, fontSize: 14.5, fontWeight: 600,
+      minHeight: 40, px: 2, flexShrink: 0, '& .MuiButton-startIcon': { color: 'primary.light' },
+      '&:hover': { borderColor: 'rgba(204, 196, 201, 0.6)', backgroundColor: 'rgba(255,255,255,0.04)' },
+    }}>
+      Editar
+    </Button>
+  ) : (
+    // En el móvil, solo el lápiz: con la palabra, títulos como «Datos
+    // personales» se partían en dos líneas.
+    <Button ref={botonEditar} size="small" startIcon={<EditOutlinedIcon />} onClick={onEditar} aria-label={`Editar ${titulo.toLowerCase()}`} sx={{
+      color: 'primary.light', fontWeight: 600, minHeight: 40, flexShrink: 0,
+      minWidth: { xs: 40, sm: 64 }, '& .MuiButton-startIcon': { mx: { xs: 0, sm: undefined } },
+    }}>
+      <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Editar</Box>
+    </Button>
+  ))
+  const conCandado = candado && (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, fontSize: 13, color: 'text.secondary', '& svg': { fontSize: 16 } }}>
+      <LockOutlinedIcon aria-hidden="true" />{candado}
+    </Box>
+  )
+
   return (
-    <TarjetaCristal component="section" aria-labelledby={idTitulo} sx={{ p: { xs: 2.5, md: 3 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <TarjetaCristal component="section" aria-labelledby={idTitulo} sx={{
+      display: 'flex', flexDirection: 'column', gap: 2,
+      // En «Mi perfil», la rejilla elige columnas por el ancho de la tarjeta (`@container`).
+      ...(perfil ? { p: { xs: 2.25, sm: 3 }, pt: { xs: 2, sm: 2.5 }, containerType: 'inline-size' } : { p: { xs: 2.5, md: 3 } }),
+    }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
-        <Box>
-          <Typography id={idTitulo} component="h2" sx={tituloOculto ? visuallyHidden : { fontSize: 20, fontWeight: 600 }}>{titulo}</Typography>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography id={idTitulo} component="h2" sx={tituloOculto ? visuallyHidden : perfil
+            ? { fontFamily: SERIFA, fontWeight: 400, fontSize: { xs: 20, sm: 22 }, lineHeight: 1.2 }
+            : { fontSize: 20, fontWeight: 600 }}>{titulo}</Typography>
           {editando && <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.25 }}>Editando</Typography>}
+          {/* En «Mi perfil», lo de Secretaría va bajo el título: abajo, solo, parecía un pie suelto. */}
+          {perfil && !editando && conCandado && <Box sx={{ mt: 0.5 }}>{conCandado}</Box>}
         </Box>
-        {!editando && formulario && onEditar && (
-          // En el móvil, solo el lápiz: con la palabra, títulos como «Datos
-          // personales» se partían en dos líneas.
-          <Button ref={botonEditar} size="small" startIcon={<EditOutlinedIcon />} onClick={onEditar} aria-label={`Editar ${titulo.toLowerCase()}`} sx={{
-            color: 'primary.light', fontWeight: 600, minHeight: 40, flexShrink: 0,
-            minWidth: { xs: 40, sm: 64 }, '& .MuiButton-startIcon': { mx: { xs: 0, sm: undefined } },
-          }}>
-            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Editar</Box>
-          </Button>
-        )}
+        {lapiz}
       </Box>
 
       {editando && formulario ? (
@@ -93,10 +130,8 @@ export default function Apartado({ titulo, vista, formulario, editando, onEditar
         </>
       )}
 
-      {candado && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pt: 1.75, borderTop: 1, borderColor: 'divider', fontSize: 13, color: 'text.secondary', '& svg': { fontSize: 16 } }}>
-          <LockOutlinedIcon aria-hidden="true" />{candado}
-        </Box>
+      {!perfil && conCandado && (
+        <Box sx={{ pt: 1.75, borderTop: 1, borderColor: 'divider' }}>{conCandado}</Box>
       )}
     </TarjetaCristal>
   )
@@ -124,11 +159,20 @@ export function Dato({ etiqueta, valor, completo = false }: { etiqueta: string; 
  * rellena el hueco que deja un dato de dos columnas al saltar de fila.
  */
 export function Rejilla({ children, lista = false }: { children: ReactNode; lista?: boolean }) {
+  // En «Mi perfil», columnas contadas por el ancho de la tarjeta: dos en el
+  // móvil, cuatro en el portátil y nunca cinco (la última fila quedaba coja).
+  const perfil = useContext(Forma) === 'perfil' && lista
   return (
     <Box component={lista ? 'dl' : 'div'} sx={{
       m: 0, display: 'grid', containerType: 'inline-size', gridAutoFlow: 'row dense',
-      gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${lista ? 180 : 230}px), 1fr))`,
-      gap: lista ? '16px 22px' : '16px 18px',
+      ...(perfil ? {
+        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '18px 16px',
+        '@container (min-width: 600px)': { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '20px 32px' },
+        '@container (min-width: 820px)': { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' },
+      } : {
+        gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${lista ? 180 : 230}px), 1fr))`,
+        gap: lista ? '16px 22px' : '16px 18px',
+      }),
     }}>
       {children}
     </Box>

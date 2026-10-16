@@ -155,7 +155,7 @@ export function PreguntaDeAvisos() {
           </Typography>
         )}
         <Typography sx={{ fontSize: 13.5, color: 'text.secondary' }}>
-          Puedes cambiarlo cuando quieras en «Cuenta».
+          Puedes cambiarlo cuando quieras en «Cuenta y contraseña», en el menú.
         </Typography>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2.5 }}>

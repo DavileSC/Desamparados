@@ -112,6 +112,7 @@ const RevisarFichaPage = lazy(() => import('../features/areaHermano/primerAcceso
 
 // Brother area pages
 const PerfilPage = lazy(() => import('../features/areaHermano/perfil/PerfilPage'))
+const CuentaPage = lazy(() => import('../features/areaHermano/perfil/CuentaPage'))
 const FamiliaPage = lazy(() => import('../features/areaHermano/familia/FamiliaPage'))
 const AvisosPage = lazy(() => import('../features/areaHermano/avisos/AvisosPage'))
 const AvisoPage = lazy(() => import('../features/areaHermano/avisos/AvisoPage'))
@@ -264,6 +265,7 @@ const router = createBrowserRouter([
           { path: 'perfil', element: pagina(PerfilPage, 'nucleo') },
           // La edición se hace ya en el propio perfil, apartado a apartado.
           { path: 'perfil/editar', element: <Navigate to="/area-hermano/perfil" replace /> },
+          { path: 'cuenta', element: pagina(CuentaPage, 'nucleo') },
           { path: 'familia', element: pagina(FamiliaPage, 'nucleo') },
           { path: 'procesion', element: pagina(ProcesionPage, 'procesion') },
           // La papeleta se pide y se consulta ya en la propia página de Procesión.

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Alert, Box, Chip, CircularProgress, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
+import { useQueryClient } from '@tanstack/react-query'
 import ContenedorDePagina from '../../../components/ContenedorDePagina'
 import SeccionAnimada from '../../../components/SeccionAnimada'
 import TarjetaCristal from '../../../components/TarjetaCristal'
@@ -12,6 +13,7 @@ import DialogoAnadirFicha from './DialogoAnadirFicha'
 import DialogoEmancipar from './DialogoEmancipar'
 import AvisoSuave from '../../../components/AvisoSuave'
 import { site } from '../../../config/site'
+import { CLAVE_FICHAS } from '../perfil/fichasDeLaCuenta'
 import { laCorporacion } from '../../../domain/articulos'
 
 const nombreParentesco = (valor: string | null) =>
@@ -54,9 +56,12 @@ export default function FamiliaPage() {
   const propia = fichaPropia(fichas)
   const aCargo = fichasACargo(fichas)
 
+  const queryClient = useQueryClient()
   const tras = async (mensaje: string) => {
     setAviso(mensaje)
     setError(null)
+    // El selector de ficha del menú tiene que enterarse de quién entra o sale de la cuenta.
+    void queryClient.invalidateQueries({ queryKey: CLAVE_FICHAS })
     await cargar()
   }
 

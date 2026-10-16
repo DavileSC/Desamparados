@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useLocation } from 'react-router-dom'
 import { renderWithProviders } from '../../../../test/test-utils'
@@ -60,6 +60,16 @@ describe('PerfilPage', () => {
     renderWithProviders(<PerfilPage />, { routerDeDatos: true })
 
     expect(await screen.findByText('Ana Pérez Ruiz')).toBeInTheDocument()
+    // La credencial: lo de Secretaría de un vistazo.
+    expect(screen.getByText('Activo')).toBeInTheDocument()
+    expect(screen.getByText('Alta el 1 de marzo de 2020')).toBeInTheDocument()
+    expect(screen.getByText('Jura en 2001')).toBeInTheDocument()
+    expect(screen.getByText('Hermano n.º')).toBeInTheDocument()
+    expect(screen.getByText('42')).toBeInTheDocument()
+    // La cuenta ya no es una pestaña: tiene su pantalla en el menú.
+    expect(screen.queryByRole('tab', { name: 'Cuenta y contraseña' })).not.toBeInTheDocument()
+    // Apuntar a un menor se hace en Mi familia, que está en el menú.
+    expect(screen.queryByRole('link', { name: 'Apuntar a un menor' })).not.toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Datos personales' })).toHaveAttribute('aria-selected', 'true')
     for (const titulo of ['Datos personales', 'Contacto y domicilio', 'Vida de hermano', 'Cuota y pago']) {
       await user.click(screen.getByRole('tab', { name: titulo }))
@@ -95,20 +105,20 @@ describe('PerfilPage', () => {
 
   // El servidor ordena por fecha de nacimiento descendente: la primera ficha es
   // la del hijo más pequeño, no la del tutor que ha iniciado sesión.
-  it('abre la ficha del titular aunque no sea la primera, y deja pasar a la del sobrino', async () => {
-    const user = userEvent.setup()
-    responder([
+  // La ficha se elige en el menú del área (MarcoAreaHermano); aquí llega en ?ficha=.
+  it('abre la ficha del titular aunque no sea la primera, y con ?ficha= la del sobrino', async () => {
+    const fichas = [
       ficha(2, 'Bruno', { esTitular: false, parentesco: 'SOBRINO', fechaNacimiento: '2014-06-01T00:00:00.000Z', numeroHermano: 118 }),
       ficha(1, 'Ana'),
-    ])
-    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
-
+    ]
+    responder(fichas)
+    const { unmount } = renderWithProviders(<PerfilPage />, { routerDeDatos: true })
     expect(await screen.findByText('Ana Pérez Ruiz')).toBeInTheDocument()
-    const selector = screen.getByRole('combobox', { name: /ficha que estás viendo/i })
-    expect(selector).toHaveTextContent(/ana/i)
+    // El selector ya no está en la pantalla: está en el menú.
+    expect(screen.queryByRole('combobox', { name: /ficha que estás viendo/i })).not.toBeInTheDocument()
+    unmount()
 
-    await user.click(selector)
-    await user.click(within(screen.getByRole('listbox')).getByRole('option', { name: /bruno.*sobrino/i }))
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true, ruta: '/area-hermano/perfil?ficha=2' })
     expect(await screen.findByText('Bruno Pérez Ruiz')).toBeInTheDocument()
     // Un sobrino no es «hijo»: su ficha dice qué es para quien la lleva.
     expect(screen.getByText('Qué es para ti')).toBeInTheDocument()
@@ -162,7 +172,7 @@ describe('PerfilPage', () => {
     renderWithProviders(<PerfilPage />, { routerDeDatos: true, modulos: ['area-hermanos'] })
 
     expect(await screen.findByText('Ana Pérez Ruiz')).toBeInTheDocument()
-    expect(screen.getAllByRole('tab').map((t) => t.getAttribute('aria-label'))).toEqual(['Datos personales', 'Contacto y domicilio', 'Cuenta y contraseña'])
+    expect(screen.getAllByRole('tab').map((t) => t.getAttribute('aria-label'))).toEqual(['Datos personales', 'Contacto y domicilio'])
   })
 
   // Con remesas y sin pago en línea, el IBAN se carga en la domiciliación: el hermano tiene que poder cambiarlo.
@@ -385,113 +395,5 @@ describe('PerfilPage: lo que se arregló en la revisión de octubre', () => {
     await user.click(screen.getByRole('button', { name: 'Cancelar' }))
     await user.click(screen.getByRole('tab', { name: 'Contacto y domicilio' }))
     expect(screen.getByText('Publicar sus fotos')).toBeInTheDocument()
-  })
-})
-
-describe('PerfilPage: cambiar la contraseña', () => {
-  const conCuerpo = (cuerpo: unknown, status = 200) =>
-    new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
-
-  /** Las fichas por GET; el cambio de contraseña y /auth/me, con lo que se pida. */
-  function simular(cambio: () => Response) {
-    const simulado = vi.fn().mockImplementation((url: string) => {
-      if (String(url).includes('/auth/cambiar-contrasena')) return Promise.resolve(cambio())
-      if (String(url).includes('/auth/me')) return Promise.resolve(conCuerpo({ cms: null, hermano: { id: 1, email: 'ana@ejemplo.test', role: 'HERMANO', perfiles: [] } }))
-      return Promise.resolve(json({ data: [ficha(1, 'Ana')], meta: { total: 1, page: 1, limit: FICHAS_POR_FAMILIA, totalPages: 1 } }))
-    })
-    vi.stubGlobal('fetch', simulado)
-    return simulado
-  }
-  const llamadasA = (simulado: ReturnType<typeof simular>, ruta: string) => simulado.mock.calls.filter(([url]) => String(url).includes(ruta))
-
-  async function rellenar(user: ReturnType<typeof userEvent.setup>, nueva = 'Otra-Clave-2026-Larga', repetida = nueva) {
-    await screen.findByText('Ana Pérez Ruiz')
-    await user.click(screen.getByRole('tab', { name: 'Cuenta y contraseña' }))
-    await user.click(screen.getByRole('button', { name: 'Cambiar' }))
-    await user.type(screen.getByLabelText('Contraseña actual'), 'La-De-Antes-2025')
-    await user.type(screen.getByLabelText('Contraseña nueva'), nueva)
-    await user.type(screen.getByLabelText('Repite la contraseña nueva'), repetida)
-    await user.click(screen.getByRole('button', { name: 'Cambiar la contraseña' }))
-  }
-
-  it('manda la actual y la nueva, enseña el mensaje y vuelve a pedir las sesiones', async () => {
-    const user = userEvent.setup()
-    const simulado = simular(() => conCuerpo({ message: 'Contraseña cambiada. Se han cerrado las sesiones abiertas en otros dispositivos.' }))
-    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
-    await rellenar(user)
-
-    expect(await screen.findByText(/Contraseña cambiada/)).toBeInTheDocument()
-    const [[, init]] = llamadasA(simulado, '/auth/cambiar-contrasena')
-    expect(init.method).toBe('POST')
-    expect(JSON.parse(String(init.body))).toEqual({ actual: 'La-De-Antes-2025', nueva: 'Otra-Clave-2026-Larga' })
-    // Las cookies son nuevas: lo que sabía la web de las sesiones era de antes del corte.
-    await waitFor(() => expect(llamadasA(simulado, '/auth/me')).toHaveLength(1))
-  })
-
-  it('no manda nada si la nueva no se repite igual', async () => {
-    const user = userEvent.setup()
-    const simulado = simular(() => conCuerpo({ message: 'ok' }))
-    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
-    await rellenar(user, 'Otra-Clave-2026-Larga', 'Otra-Clave-2026-Larg')
-
-    expect(await screen.findByText('Las contraseñas no coinciden')).toBeInTheDocument()
-    expect(llamadasA(simulado, '/auth/cambiar-contrasena')).toHaveLength(0)
-  })
-
-  it('la actual equivocada (400) se dice, y no se toma por una sesión caducada', async () => {
-    const user = userEvent.setup()
-    const simulado = simular(() => conCuerpo({ error: 'La contraseña actual no es correcta.' }, 400))
-    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
-    await rellenar(user)
-
-    expect(await screen.findByText('La contraseña actual no es correcta.')).toBeInTheDocument()
-    // Un 401 haría que la web preguntara por las sesiones; un 400 no.
-    expect(llamadasA(simulado, '/auth/me')).toHaveLength(0)
-  })
-
-  it('con algo escrito en la contraseña, cambiar de pestaña pregunta antes y no lo pierde', async () => {
-    const user = userEvent.setup()
-    simular(() => conCuerpo({ message: 'ok' }))
-    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
-    await screen.findByText('Ana Pérez Ruiz')
-    await user.click(screen.getByRole('tab', { name: 'Cuenta y contraseña' }))
-    await user.click(screen.getByRole('button', { name: 'Cambiar' }))
-    // Basta con uno de los tres campos: la repetición sola también es trabajo.
-    await user.type(screen.getByLabelText('Repite la contraseña nueva'), 'Otra')
-    await user.click(screen.getByRole('tab', { name: 'Datos personales' }))
-
-    expect(await screen.findByRole('dialog', { name: 'Hay cambios sin guardar' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Seguir editando' }))
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-    expect(screen.getByLabelText('Repite la contraseña nueva')).toHaveValue('Otra')
-    expect(screen.getByRole('tab', { name: 'Cuenta y contraseña' })).toHaveAttribute('aria-selected', 'true')
-  })
-
-  it('con la contraseña abierta pero vacía, o ya cambiada, cambiar de pestaña no pregunta', async () => {
-    const user = userEvent.setup()
-    simular(() => conCuerpo({ message: 'Contraseña cambiada.' }))
-    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
-    await screen.findByText('Ana Pérez Ruiz')
-    await user.click(screen.getByRole('tab', { name: 'Cuenta y contraseña' }))
-    await user.click(screen.getByRole('button', { name: 'Cambiar' }))
-    await user.click(screen.getByRole('tab', { name: 'Datos personales' }))
-    expect(screen.getByRole('tab', { name: 'Datos personales' })).toHaveAttribute('aria-selected', 'true')
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-
-    await rellenar(user)
-    expect(await screen.findByText('Contraseña cambiada.')).toBeInTheDocument()
-    await user.click(screen.getByRole('tab', { name: 'Datos personales' }))
-    expect(screen.getByRole('tab', { name: 'Datos personales' })).toHaveAttribute('aria-selected', 'true')
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-  })
-
-  it('el error de un campo va bajo su casilla', async () => {
-    const user = userEvent.setup()
-    simular(() => conCuerpo({ error: 'Error de validación', errors: [{ field: 'nueva', message: 'La contraseña es demasiado común' }] }, 400))
-    renderWithProviders(<PerfilPage />, { routerDeDatos: true })
-    await rellenar(user)
-
-    expect(await screen.findByText('La contraseña es demasiado común')).toBeInTheDocument()
-    expect(screen.getByLabelText('Contraseña nueva')).toHaveAttribute('aria-invalid', 'true')
   })
 })
