@@ -75,10 +75,29 @@ html, body {
 #estado {
   margin: 0;
   font-size: 17px;
+  line-height: 1.35;
   font-weight: 600;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
+}
+
+/* Una calle larga pasa a la segunda línea; la hora se queda arriba a la derecha. */
+#titulo {
+  flex: 1;
+}
+
+#hora {
+  flex: none;
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--tinta-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+#hora:empty {
+  display: none;
 }
 
 /* El punto que late solo cuando hay posición en directo. */
@@ -87,6 +106,8 @@ html, body {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+  /* Centrado con la primera línea, aunque la calle ocupe dos. */
+  margin-top: 6px;
   background: var(--granate);
   animation: latido 1.6s ease-in-out infinite;
   flex: none;
@@ -100,16 +121,22 @@ html, body {
   #estado[data-vivo='true']::before { animation: none; }
 }
 
+/* En directo sobra (la calle y la hora lo dicen todo): solo para los avisos. */
 #detalle {
-  margin: 4px 0 12px;
+  margin: 4px 0 0;
   font-size: 15px;
   line-height: 1.45;
   color: var(--tinta-suave);
 }
 
+#detalle:empty {
+  display: none;
+}
+
 .botones {
   display: flex;
   gap: 8px;
+  margin-top: 12px;
 }
 
 .botones button {
@@ -186,9 +213,46 @@ html, body {
   white-space: nowrap;
 }
 
-/* La atribución de OpenStreetMap, legible sobre oscuro y por encima del pie. */
+/* Las redes, como firma bajo los botones: no compiten con ellos. */
+.redes {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--oro) 18%, transparent);
+  /* El último icono pegado al borde, como los botones de arriba. */
+  margin-right: -12px;
+  margin-bottom: -8px;
+}
+
+.redes span {
+  flex: 1;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--oro);
+}
+
+.redes a {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tinta-suave);
+}
+
+.redes a:hover {
+  color: var(--oro);
+}
+
+.redes a:focus-visible {
+  outline: 2px solid var(--oro);
+  outline-offset: -2px;
+}
+
+/* La atribución de OpenStreetMap, legible sobre oscuro y por encima del pie (su alto lo pone main.ts). */
 .maplibregl-ctrl-bottom-right {
-  bottom: 150px;
+  bottom: var(--alto-pie, 150px);
 }
 
 .maplibregl-ctrl.maplibregl-ctrl-attrib {

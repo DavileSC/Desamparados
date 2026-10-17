@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
+import { htmlDeRedes } from './src/rosario-en-directo/redes.ts'
 
 /**
  * La página suelta del Rosario en directo (src/rosario-en-directo/), servida
@@ -51,12 +52,23 @@ function barrioRecortado(): Plugin {
   }
 }
 
+/** Las redes del Grupo, en el sitio de `<!-- redes -->` del HTML (src/rosario-en-directo/redes.ts). */
+function redesDelGrupo(): Plugin {
+  return {
+    name: 'redes-del-rosario',
+    transformIndexHtml(html) {
+      const datos = JSON.parse(readFileSync(aqui('../instalacion/datos-entidad.json'), 'utf8'))
+      return html.replace('<!-- redes -->', htmlDeRedes(datos.redes))
+    },
+  }
+}
+
 export default defineConfig({
   root: aqui('src/rosario-en-directo'),
   base: '/Rosario/',
   // Las letras del mapa, que salen a /Rosario/fuentes/.
   publicDir: aqui('public/mapas'),
-  plugins: [barrioRecortado()],
+  plugins: [barrioRecortado(), redesDelGrupo()],
   server: {
     proxy: {
       // En local, la posición la da el backend de siempre.

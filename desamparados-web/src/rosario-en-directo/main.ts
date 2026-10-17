@@ -24,7 +24,7 @@ const BASE = import.meta.env.BASE_URL
 /** Lo mismo que el mapa de la web: la posición no cambia más deprisa (el móvil la manda cada 15 s). */
 const SONDEO_MS = 20_000
 const CAMARA_CERCA = { zoom: 17, pitch: 52, bearing: -12 }
-const MARGEN = { top: 110, right: 32, left: 32, bottom: 150 }
+const MARGEN = { top: 110, right: 32, left: 32 }
 /**
  * El recorrido sale y vuelve por la misma esquina, y algunas calles se pisan:
  * un punto puede caer a la vez al principio y al final. Se prefiere el tramo
@@ -74,15 +74,28 @@ document.documentElement.style.setProperty('--granate', MARCA.principalClaro)
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T
 const estado = $('estado')
+const titulo = $('titulo')
+const hora = $<HTMLTimeElement>('hora')
 const detalle = $('detalle')
+const pie = document.querySelector<HTMLElement>('.pie')!
 const botonSeguir = $<HTMLButtonElement>('seguir')
 const botonEntero = $<HTMLButtonElement>('entero')
 
-function avisar(titulo: string, texto: string, vivo = false) {
-  estado.textContent = titulo
+/** En directo basta la calle y la hora de la posición; el texto de debajo queda para los avisos. */
+function avisar(cabecera: string, texto: string, vivo = false, horaDeLaPosicion = '') {
+  titulo.textContent = cabecera
+  hora.textContent = horaDeLaPosicion
+  hora.dateTime = horaDeLaPosicion
   estado.dataset.vivo = String(vivo)
   detalle.textContent = texto
 }
+
+/**
+ * El pie cambia de alto (un aviso de varias líneas o solo la calle): el
+ * recorrido se encuadra por encima de él, y la atribución del mapa también.
+ */
+const margen = () => ({ ...MARGEN, bottom: pie.offsetHeight + 12 })
+new ResizeObserver(() => document.documentElement.style.setProperty('--alto-pie', `${pie.offsetHeight + 8}px`)).observe(pie)
 
 async function arrancar() {
   if (!hayWebGL()) {
@@ -101,7 +114,7 @@ async function arrancar() {
     style: estilo,
     attributionControl: false,
     bounds: caja(),
-    fitBoundsOptions: { padding: MARGEN },
+    fitBoundsOptions: { padding: margen() },
     maxBounds: [[barrio.caja[0], barrio.caja[1]], [barrio.caja[2], barrio.caja[3]]],
   })
   mapa.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: ATRIBUCION }), 'bottom-right')
@@ -109,7 +122,7 @@ async function arrancar() {
 
   const salida = document.createElement('span')
   salida.className = 'rotulo-salida'
-  salida.textContent = 'Templo'
+  salida.textContent = 'Sª María Goretti'
   new maplibregl.Marker({ element: salida, anchor: 'bottom', offset: [0, -16] }).setLngLat(templo ? centroDe(templo) : RUTA[0]).addTo(mapa)
 
   const punto = document.createElement('div')
@@ -133,7 +146,7 @@ async function arrancar() {
     botonSeguir.setAttribute('aria-pressed', String(camara === 'sigue'))
     botonEntero.setAttribute('aria-pressed', String(camara === 'entero'))
     if (camara === 'sigue' && ultima) mapa.easeTo({ center: ultima, ...CAMARA_CERCA, duration: 1200 })
-    if (camara === 'entero') mapa.fitBounds(caja(), { padding: MARGEN, pitch: 0, bearing: 0, duration: 1000 })
+    if (camara === 'entero') mapa.fitBounds(caja(), { padding: margen(), pitch: 0, bearing: 0, duration: 1000 })
   }
   botonSeguir.addEventListener('click', () => ponerCamara('sigue'))
   botonEntero.addEventListener('click', () => ponerCamara('entero'))
@@ -152,11 +165,11 @@ async function arrancar() {
       return
     }
     const sobre = sobreLaRuta([p.lng, p.lat], andado)
-    const hora = horaEnMadrid(p.actualizadoEl)
+    const horaDeLaPosicion = horaEnMadrid(p.actualizadoEl)
     if (sobre.distancia > DISTANCIA_MAXIMA_M) {
       // Un GPS que se va lejos de la línea engaña más que no enseñar nada:
       // se queda el trono donde estaba (o sin pintar) hasta que vuelva.
-      avisar('El Rosario está en la calle', `Ahora mismo la posición no es fiable (última a las ${hora}). Se actualiza sola.`, true)
+      avisar('El Rosario está en la calle', `Ahora mismo la posición no es fiable (última a las ${horaDeLaPosicion}). Se actualiza sola.`, true)
       return
     }
     andado = sobre.recorrido
@@ -172,8 +185,7 @@ async function arrancar() {
     rotuloCalle.textContent = calle.nombre
     rotuloCalle.dataset.cruce = String(Boolean(calle.cruce))
     const llegando = queda < 40 && metros(aqui, RUTA[0]) < 40
-    avisar(llegando ? 'Llegando al Templo' : calle.cruce ? calle.nombre :`Ahora por ${calle.nombre}`,
-      `El punto granate es por donde va. Posición de las ${hora}; se actualiza sola.`, true)
+    avisar(llegando ? 'Llegando al Templo' : calle.cruce ? calle.nombre : `Ahora por ${calle.nombre}`, '', true, horaDeLaPosicion)
     if (primera) ponerCamara('sigue')
     else if (camara === 'sigue') mapa.easeTo({ center: aqui, duration: 1500 })
   }
