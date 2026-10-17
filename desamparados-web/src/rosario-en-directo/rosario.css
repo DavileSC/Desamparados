@@ -35,20 +35,22 @@ html, body {
 .cabecera {
   top: 0;
   background: linear-gradient(var(--velo) 55%, transparent);
+  /* Separado del borde de arriba, y por debajo de la muesca del móvil. */
+  padding-top: max(22px, env(safe-area-inset-top));
   padding-bottom: 28px;
 }
 
-/* El rótulo es una imagen de 1000 px: da para el ancho del móvil a 3x y para el tope de escritorio a 2x. */
+/* El rótulo es una imagen de 1000 px: sobra para cualquier pantalla a este tamaño. */
 .cabecera h1 {
   margin: 0 auto;
-  max-width: 440px;
+  width: min(70%, 308px);
   line-height: 0;
 }
 
-/* Pequeño, que no le quite el sitio al rótulo; más bajo de unos 11 px, «MÁLAGA» deja de leerse en el móvil. */
+/* Pequeño, que no le quite el sitio al rótulo. */
 .cabecera .marca {
-  margin: 0 auto 10px;
-  width: min(56%, 208px);
+  margin: 0 auto 7px;
+  width: min(39%, 146px);
 }
 
 .cabecera img {
