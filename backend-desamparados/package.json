@@ -19,6 +19,7 @@
     "gen:vapid": "node scripts/gen-vapid.mjs",
     "seed": "prisma db seed",
     "auditoria:purgar": "node --import tsx scripts/purgar-auditoria.ts",
+    "cuenta:crear-cargo": "node --import tsx scripts/crear-cuenta-de-cargo.ts",
     "admin:nueva-contrasena": "node --import tsx scripts/reset-admin-password.ts",
     "2fa:cifrar-secretos": "node --import tsx scripts/cifrar-secretos-2fa.ts",
     "2fa:rescatar": "node --import tsx scripts/rescatar-2fa.ts",
