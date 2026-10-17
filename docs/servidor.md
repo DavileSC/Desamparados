@@ -855,6 +855,15 @@ del nginx del sistema pasando a `127.0.0.1:8080` (como el de `pruebas`, sin
 contraseña), las copias de seguridad configuradas antes de cargar datos
 reales, y el correo del Grupo en lugar del personal.
 
+Ese sitio del dominio principal lleva `access_log off`, como el de
+`pruebas`. Hoy hereda el registro de `/etc/nginx/nginx.conf`
+(`/var/log/nginx/access.log`, formato `combined`), que guarda la URL entera
+con su consulta, el Referer y la IP completa: quedarían en disco los enlaces
+de recuperación de contraseña con su token y las búsquedas del censo. El
+registro que vale es el del contenedor, que ya los quita. Comprobado el
+17-10-2026 con `sudo nginx -T`: en ninguno de los dos nginx hay `sub_filter`,
+`mirror` ni `$request_body`, ni nada que grabe sesiones o pulsaciones.
+
 ## La aplicación, para quien venga de otro documento
 
 La sesión va en cookies httpOnly (SameSite=Strict, `Path=/api`), sin
