@@ -38,19 +38,23 @@ html, body {
   padding-bottom: 28px;
 }
 
-.cabecera p {
-  margin: 0;
-  font-size: 12px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--oro);
+/* El rótulo es una imagen de 1000 px: da para el ancho del móvil a 3x y para el tope de escritorio a 2x. */
+.cabecera h1 {
+  margin: 0 auto;
+  max-width: 440px;
+  line-height: 0;
 }
 
-.cabecera h1 {
-  margin: 4px 0 0;
-  font-size: clamp(22px, 5vw, 30px);
-  font-weight: 600;
-  line-height: 1.15;
+/* Pequeño, que no le quite el sitio al rótulo; más bajo de unos 11 px, «MÁLAGA» deja de leerse en el móvil. */
+.cabecera .marca {
+  margin: 0 auto 10px;
+  width: min(56%, 208px);
+}
+
+.cabecera img {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .pie {
