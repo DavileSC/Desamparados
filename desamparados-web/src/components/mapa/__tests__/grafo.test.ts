@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { construirGrafo, lineaDelRecorrido } from '../grafo'
+import { construirGrafo, lineaDelRecorrido, rectosTrasCambio, simplificar } from '../grafo'
 import { centroDe, edificioDelTemplo, type Barrio } from '../barrio'
 import type { Coordenada } from '../../../lib/api/contenido'
 
@@ -22,6 +22,25 @@ describe('el recorrido pegado a las calles', () => {
     expect(linea[0]).toEqual(A)
     expect(linea[2]).toEqual(C)
     expect([B, D]).toContainEqual(linea[1])
+  })
+
+  it('la salida y la entrada a mitad de calle quedan en su sitio, no en la esquina', () => {
+    // La puerta del templo, a mitad de la calle A-B y un poco apartada de ella.
+    const puerta: Coordenada = [0.0005, 0.00004]
+    const linea = lineaDelRecorrido([puerta, C], true, grafo)
+    expect(linea[0][0]).toBeCloseTo(0.0005, 6)
+    expect(linea[0][1]).toBeCloseTo(0, 6)
+    // Hacia C por B, que es lo corto: sin pasar por A.
+    expect(linea).toContainEqual(B)
+    expect(linea).not.toContainEqual(A)
+    expect(linea[linea.length - 1]).toEqual(C)
+    // Y de vuelta, acaba en la puerta.
+    const vuelta = lineaDelRecorrido([C, puerta], true, grafo)
+    expect(vuelta[vuelta.length - 1][0]).toBeCloseTo(0.0005, 6)
+  })
+
+  it('salida y entrada en el mismo trozo de calle van de una a otra', () => {
+    expect(lineaDelRecorrido([[0.0002, 0], [0.0008, 0]], true, grafo)).toEqual([[0.0002, 0], [0.0008, 0]])
   })
 
   it('sin pegar, va recto', () => {
@@ -52,6 +71,30 @@ describe('el recorrido pegado a las calles', () => {
       calles: { ...BARRIO.calles, features: [calle(A, B), calle(E, F), calle(A, lejos1), calle(lejos1, lejos2), calle(lejos2, F)] },
     }
     expect(lineaDelRecorrido([A, E], true, construirGrafo(partido))).toEqual([A, E])
+  })
+})
+
+describe('el trazo a mano alzada', () => {
+  it('se queda con las esquinas y quita el temblor', () => {
+    // Un ángulo recto de 100 m por lado con un temblor de un metro.
+    const temblor = Array.from({ length: 21 }, (_, i): Coordenada => [i * 0.00005, (i % 2) * 0.00001])
+    const subida = Array.from({ length: 20 }, (_, i): Coordenada => [0.001, (i + 1) * 0.00005])
+    const limpio = simplificar([...temblor, ...subida], 5)
+    expect(limpio).toEqual([[0, 0], [0.001, 0], [0.001, 0.001]])
+  })
+})
+
+describe('los tramos rectos al retocar', () => {
+  const E: Coordenada[] = [[0, 0], [1, 0], [2, 0], [3, 0]]
+  it('con una esquina metida, los de detrás se corren', () => {
+    expect(rectosTrasCambio(E, [E[0], E[1], [1.5, 0], E[2], E[3]], [0, 2])).toEqual([0, 3])
+  })
+  it('con una quitada, se pierden los que la tocaban', () => {
+    expect(rectosTrasCambio(E, [E[0], E[2], E[3]], [0, 1, 2])).toEqual([1])
+  })
+  it('moviendo una se quedan, y con otro trazo se pierden', () => {
+    expect(rectosTrasCambio(E, [E[0], [1, 1], E[2], E[3]], [1])).toEqual([1])
+    expect(rectosTrasCambio(E, [E[0], E[1]], [1])).toEqual([])
   })
 })
 

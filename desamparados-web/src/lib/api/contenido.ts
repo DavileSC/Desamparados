@@ -154,11 +154,27 @@ export interface BloqueGaleria extends BloqueBase { tipo: 'galeria'; medios: Med
 export interface BloqueLlamada extends BloqueBase { tipo: 'llamada'; texto: string; boton: string; enlace: string }
 export interface LineaDatos { etiqueta: string; valor: string }
 export interface BloqueDatos extends BloqueBase { tipo: 'datos'; lineas: LineaDatos[] }
+/** El recorrido de siempre o el alternativo. */
+export type VarianteDelRecorrido = 'habitual' | 'alternativo'
+
+/**
+ * El recorrido alternativo (18-10-2026), por si la salida cambia: la lluvia
+ * acortó el Rosario de 2026 y el mapa siguió enseñando el de siempre. Lleva sus
+ * propias paradas: las situadas en el mapa lo están sobre su línea.
+ */
+export interface ItinerarioAlternativo {
+  paradas: ParadaRecorrido[]
+  recorrido?: RecorridoEnMapa
+}
+
 export interface BloqueItinerario extends BloqueBase {
   tipo: 'itinerario'
   paradas: ParadaRecorrido[]
   /** El recorrido sobre el mapa: solo lo usa la disposición «plano» («Sobre el mapa»). */
   recorrido?: RecorridoEnMapa
+  alternativo?: ItinerarioAlternativo
+  /** Cuál enseñan la web y el directo. Sin él, el habitual. */
+  enUso?: VarianteDelRecorrido
 }
 export interface BloqueCronologia extends BloqueBase { tipo: 'cronologia'; hitos: HitoHistoria[] }
 /**

@@ -9,3 +9,7 @@ export const posicionSchema = type({
         precision: type("0 <= number.integer <= 100000").or("null").describe("los metros de margen del GPS"),
     }
 });
+
+export const recorridoEnUsoSchema = type({
+    body: { enUso: type("'habitual' | 'alternativo'").describe('el recorrido habitual o el alternativo') },
+});

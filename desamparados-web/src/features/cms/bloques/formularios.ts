@@ -17,7 +17,7 @@ import { libreDe, valorDe } from '../../../components/bloques/presentacion'
 import type { Props } from './formularios/comunes'
 import { problemaDelMedio } from '../contenido/medios'
 import { esDestinoValido } from '../../../lib/destinos'
-import type { Bloque } from '../../../lib/api/contenido'
+import type { Bloque, ParadaRecorrido, RecorridoEnMapa } from '../../../lib/api/contenido'
 
 /** Nombre visible de cada tipo. Es lo que lee quien edita; sale de la ficha de la galería. */
 export const NOMBRE_BLOQUE: Record<string, string> = Object.fromEntries(
@@ -163,6 +163,15 @@ export function problemaDePresentacion(bloque: Bloque): string | null {
  * verdad decide; esto es solo para avisar antes de gastar una petición y para
  * decir DE QUÉ bloque se trata, porque puede estar plegado y fuera de la vista.
  */
+/** Lo que falta a un itinerario (el habitual o el alternativo) para poder guardarse, o null. */
+function fallaDelItinerario(paradas: ParadaRecorrido[], recorrido: RecorridoEnMapa | undefined): string | null {
+  if (paradas.some((p) => p.lugar.trim() === '')) return 'tiene una parada sin lugar'
+  // Vacía vale: la hora puede no saberse todavía y la web dice «por confirmar».
+  if (paradas.some((p) => p.hora !== '' && !/^([01]\d|2[0-3]):[0-5]\d$/.test(p.hora))) return 'tiene una hora que no es una hora (usa 17:30, o déjala vacía)'
+  if (recorrido && recorrido.esquinas.length === 1) return 'tiene un recorrido de una sola esquina: pulsa al menos otra en el mapa'
+  return null
+}
+
 export function problemaDeBloque(bloque: Bloque): string | null {
   switch (bloque.tipo) {
     case 'texto':
@@ -193,12 +202,12 @@ export function problemaDeBloque(bloque: Bloque): string | null {
     case 'datos':
       if (bloque.lineas.some((l) => l.etiqueta.trim() === '')) return 'tiene una línea sin concepto'
       return null
-    case 'itinerario':
-      if (bloque.paradas.some((p) => p.lugar.trim() === '')) return 'tiene una parada sin lugar'
-      // Vacía vale: la hora puede no saberse todavía y la web dice «por confirmar».
-      if (bloque.paradas.some((p) => p.hora !== '' && !/^([01]\d|2[0-3]):[0-5]\d$/.test(p.hora))) return 'tiene una hora que no es una hora (usa 17:30, o déjala vacía)'
-      if (bloque.recorrido && bloque.recorrido.esquinas.length === 1) return 'tiene un recorrido de una sola esquina: pulsa al menos otra en el mapa'
-      return null
+    case 'itinerario': {
+      const habitual = fallaDelItinerario(bloque.paradas, bloque.recorrido)
+      if (habitual) return habitual
+      const alternativo = bloque.alternativo && fallaDelItinerario(bloque.alternativo.paradas, bloque.alternativo.recorrido)
+      return alternativo ? `en el recorrido alternativo, ${alternativo}` : null
+    }
     case 'cronologia': {
       const n = bloque.hitos.findIndex((h) => h.periodo.trim() === '')
       if (n !== -1) return `tiene el hito ${n + 1} sin periodo`

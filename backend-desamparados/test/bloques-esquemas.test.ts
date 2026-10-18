@@ -263,6 +263,26 @@ describe('bloque de itinerario', () => {
     assert.ok(!falla('itinerario', porCalles));
   });
 
+  test('acepta un recorrido alternativo con sus paradas, y elegir cuál está en uso', () => {
+    const mapa = { esquinas: [], linea: [[-4.44, 36.71], [-4.45, 36.72]], pegado: true };
+    const conAlternativo = { ...doc([PARADA]), recorrido: mapa, alternativo: { paradas: [PARADA], recorrido: mapa }, enUso: 'alternativo' };
+    assert.ok(!falla('itinerario', conAlternativo));
+    assert.ok(!falla('itinerario', { ...conAlternativo, enUso: 'habitual' }));
+    // Un alternativo sin mapa vale: la web lo enseña en lista.
+    assert.ok(!falla('itinerario', { ...conAlternativo, alternativo: { paradas: [PARADA] } }));
+    assert.ok(falla('itinerario', { ...conAlternativo, enUso: 'el otro' }));
+  });
+
+  test('el alternativo cumple lo mismo que el habitual, y no se usa si no lo hay', () => {
+    const conAlternativo = (alternativo: unknown) => ({ ...doc([PARADA]), alternativo });
+    assert.ok(falla('itinerario', conAlternativo({ paradas: [] })), 'sin paradas no pinta nada');
+    const sinLugar = esquemaDeBloque('itinerario')(conAlternativo({ paradas: [{ ...PARADA, lugar: ' ' }] }));
+    assert.ok(sinLugar instanceof ArkErrors);
+    assert.ok(String(sinLugar).includes('alternativo.paradas[0].lugar'), `debe señalar la parada del alternativo; dijo: ${sinLugar}`);
+    assert.ok(falla('itinerario', conAlternativo({ paradas: [PARADA], recorrido: { esquinas: [], linea: [[-4.44, 36.71]], pegado: true } })));
+    assert.ok(falla('itinerario', { ...doc([PARADA]), enUso: 'alternativo' }), 'en uso el alternativo sin haberlo');
+  });
+
   test('las calles van en orden, con nombre y sin desbordar; la parada no dura un día', () => {
     const conCalles = (calles: unknown[]) => ({ ...doc([PARADA]), recorrido: { esquinas: [], linea: [[-4.44, 36.71], [-4.45, 36.72]], pegado: false, calles } });
     assert.ok(falla('itinerario', conCalles([{ nombre: 'C. Real', desde: 0.5 }, { nombre: 'C. Mayor', desde: 0.2 }])), 'el trono no anda hacia atrás');

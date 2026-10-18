@@ -4,7 +4,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import PauseIcon from '@mui/icons-material/Pause'
 import ReplayIcon from '@mui/icons-material/Replay'
 import { useReducedMotion } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
 import * as maplibregl from 'maplibre-gl'
 import type { GeoJSONSource, Map as Mapa, Marker } from 'maplibre-gl'
@@ -19,7 +19,7 @@ import { anchoMaximo } from './presentacion'
 import { ALTO_LISTA, ALTO_MAPA, ALTO_MINIMO, ALTO_MINIMO_LISTA } from './EsqueletoDelRecorrido'
 import { DISTANCIA_MAXIMA_M, acumulados, lecturaDelRecorrido, metros, paradaAlcanzada, sobreElRecorrido, tramoHasta, type SitioDelRecorrido } from './recorrido'
 import { cortejoEnDirecto } from '../../lib/api/cortejoDirecto'
-import type { BloqueItinerario, Coordenada, RecorridoEnMapa as Recorrido } from '../../lib/api/contenido'
+import type { BloqueItinerario, Coordenada, RecorridoEnMapa as Recorrido, VarianteDelRecorrido } from '../../lib/api/contenido'
 import { MARCA, alfa } from '../../theme/marca'
 import { horaEnMadrid } from '../../lib/horaDeMadrid'
 
@@ -65,8 +65,10 @@ function cajaDe(linea: Coordenada[]) {
  * Con «reducir movimiento» la cámara empieza enseñando el recorrido entero y
  * no se desliza. En la vista en vivo del constructor sale entero y dibujado.
  */
-export default function RecorridoEnMapa({ bloque, onSinMapa }: {
+export default function RecorridoEnMapa({ bloque, enUso = 'habitual', onSinMapa }: {
   bloque: BloqueItinerario & { recorrido: Recorrido }
+  /** Cuál de los dos recorridos es este: si el directo dice otro, la página se vuelve a pedir. */
+  enUso?: VarianteDelRecorrido
   /** Esta instalación no tiene mapa del barrio: quien lo pinta enseña las paradas de otra forma. */
   onSinMapa?: () => void
 }) {
@@ -112,6 +114,13 @@ export default function RecorridoEnMapa({ bloque, onSinMapa }: {
     const sobre = sobreElRecorrido(linea, [d.lng, d.lat])
     return sobre.distancia <= DISTANCIA_MAXIMA_M ? { fraccion: sobre.fraccion, hora: horaCorta(d.actualizadoEl) } : null
   }, [directo.data, aqui, linea])
+  // La Junta ha cambiado de recorrido en plena salida (desde «Cortejo en
+  // directo»): quien tiene la página abierta no tiene que recargarla.
+  const consultas = useQueryClient()
+  const enUsoDelDirecto = directo.data?.ruta === aqui ? directo.data.enUso : null
+  useEffect(() => {
+    if (enUsoDelDirecto && enUsoDelDirecto !== enUso) void consultas.invalidateQueries({ queryKey: ['contenido'] })
+  }, [enUsoDelDirecto, enUso, consultas])
   const enCalleRef = useRef(enCalle)
   useEffect(() => { enCalleRef.current = enCalle }, [enCalle])
 

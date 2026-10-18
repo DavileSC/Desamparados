@@ -1,6 +1,8 @@
 import paginas from '../../../shared/paginas-publicas.json' with { type: 'json' };
 import db from '../config/db.js';
-import { esSlugContenido, mezclarConDefectos, moduloDePagina, porDefecto } from '../domain/contenido.js';
+import { esSlugContenido, mezclarConDefectos, moduloDePagina, porDefecto, type SlugContenido } from '../domain/contenido.js';
+import { HttpError, NotFoundError } from '../utils/error.handle.js';
+import { ContenidoService } from './contenido.service.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from './auditoria.service.js';
 import { ModulosService } from './modulos.service.js';
 
@@ -20,7 +22,18 @@ type Punto = [number, number];
  * la línea del mapa y, si las tiene, sus calles (con ellas, la Junta marca a
  * mano por calles y no por paradas).
  */
-export interface RecorridoDelCortejo { ruta: string; paradas: unknown[]; linea: Punto[]; calles: unknown[] }
+export interface RecorridoDelCortejo {
+  ruta: string;
+  slug: SlugContenido;
+  paradas: unknown[];
+  linea: Punto[];
+  calles: unknown[];
+  enUso: Variante;
+  hayAlternativo: boolean;
+}
+
+/** El recorrido de siempre o el alternativo (18-10-2026), por si la salida cambia. */
+export type Variante = 'habitual' | 'alternativo';
 
 interface CortejoPublico {
   enDirecto: boolean;
@@ -33,6 +46,8 @@ interface CortejoPublico {
    * barrio (el del rosario) no debe pintar el trono «en directo».
    */
   ruta: string | null;
+  /** Cuál de los dos recorridos enseña la web: si la Junta lo cambia en plena salida, el mapa abierto se recarga. */
+  enUso: Variante | null;
 }
 
 interface CortejoParaLaJunta extends CortejoPublico {
@@ -40,28 +55,52 @@ interface CortejoParaLaJunta extends CortejoPublico {
   precision: number | null;
   autorNombre: string | null;
   /** Las paradas o las calles, para marcarlas a mano, y la línea, para avisar de «lejos del recorrido». */
-  recorrido: Omit<RecorridoDelCortejo, 'ruta'> | null;
+  recorrido: { paradas: unknown[]; linea: Punto[]; calles: unknown[] } | null;
+  /** Si el itinerario tiene recorrido alternativo, para cambiar de uno a otro desde la calle. */
+  hayAlternativo: boolean;
 }
 
 const ID = 1;
 
-/** El primer itinerario con mapa de un documento, esté donde esté (también dentro de otro bloque). */
-export function itinerarioConMapa(documento: unknown): Omit<RecorridoDelCortejo, 'ruta'> | null {
+interface Itinerario { paradas?: unknown; recorrido?: { linea?: unknown; calles?: unknown } }
+interface BloqueItinerario extends Itinerario { tipo: 'itinerario'; alternativo?: Itinerario; enUso?: unknown }
+
+const conLinea = (i: Itinerario | undefined) => Array.isArray(i?.paradas) && Array.isArray(i.recorrido?.linea) && i.recorrido.linea.length > 1;
+
+/**
+ * El primer bloque de itinerario con mapa de un documento, esté donde esté
+ * (también dentro de otro bloque). Vale el mapa de cualquiera de sus dos
+ * recorridos: aunque el que esté en uso no lo tenga, es el bloque del cortejo.
+ */
+export function bloqueConMapa(documento: unknown): BloqueItinerario | null {
   if (!documento || typeof documento !== 'object') return null;
   if (Array.isArray(documento)) {
     for (const x of documento) {
-      const hallado = itinerarioConMapa(x);
+      const hallado = bloqueConMapa(x);
       if (hallado) return hallado;
     }
     return null;
   }
   const o = documento as Record<string, unknown>;
-  const recorrido = o.recorrido as { linea?: unknown; calles?: unknown } | undefined;
-  const linea = recorrido?.linea;
-  if (o.tipo === 'itinerario' && Array.isArray(o.paradas) && Array.isArray(linea) && linea.length > 1) {
-    return { paradas: o.paradas, linea: linea as Punto[], calles: Array.isArray(recorrido?.calles) ? recorrido.calles : [] };
-  }
-  return itinerarioConMapa(Object.values(o));
+  if (o.tipo === 'itinerario' && (conLinea(o) || conLinea(o.alternativo as Itinerario | undefined))) return o as unknown as BloqueItinerario;
+  return bloqueConMapa(Object.values(o));
+}
+
+/** Cuál de los dos está en uso: el alternativo solo si lo pide y existe. */
+export const varianteEnUso = (b: BloqueItinerario): Variante => (b.enUso === 'alternativo' && b.alternativo ? 'alternativo' : 'habitual');
+
+/**
+ * El itinerario del cortejo, el del recorrido en uso: sus paradas, la línea y
+ * las calles. `null` si no hay bloque con mapa o si el recorrido en uso no
+ * tiene línea (el alternativo aún sin dibujar): sin línea no hay dónde poner el trono.
+ */
+export function itinerarioConMapa(documento: unknown): { paradas: unknown[]; linea: Punto[]; calles: unknown[] } | null {
+  const bloque = bloqueConMapa(documento);
+  if (!bloque) return null;
+  const i = varianteEnUso(bloque) === 'alternativo' ? bloque.alternativo : bloque;
+  if (!i || !conLinea(i)) return null;
+  const recorrido = i.recorrido!;
+  return { paradas: i.paradas as unknown[], linea: recorrido.linea as Punto[], calles: Array.isArray(recorrido.calles) ? recorrido.calles : [] };
 }
 
 /**
@@ -81,8 +120,14 @@ async function buscarRecorrido(): Promise<RecorridoDelCortejo | null> {
   const filas = await db.contenidoPagina.findMany({ where: { slug: { in: candidatas.map((c) => c.slug) } }, select: { slug: true, datos: true } });
   const guardado = new Map(filas.map((f) => [f.slug, f.datos]));
   for (const { slug, ruta } of candidatas) {
-    const hallado = itinerarioConMapa(guardado.has(slug) ? mezclarConDefectos(slug, guardado.get(slug)) : porDefecto(slug));
-    if (hallado) return { ruta, ...hallado };
+    const documento = guardado.has(slug) ? mezclarConDefectos(slug, guardado.get(slug)) : porDefecto(slug);
+    const bloque = bloqueConMapa(documento);
+    if (!bloque) continue;
+    const hallado = itinerarioConMapa(documento);
+    return {
+      ruta, slug, enUso: varianteEnUso(bloque), hayAlternativo: Boolean(bloque.alternativo),
+      paradas: hallado?.paradas ?? [], linea: hallado?.linea ?? [], calles: hallado?.calles ?? [],
+    };
   }
   return null;
 }
@@ -117,14 +162,20 @@ export class CortejoDirectoService {
   static async publico(ahora = new Date()): Promise<CortejoPublico> {
     const [fila, r] = await Promise.all([leer(), recorrido()]);
     const ruta = r?.ruta ?? null;
-    if (!fila || !vigente(fila, ahora)) return { enDirecto: false, ruta };
-    return { enDirecto: true, lng: Number(fila.lng), lat: Number(fila.lat), actualizadoEl: fila.actualizadoEl.toISOString(), ruta };
+    const enUso = r?.enUso ?? null;
+    if (!fila || !vigente(fila, ahora)) return { enDirecto: false, ruta, enUso };
+    return { enDirecto: true, lng: Number(fila.lng), lat: Number(fila.lat), actualizadoEl: fila.actualizadoEl.toISOString(), ruta, enUso };
   }
 
   /** Lo que ve la Junta en el CMS: además, si se quedó en marcha sin renovarse y quién la mandaba. */
   static async paraLaJunta(ahora = new Date()): Promise<CortejoParaLaJunta> {
     const [fila, r] = await Promise.all([leer(), recorrido()]);
-    const deLaRuta = { ruta: r?.ruta ?? null, recorrido: r ? { paradas: r.paradas, linea: r.linea, calles: r.calles } : null };
+    const deLaRuta = {
+      ruta: r?.ruta ?? null,
+      enUso: r?.enUso ?? null,
+      hayAlternativo: r?.hayAlternativo ?? false,
+      recorrido: r && r.linea.length > 1 ? { paradas: r.paradas, linea: r.linea, calles: r.calles } : null,
+    };
     if (!fila) return { enDirecto: false, enMarcha: false, precision: null, autorNombre: null, ...deLaRuta };
     return {
       ...deLaRuta,
@@ -149,6 +200,30 @@ export class CortejoDirectoService {
     const datos = { enMarcha: true, lng: p.lng, lat: p.lat, precision: p.precision, autorId: meta.userId ?? null, autorNombre: autor?.nombre ?? null, actualizadoEl: new Date() };
     await db.cortejoEnDirecto.upsert({ where: { id: ID }, create: { id: ID, ...datos }, update: datos });
     if (!antes?.enMarcha) await AuditoriaService.log(ACCIONES_AUDITORIA.CORTEJO_DIRECTO_EMPEZAR, meta, 'cortejoEnDirecto', ID);
+    return CortejoDirectoService.paraLaJunta();
+  }
+
+  /**
+   * Cambia el recorrido en uso desde la calle (la lluvia obliga a acortar):
+   * se guarda en la página como un cambio más del CMS, con su versión en el
+   * historial, para que la web y el directo enseñen el mismo.
+   */
+  static async cambiarRecorrido(enUso: Variante, meta: MetaDeAuditoria): Promise<CortejoParaLaJunta> {
+    const r = await recorrido();
+    if (!r) throw new NotFoundError('Ninguna página tiene un itinerario con mapa.');
+    const documento = await ContenidoService.leer(r.slug);
+    const bloque = bloqueConMapa(documento);
+    if (!bloque) throw new NotFoundError('Ninguna página tiene un itinerario con mapa.');
+    if (enUso === 'alternativo' && !bloque.alternativo) {
+      throw new HttpError('Este itinerario no tiene recorrido alternativo: se prepara en el CMS, en el bloque Itinerario.', 409);
+    }
+    if (varianteEnUso(bloque) !== enUso) {
+      bloque.enUso = enUso;
+      await ContenidoService.guardar(r.slug, documento as object, meta.userId);
+      await AuditoriaService.log(ACCIONES_AUDITORIA.CORTEJO_DIRECTO_RECORRIDO, meta, 'contenidoPagina', r.slug, { enUso });
+    }
+    // Lo guardado un minuto ya no vale: el directo tiene que ver el cambio al momento.
+    recorridoGuardado = null;
     return CortejoDirectoService.paraLaJunta();
   }
 

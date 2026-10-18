@@ -5,7 +5,7 @@ import { hayWebGL } from '../mapa/barrio'
 import { GOLD } from '../../features/inicio/estilos'
 import { anchoMaximo, valorDe } from './presentacion'
 import EsqueletoDelRecorrido from './EsqueletoDelRecorrido'
-import { lecturaDelRecorrido } from './recorrido'
+import { itinerarioEnUso, lecturaDelRecorrido, varianteEnUso } from './recorrido'
 import type { BloqueItinerario as Datos } from '../../lib/api/contenido'
 import { MARCA, alfa } from '../../theme/marca'
 
@@ -30,7 +30,9 @@ const soloLector = { position: 'absolute', width: 1, height: 1, overflow: 'hidde
  * El itinerario repite lugares (la procesión pasa dos veces por la misma
  * plaza): las claves necesitan el índice o React se lía al reordenar.
  */
-export default function BloqueItinerario({ bloque: guardado }: { bloque: Datos }) {
+export default function BloqueItinerario({ bloque: original }: { bloque: Datos }) {
+  // De los dos recorridos, el que está en uso: el alternativo, si la salida cambió.
+  const guardado = itinerarioEnUso(original)
   const disposicion = valorDe(guardado, 'disposicion')
   // «Sobre el mapa» sin mapa (sin WebGL o sin el del barrio) se pinta como la
   // línea: con calles, la línea lleva las calles con sus horas, como la lista
@@ -52,7 +54,7 @@ export default function BloqueItinerario({ bloque: guardado }: { bloque: Datos }
   if (disposicion === 'plano' && recorrido && recorrido.linea.length >= 2 && !sinMapa && hayWebGL()) {
     return (
       <Suspense fallback={<EsqueletoDelRecorrido bloque={guardado} />}>
-        <RecorridoEnMapa bloque={{ ...guardado, recorrido }} onSinMapa={() => setSinMapa(true)} />
+        <RecorridoEnMapa bloque={{ ...guardado, recorrido }} enUso={varianteEnUso(original)} onSinMapa={() => setSinMapa(true)} />
       </Suspense>
     )
   }

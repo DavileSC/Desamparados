@@ -1,6 +1,6 @@
 import { manejar } from '../utils/manejar.js';
 import { AuditoriaService } from '../services/auditoria.service.js';
-import { CortejoDirectoService, type PosicionEnviada } from '../services/cortejo-directo.service.js';
+import { CortejoDirectoService, type PosicionEnviada, type Variante } from '../services/cortejo-directo.service.js';
 
 export class CortejoDirectoController {
   static publico = manejar('Error obteniendo la posición del cortejo', async (_req, res) => {
@@ -11,6 +11,9 @@ export class CortejoDirectoController {
   static paraLaJunta = manejar('Error obteniendo la posición del cortejo', async (_req, res) => { res.json(await CortejoDirectoService.paraLaJunta()); });
   static enviar = manejar('Error guardando la posición del cortejo', async (req, res) => {
     res.json(await CortejoDirectoService.enviar(req.body as PosicionEnviada, AuditoriaService.metaFromReq(req)));
+  });
+  static cambiarRecorrido = manejar('Error cambiando el recorrido en uso', async (req, res) => {
+    res.json(await CortejoDirectoService.cambiarRecorrido((req.body as { enUso: Variante }).enUso, AuditoriaService.metaFromReq(req)));
   });
   static terminar = manejar('Error terminando el directo', async (req, res) => { res.json(await CortejoDirectoService.terminar(AuditoriaService.metaFromReq(req))); });
 }

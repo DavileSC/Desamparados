@@ -1,4 +1,4 @@
-import type { BloqueItinerario, Coordenada, ParadaRecorrido } from '../../lib/api/contenido'
+import type { BloqueItinerario, Coordenada, ParadaRecorrido, VarianteDelRecorrido } from '../../lib/api/contenido'
 
 /**
  * Las cuentas del recorrido sobre el mapa. Las comparten la web, que dibuja la
@@ -10,6 +10,19 @@ import type { BloqueItinerario, Coordenada, ParadaRecorrido } from '../../lib/ap
  */
 
 const METROS_POR_GRADO = 111320
+
+/** Cuál de los dos recorridos está en uso: el alternativo solo si lo pide y existe. */
+export const varianteEnUso = (bloque: Pick<BloqueItinerario, 'alternativo' | 'enUso'>): VarianteDelRecorrido =>
+  (bloque.enUso === 'alternativo' && bloque.alternativo ? 'alternativo' : 'habitual')
+
+/**
+ * El bloque con las paradas y el recorrido del que está en uso: lo que pintan
+ * la web, la 404 y el esqueleto, que no saben de dos recorridos.
+ */
+export function itinerarioEnUso<T extends BloqueItinerario>(bloque: T): T {
+  if (varianteEnUso(bloque) === 'habitual' || !bloque.alternativo) return bloque
+  return { ...bloque, paradas: bloque.alternativo.paradas, recorrido: bloque.alternativo.recorrido }
+}
 
 /** Metros entre dos puntos. */
 export function metros(a: Coordenada, b: Coordenada): number {

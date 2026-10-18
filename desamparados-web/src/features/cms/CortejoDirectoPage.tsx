@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert, Box, Button, CircularProgress, Paper, Stack, Typography } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, Paper, Stack, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 import MyLocationIcon from '@mui/icons-material/MyLocation'
 import StopIcon from '@mui/icons-material/Stop'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
 import CabeceraSeccion from './CabeceraSeccion'
-import { cortejoParaLaJunta, enviarPosicion, terminarDirecto, type CortejoParaLaJunta, type PosicionCortejo } from '../../lib/api/cortejoDirecto'
+import { cambiarRecorridoEnUso, cortejoParaLaJunta, enviarPosicion, terminarDirecto, type CortejoParaLaJunta, type PosicionCortejo } from '../../lib/api/cortejoDirecto'
+import type { VarianteDelRecorrido } from '../../lib/api/contenido'
 import { DISTANCIA_MAXIMA_M, lecturaDelRecorrido, puntoEn, sobreElRecorrido } from '../../components/bloques/recorrido'
 import { site } from '../../config/site'
 
@@ -109,6 +110,15 @@ export default function CortejoDirectoPage() {
     finally { setOcupado(false) }
   }
 
+  // Si la salida se acorta o se desvía (la lluvia del Rosario de 2026), se
+  // pasa al alternativo desde aquí: se guarda en la página y la web lo enseña.
+  const cambiarRecorrido = async (enUso: VarianteDelRecorrido) => {
+    setOcupado(true)
+    try { setEstado(await cambiarRecorridoEnUso(enUso)); setError(null) }
+    catch (err: unknown) { setError(mensaje(err, 'No se ha podido cambiar el recorrido.')) }
+    finally { setOcupado(false) }
+  }
+
   const marcarParada = (i: number) => {
     if (!itinerario || !lectura) return
     const { posiciones, porCalles } = lectura
@@ -141,6 +151,23 @@ export default function CortejoDirectoPage() {
             : <Typography>El cortejo no está en la calle: la web enseña la reproducción del recorrido.</Typography>}
       </Paper>
 
+      {estado.hayAlternativo && estado.enUso && (
+        <Paper sx={{ p: 2.5 }}>
+          <Typography component="h2" sx={{ fontWeight: 600, mb: 0.5 }}>Recorrido en uso</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Si la salida se acorta o cambia, pasa al alternativo: la web y este directo lo enseñan al momento.
+          </Typography>
+          <ToggleButtonGroup
+            exclusive fullWidth color="primary" value={estado.enUso} disabled={ocupado}
+            onChange={(_, valor: VarianteDelRecorrido | null) => { if (valor) void cambiarRecorrido(valor) }}
+            aria-label="Recorrido en uso"
+          >
+            <ToggleButton value="habitual" sx={{ textTransform: 'none', minHeight: 48 }}>Habitual</ToggleButton>
+            <ToggleButton value="alternativo" sx={{ textTransform: 'none', minHeight: 48 }}>Alternativo</ToggleButton>
+          </ToggleButtonGroup>
+        </Paper>
+      )}
+
       {lejos > DISTANCIA_MAXIMA_M && <Alert severity="warning">La última posición queda a {lejos} m del recorrido: la web no la enseña hasta que vuelva a caer cerca de la línea.</Alert>}
       {error && <Alert severity="warning" onClose={() => setError(null)}>{error}</Alert>}
 
@@ -167,7 +194,9 @@ export default function CortejoDirectoPage() {
           </Box>
         </Box>
       )}
-      {!itinerario && <Alert severity="info">Ninguna página tiene un itinerario con mapa (Web pública → Páginas, bloque Itinerario con su recorrido dibujado): sin él, la web no puede enseñar la posición.</Alert>}
+      {!itinerario && (estado.ruta
+        ? <Alert severity="info">El recorrido en uso no tiene el mapa dibujado (Web pública → Páginas, bloque Itinerario): sin la línea, la web no puede enseñar la posición.</Alert>
+        : <Alert severity="info">Ninguna página tiene un itinerario con mapa (Web pública → Páginas, bloque Itinerario con su recorrido dibujado): sin él, la web no puede enseñar la posición.</Alert>)}
     </Stack>
   </>
 }

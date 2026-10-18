@@ -9,6 +9,7 @@ import Boton from '../../components/Boton'
 import { enlaceConFlecha } from '../../components/estiloDeBoton'
 import { hayWebGL } from '../../components/mapa/barrio'
 import { CLAVE_RECORRIDO, getContenido, type BloqueItinerario, type Coordenada, type PaginaDeBloques } from '../../lib/api/contenido'
+import { itinerarioEnUso } from '../../components/bloques/recorrido'
 import { useModulos } from '../../hooks/useModulos'
 import { ahorraDatos } from '../../lib/videoPropio'
 
@@ -22,7 +23,9 @@ const huecoDelMapa = <Box sx={{ aspectRatio: { xs: '1.1 / 1', sm: '1.5 / 1', md:
 
 /** La línea del recorrido de la salida, si la página del recorrido tiene una dibujada sobre el mapa. */
 function lineaDelRecorrido(pagina: PaginaDeBloques | undefined): Coordenada[] | null {
-  const bloque = pagina?.bloques.find((b): b is BloqueItinerario => b.tipo === 'itinerario' && (b.recorrido?.linea.length ?? 0) >= 2)
+  // El que esté en uso: si la salida cambió, la placa sale del recorrido de verdad.
+  const itinerarios = (pagina?.bloques ?? []).filter((b): b is BloqueItinerario => b.tipo === 'itinerario').map(itinerarioEnUso)
+  const bloque = itinerarios.find((b) => (b.recorrido?.linea.length ?? 0) >= 2)
   return bloque?.recorrido?.linea ?? null
 }
 

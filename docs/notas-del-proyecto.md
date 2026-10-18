@@ -874,3 +874,21 @@ filas en `ContenidoPagina`), como `salidas_neutras_en_base_nueva`: así
 Desamparados recupera «Parroquia · Pasionistas» y otra corporación empieza
 con «Parroquia». La prueba que lo comprueba tapa `ContenidoPagina` con una
 tabla temporal en su conexión, en vez de vaciarla.
+
+---
+
+## 15. El itinerario tiene dos recorridos: no leer `recorrido` a pelo
+
+Desde el 18-10-2026 el bloque Itinerario guarda el recorrido de siempre
+(`paradas` y `recorrido`) y, si se preparó, un `alternativo` con sus propias
+paradas y su mapa; `enUso` dice cuál enseñan la web y el directo. Quien lea
+`bloque.recorrido` o `bloque.paradas` directamente enseña el habitual aunque
+la salida vaya por el alternativo, que es justo lo que pasó con el Rosario.
+
+Hay que pasar por `itinerarioEnUso` (web, `components/bloques/recorrido.ts`)
+o `itinerarioConMapa` (API, `cortejo-directo.service.ts`). Lo hacen ya el
+bloque público, la 404 y el directo; el CMS edita los dos por pestañas.
+
+Cambiar el recorrido en uso desde «Cortejo en directo» **reescribe la página**
+(con su versión en el historial). Si alguien la tiene abierta en el CMS y
+guarda después, vuelve a dejar el que tenía: en plena salida, el CMS cerrado.

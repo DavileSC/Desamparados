@@ -4,7 +4,7 @@ import { CortejoDirectoController as C } from '../controllers/cortejo-directo.co
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { validate } from '../config/validate.js';
-import { posicionSchema } from '../schemas/cortejo-directo.schema.js';
+import { posicionSchema, recorridoEnUsoSchema } from '../schemas/cortejo-directo.schema.js';
 
 const cortejoDirectoRoutes = Router();
 
@@ -18,6 +18,8 @@ admin.use(checkRole([Role.ADMIN, Role.SECRETARIA, Role.ALBACERIA, Role.HERMANO_M
 admin.get('/', C.paraLaJunta);
 admin.put('/', validate(posicionSchema), C.enviar);
 admin.post('/terminar', C.terminar);
+// El recorrido en uso, desde la calle: la lluvia obliga a acortar y el mapa tiene que enseñarlo.
+admin.put('/recorrido', validate(recorridoEnUsoSchema), C.cambiarRecorrido);
 cortejoDirectoRoutes.use('/admin', admin);
 
 export { cortejoDirectoRoutes };

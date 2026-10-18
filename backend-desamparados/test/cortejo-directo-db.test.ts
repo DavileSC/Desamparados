@@ -11,7 +11,7 @@ import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
-import { CADUCA_MS, CortejoDirectoService, itinerarioConMapa } from '../src/services/cortejo-directo.service.js';
+import { CADUCA_MS, CortejoDirectoService, bloqueConMapa, itinerarioConMapa } from '../src/services/cortejo-directo.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 
@@ -102,4 +102,35 @@ test('el recorrido del cortejo es el primer itinerario con mapa, también dentro
   // Con calles, van también: la Junta marca a mano por calles.
   const calles = [{ nombre: 'C. Mayor', desde: 0 }, { nombre: 'Cruce de la avenida', desde: 0.5, cruce: true }];
   assert.deepEqual(itinerarioConMapa({ bloques: [{ ...conMapa, recorrido: { linea, calles } }] })?.calles, calles);
+});
+
+test('cambiar el recorrido en uso pide la Junta y un recorrido que exista', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const albacea = await crearUsuarioPrueba(Role.ALBACERIA);
+  const hermano = await crearUsuarioPrueba(Role.USER);
+  try {
+    const url = `${baseUrl}/api/cortejo-directo/admin/recorrido`;
+    const cuerpo = JSON.stringify({ enUso: 'habitual' });
+    assert.equal((await fetch(url, { method: 'PUT', body: cuerpo, headers: { 'Content-Type': 'application/json' } })).status, 401);
+    assert.equal((await fetch(url, { method: 'PUT', body: cuerpo, headers: cookie(hermano.id, Role.USER) })).status, 403);
+    assert.equal((await fetch(url, { method: 'PUT', body: JSON.stringify({ enUso: 'el corto' }), headers: cookie(albacea.id, Role.ALBACERIA) })).status, 400);
+  } finally {
+    await borrarUsuarioPrueba(albacea.id);
+    await borrarUsuarioPrueba(hermano.id);
+  }
+});
+
+test('con el alternativo en uso, el cortejo va por el alternativo', () => {
+  const linea = [[-4.44, 36.72], [-4.45, 36.73]];
+  const corta = [[-4.44, 36.72], [-4.441, 36.721]];
+  const alternativo = { paradas: [{ lugar: 'Atajo' }], recorrido: { linea: corta } };
+  const bloque = { tipo: 'itinerario', paradas: [{ lugar: 'Templo' }], recorrido: { linea }, alternativo };
+  assert.deepEqual(itinerarioConMapa({ bloques: [bloque] })?.linea, linea, 'sin enUso, el habitual');
+  assert.deepEqual(itinerarioConMapa({ bloques: [{ ...bloque, enUso: 'alternativo' }] }), { paradas: alternativo.paradas, linea: corta, calles: [] });
+  // En uso el alternativo sin dibujar: el bloque es el del cortejo, pero no hay línea.
+  const sinDibujar = { ...bloque, enUso: 'alternativo', alternativo: { paradas: [{ lugar: 'Atajo' }] } };
+  assert.equal(bloqueConMapa({ bloques: [sinDibujar] }), sinDibujar);
+  assert.equal(itinerarioConMapa({ bloques: [sinDibujar] }), null);
+  // Pedir el alternativo sin tenerlo es el habitual.
+  assert.deepEqual(itinerarioConMapa({ bloques: [{ ...bloque, alternativo: undefined, enUso: 'alternativo' }] })?.linea, linea);
 });

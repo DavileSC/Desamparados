@@ -2,8 +2,8 @@
  * Los bloques que son una lista de piezas iguales: tarjetas, líneas de datos y
  * paradas de un itinerario. Los tres se añaden, se ordenan y se borran igual.
  */
-import { lazy, Suspense } from 'react'
-import { Button, Divider, IconButton, MenuItem, Stack, TextField, Tooltip, Typography } from '@mui/material'
+import { lazy, Suspense, useState } from 'react'
+import { Alert, Box, Button, Chip, Divider, IconButton, MenuItem, Paper, Stack, Tab, Tabs, TextField, Tooltip, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
@@ -13,13 +13,15 @@ import CampoEnlace from '../../contenido/CampoEnlace'
 import CampoImagen from '../../CampoImagen'
 import { ICONOS } from '../../../../components/bloques/iconos'
 import { valorDe } from '../../../../components/bloques/presentacion'
+import DialogoConfirmacion from '../../../../components/DialogoConfirmacion'
+import { varianteEnUso } from '../../../../components/bloques/recorrido'
 import EditorDeLineas from './EditorDeLineas'
 import { intercambiar, type Props } from './comunes'
 
 // El editor del mapa lleva MapLibre: se descarga solo al abrir un itinerario.
 const EditorDeRecorrido = lazy(() => import('./EditorDeRecorrido'))
 const CallesDelRecorrido = lazy(() => import('./CallesDelRecorrido'))
-import type { BloqueTarjetas, BloqueDatos, BloqueItinerario, TarjetaEnlace, IconoTarjeta } from '../../../../lib/api/contenido'
+import type { BloqueTarjetas, BloqueDatos, BloqueItinerario, Coordenada, TarjetaEnlace, IconoTarjeta, VarianteDelRecorrido } from '../../../../lib/api/contenido'
 
 const TARJETA_NUEVA = { titulo: '', descripcion: '', enlace: '' }
 
@@ -99,7 +101,102 @@ export function FormularioDatos({ bloque, onCambio }: Props<BloqueDatos>) {
 
 const PARADA_NUEVA = { hora: '17:30', lugar: '' }
 
+/** Fija: un `[]` nuevo en cada pintado haría repintar el mapa a cada tecla. */
+const SIN_LINEA: Coordenada[] = []
+
+const NOMBRE: Record<VarianteDelRecorrido, string> = { habitual: 'el habitual', alternativo: 'el alternativo' }
+
+/**
+ * El itinerario tiene dos recorridos (18-10-2026): el habitual y uno
+ * alternativo por si la salida cambia (la lluvia acortó el Rosario de 2026 y
+ * el mapa siguió enseñando el de siempre). Se edita uno cada vez, con el mismo
+ * formulario; el que está «en uso» es el que enseñan la web y el directo, y
+ * desde la calle se cambia en «Cortejo en directo».
+ */
 export function FormularioItinerario({ bloque, onCambio }: Props<BloqueItinerario>) {
+  const enUso = varianteEnUso(bloque)
+  const { alternativo } = bloque
+  const [pestana, setPestana] = useState<VarianteDelRecorrido>(enUso)
+  const [quitando, setQuitando] = useState(false)
+
+  // Lo que se edita: el bloque tal cual o, en la otra pestaña, con las paradas y el mapa del alternativo.
+  const vista: BloqueItinerario = pestana === 'alternativo' && alternativo
+    ? { ...bloque, paradas: alternativo.paradas, recorrido: alternativo.recorrido }
+    : bloque
+  const onVista = (cambios: Partial<BloqueItinerario>) => {
+    if (pestana === 'habitual' || !alternativo) { onCambio(cambios); return }
+    const { paradas, recorrido, ...resto } = cambios
+    onCambio({ ...resto, alternativo: { paradas: paradas ?? alternativo.paradas, recorrido: 'recorrido' in cambios ? recorrido : alternativo.recorrido } })
+  }
+  // El otro recorrido, a trazos debajo del mapa: el alternativo se dibuja casi siempre sobre el habitual.
+  const referencia: Coordenada[] = (pestana === 'habitual' ? alternativo?.recorrido?.linea : bloque.recorrido?.linea) ?? SIN_LINEA
+
+  // Copia entera: lo que se cambie en el alternativo no toca al habitual.
+  const partirDelHabitual = () => onCambio({ alternativo: structuredClone({ paradas: bloque.paradas, ...(bloque.recorrido ? { recorrido: bloque.recorrido } : {}) }) })
+  const quitarAlternativo = () => {
+    setQuitando(false)
+    setPestana('habitual')
+    onCambio({ alternativo: undefined, enUso: undefined })
+  }
+
+  return (
+    <Stack spacing={1.5}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs value={pestana} onChange={(_, valor: VarianteDelRecorrido) => setPestana(valor)} aria-label="Recorrido que editas">
+          {(['habitual', 'alternativo'] as const).map((v) => (
+            <Tab
+              key={v} value={v} sx={{ textTransform: 'none', minHeight: 48 }}
+              label={(
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                  <span>{v === 'habitual' ? 'Habitual' : 'Alternativo'}</span>
+                  {enUso === v && <Chip label="En uso" size="small" color="primary" sx={{ height: 20, fontSize: 11 }} />}
+                </Stack>
+              )}
+            />
+          ))}
+        </Tabs>
+      </Box>
+
+      {pestana === 'alternativo' && !alternativo ? (
+        <Paper variant="outlined" sx={{ p: 2.5 }}>
+          <Typography sx={{ fontWeight: 600, mb: 0.5 }}>Sin recorrido alternativo</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Un segundo recorrido por si la salida cambia: lluvia, obras, un corte de calle. Lo normal es partir del habitual y quitar o mover lo que cambie.
+          </Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+            <Button variant="contained" onClick={partirDelHabitual}>Partir del habitual</Button>
+            <Button onClick={() => onCambio({ alternativo: { paradas: [{ ...PARADA_NUEVA }] } })}>Empezar desde cero</Button>
+          </Stack>
+        </Paper>
+      ) : (
+        <>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignItems: { sm: 'center' }, justifyContent: 'space-between' }}>
+            <Typography variant="body2" color="text.secondary">
+              {pestana === enUso ? 'La web y el directo enseñan este.' : `La web y el directo enseñan ${NOMBRE[enUso]}.`}
+            </Typography>
+            <Stack direction="row" spacing={1}>
+              {pestana !== enUso && <Button size="small" variant="outlined" onClick={() => onCambio({ enUso: pestana })}>Usar este</Button>}
+              {pestana === 'alternativo' && <Button size="small" color="error" onClick={() => setQuitando(true)}>Quitar el alternativo</Button>}
+            </Stack>
+          </Stack>
+          {pestana === 'alternativo' && enUso === 'alternativo' && (
+            <Alert severity="info">El alternativo está en uso. Cuando la salida vuelva a ser la de siempre, pulsa «Usar este» en el habitual.</Alert>
+          )}
+          <ParadasYMapa key={pestana} bloque={vista} onCambio={onVista} referencia={referencia} />
+        </>
+      )}
+
+      <DialogoConfirmacion
+        abierto={quitando} peligro titulo="¿Quitar el recorrido alternativo?"
+        mensaje={enUso === 'alternativo' ? 'Está en uso: la web y el directo volverán al habitual. Sus paradas y su mapa se pierden al guardar la página.' : 'Sus paradas y su mapa se pierden al guardar la página.'}
+        textoConfirmar="Quitar" onConfirmar={quitarAlternativo} onCancelar={() => setQuitando(false)}
+      />
+    </Stack>
+  )
+}
+
+/** Las paradas y el mapa de un recorrido: el habitual o el alternativo, con el mismo formulario. */
+function ParadasYMapa({ bloque, onCambio, referencia }: Props<BloqueItinerario> & { referencia: Coordenada[] }) {
   const cambiar = (indice: number, campo: 'hora' | 'lugar' | 'nota', texto: string) =>
     onCambio({ paradas: bloque.paradas.map((p, i) => (i === indice ? { ...p, [campo]: texto } : p)) })
   const cambiarMinutos = (indice: number, texto: string) => {
@@ -195,7 +292,7 @@ export function FormularioItinerario({ bloque, onCambio }: Props<BloqueItinerari
       </Typography>
 
       <Divider sx={{ pt: 1 }} />
-      <RecorridoDelMapa bloque={bloque} onCambio={onCambio} />
+      <RecorridoDelMapa bloque={bloque} onCambio={onCambio} referencia={referencia} />
     </Stack>
   )
 }
@@ -204,7 +301,7 @@ export function FormularioItinerario({ bloque, onCambio }: Props<BloqueItinerari
  * El recorrido sobre el mapa del barrio. Solo se ve con la disposición «Sobre
  * el mapa»; con las demás se guarda igual, por si se vuelve a ella.
  */
-function RecorridoDelMapa({ bloque, onCambio }: Props<BloqueItinerario>) {
+function RecorridoDelMapa({ bloque, onCambio, referencia }: Props<BloqueItinerario> & { referencia: Coordenada[] }) {
   const enUso = valorDe(bloque, 'disposicion') === 'plano'
   return (
     <Stack spacing={1.5}>
@@ -220,6 +317,7 @@ function RecorridoDelMapa({ bloque, onCambio }: Props<BloqueItinerario>) {
           paradas={bloque.paradas}
           onRecorrido={(recorrido) => onCambio({ recorrido })}
           onParadas={(paradas) => onCambio({ paradas })}
+          referencia={referencia}
         />
         {bloque.recorrido && bloque.recorrido.linea.length >= 2 && (
           <>

@@ -111,6 +111,8 @@ export const ACCIONES_AUDITORIA = {
   TIENDA_INGRESO_BORRAR: 'TIENDA_INGRESO_BORRAR',
   CORTEJO_DIRECTO_EMPEZAR: 'CORTEJO_DIRECTO_EMPEZAR',
   CORTEJO_DIRECTO_TERMINAR: 'CORTEJO_DIRECTO_TERMINAR',
+  // El recorrido en uso cambiado desde la calle (el habitual o el alternativo)
+  CORTEJO_DIRECTO_RECORRIDO: 'CORTEJO_DIRECTO_RECORRIDO',
   // Una entrada al templo apuntada por error, que vuelve a faltar
   PUERTA_DESHACER: 'PUERTA_DESHACER',
   // El fichero del Modelo 182 sacado para presentarlo en Hacienda

@@ -22,6 +22,7 @@ function montar(geolocalizacion?: Partial<Geolocation>, inicial: unknown = APAGA
   const fetch = vi.fn().mockImplementation((url: string, init: RequestInit = {}) => {
     const ruta = String(url)
     if (ruta.endsWith('/terminar')) return Promise.resolve(json({ ...APAGADO, enMarcha: false }))
+    if (ruta.endsWith('/recorrido')) return Promise.resolve(json({ ...(inicial as object), enUso: JSON.parse(String(init.body)).enUso }))
     if (init.method === 'PUT') {
       const p = JSON.parse(String(init.body))
       return Promise.resolve(json({ enDirecto: true, enMarcha: true, ...p, actualizadoEl: '2026-10-01T17:05:00.000Z', autorNombre: 'Ana Ruiz', ...DEL_RECORRIDO }))
@@ -85,6 +86,23 @@ describe('CortejoDirectoPage', () => {
     expect(await screen.findByText(/Ninguna página tiene un itinerario con mapa/)).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Ver el mapa' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Calle Larga' })).not.toBeInTheDocument()
+  })
+
+  it('con recorrido alternativo, se cambia desde aquí el que está en uso', async () => {
+    const user = userEvent.setup()
+    const fetch = montar(undefined, { ...APAGADO, enUso: 'habitual', hayAlternativo: true })
+    const alternativo = await screen.findByRole('button', { name: 'Alternativo' })
+    expect(screen.getByRole('button', { name: 'Habitual' })).toHaveAttribute('aria-pressed', 'true')
+    await user.click(alternativo)
+    const cambio = fetch.mock.calls.find(([url]) => String(url).endsWith('/cortejo-directo/admin/recorrido'))
+    expect(JSON.parse(String((cambio?.[1] as RequestInit).body))).toEqual({ enUso: 'alternativo' })
+    expect(await screen.findByRole('button', { name: 'Alternativo' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('sin recorrido alternativo no ofrece cambiarlo', async () => {
+    montar(undefined, { ...APAGADO, enUso: 'habitual', hayAlternativo: false })
+    expect(await screen.findByText(/no está en la calle/)).toBeInTheDocument()
+    expect(screen.queryByText('Recorrido en uso')).not.toBeInTheDocument()
   })
 
   it('si el navegador niega la ubicación, lo dice y ofrece las paradas', async () => {

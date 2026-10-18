@@ -56,6 +56,7 @@ const ACCIONES: Record<string, string> = {
   PLANTILLA_CORREO_BORRAR: 'Borrar una plantilla de correo',
   PLANTILLA_CORREO_USAR: 'Poner en uso una plantilla de correo',
   CORTEJO_DIRECTO_TERMINAR: 'Terminar el cortejo en directo',
+  CORTEJO_DIRECTO_RECORRIDO: 'Cambiar el recorrido en uso desde la calle',
   RECIBO_ACTUALIZAR: 'Editar un recibo',
   RECIBO_EMITIR: 'Emitir un recibo',
   CUOTAS_GENERAR: 'Generar las cuotas',

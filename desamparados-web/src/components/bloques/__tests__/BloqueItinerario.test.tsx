@@ -15,6 +15,26 @@ const bloque = (disposicion: string): Datos => ({
   presentacion: { disposicion },
 })
 
+describe('BloqueItinerario con recorrido alternativo', () => {
+  const conAlternativo = (enUso?: 'habitual' | 'alternativo'): Datos => ({
+    ...bloque('indice'),
+    alternativo: { paradas: [{ hora: '19:30', lugar: 'Salida desde el Templo' }, { hora: '20:15', lugar: 'Atajo por la plaza' }] },
+    enUso,
+  })
+
+  it('enseña el habitual mientras no se ponga en uso el alternativo', () => {
+    renderWithProviders(<BloqueItinerario bloque={conAlternativo()} />)
+    expect(screen.getByText('C. Villalón')).toBeInTheDocument()
+    expect(screen.queryByText('Atajo por la plaza')).not.toBeInTheDocument()
+  })
+
+  it('con el alternativo en uso, enseña sus paradas', () => {
+    renderWithProviders(<BloqueItinerario bloque={conAlternativo('alternativo')} />)
+    expect(screen.getByText('Atajo por la plaza')).toBeInTheDocument()
+    expect(screen.queryByText('C. Villalón')).not.toBeInTheDocument()
+  })
+})
+
 describe('BloqueItinerario, índice de devocionario', () => {
   it('pone cada calle con su hora, en el orden del camino', () => {
     renderWithProviders(<BloqueItinerario bloque={bloque('indice')} />)

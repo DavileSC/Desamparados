@@ -220,40 +220,64 @@ const calleSchema = type({
 /** Un punto del mapa: [longitud, latitud], como en GeoJSON. */
 const coordenada = type(['-180 <= number <= 180', '-90 <= number <= 90']);
 
+// El recorrido sobre el mapa (disposición «plano»): las esquinas que se
+// pulsaron en el CMS y la línea que sale de ellas, pegada a las calles si
+// `pegado`. Se guardan las dos: las esquinas para seguir editando y la
+// línea para pintarla sin volver a calcular el camino.
+const recorridoSchema = type({
+  esquinas: coordenada.array().atMostLength(topes.puntosPorTrazado),
+  linea: coordenada.array().atMostLength(topes.puntosPorLinea),
+  pegado: 'boolean',
+  // Los tramos que van rectos aunque se pegue a las calles (un cruce): el número de la esquina de la que salen.
+  'rectos?': type('number.integer >= 0').array().atMostLength(topes.puntosPorTrazado),
+  'calles?': calleSchema.array().atMostLength(topes.callesPorRecorrido),
+  'salida?': hora,
+  'entrada?': hora,
+});
+const paradasSchema = paradaSchema.array().atLeastLength(1).atMostLength(topes.paradasPorItinerario);
+
+type Paradas = typeof paradasSchema.infer;
+type Recorrido = typeof recorridoSchema.infer;
+
+/** Lo que no cabe en el esquema de un itinerario (el habitual o el alternativo): el problema y dónde, o null. */
+function fallaDelItinerario(paradas: Paradas, recorrido: Recorrido | undefined): { path: (string | number)[]; problem: string } | null {
+  // Una parada sin lugar es una hora suelta: no dice por dónde pasa la
+  // procesión, que es justo para lo que se consulta esta página.
+  const indice = paradas.findIndex((parada) => parada.lugar.trim() === '');
+  if (indice !== -1) return { path: ['paradas', indice, 'lugar'], problem: 'no puede quedar en blanco' };
+  // La línea es una línea: un punto suelto no dibuja nada.
+  if (recorrido && recorrido.linea.length === 1) return { path: ['recorrido', 'linea'], problem: 'necesita al menos dos puntos' };
+  // Las calles van en el orden del camino: una que empezara antes que la
+  // anterior pondría al trono a andar hacia atrás.
+  const calles = recorrido?.calles ?? [];
+  const enBlanco = calles.findIndex((calle) => calle.nombre.trim() === '');
+  if (enBlanco !== -1) return { path: ['recorrido', 'calles', enBlanco, 'nombre'], problem: 'no puede quedar en blanco' };
+  const desordenada = calles.findIndex((calle, i) => i > 0 && calle.desde < calles[i - 1].desde);
+  if (desordenada !== -1) return { path: ['recorrido', 'calles', desordenada, 'desde'], problem: 'tiene que ir después de la calle anterior' };
+  return null;
+}
+
 const itinerarioSchema = type({
   ...comunes,
   tipo: "'itinerario'",
-  paradas: paradaSchema.array().atLeastLength(1).atMostLength(topes.paradasPorItinerario),
-  // El recorrido sobre el mapa (disposición «plano»): las esquinas que se
-  // pulsaron en el CMS y la línea que sale de ellas, pegada a las calles si
-  // `pegado`. Se guardan las dos: las esquinas para seguir editando y la
-  // línea para pintarla sin volver a calcular el camino.
-  'recorrido?': {
-    esquinas: coordenada.array().atMostLength(topes.puntosPorTrazado),
-    linea: coordenada.array().atMostLength(topes.puntosPorLinea),
-    pegado: 'boolean',
-    // Los tramos que van rectos aunque se pegue a las calles (un cruce): el número de la esquina de la que salen.
-    'rectos?': type('number.integer >= 0').array().atMostLength(topes.puntosPorTrazado),
-    'calles?': calleSchema.array().atMostLength(topes.callesPorRecorrido),
-    'salida?': hora,
-    'entrada?': hora,
-  },
+  paradas: paradasSchema,
+  'recorrido?': recorridoSchema,
+  // El recorrido alternativo (18-10-2026), por si la salida cambia: la lluvia
+  // acortó el Rosario de 2026 y el mapa siguió enseñando el de siempre. Lleva
+  // sus propias paradas, porque las situadas en el mapa lo están sobre su línea.
+  'alternativo?': { paradas: paradasSchema, 'recorrido?': recorridoSchema },
+  // Cuál enseñan la web y el directo. Sin él, el habitual.
+  'enUso?': "'habitual' | 'alternativo'",
 }).narrow((datos, ctx) => {
-  // Una parada sin lugar es una hora suelta: no dice por dónde pasa la
-  // procesión, que es justo para lo que se consulta esta página.
-  const indice = datos.paradas.findIndex((parada) => parada.lugar.trim() === '');
-  if (indice !== -1) return ctx.reject({ path: ['paradas', indice, 'lugar'], problem: 'no puede quedar en blanco' });
-  // La línea es una línea: un punto suelto no dibuja nada.
-  if (datos.recorrido && datos.recorrido.linea.length === 1) {
-    return ctx.reject({ path: ['recorrido', 'linea'], problem: 'necesita al menos dos puntos' });
+  const habitual = fallaDelItinerario(datos.paradas, datos.recorrido);
+  if (habitual) return ctx.reject(habitual);
+  if (datos.alternativo) {
+    const alternativo = fallaDelItinerario(datos.alternativo.paradas, datos.alternativo.recorrido);
+    if (alternativo) return ctx.reject({ ...alternativo, path: ['alternativo', ...alternativo.path] });
   }
-  // Las calles van en el orden del camino: una que empezara antes que la
-  // anterior pondría al trono a andar hacia atrás.
-  const calles = datos.recorrido?.calles ?? [];
-  const enBlanco = calles.findIndex((calle) => calle.nombre.trim() === '');
-  if (enBlanco !== -1) return ctx.reject({ path: ['recorrido', 'calles', enBlanco, 'nombre'], problem: 'no puede quedar en blanco' });
-  const desordenada = calles.findIndex((calle, i) => i > 0 && calle.desde < calles[i - 1].desde);
-  if (desordenada !== -1) return ctx.reject({ path: ['recorrido', 'calles', desordenada, 'desde'], problem: 'tiene que ir después de la calle anterior' });
+  if (datos.enUso === 'alternativo' && !datos.alternativo) {
+    return ctx.reject({ path: ['enUso'], problem: 'no puede ser el alternativo si no lo hay' });
+  }
   return true;
 });
 
