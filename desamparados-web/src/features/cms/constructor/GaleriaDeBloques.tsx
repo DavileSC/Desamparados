@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Alert, Box, Button, ButtonBase, Chip, CircularProgress, Dialog, DialogContent, DialogTitle,
   IconButton, InputAdornment, Stack, Tab, Tabs, TextField, Tooltip, Typography,
@@ -35,7 +35,9 @@ export default function GaleriaDeBloques({ abierta, posicion, total, onElegir, o
   const donde = posicion >= total ? 'al final de la página' : `en la posición ${posicion + 1}`
 
   return (
-    <Dialog open={abierta} onClose={onCerrar} maxWidth="md" fullWidth aria-labelledby="titulo-galeria-bloques">
+    // Arriba y no centrada: al buscar, la lista encoge, y centrada la ventana saltaba con cada letra.
+    <Dialog open={abierta} onClose={onCerrar} maxWidth="md" fullWidth aria-labelledby="titulo-galeria-bloques"
+      sx={{ '& .MuiDialog-container': { alignItems: 'flex-start' } }}>
       <DialogTitle id="titulo-galeria-bloques" sx={{ pr: 7 }}>
         Añadir un bloque
         <Typography component="span" variant="body2" color="text.secondary" sx={{ display: 'block' }}>Irá {donde}.</Typography>
@@ -61,6 +63,13 @@ function Tipos({ onElegir }: { onElegir: (tipo: string) => void }) {
   const { activo } = useModulos()
   // Son casi treinta: buscar por el nombre o por lo que hace va antes que recorrerlos.
   const [busqueda, setBusqueda] = useState('')
+  // Se escribe nada más abrir. Con `autoFocus` no bastaba: al abrirse, la
+  // ventana se lleva el foco a sí misma después de que el campo lo coja.
+  const campo = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    const espera = window.setTimeout(() => campo.current?.focus(), 0)
+    return () => window.clearTimeout(espera)
+  }, [])
   const buscado = sinTildes(busqueda.trim())
   const encaja = (tipo: string) => buscado === ''
     || sinTildes(`${FICHA_DE_BLOQUE[tipo].nombre} ${FICHA_DE_BLOQUE[tipo].descripcion}`).includes(buscado)
@@ -71,7 +80,7 @@ function Tipos({ onElegir }: { onElegir: (tipo: string) => void }) {
   const ninguno = porGrupo.every(({ tipos }) => tipos.length === 0)
   return (
     <Stack spacing={3}>
-      <TextField size="small" fullWidth autoFocus value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
+      <TextField size="small" fullWidth inputRef={campo} value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
         placeholder="Buscar: foto, mapa, botón…" aria-label="Buscar un bloque"
         slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }} />
       {ninguno && <Typography color="text.secondary">Ningún bloque coincide con «{busqueda.trim()}».</Typography>}
