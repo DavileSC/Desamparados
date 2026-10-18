@@ -28,7 +28,6 @@ la licencia.
 |---|---|---|
 | Exo 2 y Saira | La web (`@fontsource-variable`) | OFL 1.1, dentro de su paquete |
 | Cormorant Garamond | El calendario de la Agenda (`@fontsource`) | OFL 1.1, dentro de su paquete |
-| Montserrat | La página suelta del Rosario en directo (`@fontsource-variable`) | OFL 1.1, dentro de su paquete |
 | Newsreader e Instrument Sans | Los PDF de la API (`src/services/informes/fuentes`) | OFL 1.1, en `OFL-Newsreader.txt` y `OFL-Instrument-Sans.txt` junto a los `.ttf` |
 
 ## Mapas

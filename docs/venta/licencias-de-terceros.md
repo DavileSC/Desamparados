@@ -313,11 +313,11 @@ MIT (239), ISC (24), Apache-2.0 (12), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X1
 | yargs-parser | 18.1.3 | ISC |
 | zip-stream | 4.1.1 | MIT |
 
-## La web: 193 paquetes
+## La web: 192 paquetes
 
-MIT (166), ISC (10), BSD-3-Clause (6), OFL-1.1 (4), BSD-2-Clause (2), Apache-2.0 (2), (MIT OR Apache-2.0) (1), (MPL-2.0 OR Apache-2.0) (1), 0BSD (1)
+MIT (166), ISC (10), BSD-3-Clause (6), OFL-1.1 (3), BSD-2-Clause (2), Apache-2.0 (2), (MIT OR Apache-2.0) (1), (MPL-2.0 OR Apache-2.0) (1), 0BSD (1)
 
-**A mirar:** @fontsource-variable/exo-2 5.3.0 (OFL-1.1); @fontsource-variable/montserrat 5.3.0 (OFL-1.1); @fontsource-variable/saira 5.3.0 (OFL-1.1); @fontsource/cormorant-garamond 5.3.0 (OFL-1.1); dompurify 3.4.16 ((MPL-2.0 OR Apache-2.0)).
+**A mirar:** @fontsource-variable/exo-2 5.3.0 (OFL-1.1); @fontsource-variable/saira 5.3.0 (OFL-1.1); @fontsource/cormorant-garamond 5.3.0 (OFL-1.1); dompurify 3.4.16 ((MPL-2.0 OR Apache-2.0)).
 
 | Paquete | Versión | Licencia |
 |---|---|---|
@@ -353,7 +353,6 @@ MIT (166), ISC (10), BSD-3-Clause (6), OFL-1.1 (4), BSD-2-Clause (2), Apache-2.0
 | @floating-ui/dom | 1.8.0 | MIT |
 | @floating-ui/utils | 0.2.12 | MIT |
 | @fontsource-variable/exo-2 | 5.3.0 | OFL-1.1 |
-| @fontsource-variable/montserrat | 5.3.0 | OFL-1.1 |
 | @fontsource-variable/saira | 5.3.0 | OFL-1.1 |
 | @fontsource/cormorant-garamond | 5.3.0 | OFL-1.1 |
 | @hookform/resolvers | 5.9.1 | MIT |
