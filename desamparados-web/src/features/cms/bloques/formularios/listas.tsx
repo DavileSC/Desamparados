@@ -16,81 +16,67 @@ import { valorDe } from '../../../../components/bloques/presentacion'
 import DialogoConfirmacion from '../../../../components/DialogoConfirmacion'
 import { varianteEnUso } from '../../../../components/bloques/recorrido'
 import EditorDeLineas from './EditorDeLineas'
+import ListaEditable from './ListaEditable'
 import { intercambiar, type Props } from './comunes'
+import type { BloqueTarjetas, BloqueDatos, BloqueItinerario, Coordenada, TarjetaEnlace, IconoTarjeta, VarianteDelRecorrido } from '../../../../lib/api/contenido'
 
 // El editor del mapa lleva MapLibre: se descarga solo al abrir un itinerario.
 const EditorDeRecorrido = lazy(() => import('./EditorDeRecorrido'))
 const CallesDelRecorrido = lazy(() => import('./CallesDelRecorrido'))
-import type { BloqueTarjetas, BloqueDatos, BloqueItinerario, Coordenada, TarjetaEnlace, IconoTarjeta, VarianteDelRecorrido } from '../../../../lib/api/contenido'
 
-const TARJETA_NUEVA = { titulo: '', descripcion: '', enlace: '' }
+/**
+ * Una tarjeta recién añadida, en blanco y sin enlace. Antes apuntaba a la
+ * portada por defecto, y una tarjeta a medio hacer llevaba al inicio sin que
+ * nadie lo hubiera decidido.
+ */
+const TARJETA_NUEVA: TarjetaEnlace = { titulo: '', descripcion: '', enlace: '' }
 
 export function FormularioTarjetas({ bloque, onCambio }: Props<BloqueTarjetas>) {
-  const cambiar = (indice: number, campo: keyof TarjetaEnlace, valor: string) =>
-    onCambio({ tarjetas: bloque.tarjetas.map((t, i) => (i === indice ? { ...t, [campo]: valor } : t)) })
-
-  const anadir = () => onCambio({ tarjetas: [...bloque.tarjetas, { ...TARJETA_NUEVA }] })
-  const quitar = (indice: number) =>
-    onCambio({ tarjetas: bloque.tarjetas.filter((_, i) => i !== indice) })
-
-  // Los dos límites son los del esquema del servidor, que lee el mismo JSON:
-  // una lista vacía no pinta nada, y el tope de arriba evita una página
-  // interminable. El servidor sigue siendo quien decide; esto solo evita
-  // ofrecer algo que se va a rechazar.
-  const sobranParaQuitar = bloque.tarjetas.length > 1
-  const cabenMas = bloque.tarjetas.length < topes.tarjetasPorBloque
-
+  // Numeradas, el número hace de icono: ni foto ni icono se pintan, así que no se piden.
+  const numeradas = valorDe(bloque, 'estilo') === 'numeradas'
   return (
     <Stack spacing={2}>
-      {bloque.tarjetas.map((tarjeta, indice) => (
-        <Stack key={indice} spacing={1.5} sx={{ p: { xs: 1.5, sm: 2 }, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-          <Stack direction="row" sx={{ alignItems: 'center' }}>
-            <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>Tarjeta {indice + 1}</Typography>
-            <Tooltip title={sobranParaQuitar ? 'Quitar' : 'El bloque necesita al menos una tarjeta'}><span>
-              <IconButton size="small" color="error" aria-label={`Quitar la tarjeta ${indice + 1}`}
-                disabled={!sobranParaQuitar} onClick={() => quitar(indice)}>
-                <DeleteOutlineIcon fontSize="small" />
-              </IconButton>
-            </span></Tooltip>
-          </Stack>
-          <TextField label={`Título de la tarjeta ${indice + 1}`} value={tarjeta.titulo}
-            onChange={(e) => cambiar(indice, 'titulo', e.target.value)} size="small" fullWidth
-            slotProps={{ htmlInput: { maxLength: topes.titulo } }} />
-          <TextField label="Descripción" value={tarjeta.descripcion} multiline
-            onChange={(e) => cambiar(indice, 'descripcion', e.target.value)} size="small" fullWidth
-            slotProps={{ htmlInput: { maxLength: topes.textoTarjeta } }} />
-          <CampoEnlace etiqueta={`Enlace de la tarjeta ${indice + 1}`} valor={tarjeta.enlace} opcional
-            onCambio={(ruta) => cambiar(indice, 'enlace', ruta)}
-            ayuda="Opcional. Sin enlace, la tarjeta es informativa y no lleva a ninguna parte." />
-          {/* Foto o icono, no los dos: con foto, el icono no se pinta. */}
-          <CampoImagen valor={tarjeta.foto ?? ''} onCambio={(foto) => cambiar(indice, 'foto', foto)}
-            etiqueta={`Foto de la tarjeta ${indice + 1}`} apaisada
-            ayuda="Opcional. Va arriba de la tarjeta, recortada a lo ancho." />
-          {(tarjeta.foto ?? '') !== '' ? (
-            <TextField label="Descripción de la foto" value={tarjeta.fotoAlt ?? ''} size="small" fullWidth
-              onChange={(e) => cambiar(indice, 'fotoAlt', e.target.value)}
-              helperText="Obligatoria con foto: lo que se ve, en una frase."
-              slotProps={{ htmlInput: { maxLength: topes.descripcion } }} />
-          ) : (
-            <TextField select label="Icono" value={tarjeta.icono ?? ''} size="small" fullWidth
-              onChange={(e) => cambiar(indice, 'icono', e.target.value as IconoTarjeta | '')}
-              helperText="Opcional. Un icono redondo encima del título.">
-              <MenuItem value="">Sin icono</MenuItem>
-              {Object.entries(ICONOS).map(([clave, { Icono, nombre }]) => (
-                <MenuItem key={clave} value={clave}><Icono fontSize="small" sx={{ mr: 1.5, color: 'text.secondary' }} />{nombre}</MenuItem>
-              ))}
-            </TextField>
-          )}
-        </Stack>
-      ))}
-      <Button startIcon={<AddIcon />} onClick={anadir} disabled={!cabenMas} sx={{ alignSelf: 'flex-start' }}>
-        Añadir tarjeta
-      </Button>
-      {!cabenMas && (
-        <Typography variant="caption" color="text.secondary">
-          Son ya {topes.tarjetasPorBloque} tarjetas, el máximo de un bloque.
+      {numeradas && (
+        <Typography variant="body2" color="text.secondary">
+          En el estilo «Numeradas» cada tarjeta lleva su número en vez de foto o icono.
         </Typography>
       )}
+      <ListaEditable elementos={bloque.tarjetas} onCambio={(tarjetas) => onCambio({ tarjetas })} nuevo={() => ({ ...TARJETA_NUEVA })}
+        nombre="Tarjeta" maximo={topes.tarjetasPorBloque}
+        pintar={(tarjeta, cambiar, indice) => (
+          <>
+            <TextField label={`Título de la tarjeta ${indice + 1}`} value={tarjeta.titulo}
+              onChange={(e) => cambiar({ titulo: e.target.value })} size="small" fullWidth
+              slotProps={{ htmlInput: { maxLength: topes.titulo } }} />
+            <TextField label="Descripción" value={tarjeta.descripcion} multiline
+              onChange={(e) => cambiar({ descripcion: e.target.value })} size="small" fullWidth
+              slotProps={{ htmlInput: { maxLength: topes.textoTarjeta } }} />
+            <CampoEnlace etiqueta={`Enlace de la tarjeta ${indice + 1}`} valor={tarjeta.enlace} opcional
+              onCambio={(enlace) => cambiar({ enlace })}
+              ayuda="Opcional. Sin enlace, la tarjeta es informativa y no lleva a ninguna parte." />
+            {/* Foto o icono, no los dos: con foto, el icono no se pinta. */}
+            {!numeradas && (
+              <CampoImagen valor={tarjeta.foto ?? ''} onCambio={(foto) => cambiar({ foto })}
+                etiqueta={`Foto de la tarjeta ${indice + 1}`} apaisada
+                ayuda="Opcional. Va arriba de la tarjeta, recortada a lo ancho." />
+            )}
+            {!numeradas && ((tarjeta.foto ?? '') !== '' ? (
+              <TextField label="Descripción de la foto" value={tarjeta.fotoAlt ?? ''} size="small" fullWidth
+                onChange={(e) => cambiar({ fotoAlt: e.target.value })}
+                helperText="Obligatoria con foto: lo que se ve, en una frase."
+                slotProps={{ htmlInput: { maxLength: topes.descripcion } }} />
+            ) : (
+              <TextField select label="Icono" value={tarjeta.icono ?? ''} size="small" fullWidth
+                onChange={(e) => cambiar({ icono: e.target.value as IconoTarjeta | '' })}
+                helperText="Opcional. Un icono redondo encima del título.">
+                <MenuItem value="">Sin icono</MenuItem>
+                {Object.entries(ICONOS).map(([clave, { Icono, nombre }]) => (
+                  <MenuItem key={clave} value={clave}><Icono fontSize="small" sx={{ mr: 1.5, color: 'text.secondary' }} />{nombre}</MenuItem>
+                ))}
+              </TextField>
+            ))}
+          </>
+        )} />
     </Stack>
   )
 }
@@ -99,7 +85,10 @@ export function FormularioDatos({ bloque, onCambio }: Props<BloqueDatos>) {
   return <EditorDeLineas lineas={bloque.lineas} onCambio={(lineas) => onCambio({ lineas })} minimo={1} />
 }
 
-const PARADA_NUEVA = { hora: '17:30', lugar: '' }
+/** Una parada recién añadida, sin hora: hasta que se sepa, la web dice «por confirmar». */
+const PARADA_NUEVA = { hora: '', lugar: '' }
+
+const HORA = /^([01]\d|2[0-3]):[0-5]\d$/
 
 /** Fija: un `[]` nuevo en cada pintado haría repintar el mapa a cada tecla. */
 const SIN_LINEA: Coordenada[] = []
@@ -231,55 +220,58 @@ function ParadasYMapa({ bloque, onCambio, referencia }: Props<BloqueItinerario> 
         // repite lugares. Aquí no importa como en la galería, porque ninguno de
         // estos campos guarda estado propio: son cuadros de texto.
         <Stack key={indice} spacing={1}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignItems: { sm: 'center' } }}>
-          <TextField
-            label={`Hora ${indice + 1}`} value={parada.hora}
-            onChange={(e) => cambiar(indice, 'hora', e.target.value)}
-            size="small" sx={{ width: { sm: 120 } }}
-            placeholder="Sin hora"
-            slotProps={{ htmlInput: { maxLength: 5, inputMode: 'numeric' } }}
-          />
-          <TextField
-            label="Lugar" value={parada.lugar}
-            onChange={(e) => cambiar(indice, 'lugar', e.target.value)}
-            size="small" fullWidth
-            slotProps={{ htmlInput: { maxLength: topes.lugar } }}
-          />
-          <Stack direction="row" spacing={0.5}>
-            <Tooltip title="Subir"><span>
-              <IconButton size="small" aria-label={`Subir la parada ${indice + 1}`}
-                disabled={indice === 0} onClick={() => mover(indice, -1)}>
-                <ArrowUpwardIcon fontSize="small" />
-              </IconButton>
-            </span></Tooltip>
-            <Tooltip title="Bajar"><span>
-              <IconButton size="small" aria-label={`Bajar la parada ${indice + 1}`}
-                disabled={indice === bloque.paradas.length - 1} onClick={() => mover(indice, 1)}>
-                <ArrowDownwardIcon fontSize="small" />
-              </IconButton>
-            </span></Tooltip>
-            <Tooltip title={sobranParaQuitar ? 'Quitar' : 'El itinerario necesita al menos una parada'}><span>
-              <IconButton size="small" color="error" aria-label={`Quitar la parada ${indice + 1}`}
-                disabled={!sobranParaQuitar} onClick={() => quitar(indice)}>
-                <DeleteOutlineIcon fontSize="small" />
-              </IconButton>
-            </span></Tooltip>
-          </Stack>
-        </Stack>
-        {porCalles && (
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ pl: { sm: '136px' } }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignItems: { sm: 'center' } }}>
             <TextField
-              label="Qué pasa allí" value={parada.nota ?? ''} placeholder="Saetas a la Virgen"
-              onChange={(e) => cambiar(indice, 'nota', e.target.value)}
-              size="small" fullWidth slotProps={{ htmlInput: { maxLength: topes.lugar } }}
+              label={`Hora ${indice + 1}`} value={parada.hora}
+              onChange={(e) => cambiar(indice, 'hora', e.target.value)}
+              size="small" sx={{ width: { sm: 120 } }}
+              placeholder="Sin hora"
+              // Se marca al momento, y no solo al guardar: así se ve cuál es.
+              error={parada.hora !== '' && !HORA.test(parada.hora)}
+              helperText={parada.hora !== '' && !HORA.test(parada.hora) ? 'Como 17:30' : undefined}
+              slotProps={{ htmlInput: { maxLength: 5, inputMode: 'numeric' } }}
             />
             <TextField
-              label="Minutos parado" value={parada.minutos ?? ''} type="number"
-              onChange={(e) => cambiarMinutos(indice, e.target.value)}
-              size="small" sx={{ width: { sm: 150 } }} slotProps={{ htmlInput: { min: 0, max: topes.minutosDeParada } }}
+              label="Lugar" value={parada.lugar}
+              onChange={(e) => cambiar(indice, 'lugar', e.target.value)}
+              size="small" fullWidth
+              slotProps={{ htmlInput: { maxLength: topes.lugar } }}
             />
+            <Stack direction="row" spacing={0.5}>
+              <Tooltip title="Subir"><span>
+                <IconButton size="small" aria-label={`Subir la parada ${indice + 1}`}
+                  disabled={indice === 0} onClick={() => mover(indice, -1)}>
+                  <ArrowUpwardIcon fontSize="small" />
+                </IconButton>
+              </span></Tooltip>
+              <Tooltip title="Bajar"><span>
+                <IconButton size="small" aria-label={`Bajar la parada ${indice + 1}`}
+                  disabled={indice === bloque.paradas.length - 1} onClick={() => mover(indice, 1)}>
+                  <ArrowDownwardIcon fontSize="small" />
+                </IconButton>
+              </span></Tooltip>
+              <Tooltip title={sobranParaQuitar ? 'Quitar' : 'El itinerario necesita al menos una parada'}><span>
+                <IconButton size="small" color="error" aria-label={`Quitar la parada ${indice + 1}`}
+                  disabled={!sobranParaQuitar} onClick={() => quitar(indice)}>
+                  <DeleteOutlineIcon fontSize="small" />
+                </IconButton>
+              </span></Tooltip>
+            </Stack>
           </Stack>
-        )}
+          {porCalles && (
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ pl: { sm: '136px' } }}>
+              <TextField
+                label="Qué pasa allí" value={parada.nota ?? ''} placeholder="Saetas a la Virgen"
+                onChange={(e) => cambiar(indice, 'nota', e.target.value)}
+                size="small" fullWidth slotProps={{ htmlInput: { maxLength: topes.lugar } }}
+              />
+              <TextField
+                label="Minutos parado" value={parada.minutos ?? ''} type="number"
+                onChange={(e) => cambiarMinutos(indice, e.target.value)}
+                size="small" sx={{ width: { sm: 150 } }} slotProps={{ htmlInput: { min: 0, max: topes.minutosDeParada } }}
+              />
+            </Stack>
+          )}
         </Stack>
       ))}
       <Button startIcon={<AddIcon />} onClick={anadir} disabled={!cabenMas} sx={{ alignSelf: 'flex-start' }}>
@@ -302,12 +294,12 @@ function ParadasYMapa({ bloque, onCambio, referencia }: Props<BloqueItinerario> 
  * el mapa»; con las demás se guarda igual, por si se vuelve a ella.
  */
 function RecorridoDelMapa({ bloque, onCambio, referencia }: Props<BloqueItinerario> & { referencia: Coordenada[] }) {
-  const enUso = valorDe(bloque, 'disposicion') === 'plano'
+  const sobreElMapa = valorDe(bloque, 'disposicion') === 'plano'
   return (
     <Stack spacing={1.5}>
       <Typography variant="subtitle2">Recorrido sobre el mapa</Typography>
       <Typography variant="body2" color="text.secondary">
-        {enUso
+        {sobreElMapa
           ? 'Al bajar por las paradas, la línea del recorrido se dibuja por las calles y el trono llega a cada una. Quien lo ve puede darle al play.'
           : 'Se ve eligiendo «Sobre el mapa» en la pestaña Presentación: al bajar por las paradas, la línea del recorrido se dibuja por las calles.'}
       </Typography>

@@ -106,7 +106,7 @@ export default function FinesEnFoco({ bloque }: { bloque: Datos }) {
       <Box sx={{
         mt: { xs: 3, md: 5 }, py: { xs: 3, md: 6 },
         borderTop: '1px solid rgba(255,255,255,0.08)', borderBottom: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: { xs: 1.5, md: 2 },
+        display: 'flex', flexDirection: { xs: 'column', md: 'row' }, flexWrap: { md: 'wrap' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: { xs: 1.5, md: 2 },
       }}>
         {bloque.fines.map((fin, i) => {
           const activa = i === foco
@@ -127,7 +127,8 @@ export default function FinesEnFoco({ bloque }: { bloque: Datos }) {
                 '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
               }}
             >
-              <Box component="span" sx={{ fontSize: { xs: 44, sm: 64, md: 84, lg: 108 }, fontWeight: 200, letterSpacing: '-0.02em', lineHeight: 1 }}>
+              {/* Crece con la ventana: a 84 px fijos, tres palabras largas no cabían en una fila a 900 px. */}
+              <Box component="span" sx={{ fontSize: { xs: 44, sm: 60, md: 'min(84px, 6.2vw)', lg: 'min(108px, 7vw)' }, fontWeight: 200, letterSpacing: '-0.02em', lineHeight: 1 }}>
                 {fin.titulo}
               </Box>
               <Box component="span" aria-hidden sx={esquina('arriba-izquierda', activa)} />

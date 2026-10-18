@@ -22,7 +22,6 @@ const RECUADRO = '#1a181b'
 const ACENTO = MARCA.principalClaro
 const FILETE = 'rgba(255, 255, 255, 0.14)'
 
-
 /** «12,5» o «12.50» → 12.5; lo que no es un importe con dos decimales como mucho, null. */
 function leerImporte(texto: string): number | null {
   const limpio = texto.trim().replace(',', '.')
@@ -48,7 +47,9 @@ export default function BloqueDonativo({ bloque }: { bloque: Datos }) {
   const pagina = useSlugDeLaPagina()
   const { data } = useQuery({ queryKey: ['pagos', 'metodos'], queryFn: metodosDePago, staleTime: 5 * 60_000 })
   const pago = data?.pago ?? null
-  const [elegido, setElegido] = useState<number | 'otro'>(bloque.importes[1] ?? bloque.importes[0])
+  const [eleccion, setElegido] = useState<number | 'otro'>(bloque.importes[1] ?? bloque.importes[0])
+  // Si los importes cambian (en la vista del CMS, mientras se editan), lo elegido puede no estar ya.
+  const elegido = eleccion === 'otro' || bloque.importes.includes(eleccion) ? eleccion : (bloque.importes[1] ?? bloque.importes[0])
   const [otro, setOtro] = useState('')
   const [destino, setDestino] = useState<string | null>(null)
   const [nombre, setNombre] = useState('')
@@ -145,7 +146,7 @@ export default function BloqueDonativo({ bloque }: { bloque: Datos }) {
           <Typography id="donativo-destino" sx={{ fontSize: 13, letterSpacing: '0.18em', textTransform: 'uppercase', color: ACENTO }}>¿A qué lo destinas?</Typography>
           <Box role="group" aria-labelledby="donativo-destino" sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25 }}>
             {bloque.destinos.map((d, i) => (
-              <ButtonBase key={d} aria-pressed={destino === d} onClick={() => setDestino(d)} sx={opcion(destino === d)}
+              <ButtonBase key={`${d}-${i}`} aria-pressed={destino === d} onClick={() => setDestino(d)} sx={opcion(destino === d)}
                 {...(intentado && faltaDestino && i === 0 && { 'data-falta': true, 'aria-describedby': 'donativo-falta-destino' })}>{d}</ButtonBase>
             ))}
           </Box>

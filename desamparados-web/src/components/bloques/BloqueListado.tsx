@@ -89,9 +89,11 @@ const LISTADOS: Record<FuenteListado, (props: PropsListado) => ReactNode> = {
 /**
  * Título del bloque, con el enlace al listado entero si lo hay. Sin título, el
  * enlace va solo y a la derecha: un `TituloDeSeccion` vacío dejaría un encabezado
- * sin texto, que un lector de pantalla anuncia igual.
+ * sin texto, que un lector de pantalla anuncia igual. Va siempre a la
+ * izquierda, con el enlace al otro lado: por eso el CMS no ofrece centrarlo.
  */
-function Encabezado({ titulo, enlace, accion }: { titulo: string; enlace?: { texto: string; ruta: string }; accion?: ReactNode }) {
+function Encabezado({ bloque, enlace, accion }: { bloque: Datos; enlace?: { texto: string; ruta: string }; accion?: ReactNode }) {
+  const { titulo } = bloque
   if (titulo) return <TituloDeSeccion title={titulo} actionLabel={enlace?.texto} actionHref={enlace?.ruta} accion={accion} />
   if (accion) return <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>{accion}</Box>
   if (!enlace) return null
@@ -205,7 +207,7 @@ function NoticiasRecientes({ titulo, bloque }: PropsListado) {
   const items = todas.slice(0, cuantas)
   return (
     <>
-      <Encabezado titulo={titulo} enlace={{ texto: 'Ver todas las noticias', ruta: '/noticias' }} />
+      <Encabezado bloque={bloque} enlace={{ texto: 'Ver todas las noticias', ruta: '/noticias' }} />
       {(loading || error) && (
         <EnCarga
           estado={loading ? 'cargando' : 'error'}
@@ -240,7 +242,7 @@ function AgendaProxima({ titulo, bloque }: PropsListado) {
   if (loading || error) {
     return (
       <>
-        <Encabezado titulo={titulo} enlace={{ texto: 'Ver agenda completa', ruta: '/agenda' }} />
+        <Encabezado bloque={bloque} enlace={{ texto: 'Ver agenda completa', ruta: '/agenda' }} />
         <EnCarga
           estado={loading ? 'cargando' : 'error'}
           que="la agenda"
@@ -259,7 +261,7 @@ function AgendaProxima({ titulo, bloque }: PropsListado) {
   const lista = enLista(bloque) && items.length > 0
   return (
     <>
-      <Encabezado titulo={titulo} enlace={{ texto: 'Ver agenda completa', ruta: '/agenda' }} />
+      <Encabezado bloque={bloque} enlace={{ texto: 'Ver agenda completa', ruta: '/agenda' }} />
       {lista
         ? <ListaSencilla etiqueta={titulo || 'Próximos actos'}
             filas={items.map((a) => ({ clave: a.id, fecha: a.fecha, texto: a.titulo, detalle: [a.hora, a.lugar].filter(Boolean).join(' · ') }))} />
@@ -290,10 +292,10 @@ function ListaDeEventos({ eventos, columnas }: { eventos: Acto[]; columnas: numb
  * porque un curso cabe en una página. La suscripción va junto al título, a la
  * vista nada más entrar.
  */
-function Agenda({ titulo }: PropsListado) {
+function Agenda({ bloque }: PropsListado) {
   return (
     <>
-      <Encabezado titulo={titulo} accion={<SuscribirseALaAgenda />} />
+      <Encabezado bloque={bloque} accion={<SuscribirseALaAgenda />} />
       <AgendaDeCultos />
     </>
   )
@@ -333,7 +335,7 @@ function ArchivoDeNoticias({ titulo, bloque }: PropsListado) {
 
   return (
     <>
-      <Encabezado titulo={titulo} />
+      <Encabezado bloque={bloque} />
       {items.length === 0 && (loading || error) && (
         <EnCarga
           // Tras un fallo sin ninguna noticia a la vista, «Volver a intentar» pide lo mismo.
@@ -384,7 +386,7 @@ const visualmenteOculto = {
   overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap',
 } as const
 
-function Publicaciones({ titulo, bloque, categoria, etiqueta, que, vacio, fallo }: PropsListado & {
+function Publicaciones({ bloque, categoria, etiqueta, que, vacio, fallo }: PropsListado & {
   categoria?: 'boletin' | 'dossier'
   /** Lo que se pagina: para el paginador. */
   etiqueta: string
@@ -397,7 +399,7 @@ function Publicaciones({ titulo, bloque, categoria, etiqueta, que, vacio, fallo 
   const columnas = columnasDe(bloque, 4)
   return (
     <>
-      <Encabezado titulo={titulo} />
+      <Encabezado bloque={bloque} />
       {(loading || error) && (
         <EnCarga
           estado={loading ? 'cargando' : 'error'}

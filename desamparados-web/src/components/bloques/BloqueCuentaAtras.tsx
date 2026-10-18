@@ -59,7 +59,7 @@ export default function BloqueCuentaAtras({ bloque }: { bloque: Datos }) {
       ) : (
         <>
           <Typography sx={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>
-            {`Faltan ${dias} días para el ${fechaLegible}.`}
+            {dias === 0 ? `Falta menos de un día para el ${fechaLegible}.` : `${dias === 1 ? 'Falta un día' : `Faltan ${dias} días`} para el ${fechaLegible}.`}
           </Typography>
           {estilo === 'rueda' ? <Ruedas casillas={casillas} /> : (
           <Box aria-hidden sx={{ display: 'flex', justifyContent: 'center', gap: compacta ? { xs: 2, md: 3 } : { xs: 1.5, sm: 3, md: 5 } }}>

@@ -3,7 +3,7 @@ import { Box, Typography } from '@mui/material'
 import { keyframes } from '@mui/material/styles'
 import { useInView, useReducedMotion } from 'framer-motion'
 import { useModoEdicion } from './modoEdicion'
-import { GOLD, SERIF } from '../../features/inicio/estilos'
+import { SERIF } from '../../features/inicio/estilos'
 import { anchoMaximo, valorDe } from './presentacion'
 import type { BloqueCita as Datos } from '../../lib/api/contenido'
 
@@ -55,10 +55,11 @@ export default function BloqueCita({ bloque }: { bloque: Datos }) {
   return (
     <Box component="figure" sx={{
       m: 0, mx: 'auto', maxWidth: anchoMaximo(bloque, enfoque ? '1200px' : grande ? '1000px' : '820px'), textAlign: izquierda ? 'left' : 'center',
-      ...(estilo === 'franja' && { py: { xs: 4, md: 5 }, borderTop: `1px solid ${GOLD}`, borderBottom: `1px solid ${GOLD}` }),
+      // El acento del tema y no el oro a mano: sobre una franja de papel pasa a granate y se lee.
+      ...(estilo === 'franja' && { py: { xs: 4, md: 5 }, borderTop: '1px solid', borderBottom: '1px solid', borderColor: 'secondary.main' }),
     }}>
       {estilo === 'clasica' && (
-        <Typography aria-hidden sx={{ fontFamily: SERIF, fontSize: 88, lineHeight: 0.6, color: GOLD, mb: 1, height: 44 }}>“</Typography>
+        <Typography aria-hidden sx={{ fontFamily: SERIF, fontSize: 88, lineHeight: 0.6, color: 'secondary.main', mb: 1, height: 44 }}>“</Typography>
       )}
       <Box component="blockquote" sx={{ m: 0 }}>
         <Typography sx={{

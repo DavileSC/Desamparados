@@ -51,6 +51,13 @@ function CampoHoras({ horas, onCambio, etiqueta, ayuda }: { horas: string[]; onC
   const trozos = texto.split(/[,;\s]+/).filter(Boolean)
   const normalizadas = trozos.map(normalizarHora)
   const valen = normalizadas.every((h) => h !== null)
+  // Las horas pueden cambiar sin escribir aquí: al deshacer, o al mover la
+  // franja. Si lo escrito ya no dice lo mismo que lo guardado, manda lo guardado.
+  const [vistas, setVistas] = useState(horas)
+  if (vistas !== horas) {
+    setVistas(horas)
+    if (!valen || [...new Set(normalizadas as string[])].sort().join() !== horas.join()) setTexto(horasEnTexto(horas))
+  }
   return (
     <TextField label={etiqueta} value={texto} size="small" fullWidth error={!valen}
       helperText={valen ? ayuda : 'Escribe las horas así: 9:30, 19:00'}

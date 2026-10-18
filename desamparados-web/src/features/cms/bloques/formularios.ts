@@ -73,10 +73,12 @@ const BLOQUE_NUEVO: Record<string, object> = {
   // La galería nace vacía a propósito: el primer paso es elegir si lo que se
   // añade es una foto o un vídeo, y son dos formularios distintos.
   galeria: { tipo: 'galeria', titulo: '', medios: [] },
-  tarjetas: { tipo: 'tarjetas', titulo: '', tarjetas: [{ titulo: '', descripcion: '', enlace: '/' }] },
-  llamada: { tipo: 'llamada', titulo: '', texto: '', boton: '', enlace: '/' },
+  // Los botones y enlaces nacen sin destino: antes llevaban a la portada, y uno
+  // a medio hacer iba al inicio sin que nadie lo hubiera decidido.
+  tarjetas: { tipo: 'tarjetas', titulo: '', tarjetas: [{ titulo: '', descripcion: '', enlace: '' }] },
+  llamada: { tipo: 'llamada', titulo: '', texto: '', boton: '', enlace: '' },
   datos: { tipo: 'datos', titulo: '', lineas: [{ etiqueta: '', valor: '' }] },
-  itinerario: { tipo: 'itinerario', titulo: '', paradas: [{ hora: '17:30', lugar: '' }] },
+  itinerario: { tipo: 'itinerario', titulo: '', paradas: [{ hora: '', lugar: '' }] },
   cronologia: {
     tipo: 'cronologia', titulo: '',
     hitos: [{ periodo: '', etiqueta: '', titulo: '', relato: '', foto: { url: '', alt: '', pie: '' }, tono: 'ninguno' }],
@@ -87,7 +89,7 @@ const BLOQUE_NUEVO: Record<string, object> = {
   fotoTexto: { tipo: 'fotoTexto', titulo: '', url: '', alt: '', pie: '', html: '', boton: '', enlace: '' },
   cita: { tipo: 'cita', titulo: '', texto: '', autor: '', fuente: '' },
   video: { tipo: 'video', titulo: '', url: '', portada: '', alt: '', pie: '' },
-  botones: { tipo: 'botones', titulo: '', botones: [{ texto: '', enlace: '/', estilo: 'principal' }] },
+  botones: { tipo: 'botones', titulo: '', botones: [{ texto: '', enlace: '', estilo: 'principal' }] },
   preguntas: { tipo: 'preguntas', titulo: '', preguntas: [{ pregunta: '', respuesta: '' }] },
   descargas: { tipo: 'descargas', titulo: '', archivos: [{ titulo: '', descripcion: '', url: '' }] },
   mapa: { tipo: 'mapa', titulo: '', lugar: '', direccion: '' },
@@ -154,15 +156,6 @@ export function problemaDePresentacion(bloque: Bloque): string | null {
   return null
 }
 
-/**
- * Qué le falta a un bloque para poder guardarse, o `null` si está completo.
- *
- * No reimplementa el esquema del servidor (`bloques.schema.ts`): cubre lo que
- * un bloque recién añadido tiene en blanco (`BLOQUE_NUEVO`), que es el caso que
- * de verdad se cuela al guardar sin querer. El servidor sigue siendo quien de
- * verdad decide; esto es solo para avisar antes de gastar una petición y para
- * decir DE QUÉ bloque se trata, porque puede estar plegado y fuera de la vista.
- */
 /** Lo que falta a un itinerario (el habitual o el alternativo) para poder guardarse, o null. */
 function fallaDelItinerario(paradas: ParadaRecorrido[], recorrido: RecorridoEnMapa | undefined): string | null {
   if (paradas.some((p) => p.lugar.trim() === '')) return 'tiene una parada sin lugar'
@@ -172,6 +165,24 @@ function fallaDelItinerario(paradas: ParadaRecorrido[], recorrido: RecorridoEnMa
   return null
 }
 
+/**
+ * El primero de unos enlaces opcionales que lleva a una página que no existe,
+ * con su posición (desde 1), o null. Vacío vale: es «sin enlace».
+ */
+function enlaceRoto(enlaces: string[]): { n: number; enlace: string } | null {
+  const i = enlaces.findIndex((enlace) => enlace !== '' && !esDestinoValido(enlace))
+  return i === -1 ? null : { n: i + 1, enlace: enlaces[i] }
+}
+
+/**
+ * Qué le falta a un bloque para poder guardarse, o `null` si está completo.
+ *
+ * No reimplementa el esquema del servidor (`bloques.schema.ts`): cubre lo que
+ * un bloque recién añadido tiene en blanco (`BLOQUE_NUEVO`), que es el caso que
+ * de verdad se cuela al guardar sin querer. El servidor sigue siendo quien de
+ * verdad decide; esto es solo para avisar antes de gastar una petición y para
+ * decir DE QUÉ bloque se trata, porque puede estar plegado y fuera de la vista.
+ */
 export function problemaDeBloque(bloque: Bloque): string | null {
   switch (bloque.tipo) {
     case 'texto':
@@ -232,6 +243,8 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       return problemaDelMedio({ tipo: 'video', url: bloque.url, portada: bloque.portada, alt: bloque.alt, pie: bloque.pie })
     case 'botones': {
       if (bloque.botones.some((b) => b.texto.trim() === '')) return 'tiene un botón sin texto'
+      const sinDestino = bloque.botones.findIndex((b) => b.enlace === '')
+      if (sinDestino !== -1) return `tiene el botón ${sinDestino + 1} sin destino`
       const roto = bloque.botones.find((b) => !esDestinoValido(b.enlace))
       return roto ? `lleva un botón a una página que no existe (${roto.enlace})` : null
     }
@@ -270,7 +283,9 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       const sinNombre = bloque.fines.findIndex((f) => f.titulo.trim() === '')
       if (sinNombre !== -1) return `tiene el fin ${sinNombre + 1} sin nombre`
       const cojo = bloque.fines.findIndex((f) => (f.boton.trim() === '') !== (f.enlace === ''))
-      return cojo === -1 ? null : `tiene el botón del fin ${cojo + 1} sin texto o sin destino`
+      if (cojo !== -1) return `tiene el botón del fin ${cojo + 1} sin texto o sin destino`
+      const roto = enlaceRoto(bloque.fines.map((f) => f.enlace))
+      return roto ? `lleva el botón del fin ${roto.n} a una página que no existe (${roto.enlace})` : null
     }
     case 'puertas': {
       const sinTitulo = bloque.puertas.findIndex((p) => p.titulo.trim() === '')
@@ -278,11 +293,15 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       const sinNombre = bloque.puertas.findIndex((p) => p.datos.some((d) => d.etiqueta.trim() === ''))
       if (sinNombre !== -1) return `tiene un dato de la puerta ${sinNombre + 1} sin nombre`
       const cojo = bloque.puertas.findIndex((p) => (p.boton.trim() === '') !== (p.enlace === ''))
-      return cojo === -1 ? null : `tiene el botón de la puerta ${cojo + 1} sin texto o sin destino`
+      if (cojo !== -1) return `tiene el botón de la puerta ${cojo + 1} sin texto o sin destino`
+      const roto = enlaceRoto(bloque.puertas.map((p) => p.enlace))
+      return roto ? `lleva el botón de la puerta ${roto.n} a una página que no existe (${roto.enlace})` : null
     }
     case 'donativo':
       if (bloque.importes.length === 0) return 'no tiene ningún importe sugerido'
       if (bloque.destinos.some((d) => d.trim() === '')) return 'tiene un destino en blanco'
+      // Igual que el servidor: sin distinguir mayúsculas, dos iguales no se podrían elegir por separado.
+      if (new Set(bloque.destinos.map((d) => d.trim().toLocaleLowerCase('es-ES'))).size !== bloque.destinos.length) return 'tiene dos destinos iguales'
       return null
     case 'carrusel': {
       const sinNombre = bloque.piezas.findIndex((p) => p.titulo.trim() === '')
@@ -296,7 +315,9 @@ export function problemaDeBloque(bloque: Bloque): string | null {
     }
     case 'relacion': {
       const sinCargo = bloque.filas.findIndex((f) => f.cargo.trim() === '')
-      return sinCargo === -1 ? null : `tiene la fila ${sinCargo + 1} sin cargo`
+      if (sinCargo !== -1) return `tiene la fila ${sinCargo + 1} sin cargo`
+      const roto = enlaceRoto(bloque.filas.map((f) => f.enlace))
+      return roto ? `lleva la fila ${roto.n} a una página que no existe (${roto.enlace})` : null
     }
     case 'programa': {
       const sinCuando = bloque.filas.findIndex((f) => f.cuando.trim() === '')
@@ -304,7 +325,9 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       const sinTitulo = bloque.filas.findIndex((f) => f.titulo.trim() === '')
       if (sinTitulo !== -1) return `tiene el culto ${sinTitulo + 1} sin nombre`
       const cojo = bloque.filas.findIndex((f) => (f.boton.trim() === '') !== (f.enlace === ''))
-      return cojo === -1 ? null : `tiene el enlace del culto ${cojo + 1} sin texto o sin destino`
+      if (cojo !== -1) return `tiene el enlace del culto ${cojo + 1} sin texto o sin destino`
+      const roto = enlaceRoto(bloque.filas.map((f) => f.enlace))
+      return roto ? `lleva el enlace del culto ${roto.n} a una página que no existe (${roto.enlace})` : null
     }
     case 'dibujo':
       if (bloque.foto && bloque.foto.url !== '' && bloque.foto.alt.trim() === '') return 'tiene la ilustración sin descripción'

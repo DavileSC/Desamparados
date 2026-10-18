@@ -67,10 +67,16 @@ export const libreDe = (bloque: { presentacion?: Presentacion }, clave: 'fondoFo
 /**
  * El ancho máximo del contenido de un bloque: el suyo de siempre (`normal`),
  * uno de lectura cómoda (`estrecho`) o todo el de la página (`ancho`).
+ *
+ * Estrecho nunca ensancha: una foto pequeña (480 px) o una carta (680 px) ya
+ * son más estrechas que 720 y se quedan como están.
  */
 export function anchoMaximo(bloque: Bloque, propio: string | number): string | number {
   const ancho = valorDe(bloque, 'ancho')
-  if (ancho === 'estrecho') return typeof propio === 'number' ? Math.min(propio, 720) : '720px'
+  if (ancho === 'estrecho') {
+    if (typeof propio === 'number') return Math.min(propio, 720)
+    return propio === 'none' ? '720px' : `min(${propio}, 720px)`
+  }
   if (ancho === 'ancho') return 'none'
   return propio
 }

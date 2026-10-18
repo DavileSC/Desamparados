@@ -91,7 +91,8 @@ export default function BloqueCarrusel({ bloque }: { bloque: Datos }) {
           height: { md: 'min(72svh, 680px)' }, minHeight: { md: 440 },
         }}
       >
-        {bloque.piezas.map((p, i) => (
+        {/* Una pieza recién añadida en el CMS aún sin foto, nada: un <img src=""> vuelve a pedir la página. */}
+        {bloque.piezas.map((p, i) => p.foto.url !== '' && (
           <Box
             // Clave posicional: una pieza no tiene identificador, y la foto no guarda estado.
             key={i}
@@ -194,7 +195,7 @@ function CarruselMovil({ bloque, actual, pieza, total, ir, teclas, empieza, acab
         '&:focus-visible': { outline: `2px solid ${MARCA.acento}`, outlineOffset: -2 },
       }}
     >
-      {bloque.piezas.map((p, i) => (
+      {bloque.piezas.map((p, i) => p.foto.url !== '' && (
         <Box
           key={i}
           component="img"

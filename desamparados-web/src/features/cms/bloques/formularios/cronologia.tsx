@@ -188,8 +188,3 @@ export function FormularioCronologia({ bloque, onCambio }: Props<BloqueCronologi
     </Stack>
   )
 }
-
-/**
- * Las fuentes de un listado, con lo que quien edita necesita saber: qué sale
- * y desde dónde se escribe. Es lo que decide, porque el bloque no tiene más.
- */

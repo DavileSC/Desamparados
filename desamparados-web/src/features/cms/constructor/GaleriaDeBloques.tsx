@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import {
   Alert, Box, Button, ButtonBase, Chip, CircularProgress, Dialog, DialogContent, DialogTitle,
-  IconButton, Stack, Tab, Tabs, Tooltip, Typography,
+  IconButton, InputAdornment, Stack, Tab, Tabs, TextField, Tooltip, Typography,
 } from '@mui/material'
+import SearchIcon from '@mui/icons-material/Search'
 import CloseIcon from '@mui/icons-material/Close'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import TIPOS from '../../../../../shared/tipos-de-bloque.json'
@@ -53,12 +54,28 @@ export default function GaleriaDeBloques({ abierta, posicion, total, onElegir, o
   )
 }
 
+/** Para buscar sin que importen tildes ni mayúsculas: «galeria» encuentra «Galería». */
+const sinTildes = (texto: string) => texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+
 function Tipos({ onElegir }: { onElegir: (tipo: string) => void }) {
   const { activo } = useModulos()
+  // Son casi treinta: buscar por el nombre o por lo que hace va antes que recorrerlos.
+  const [busqueda, setBusqueda] = useState('')
+  const buscado = sinTildes(busqueda.trim())
+  const encaja = (tipo: string) => buscado === ''
+    || sinTildes(`${FICHA_DE_BLOQUE[tipo].nombre} ${FICHA_DE_BLOQUE[tipo].descripcion}`).includes(buscado)
+  const porGrupo = GRUPOS_DE_BLOQUES.map((grupo) => ({
+    grupo,
+    tipos: TIPOS.tipos.filter((tipo) => FICHA_DE_BLOQUE[tipo]?.grupo === grupo && activo(moduloDeTipo(tipo)) && encaja(tipo)),
+  }))
+  const ninguno = porGrupo.every(({ tipos }) => tipos.length === 0)
   return (
     <Stack spacing={3}>
-      {GRUPOS_DE_BLOQUES.map((grupo) => {
-        const tipos = TIPOS.tipos.filter((tipo) => FICHA_DE_BLOQUE[tipo]?.grupo === grupo && activo(moduloDeTipo(tipo)))
+      <TextField size="small" fullWidth autoFocus value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
+        placeholder="Buscar: foto, mapa, botón…" aria-label="Buscar un bloque"
+        slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }} />
+      {ninguno && <Typography color="text.secondary">Ningún bloque coincide con «{busqueda.trim()}».</Typography>}
+      {porGrupo.map(({ grupo, tipos }) => {
         if (tipos.length === 0) return null
         return (
           <Box key={grupo} component="section" aria-labelledby={`grupo-${grupo}`}>
@@ -91,6 +108,8 @@ function Tipos({ onElegir }: { onElegir: (tipo: string) => void }) {
 function Secciones({ abierta, onElegir }: { abierta: boolean; onElegir: (bloques: Bloque[]) => void }) {
   const [secciones, setSecciones] = useState<SeccionGuardada[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Aparte del de cargar: un borrado que falla no tapa la lista, que sigue ahí.
+  const [errorAlBorrar, setErrorAlBorrar] = useState<string | null>(null)
   const [borrando, setBorrando] = useState<SeccionGuardada | null>(null)
 
   useEffect(() => {
@@ -106,11 +125,12 @@ function Secciones({ abierta, onElegir }: { abierta: boolean; onElegir: (bloques
     if (!borrando) return
     const id = borrando.id
     setBorrando(null)
+    setErrorAlBorrar(null)
     try {
       await borrarSeccion(id)
       setSecciones((antes) => antes?.filter((s) => s.id !== id) ?? null)
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'No se ha podido borrar la sección.')
+      setErrorAlBorrar(e instanceof Error ? e.message : 'No se ha podido borrar la sección.')
     }
   }
 
@@ -127,6 +147,7 @@ function Secciones({ abierta, onElegir }: { abierta: boolean; onElegir: (bloques
   return (
     <>
       <Stack spacing={1.5}>
+        {errorAlBorrar && <Alert severity="error" onClose={() => setErrorAlBorrar(null)}>{errorAlBorrar}</Alert>}
         {secciones.map((seccion) => (
           <Stack key={seccion.id} direction="row" spacing={2} sx={{ alignItems: 'center', p: 1.5, border: 1, borderColor: 'divider', borderRadius: 2 }}>
             <Box sx={{ flex: 1, minWidth: 0 }}>

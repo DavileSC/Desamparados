@@ -52,7 +52,7 @@ function AnillosEntrelazados({ bloque }: { bloque: Datos }) {
   const enConstructor = useModoEdicion() !== null
   const quieto = Boolean(reducir) || enConstructor
   const vivo = quieto || aLaVista
-  const escritorio = useMediaQuery('(min-width: 900px)')
+  const escritorio = useMediaQuery('(min-width: 900px)', { noSsr: true })
   const [activo, setActivo] = useState<number | null>(null)
 
   const anillos = (

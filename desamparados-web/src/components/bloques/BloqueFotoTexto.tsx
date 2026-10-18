@@ -32,25 +32,30 @@ export default function BloqueFotoTexto({ bloque }: { bloque: Datos }) {
   const columnaFoto = 'minmax(0, 1fr)'
   const columnaTexto = tercio ? 'minmax(0, 2fr)' : 'minmax(0, 1fr)'
 
+  // Sin foto (la que no carga), el texto se queda solo y no a media página
+  // junto a una columna vacía.
   return (
     <Box sx={{
       maxWidth: anchoMaximo(bloque, '1200px'), mx: 'auto',
       display: 'grid', gap: { xs: 3, md: 6 }, alignItems: arriba ? 'start' : 'center',
-      gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: derecha ? `${columnaTexto} ${columnaFoto}` : `${columnaFoto} ${columnaTexto}` },
-      gridTemplateAreas: { xs: '"foto" "texto"', md: derecha ? '"texto foto"' : '"foto texto"' },
+      gridTemplateColumns: {
+        xs: 'minmax(0, 1fr)',
+        md: !visible ? 'minmax(0, 1fr)' : derecha ? `${columnaTexto} ${columnaFoto}` : `${columnaFoto} ${columnaTexto}`,
+      },
+      gridTemplateAreas: { xs: visible ? '"foto" "texto"' : '"texto"', md: !visible ? '"texto"' : derecha ? '"texto foto"' : '"foto texto"' },
     }}>
-      <Box component="figure" sx={{ gridArea: 'foto', m: 0 }}>
-        {visible && (
+      {visible && (
+        <Box component="figure" sx={{ gridArea: 'foto', m: 0 }}>
           <Box component="img" {...propsDeFoto(bloque.url, '(min-width: 900px) 50vw, 100vw', alFallar)} alt={bloque.alt} loading="lazy" decoding="async"
             sx={{
               display: 'block', width: '100%', height: 'auto', borderRadius: 2,
               ...(proporcion !== 'original' && { aspectRatio: proporcion.replace(':', ' / '), objectFit: 'cover' }),
             }} />
-        )}
-        {bloque.pie && (
-          <Typography component="figcaption" variant="body2" sx={{ color: 'text.secondary', mt: 1.25 }}>{bloque.pie}</Typography>
-        )}
-      </Box>
+          {bloque.pie && (
+            <Typography component="figcaption" variant="body2" sx={{ color: 'text.secondary', mt: 1.25 }}>{bloque.pie}</Typography>
+          )}
+        </Box>
+      )}
       <Box sx={{ gridArea: 'texto', minWidth: 0 }}>
         <Box
           sx={{

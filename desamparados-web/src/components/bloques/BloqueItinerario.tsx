@@ -128,7 +128,7 @@ export default function BloqueItinerario({ bloque: original }: { bloque: Datos }
         <tbody>
           {bloque.paradas.map((parada, i) => (
             <Box component="tr" key={`${parada.hora}-${parada.lugar}-${i}`} sx={{ borderTop: i === 0 ? 0 : '1px solid', borderColor: 'divider' }}>
-              {!sinHoras && <Box component="td" sx={{ py: 1.25, pr: 3, width: 80, color: 'secondary.main', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{parada.hora || '—'}</Box>}
+              {!sinHoras && <Box component="td" sx={{ py: 1.25, pr: 3, width: 80, color: 'secondary.main', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{parada.hora || SIN_HORA}</Box>}
               <Box component="td" sx={{ py: 1.25, color: 'text.primary' }}>{parada.lugar}</Box>
             </Box>
           ))}

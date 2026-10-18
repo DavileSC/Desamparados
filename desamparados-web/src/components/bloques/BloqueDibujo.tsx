@@ -128,8 +128,10 @@ function Trazo({ d, avance, quieto, desde, hasta, grueso = 1.6 }: PropsDibujo & 
   )
 }
 
-/** Unos trazos repartidos por igual hasta `hasta`, dejando lo que queda para lo que aparece después. */
 /**
+ * Unos trazos repartidos por igual hasta `hasta`, dejando lo que queda para lo
+ * que aparece después.
+ *
  * Sin `vector-effect: non-scaling-stroke`: con él, el trazo discontinuo se mide
  * en píxeles de pantalla y no en el largo normalizado del camino, y el dibujo
  * se quedaba a medias. El grueso va, pues, en unidades del dibujo: cada uno

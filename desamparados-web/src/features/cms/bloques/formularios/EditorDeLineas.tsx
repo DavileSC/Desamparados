@@ -1,11 +1,13 @@
 import { Button, IconButton, Stack, TextField, Tooltip, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
-import topes from '../../../../../../shared/topes-contenido.json'
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
+import topes from '../../../../../../shared/topes-contenido.json'
+import { intercambiar } from './comunes'
 import type { LineaDatos } from '../../../../lib/api/contenido'
 
 const LINEA_NUEVA = { etiqueta: '', valor: '' }
-
 
 /**
  * Las líneas de concepto y valor: las del bloque de datos y las de la tarjeta
@@ -38,12 +40,27 @@ export default function EditorDeLineas({ lineas, onCambio, minimo }: {
           <TextField label="Valor" value={linea.valor}
             onChange={(e) => cambiar(indice, 'valor', e.target.value)} size="small" fullWidth
             slotProps={{ htmlInput: { maxLength: topes.lugar } }} />
-          <Tooltip title={sobranParaQuitar ? 'Quitar' : 'El bloque necesita al menos una línea'}><span>
-            <IconButton size="small" color="error" aria-label={`Quitar la línea ${indice + 1}`}
-              disabled={!sobranParaQuitar} onClick={() => quitar(indice)}>
-              <DeleteOutlineIcon fontSize="small" />
-            </IconButton>
-          </span></Tooltip>
+          {/* Los tres botones juntos; en el móvil, debajo de los campos y a la derecha. */}
+          <Stack direction="row" sx={{ alignSelf: { xs: 'flex-end', md: 'flex-start' } }}>
+            <Tooltip title="Subir"><span>
+              <IconButton size="small" aria-label={`Subir la línea ${indice + 1}`} disabled={indice === 0}
+                onClick={() => onCambio(intercambiar(lineas, indice, indice - 1))}>
+                <ArrowUpwardIcon fontSize="small" />
+              </IconButton>
+            </span></Tooltip>
+            <Tooltip title="Bajar"><span>
+              <IconButton size="small" aria-label={`Bajar la línea ${indice + 1}`} disabled={indice === lineas.length - 1}
+                onClick={() => onCambio(intercambiar(lineas, indice, indice + 1))}>
+                <ArrowDownwardIcon fontSize="small" />
+              </IconButton>
+            </span></Tooltip>
+            <Tooltip title={sobranParaQuitar ? 'Quitar' : 'El bloque necesita al menos una línea'}><span>
+              <IconButton size="small" color="error" aria-label={`Quitar la línea ${indice + 1}`}
+                disabled={!sobranParaQuitar} onClick={() => quitar(indice)}>
+                <DeleteOutlineIcon fontSize="small" />
+              </IconButton>
+            </span></Tooltip>
+          </Stack>
         </Stack>
       ))}
       <Button startIcon={<AddIcon />} onClick={anadir} disabled={!cabenMas} sx={{ alignSelf: 'flex-start' }}>
@@ -57,8 +74,3 @@ export default function EditorDeLineas({ lineas, onCambio, minimo }: {
     </Stack>
   )
 }
-
-/**
- * Los tres colores de un hito. No hay un color libre: cada uno responde a algo
- * de la web, y así se le explica a quien edita.
- */

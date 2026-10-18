@@ -182,18 +182,18 @@ describe('PaginaAdminPage', () => {
     // formulario. El fixture trae UNA tarjeta, así que quitar tiene que estar
     // deshabilitado: el esquema del servidor exige al menos una.
     await user.click(screen.getByRole('button', { name: /^Tarjetas/ }))
-    expect(screen.getByRole('button', { name: /quitar la tarjeta 1/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /quitar: tarjeta 1/i })).toBeDisabled()
 
     await user.click(screen.getByRole('button', { name: /añadir tarjeta/i }))
     // Nace sin enlace: antes apuntaba a la portada sin que nadie lo decidiera.
     expect(screen.getByRole('combobox', { name: /enlace de la tarjeta 2/i })).toHaveValue('')
-    expect(screen.getByRole('button', { name: /quitar la tarjeta 1/i })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /quitar: tarjeta 1/i })).toBeEnabled()
 
     await user.type(screen.getByRole('textbox', { name: /título de la tarjeta 2/i }), 'Cultos')
 
     // Quitar de verdad, antes de guardar: al guardar, la pantalla recarga las
     // filas con claves nuevas y vuelve a plegarlas todas.
-    await user.click(screen.getByRole('button', { name: /quitar la tarjeta 2/i }))
+    await user.click(screen.getByRole('button', { name: /quitar: tarjeta 2/i }))
     expect(screen.queryByDisplayValue('Cultos')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /añadir tarjeta/i }))

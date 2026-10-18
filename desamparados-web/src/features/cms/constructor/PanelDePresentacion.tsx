@@ -2,7 +2,8 @@ import { Box, FormControlLabel, InputAdornment, Stack, Switch, TextField, Toggle
 import topes from '../../../../../shared/topes-contenido.json'
 import CampoImagen from '../CampoImagen'
 import { OPCIONES_COMUNES, libreDe, opcionesFijas, opcionesPropias, siDe, valorDe, type Opcion } from '../../../components/bloques/presentacion'
-import { AYUDA_OPCION, ETIQUETA_OPCION, etiquetaDeValor } from './etiquetas'
+import { AYUDA_OPCION, ETIQUETA_OPCION, etiquetaDeValor, ordenDeValores } from './etiquetas'
+import { SOLO_FONDO_OSCURO, opcionesSinEfecto } from './opcionesSinEfecto'
 import { aAncla } from './utilidades'
 import type { Bloque, Presentacion } from '../../../lib/api/contenido'
 
@@ -49,18 +50,21 @@ export default function PanelDePresentacion({ bloque, ruta, onCambio }: {
           onChange={(_, valor: string | null) => { if (valor !== null) fijar(clave, valor, opcion.valores[0]) }}
           sx={{ flexWrap: 'wrap', gap: 0.5, '& .MuiToggleButton-root': { border: 1, borderColor: 'divider', borderRadius: '6px !important', px: 1.25, py: 0.5, textTransform: 'none' } }}
         >
-          {opcion.valores.map((valor) => <ToggleButton key={valor} value={valor}>{etiquetaDeValor(valor)}</ToggleButton>)}
+          {ordenDeValores(opcion.valores).map((valor) => <ToggleButton key={valor} value={valor}>{etiquetaDeValor(valor)}</ToggleButton>)}
         </ToggleButtonGroup>
         {AYUDA_OPCION[clave] && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>{AYUDA_OPCION[clave]}</Typography>}
       </Box>
     )
   }
 
-  // Las fijas no se enseñan: un control que no cambia nada solo confunde.
+  // Las fijas, y las que con lo que el bloque es ahora no harían nada, no se
+  // enseñan: un control que no cambia nada solo confunde.
   const fijas = opcionesFijas(bloque)
   const conVideos = Object.keys(fijas).length > 0
-  const propias = Object.entries(opcionesPropias(bloque.tipo)).filter(([clave]) => !(clave in fijas))
-  const comunes = Object.entries(OPCIONES_COMUNES).filter(([clave]) => DE_FRANJA.includes(clave) && !(clave in fijas))
+  const sinEfecto = opcionesSinEfecto(bloque)
+  const seEnsena = (clave: string) => !(clave in fijas) && !sinEfecto.has(clave)
+  const propias = Object.entries(opcionesPropias(bloque.tipo)).filter(([clave]) => seEnsena(clave))
+  const comunes = Object.entries(OPCIONES_COMUNES).filter(([clave]) => DE_FRANJA.includes(clave) && seEnsena(clave))
   const ancla = libreDe(bloque, 'ancla')
   const libre = (clave: 'fondoFoto' | 'ancla' | 'desde' | 'hasta', valor: string) => fijar(clave, valor, '')
 
@@ -81,6 +85,11 @@ export default function PanelDePresentacion({ bloque, ruta, onCambio }: {
 
       <Seccion titulo="Franja y aire">
         {comunes.map(([clave, opcion]) => control(clave, opcion))}
+        {valorDe(bloque, 'fondo') === 'papel' && SOLO_FONDO_OSCURO.has(bloque.tipo) && (
+          <Typography variant="body2" color="warning.main">
+            Este bloque está pensado para fondo oscuro: sobre papel su texto claro apenas se lee. Mejor «Oscuro» o «Ninguno».
+          </Typography>
+        )}
         {valorDe(bloque, 'fondo') === 'foto' && (
           <CampoImagen valor={libreDe(bloque, 'fondoFoto')} onCambio={(ruta) => libre('fondoFoto', ruta)} etiqueta="Foto del fondo" apaisada
             ayuda="JPG, PNG o WebP grande y apaisado, de hasta 5 MB. Se ve muy velada, detrás del bloque." />

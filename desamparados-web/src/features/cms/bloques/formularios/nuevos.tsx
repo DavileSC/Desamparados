@@ -4,6 +4,7 @@
  * mapa, cuenta atrás y espacio. Aquí va solo el contenido; cómo se ven se
  * elige en la pestaña «Presentación».
  */
+import { useState } from 'react'
 import { Alert, FormControlLabel, MenuItem, Stack, Switch, TextField, Typography } from '@mui/material'
 import { valorDe } from '../../../../components/bloques/presentacion'
 import topes from '../../../../../../shared/topes-contenido.json'
@@ -15,6 +16,7 @@ import CampoEnlace from '../../contenido/CampoEnlace'
 import CamposDeMedio from '../../contenido/CamposDeMedio'
 import { site } from '../../../../config/site'
 import { deLaCorporacion } from '../../../../domain/articulos'
+import { instanteEnMadrid } from '../../../../lib/horaDeMadrid'
 import ListaEditable from './ListaEditable'
 import type { Props } from './comunes'
 import type {
@@ -46,7 +48,7 @@ export function FormularioCita({ bloque, onCambio }: Props<BloqueCita>) {
   return (
     <Stack spacing={2}>
       <CampoTexto etiqueta="La cita" valor={bloque.texto} onCambio={(texto) => onCambio({ texto })} multilinea
-        ayuda="Las palabras que se destacan, sin comillas: las pone la web." maxLength={topes.parrafo} />
+        ayuda="Las palabras que se destacan, sin comillas: el estilo «Clásica» pone una grande delante." maxLength={topes.parrafo} />
       <CampoTexto etiqueta="Quién lo dijo" valor={bloque.autor} onCambio={(autor) => onCambio({ autor })}
         ayuda="Opcional, como «San Pablo de la Cruz»." maxLength={topes.etiqueta} />
       <CampoTexto etiqueta="Dónde" valor={bloque.fuente} onCambio={(fuente) => onCambio({ fuente })}
@@ -67,7 +69,7 @@ export function FormularioVideo({ bloque, onCambio }: Props<BloqueVideo>) {
   )
 }
 
-const BOTON_NUEVO = (): BotonDeBloque => ({ texto: '', enlace: '/', estilo: 'secundario' })
+const BOTON_NUEVO = (): BotonDeBloque => ({ texto: '', enlace: '', estilo: 'secundario' })
 
 export function FormularioBotones({ bloque, onCambio }: Props<BloqueBotones>) {
   return (
@@ -82,7 +84,7 @@ export function FormularioBotones({ bloque, onCambio }: Props<BloqueBotones>) {
           <TextField select label="Aspecto" value={boton.estilo} size="small" fullWidth
             onChange={(e) => cambiar({ estilo: e.target.value as BotonDeBloque['estilo'] })}>
             <MenuItem value="principal">Principal (granate)</MenuItem>
-            <MenuItem value="secundario">Secundario (con contorno)</MenuItem>
+            <MenuItem value="secundario">Secundario (velo claro)</MenuItem>
           </TextField>
         </>
       )} />
@@ -327,8 +329,18 @@ export function FormularioRelacion({ bloque, onCambio }: Props<BloqueRelacion>) 
 }
 
 export function FormularioCuentaAtras({ bloque, onCambio }: Props<BloqueCuentaAtras>) {
+  // La hora de cuando se abre el formulario basta para avisar: no hace falta que corra.
+  const [ahora] = useState(() => Date.now())
+  const objetivo = instanteEnMadrid(bloque.fecha)
+  const pasada = objetivo !== null && objetivo <= ahora
   return (
     <Stack spacing={2}>
+      {pasada && (
+        <Alert severity="warning">
+          Esa fecha ya ha pasado: la web enseña el «Texto al llegar». Pon otra fecha, o una fecha «Hasta el día» en
+          Presentación para que el bloque deje de verse solo.
+        </Alert>
+      )}
       <TextField label="Fecha y hora" type="datetime-local" value={bloque.fecha} onChange={(e) => onCambio({ fecha: e.target.value })}
         size="small" fullWidth helperText="Hora peninsular española (la de Madrid), para quien mire desde donde mire."
         slotProps={{ inputLabel: { shrink: true } }} />

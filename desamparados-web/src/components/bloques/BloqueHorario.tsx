@@ -49,9 +49,9 @@ export default function BloqueHorario({ bloque }: { bloque: Datos }) {
 
   return (
     <Box sx={{ maxWidth: anchoMaximo(bloque, '1000px'), mx: 'auto' }}>
+      {/* Sin aria-live: la cuenta cambia cada minuto, y un lector de pantalla
+          la leería en voz alta cada vez, sin dejar oír nada más. */}
       <Box
-        // Se anuncia al cambiar, sin interrumpir: quien usa un lector de pantalla oye la nueva cuenta cuando la busca.
-        aria-live="polite"
         sx={{
           display: 'grid', gridTemplateColumns: { xs: '1fr', md: despacho ? 'minmax(0, 1.4fr) minmax(0, 1fr)' : '1fr' },
           borderRadius: '4px', overflow: 'hidden',

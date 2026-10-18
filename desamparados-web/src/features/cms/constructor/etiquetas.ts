@@ -60,12 +60,29 @@ const ETIQUETA_VALOR: Record<string, string> = {
 
 export const etiquetaDeValor = (valor: string): string => ETIQUETA_VALOR[valor] ?? valor
 
+/** El sitio de cada valor de tamaño en una escala, de menos a más. */
+const ESCALA: Record<string, number> = {
+  pequena: 0, pequeno: 0, compacto: 0, bajo: 0,
+  mediana: 1, mediano: 1, normal: 1, medio: 1,
+  grande: 2, amplio: 2, alto: 2,
+  completa: 3,
+}
+
+/**
+ * Los valores en el orden en que se enseñan. En el catálogo el primero es el
+ * de siempre, y así salían «Grande, Pequeña, Mediana»; una lista que es toda
+ * de tamaños se enseña de menor a mayor. Lo que se guarda no cambia.
+ */
+export function ordenDeValores(valores: string[]): string[] {
+  if (!valores.every((valor) => valor in ESCALA)) return valores
+  return [...valores].sort((a, b) => ESCALA[a] - ESCALA[b])
+}
+
 /** Una ayuda corta debajo de algunas opciones, donde el nombre no basta. */
 export const AYUDA_OPCION: Record<string, string> = {
   fondo: 'Una franja de color de lado a lado de la ventana, con el bloque dentro. La foto va muy velada.',
   ancho: 'Estrecho se lee más cómodo; todo el ancho aprovecha la pantalla.',
   proporcion: 'Recorta la foto a esa forma. Original la deja como es.',
-  cantidad: 'Solo en «Últimas noticias» y «Próximos actos».',
   columnas: 'En el ordenador; en el móvil se apilan siempre.',
 }
 

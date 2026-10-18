@@ -26,6 +26,9 @@ function avisoDe(bloque: Bloque): string | null {
  *
  * La posición (`indice`) es la del bloque en el documento, no en lo que se
  * pinta: es con lo que el editor lo encuentra.
+ *
+ * También se llega con el teclado: el tabulador pasa por cada bloque y con
+ * Intro o espacio se abre, igual que pulsándolo.
  */
 export default function MarcoEditable({ bloque, indice, children }: { bloque: Bloque; indice: number; children: ReactNode }) {
   const modo = useModoEdicion()
@@ -37,7 +40,17 @@ export default function MarcoEditable({ bloque, indice, children }: { bloque: Bl
   return (
     <Box
       data-bloque={indice}
+      role="button"
+      tabIndex={0}
+      aria-label={`Bloque ${indice + 1}${aviso ? ` (${aviso.toLowerCase()})` : ''}: abrirlo en el editor`}
+      aria-pressed={seleccionado}
       onClick={() => modo.alPulsar(indice)}
+      onKeyDown={(e) => {
+        // Solo sobre el marco: Intro en un enlace o un botón de dentro es suyo.
+        if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return
+        e.preventDefault()
+        modo.alPulsar(indice)
+      }}
       sx={{
         position: 'relative',
         cursor: 'pointer',
@@ -55,6 +68,8 @@ export default function MarcoEditable({ bloque, indice, children }: { bloque: Bl
           zIndex: 5,
         },
         '&:hover::after': { borderColor: seleccionado ? MARCA.acento : alfa(MARCA.acento, 0.45) },
+        outline: 'none',
+        '&:focus-visible::after': { borderColor: MARCA.acento, boxShadow: `0 0 0 4px ${alfa(MARCA.acento, 0.35)}` },
       }}
     >
       <Box sx={{ opacity: aviso ? 0.45 : 1 }}>{children}</Box>

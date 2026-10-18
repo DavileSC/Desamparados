@@ -46,15 +46,8 @@ export function FormularioFoto({ bloque, onCambio }: Props<BloqueFoto>) {
   )
 }
 
-/**
- * Una tarjeta recién añadida, en blanco y sin enlace. Antes apuntaba a la
- * portada por defecto, y una tarjeta a medio hacer llevaba al inicio sin que
- * nadie lo hubiera decidido.
- */
-
 export function FormularioGaleria({ bloque, onCambio }: Props<BloqueGaleria>) {
   const [claves, setClaves] = useState<number[]>(() => bloque.medios.map(siguienteClave))
-
 
   const anadir = (medio: MedioGaleria) => {
     setClaves((actuales) => [...actuales, siguienteClave()])

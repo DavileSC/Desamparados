@@ -1,5 +1,5 @@
 import { Box, Typography, useMediaQuery } from '@mui/material'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { m, useInView, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion'
 import { useModoEdicion } from './modoEdicion'
 import { GOLD, GRANATE, SERIF, ceja } from '../../features/inicio/estilos'
@@ -408,21 +408,28 @@ function CronologiaHorizontal({ bloque, conAnclas }: { bloque: Datos; conAnclas:
  *
  * En el móvil, con «reducir movimiento» o en la vista del constructor es la
  * horizontal de siempre, que se desliza con el dedo: fijar la pantalla en un
- * móvil se siente como si el scroll se hubiera atascado.
+ * móvil se siente como si el scroll se hubiera atascado. También cuando los
+ * hitos no caben de alto en la pantalla (relatos largos, una pantalla baja):
+ * fija, la cinta cortaba lo que sobraba por abajo y no había forma de leerlo.
  */
 function CronologiaCinta({ bloque, conAnclas }: { bloque: Datos; conAnclas: boolean }) {
   const reducir = useReducedMotion()
   const enConstructor = useModoEdicion() !== null
-  const escritorio = useMediaQuery('(min-width: 900px)')
-  if (reducir || enConstructor || !escritorio) return <CronologiaHorizontal bloque={bloque} conAnclas={conAnclas} />
-  return <CintaViva bloque={bloque} conAnclas={conAnclas} />
+  const escritorio = useMediaQuery('(min-width: 900px)', { noSsr: true })
+  const [noCabe, setNoCabe] = useState(false)
+  const alNoCaber = useCallback(() => setNoCabe(true), [])
+  if (reducir || enConstructor || !escritorio || noCabe) return <CronologiaHorizontal bloque={bloque} conAnclas={conAnclas} />
+  return <CintaViva bloque={bloque} conAnclas={conAnclas} onNoCabe={alNoCaber} />
 }
+
+/** El periodo, más pequeño cuanto más largo: a 88 px, «Años cincuenta» se salía de su columna. */
+const tamanoDelPeriodo = (periodo: string) => (periodo.length <= 5 ? 88 : periodo.length <= 9 ? 64 : 44)
 
 /** El ancho de cada hito de la cinta y el hueco entre dos. */
 const ANCHO_HITO = 360
 const HUECO_CINTA = 72
 
-function CintaViva({ bloque, conAnclas }: { bloque: Datos; conAnclas: boolean }) {
+function CintaViva({ bloque, conAnclas, onNoCabe }: { bloque: Datos; conAnclas: boolean; onNoCabe: () => void }) {
   const tramo = useRef<HTMLDivElement>(null)
   const fila = useRef<HTMLOListElement>(null)
   // Lo que la cinta mide de más respecto a la ventana: es lo que tiene que
@@ -431,13 +438,18 @@ function CintaViva({ bloque, conAnclas }: { bloque: Datos; conAnclas: boolean })
   useLayoutEffect(() => {
     const ol = fila.current
     if (!ol) return
-    const mide = () => setSobra(Math.max(0, ol.scrollWidth - window.innerWidth))
+    const mide = () => {
+      setSobra(Math.max(0, ol.scrollWidth - window.innerWidth))
+      // Lo que queda de alto bajo el margen de arriba y el filete de lo recorrido.
+      const util = window.innerHeight - Math.max(120, window.innerHeight * 0.16) - 64
+      if (ol.offsetHeight > util) onNoCabe()
+    }
     mide()
     const observador = new ResizeObserver(mide)
     observador.observe(ol)
     window.addEventListener('resize', mide)
     return () => { observador.disconnect(); window.removeEventListener('resize', mide) }
-  }, [bloque.hitos.length])
+  }, [bloque.hitos.length, onNoCabe])
 
   const { scrollYProgress } = useScroll({ target: tramo, offset: ['start start', 'end end'] })
   const x = useSpring(useTransform(scrollYProgress, (v) => -v * sobra), { stiffness: 160, damping: 32, mass: 0.35 })
@@ -473,7 +485,7 @@ function CintaViva({ bloque, conAnclas }: { bloque: Datos; conAnclas: boolean })
                 }}>
                   <Box sx={{ position: 'relative', width: 13, height: 13, borderRadius: '50%', boxSizing: 'border-box', border: '2px solid #cbc5c8', backgroundColor: FONDO, ...tono?.punto }} />
                 </Box>
-                <Typography component="span" sx={{ display: 'block', fontFamily: SERIF, fontSize: 88, lineHeight: 0.9, letterSpacing: '-0.03em', color: tono?.texto ?? 'text.primary' }}>
+                <Typography component="span" sx={{ display: 'block', fontFamily: SERIF, fontSize: tamanoDelPeriodo(hito.periodo), lineHeight: 0.9, letterSpacing: '-0.03em', overflowWrap: 'anywhere', color: tono?.texto ?? 'text.primary' }}>
                   {hito.periodo}
                 </Typography>
                 <Typography component="span" sx={{ ...ceja, mb: 2.5, mt: 2, letterSpacing: '0.22em' }}>{hito.etiqueta}</Typography>

@@ -45,8 +45,10 @@ export function FormularioLlamada({ bloque, onCambio }: Props<BloqueLlamada>) {
   )
 }
 
-/** Una línea recién añadida, en blanco. */
-
+/**
+ * Las fuentes de un listado, con lo que quien edita necesita saber: qué sale
+ * y desde dónde se escribe. Es lo que decide, porque el bloque no tiene más.
+ */
 const FUENTES: { valor: FuenteListado; nombre: string; ayuda: string }[] = [
   { valor: 'noticias-recientes', nombre: 'Últimas noticias (3)', ayuda: 'Las tres noticias más recientes, con un enlace a todas. Se escriben en «Noticias».' },
   { valor: 'agenda-proxima', nombre: 'Próximos actos (4)', ayuda: 'Los cuatro próximos actos, con un enlace a la agenda completa. Se escriben en «Agenda».' },
@@ -101,5 +103,3 @@ export function FormularioContacto({ bloque, onCambio }: Props<BloqueContacto>) 
     </Stack>
   )
 }
-
-/** Una parada recién añadida, con una hora que parece una hora. */

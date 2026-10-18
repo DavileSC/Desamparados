@@ -62,7 +62,8 @@ export default function BloqueFotoFija({ bloque }: { bloque: Datos }) {
           backgroundColor: '#0c0b0d',
         }}
       >
-        {bloque.pasos.map((paso, i) => (
+        {/* Una parte recién añadida en el CMS aún sin foto, nada: un <img src=""> vuelve a pedir la página. */}
+        {bloque.pasos.map((paso, i) => paso.foto.url !== '' && (
           <Box
             // Clave posicional: una parte no tiene identificador, y la foto no guarda estado.
             key={i}

@@ -25,6 +25,13 @@ export function FormularioDonativo({ bloque, onCambio }: Props<BloqueDonativo>) 
   // Lo escrito se guarda aparte: «5, 1» a medio teclear no es aún una lista válida.
   const [importes, setImportes] = useState(bloque.importes.join(', '))
   const leidos = leerImportes(importes)
+  // Al deshacer, los importes cambian sin escribir aquí: si lo escrito ya no
+  // dice lo mismo que lo guardado, manda lo guardado.
+  const [vistos, setVistos] = useState(bloque.importes)
+  if (vistos !== bloque.importes) {
+    setVistos(bloque.importes)
+    if (leidos?.join() !== bloque.importes.join()) setImportes(bloque.importes.join(', '))
+  }
 
   const cambiarDestino = (i: number, valor: string) => onCambio({ destinos: bloque.destinos.map((d, j) => (j === i ? valor : d)) })
 

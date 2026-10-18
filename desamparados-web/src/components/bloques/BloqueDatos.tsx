@@ -65,6 +65,9 @@ export default function BloqueDatos({ bloque }: { bloque: Datos }) {
               borderColor: tabla ? 'divider' : 'rgba(204, 196, 201, 0.1)',
               backgroundColor: tabla && indice % 2 === 1 ? 'action.hover' : 'transparent',
             },
+            // En el móvil el valor va debajo de su concepto: sin raya entre los
+            // dos (parecerían dos filas) y pegado a él.
+            '& > dd': { borderTop: { xs: 0, sm: indice === 0 ? 0 : 1 }, pt: { xs: 0, sm: 1.5 } },
           }}
         >
           <Typography component="dt" variant="body2" sx={{ color: 'text.primary', fontWeight: 600 }}>
