@@ -1,15 +1,25 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import CuentaAtrasDeSalida from '../CuentaAtrasDeSalida'
 import { textosDePrueba } from './ayudas'
 
-afterEach(() => { vi.unstubAllGlobals() })
+// El reloj, fijo y lejos de un cambio de hora: contando desde «ahora», la
+// semana del último domingo de octubre (o de marzo) tiene una hora de más (o
+// de menos) y «dentro de seis días a las 23:59» pasaba a ser siete. Solo la
+// fecha: los temporizadores siguen siendo los de verdad, que `findBy` necesita.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-06-01T10:00:00Z'))
+})
+afterEach(() => {
+  vi.useRealTimers()
+  vi.unstubAllGlobals()
+})
 
 const json = (cuerpo: unknown) => new Response(JSON.stringify(cuerpo), { status: 200, headers: { 'Content-Type': 'application/json' } })
-/** Dentro de seis días, en Madrid, para que la cuenta nunca caduque. */
-const dentroDeSeis = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date(Date.now() + 6 * 86_400_000))
-const PROXIMA = { nombre: 'Rosario vespertino', articulo: 'el', dia: dentroDeSeis, hora: '23:59' }
+/** Seis días y casi doce horas después del reloj fijo, en Madrid. */
+const PROXIMA = { nombre: 'Rosario vespertino', articulo: 'el', dia: '2026-06-07', hora: '23:59' }
 
 function servidor(cuentaAtras?: boolean) {
   const textos = textosDePrueba()
