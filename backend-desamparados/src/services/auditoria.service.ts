@@ -197,6 +197,9 @@ export const ACCIONES_AUDITORIA = {
   CORPORACION_ACTUALIZAR: 'CORPORACION_ACTUALIZAR',
   // CMS → Páginas: el nombre de una página en el menú público
   MENU_NOMBRES_ACTUALIZAR: 'MENU_NOMBRES_ACTUALIZAR',
+  // Sistema → Abrir la web: abrirla al público o dejarla en «Próximamente»
+  WEB_ABRIR: 'WEB_ABRIR',
+  WEB_CERRAR: 'WEB_CERRAR',
   // Correo que no salió. No es una acción de nadie, pero se guarda aquí porque
   // es el único sitio del CMS donde el staff puede enterarse: antes el fallo
   // moría en un console.error y el alta se daba por buena sin avisar a nadie.

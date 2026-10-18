@@ -3,6 +3,7 @@ import db from '../config/db.js';
 import { identidad } from '../domain/datos-entidad.js';
 import { esClaveEncendible, NUCLEO, type ClaveEncendible } from '../domain/modulos.js';
 import { ModulosService } from './modulos.service.js';
+import { WebAbiertaService } from './web-abierta.service.js';
 
 /**
  * El sitemap de la web pública, en /sitemap.xml.
@@ -36,6 +37,9 @@ interface EntradaSitemap { ruta: string; lastmod?: Date }
 export class SitemapService {
   /** Las direcciones que se anuncian, sin el dominio. */
   static async entradas(): Promise<EntradaSitemap[]> {
+    // Cerrada, todas las direcciones enseñan «Próximamente», que no se indexa:
+    // anunciarlas solo llenaría el buscador de páginas iguales.
+    if (!(await WebAbiertaService.leer()).abierta) return [];
     const activos = await ModulosService.activos();
     const fijas = RUTAS
       .filter(({ ruta, requisito }) => !ruta.includes(':') && cumple(requisito, activos))

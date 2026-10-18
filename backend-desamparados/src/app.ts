@@ -36,6 +36,7 @@ import { modulosRoutes, modulosCmsRoutes } from './routes/modulos.routes.js';
 import estadisticasDeVisitasRoutes from './routes/estadisticas-de-visitas.routes.js';
 import { corporacionRoutes, corporacionCmsRoutes } from './routes/corporacion.routes.js';
 import { menuRoutes, menuCmsRoutes } from './routes/menu.routes.js';
+import { webAbiertaRoutes, webAbiertaCmsRoutes } from './routes/web-abierta.routes.js';
 import { conModulo, nucleo } from './middleware/modulos.js';
 import { roperoRoutes } from './routes/ropero.routes.js';
 import { correoRoutes } from './routes/correo.routes.js';
@@ -201,6 +202,8 @@ app.use('/api/cms/corporacion', nucleo, corporacionCmsRoutes);  // Cambiarlos, d
 app.use('/api/estadisticas-de-visitas', conModulo('estadisticas-de-visitas'), estadisticasDeVisitasRoutes); // El informe de GoAccess, en el CMS
 app.use('/api/menu', nucleo, menuRoutes);         // Nombres de las páginas en el menú público, para la web
 app.use('/api/cms/menu', nucleo, menuCmsRoutes);  // Cambiarlos, desde el índice de Páginas del CMS
+app.use('/api/web', nucleo, webAbiertaRoutes);         // Si la web está abierta o en «Próximamente»
+app.use('/api/cms/web', nucleo, webAbiertaCmsRoutes);  // Abrirla o cerrarla, desde Sistema → Abrir la web
 
 // El sitemap, en la raíz y no bajo /api: es donde lo buscan los buscadores
 // (lo anuncia robots.txt). nginx manda aquí /sitemap.xml (docker/nginx/ubicaciones.conf).

@@ -3,6 +3,7 @@ import { CLAVES_DE_INSTALACION, CLAVES_MODULO } from '../domain/modulos'
 import { CLAVE_MODULOS } from '../lib/api/modulos'
 import { CLAVE_CORPORACION } from '../lib/api/corporacion'
 import { CLAVE_NOMBRES_EN_MENU, type NombresEnMenu } from '../lib/api/menu'
+import { CLAVE_ESTADO_DE_LA_WEB, type EstadoDeLaWeb } from '../lib/api/web'
 import { DATOS } from './instalacion'
 
 const MODULOS_DEL_EJEMPLO: readonly string[] = [
@@ -46,6 +47,7 @@ export function crearQueryClientDePruebas(modulos?: readonly string[], nombresEn
   queryClient.setQueryData(CLAVE_MODULOS, [...(modulos ?? MODULOS_DEL_EJEMPLO)])
   sembrarContacto(queryClient)
   sembrarNombresEnMenu(queryClient, nombresEnMenu)
+  sembrarEstadoDeLaWeb(queryClient)
   return queryClient
 }
 
@@ -71,4 +73,14 @@ export function sembrarContacto(queryClient: QueryClient) {
 export function sembrarNombresEnMenu(queryClient: QueryClient, nombres: NombresEnMenu = {}) {
   queryClient.setQueryDefaults(CLAVE_NOMBRES_EN_MENU, { gcTime: Infinity, staleTime: Infinity })
   queryClient.setQueryData(CLAVE_NOMBRES_EN_MENU, nombres)
+}
+
+/**
+ * La web abierta, como la de una instalación que no ha tocado esto: el marco
+ * público no pide /web al `fetch` simulado. La prueba de la web cerrada pasa
+ * el estado. El `gcTime`, por lo mismo que los módulos.
+ */
+export function sembrarEstadoDeLaWeb(queryClient: QueryClient, estado: EstadoDeLaWeb = { abierta: true, mensaje: null, fecha: null }) {
+  queryClient.setQueryDefaults(CLAVE_ESTADO_DE_LA_WEB, { gcTime: Infinity, staleTime: Infinity })
+  queryClient.setQueryData(CLAVE_ESTADO_DE_LA_WEB, estado)
 }

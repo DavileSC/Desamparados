@@ -64,6 +64,8 @@ export const rolesPorRutaCms = {
   // Los datos de contacto: la guarda de /api/cms/corporacion.
   corporacion: ['ADMIN', 'SECRETARIA'],
   auditoria: ['ADMIN', 'HERMANO_MAYOR'],
+  // Abrir la web al público o dejarla en «Próximamente»: la guarda de PUT /api/cms/web.
+  web: ['ADMIN', 'HERMANO_MAYOR'],
   // La foto del retablo del Inicio: la misma guarda que PUT /api/panel/retablo.
   'ajustes-inicio': ['ADMIN', 'HERMANO_MAYOR'],
   // La gestión del 2FA propio es de todo el staff: cada cuenta debe poder

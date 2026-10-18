@@ -7,6 +7,7 @@ import { useCargarSesion, useVaciarCacheAlCambiarDeUsuario } from './features/al
 import { portadaDelInicio } from './lib/api/portada'
 import { CLAVE_CORPORACION, datosDeContacto } from './lib/api/corporacion'
 import { CLAVE_NOMBRES_EN_MENU, nombresEnMenu } from './lib/api/menu'
+import { CLAVE_ESTADO_DE_LA_WEB, estadoDeLaWeb } from './lib/api/web'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,6 +42,12 @@ void queryClient.prefetchQuery({ queryKey: CLAVE_CORPORACION, queryFn: datosDeCo
  * Misma clave y mismo tiempo que `useNombresEnMenu`.
  */
 void queryClient.prefetchQuery({ queryKey: CLAVE_NOMBRES_EN_MENU, queryFn: nombresEnMenu, staleTime: 10 * 60_000 })
+
+/*
+ * Si la web está abierta, lo primero de todo: hasta saberlo, el marco público
+ * no pinta nada. Misma clave y mismo tiempo que `useEstadoDeLaWeb`.
+ */
+void queryClient.prefetchQuery({ queryKey: CLAVE_ESTADO_DE_LA_WEB, queryFn: estadoDeLaWeb, staleTime: 10 * 60_000 })
 
 function App() {
   // Recupera la sesion de la cookie httpOnly. Una sola vez, al arrancar.

@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
+import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import HowToVoteOutlinedIcon from '@mui/icons-material/HowToVoteOutlined'
 import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined'
@@ -133,6 +134,8 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Datos e informes', href: '/cms/datos', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Junta', icono: InsightsOutlinedIcon, modulo: 'nucleo' },
   { label: 'Informe anual', href: '/cms/informe-anual', roles: ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA'], grupo: 'Junta', icono: HistoryEduOutlinedIcon, modulo: 'informe-anual' },
   { label: 'Cabildos', href: '/cms/cabildos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Junta', icono: HowToVoteOutlinedIcon, modulo: 'cabildos' },
+  // Abrir la web al público el día de la presentación: el Hermano Mayor (y Administración).
+  { label: 'Abrir la web', href: '/cms/web', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Sistema', icono: PublicOutlinedIcon, modulo: 'nucleo' },
   { label: 'Accesos', href: '/cms/accesos', roles: ['ADMIN'], grupo: 'Sistema', icono: ManageAccountsOutlinedIcon, modulo: 'nucleo' },
   // Encender y apagar módulos abre pantallas a toda la junta: solo Administración.
   { label: 'Módulos', href: '/cms/modulos', roles: ['ADMIN'], grupo: 'Sistema', icono: ExtensionOutlinedIcon, modulo: 'nucleo' },

@@ -76,6 +76,15 @@ try {
   process.exit(1);
 }
 
+// Si la web está abierta, también: sin saberlo, se abriría una web cerrada.
+const { WebAbiertaService } = await import('./services/web-abierta.service');
+try {
+  await WebAbiertaService.cargar();
+} catch (error) {
+  console.error(`[Web abierta] No se pudo leer si la web está abierta de la base de datos: ${describirErrorParaLog(error)}`);
+  process.exit(1);
+}
+
 // Las páginas de la web pública que aún no tengan fila nacen con la semilla
 // de la instalación o con el contenido neutro. Las que existen no se tocan.
 // Sin esto, una instalación nueva enseñaría el neutro aunque trajera su
