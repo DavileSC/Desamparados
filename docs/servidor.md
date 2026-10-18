@@ -794,11 +794,77 @@ lo que quede en los registros.
 
 ## El día de la presentación
 
-Pendiente de preparar. En esencia: la base buena con su propia `TOTP_ENC_KEY`,
-`FRONTEND_URL`/`API_URL` al dominio principal, el sitio del dominio principal
-del nginx del sistema pasando a `127.0.0.1:8080` (como el de `pruebas`, sin
-contraseña), las copias de seguridad configuradas antes de cargar datos
-reales, y el correo del Grupo en lugar del personal.
+Se prepara **antes**, con la web cerrada, para que ese día baste con pulsar
+«Abrir la web» en el CMS. Web de pruebas y dominio principal son el mismo
+montaje y la misma base: cerrarla también deja «Próximamente» en `pruebas`
+para quien no tenga sesión del CMS.
+
+Queda aparte, también antes: la base buena con su propia `TOTP_ENC_KEY`, las
+copias de seguridad configuradas antes de cargar datos reales, el correo del
+Grupo en lugar del personal y las claves de Redsys del banco.
+
+**1. Cerrar la web** en CMS → Sistema → «Abrir la web». Comprobar desde una
+ventana privada, en `pruebas`, que sale «Próximamente».
+
+**2. Mirar el DNS y el certificado.** Sin AAAA en ninguno de los dos nombres
+(ver «Lo que hay»), y el nombre del certificado que ya cubre los dos:
+
+```bash
+dig +short A desamparadosmalaga.com www.desamparadosmalaga.com
+dig +short AAAA desamparadosmalaga.com www.desamparadosmalaga.com
+sudo certbot certificates
+```
+
+**3. Cambiar el sitio del nginx del sistema.** Primero una copia del de
+mantenimiento, para volver a él; luego el del repositorio, solo en http, y
+certbot le vuelve a poner el https con el certificado que ya existe
+(«reinstall this existing certificate»):
+
+```bash
+sudo cp /etc/nginx/sites-available/desamparadosmalaga.com ~/desamparadosmalaga.com.mantenimiento
+sudo cp /srv/desamparados/docker/servidor/nginx-principal.conf /etc/nginx/sites-available/desamparadosmalaga.com
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d desamparadosmalaga.com -d www.desamparadosmalaga.com
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+Para volver al mantenimiento: copiar de vuelta
+`~/desamparadosmalaga.com.mantenimiento` y `sudo nginx -t && sudo systemctl
+reload nginx`.
+
+**4. Las direcciones de la API al dominio.** Con ellas salen los enlaces de
+los correos, la baja del boletín y el aviso del banco. Las fotos no cambian:
+se guardan con la ruta, sin el dominio. Recrear la API (`up -d api`; reiniciarla
+no relee el `.env`):
+
+```bash
+cd /srv/desamparados
+sudo sed -i   -e "s|^FRONTEND_URL=.*|FRONTEND_URL=https://www.desamparadosmalaga.com|"   -e "s|^API_URL=.*|API_URL=https://www.desamparadosmalaga.com|"   .env
+sudo grep -E '^(FRONTEND_URL|API_URL)=' .env
+sudo docker compose -f compose.yaml -f compose.servidor.yaml up -d api
+sudo docker compose -f compose.yaml -f compose.servidor.yaml ps
+```
+
+**5. Comprobar.** Los `curl`, desde el servidor o el PC:
+
+```bash
+curl -sI http://desamparadosmalaga.com | head -3        # 301 a https
+curl -sI https://desamparadosmalaga.com | head -3       # 301 a https://www…
+curl -sI https://www.desamparadosmalaga.com | grep -i -E '^HTTP|x-robots'   # 200 y sin x-robots
+curl -s https://www.desamparadosmalaga.com/api/web; echo                  # "abierta":false
+curl -s https://www.desamparadosmalaga.com/sitemap.xml | grep -c '<url>'  # 0 mientras esté cerrada
+```
+
+- En el móvil, sin sesión: «Próximamente» y los textos legales abiertos.
+- Entrando al CMS en `www.desamparadosmalaga.com/cms`: la web entera con el
+  aviso abajo a la izquierda.
+
+**6. El segundo webhook de Brevo** con la URL del dominio, como dice la fila
+«Lo que queda a mano al instalar la web real» de la hoja de ruta.
+
+**El día:** CMS → Sistema → «Abrir la web» → «Abrir la web». El sitemap se
+llena solo; en Google Search Console se puede mandar
+`https://www.desamparadosmalaga.com/sitemap.xml` para que la recorra antes.
 
 Ese sitio del dominio principal lleva `access_log off`, como el de
 `pruebas`. Hoy hereda el registro de `/etc/nginx/nginx.conf`
