@@ -71,15 +71,17 @@ const guardar = async (user: ReturnType<typeof userEvent.setup>) => {
 }
 
 /**
- * Añade un bloque al final desde la galería. El bloque nuevo llega ya abierto.
- * La galería se cierra con transición, y mientras dura MUI deja el resto del
- * árbol en aria-hidden: `getByRole` no ve lo oculto, así que se espera a que
- * se vaya del todo.
+ * Añade un bloque al final desde la galería: se busca por su nombre, se elige y
+ * se pulsa «Añadir». El bloque nuevo llega ya abierto. La galería se cierra con
+ * transición, y mientras dura MUI deja el resto del árbol en aria-hidden:
+ * `getByRole` no ve lo oculto, así que se espera a que se vaya del todo.
  */
-const anadirBloque = async (user: ReturnType<typeof userEvent.setup>, nombre: RegExp) => {
+const anadirBloque = async (user: ReturnType<typeof userEvent.setup>, nombre: string) => {
   await user.click(screen.getByRole('button', { name: /añadir bloque al final/i }))
   const galeria = await screen.findByRole('dialog', { name: /añadir un bloque/i })
-  await user.click(within(galeria).getByRole('button', { name: nombre }))
+  await user.type(within(galeria).getByRole('textbox', { name: 'Buscar un bloque' }), nombre)
+  await user.click(within(galeria).getByRole('button', { name: new RegExp(`^${nombre}:`) }))
+  await user.click(within(galeria).getByRole('button', { name: `Añadir «${nombre}»` }))
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
 }
 
@@ -110,7 +112,7 @@ describe('PaginaAdminPage', () => {
     montar()
     await screen.findByDisplayValue('Corporación')
 
-    await anadirBloque(user, /^Foto:/)
+    await anadirBloque(user, 'Foto')
 
     expect(await screen.findByText(/Posición 3 de 3/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^Foto/, expanded: true })).toBeInTheDocument()
@@ -223,7 +225,7 @@ describe('PaginaAdminPage', () => {
     const llamadas = montar()
     await screen.findByDisplayValue('Corporación')
 
-    await anadirBloque(user, /^Foto:/)
+    await anadirBloque(user, 'Foto')
     // Se pliega a mano: el aviso tiene que volver a abrirlo.
     await user.click(screen.getByRole('button', { name: /^Foto/, expanded: true }))
     await guardar(user)
@@ -285,13 +287,19 @@ describe('PaginaAdminPage: los bloques de la segunda fase', () => {
 
     await user.click(screen.getByRole('button', { name: /añadir bloque al final/i }))
     const galeria = await screen.findByRole('dialog', { name: /añadir un bloque/i })
-    expect(within(galeria).getByText('Irá al final de la página.')).toBeInTheDocument()
-    // Cada tipo es un botón «Nombre: para qué sirve»; se cuentan por el nombre.
-    const botones = within(galeria).getAllByRole('button').filter((b) => b.getAttribute('aria-label')?.includes(':'))
+    expect(within(galeria).getByText(/^Irá al final, después de «.+»\.$/)).toBeInTheDocument()
+    // Cada tipo es un botón «Nombre: para qué sirve» en su carpeta; se recorren todas.
+    const nombres: string[] = []
+    const carpetas = within(within(galeria).getByRole('navigation', { name: 'Carpetas' })).getAllByRole('button')
+    for (const carpeta of carpetas.filter((c) => !c.textContent?.startsWith('Secciones'))) {
+      await user.click(carpeta)
+      nombres.push(...within(galeria).getAllByRole('button', { pressed: undefined }).map((b) => b.getAttribute('aria-label') ?? '').filter((n) => n.includes(':')))
+    }
     // Menos el Dibujo, que es de las páginas propias (apagadas en el ejemplo).
     const deModulo = TIPOS.modulo as Record<string, unknown>
-    expect(botones).toHaveLength(TIPOS.tipos.filter((t) => deModulo[t] !== 'paginas-propias').length)
-    expect(within(galeria).queryByRole('button', { name: /^Dibujo con texto:/ })).not.toBeInTheDocument()
+    expect(new Set(nombres).size).toBe(nombres.length)
+    expect(nombres).toHaveLength(TIPOS.tipos.filter((t) => deModulo[t] !== 'paginas-propias').length)
+    expect(nombres.some((n) => n.startsWith('Dibujo con texto:'))).toBe(false)
   })
 
   it('una galería recién añadida avisa de que está vacía, y no se manda', async () => {
@@ -299,7 +307,7 @@ describe('PaginaAdminPage: los bloques de la segunda fase', () => {
     const llamadas = montar()
     await screen.findByDisplayValue('Corporación')
 
-    await anadirBloque(user, /^Galería:/)
+    await anadirBloque(user, 'Galería')
     await guardar(user)
 
     expect(await screen.findByText(/el bloque 3 \(galería\) está vacío/i)).toBeInTheDocument()
@@ -315,7 +323,7 @@ describe('PaginaAdminPage: los bloques de la segunda fase', () => {
     montar()
     await screen.findByDisplayValue('Corporación')
 
-    await anadirBloque(user, /^Galería:/)
+    await anadirBloque(user, 'Galería')
     await user.click(screen.getByRole('button', { name: /añadir vídeo/i }))
 
     // Los vídeos no se suben: se pega su dirección. Lo que sí se sube es la
@@ -342,7 +350,7 @@ describe('PaginaAdminPage: los bloques de la segunda fase', () => {
     const llamadas = montar()
     await screen.findByDisplayValue('Corporación')
 
-    await anadirBloque(user, /^Galería:/)
+    await anadirBloque(user, 'Galería')
     await user.upload(screen.getByLabelText(/subir fotos/i), new File(['x'], 'uno.jpg', { type: 'image/jpeg' }))
     await screen.findByText(/1 foto añadida/i)
     await user.click(screen.getByRole('button', { name: /añadir vídeo/i }))
@@ -362,7 +370,7 @@ describe('PaginaAdminPage: los bloques de la segunda fase', () => {
     const llamadas = montar()
     await screen.findByDisplayValue('Corporación')
 
-    await anadirBloque(user, /^Llamada:/)
+    await anadirBloque(user, 'Llamada')
     await guardar(user)
 
     expect(await screen.findByText(/el bloque 3 \(llamada\) no tiene texto en el botón/i)).toBeInTheDocument()
@@ -374,7 +382,7 @@ describe('PaginaAdminPage: los bloques de la segunda fase', () => {
     const llamadas = montar()
     await screen.findByDisplayValue('Corporación')
 
-    await anadirBloque(user, /^Datos:/)
+    await anadirBloque(user, 'Datos')
 
     // Nace con una línea, y el esquema del servidor exige al menos una: quitar
     // tiene que estar deshabilitado hasta que haya una segunda.
@@ -410,7 +418,7 @@ describe('PaginaAdminPage: cronología, listado y contacto', () => {
     const llamadas = montar()
     await screen.findByDisplayValue('Corporación')
 
-    await anadirBloque(user, /^Cronología:/)
+    await anadirBloque(user, 'Cronología')
     await guardar(user)
 
     expect(await screen.findByText(/el bloque 3 \(cronología\) tiene el hito 1 sin periodo/i)).toBeInTheDocument()
@@ -426,7 +434,7 @@ describe('PaginaAdminPage: cronología, listado y contacto', () => {
     const llamadas = montar()
     await screen.findByDisplayValue('Corporación')
 
-    await anadirBloque(user, /^Listado:/)
+    await anadirBloque(user, 'Listado')
     await user.selectOptions(screen.getByLabelText('Qué se enseña'), 'boletines')
     expect(screen.getByText(/solo los boletines/i)).toBeInTheDocument()
     await guardar(user)
@@ -440,7 +448,7 @@ describe('PaginaAdminPage: cronología, listado y contacto', () => {
     const llamadas = montar()
     await screen.findByDisplayValue('Corporación')
 
-    await anadirBloque(user, /^Formulario de contacto:/)
+    await anadirBloque(user, 'Formulario de contacto')
     await guardar(user)
 
     await vi.waitFor(() => expect(llamadas.some((l) => l.metodo === 'PUT')).toBe(true))
@@ -499,7 +507,7 @@ describe('PaginaAdminPage: cronología, listado y contacto', () => {
     const user = userEvent.setup({ applyAccept: false })
     const llamadas = montar()
     await screen.findByDisplayValue('Corporación')
-    await anadirBloque(user, /^Galería:/)
+    await anadirBloque(user, 'Galería')
 
     await user.upload(screen.getByLabelText(/subir fotos/i), [
       new File(['1'], 'procesion.jpg', { type: 'image/jpeg' }),

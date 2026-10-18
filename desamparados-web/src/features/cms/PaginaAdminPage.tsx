@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Alert, Box, Button, CircularProgress, Dialog, IconButton, Paper, Slider, Snackbar, Stack, Tooltip, Typography, useMediaQuery,
 } from '@mui/material'
@@ -18,7 +18,8 @@ import CampoImagen from './CampoImagen'
 import CampoTexto from './contenido/CampoTexto'
 import SeccionPlegable from './contenido/SeccionPlegable'
 import ListaDeBloques, { type AccionDeBloque } from './constructor/ListaDeBloques'
-import GaleriaDeBloques from './constructor/GaleriaDeBloques'
+import GaleriaDeBloques, { type Hueco } from './constructor/GaleriaDeBloques'
+import { fotosDeLaPagina } from './constructor/ejemplos'
 import VistaEnVivo from './constructor/VistaEnVivo'
 import { DialogoCopiarBloque, DialogoGuardarSeccion, HistorialDeVersiones } from './constructor/Dialogos'
 import { useDeshacer } from './constructor/useDeshacer'
@@ -87,6 +88,12 @@ function copiaDe(bloque: Bloque): Bloque {
 
 interface Estado { cabecera: CabeceraPagina | null; filas: Fila[] }
 
+/** Cómo se llama un bloque para quien edita: por su título, que lo distingue, o por su tipo. */
+const nombreDe = (fila: Fila | undefined) => (fila ? fila.bloque.titulo.trim() || (NOMBRE_BLOQUE[fila.bloque.tipo] ?? fila.bloque.tipo) : null)
+
+/** Entre qué bloques irá uno nuevo en esa posición. */
+const huecoDe = (filas: Fila[], posicion: number): Hueco => ({ antes: nombreDe(filas[posicion - 1]), despues: nombreDe(filas[posicion]) })
+
 /**
  * El constructor de una página de la web pública.
  *
@@ -108,6 +115,8 @@ export default function PaginaAdminPage() {
   const conVistaAlLado = useMediaQuery(tema.breakpoints.up('lg'))
   const { estado, fijar, deshacer, rehacer, reiniciar, puedeDeshacer, puedeRehacer } = useDeshacer<Estado>({ cabecera: null, filas: [] })
   const { cabecera, filas } = estado
+  // Las fotos de esta página, para que la vista previa de «Añadir bloque» enseñe las suyas.
+  const fotosDeEjemplo = useMemo(() => fotosDeLaPagina({ cabecera, bloques: filas.map((f) => f.bloque) }), [cabecera, filas])
   const [inicial, setInicial] = useState<PaginaDeBloques | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
@@ -374,8 +383,8 @@ export default function PaginaAdminPage() {
 
       <GaleriaDeBloques
         abierta={insertarEn !== null}
-        posicion={insertarEn ?? filas.length}
-        total={filas.length}
+        hueco={huecoDe(filas, insertarEn ?? filas.length)}
+        fotos={fotosDeEjemplo}
         onElegir={(tipo) => insertar([conClave(bloqueNuevo(tipo))], insertarEn ?? filas.length)}
         onElegirSeccion={(bloques) => insertar(bloques.map((b) => conClave(structuredClone(b))), insertarEn ?? filas.length)}
         onCerrar={() => setInsertarEn(null)}

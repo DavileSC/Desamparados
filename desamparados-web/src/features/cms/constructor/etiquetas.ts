@@ -86,39 +86,50 @@ export const AYUDA_OPCION: Record<string, string> = {
   columnas: 'En el ordenador; en el móvil se apilan siempre.',
 }
 
-interface FichaDeBloque { nombre: string; descripcion: string; grupo: string }
+interface FichaDeBloque { nombre: string; descripcion: string }
 
-/** La ficha de cada tipo en la galería de «Añadir bloque», y su grupo. */
+/** La ficha de cada tipo en la galería de «Añadir bloque»: su nombre y para qué sirve. */
 export const FICHA_DE_BLOQUE: Record<string, FichaDeBloque> = {
-  texto: { nombre: 'Texto', grupo: 'Texto', descripcion: 'Párrafos con formato: negritas, listas, enlaces y subtítulos.' },
-  cita: { nombre: 'Cita', grupo: 'Texto', descripcion: 'Unas palabras destacadas en grande, con quién las dijo.' },
-  preguntas: { nombre: 'Preguntas plegables', grupo: 'Texto', descripcion: 'Preguntas que se abren al pulsarlas: ideal para dudas frecuentes.' },
-  foto: { nombre: 'Foto', grupo: 'Imagen y vídeo', descripcion: 'Una foto con su pie, del tamaño y recorte que quieras.' },
-  fotoTexto: { nombre: 'Foto con texto', grupo: 'Imagen y vídeo', descripcion: 'Foto a un lado y texto al otro, con un botón si quieres.' },
-  galeria: { nombre: 'Galería', grupo: 'Imagen y vídeo', descripcion: 'Varias fotos y vídeos: en pase, cuadrícula, mosaico, tiras, estampas o carteles.' },
-  carrusel: { nombre: 'Carrusel de piezas', grupo: 'Imagen y vídeo', descripcion: 'Una pieza cada vez: la foto grande y, al lado, su historia y su cartela.' },
-  donativo: { nombre: 'Donativo', grupo: 'Automáticos', descripcion: 'Importes sugeridos y el pago con tarjeta o Bizum en el banco, sin cuenta en la web.' },
-  fotoFija: { nombre: 'Foto fija y texto que pasa', grupo: 'Imagen y vídeo', descripcion: 'La foto se queda quieta y cambia según se lee cada parte del texto.' },
-  video: { nombre: 'Vídeo', grupo: 'Imagen y vídeo', descripcion: 'Un vídeo de YouTube o Vimeo, que no se carga hasta darle al play.' },
-  tarjetas: { nombre: 'Tarjetas', grupo: 'Composición', descripcion: 'Una rejilla de tarjetas con título, texto, foto o icono y enlace.' },
-  llamada: { nombre: 'Llamada', grupo: 'Composición', descripcion: 'Un texto con un botón que lleva a otra página.' },
-  botones: { nombre: 'Botones', grupo: 'Composición', descripcion: 'Hasta cuatro botones en fila, cada uno a una página.' },
-  espacio: { nombre: 'Espacio', grupo: 'Composición', descripcion: 'Aire entre dos bloques, con una línea si quieres.' },
-  datos: { nombre: 'Datos', grupo: 'Información', descripcion: 'Pares de concepto y valor: horarios, direcciones, medidas.' },
-  itinerario: { nombre: 'Itinerario', grupo: 'Información', descripcion: 'Las paradas de un recorrido con su hora, y el recorrido sobre el mapa.' },
-  cronologia: { nombre: 'Cronología', grupo: 'Información', descripcion: 'Momentos de una historia en orden, con fecha y relato.' },
-  descargas: { nombre: 'Descargas', grupo: 'Información', descripcion: 'Documentos en PDF para descargar.' },
-  mapa: { nombre: 'Mapa', grupo: 'Información', descripcion: 'Un lugar en el mapa, con el enlace para llegar.' },
-  horario: { nombre: 'Horario vivo', grupo: 'Información', descripcion: 'Misas y despacho, con la próxima misa y cuánto falta, calculado al momento.' },
-  relacion: { nombre: 'Relación de cargos', grupo: 'Información', descripcion: 'Los cargos de la Junta, con quién los ocupa y qué hace cada uno.' },
-  programa: { nombre: 'Programa', grupo: 'Automáticos', descripcion: 'Los cultos del año mes a mes, con el próximo marcado solo y su fecha de la Agenda.' },
-  puertas: { nombre: 'Dos puertas', grupo: 'Composición', descripcion: 'Dos paneles para dos lectores, como «Necesito ayuda» y «Quiero ayudar», con sus datos y un botón.' },
-  anillos: { nombre: 'Tres fines', grupo: 'Composición', descripcion: 'Tres fines que van juntos: en anillos entrelazados, o en foco, una palabra nítida y las otras dos desenfocadas.' },
-  dibujo: { nombre: 'Dibujo con texto', grupo: 'Imagen y vídeo', descripcion: 'Un dibujo de líneas que se traza al bajar, con un texto al lado.' },
-  cuentaAtras: { nombre: 'Cuenta atrás', grupo: 'Información', descripcion: 'Días, horas y minutos que faltan para una fecha.' },
-  listado: { nombre: 'Listado', grupo: 'Automáticos', descripcion: 'Noticias, actos o publicaciones, que salen solos de otras pantallas.' },
-  contacto: { nombre: 'Formulario de contacto', grupo: 'Automáticos', descripcion: 'El formulario que llega por correo, con los datos al lado.' },
+  texto: { nombre: 'Texto', descripcion: 'Párrafos con formato: negritas, listas, enlaces y subtítulos.' },
+  cita: { nombre: 'Cita', descripcion: 'Unas palabras destacadas en grande, con quién las dijo.' },
+  preguntas: { nombre: 'Preguntas plegables', descripcion: 'Preguntas que se abren al pulsarlas: ideal para dudas frecuentes.' },
+  foto: { nombre: 'Foto', descripcion: 'Una foto con su pie, del tamaño y recorte que quieras.' },
+  fotoTexto: { nombre: 'Foto con texto', descripcion: 'Foto a un lado y texto al otro, con un botón si quieres.' },
+  galeria: { nombre: 'Galería', descripcion: 'Varias fotos y vídeos: en pase, cuadrícula, mosaico, tiras, estampas o carteles.' },
+  carrusel: { nombre: 'Carrusel de piezas', descripcion: 'Una pieza cada vez: la foto grande y, al lado, su historia y su cartela.' },
+  donativo: { nombre: 'Donativo', descripcion: 'Importes sugeridos y el pago con tarjeta o Bizum en el banco, sin cuenta en la web.' },
+  fotoFija: { nombre: 'Foto fija y texto que pasa', descripcion: 'La foto se queda quieta y cambia según se lee cada parte del texto.' },
+  video: { nombre: 'Vídeo', descripcion: 'Un vídeo de YouTube o Vimeo, que no se carga hasta darle al play.' },
+  tarjetas: { nombre: 'Tarjetas', descripcion: 'Una rejilla de tarjetas con título, texto, foto o icono y enlace.' },
+  llamada: { nombre: 'Llamada', descripcion: 'Un texto con un botón que lleva a otra página.' },
+  botones: { nombre: 'Botones', descripcion: 'Hasta cuatro botones en fila, cada uno a una página.' },
+  espacio: { nombre: 'Espacio', descripcion: 'Aire entre dos bloques, con una línea si quieres.' },
+  datos: { nombre: 'Datos', descripcion: 'Pares de concepto y valor: horarios, direcciones, medidas.' },
+  itinerario: { nombre: 'Itinerario', descripcion: 'Las paradas de un recorrido con su hora, y el recorrido sobre el mapa.' },
+  cronologia: { nombre: 'Cronología', descripcion: 'Momentos de una historia en orden, con fecha y relato.' },
+  descargas: { nombre: 'Descargas', descripcion: 'Documentos en PDF para descargar.' },
+  mapa: { nombre: 'Mapa', descripcion: 'Un lugar en el mapa, con el enlace para llegar.' },
+  horario: { nombre: 'Horario vivo', descripcion: 'Misas y despacho, con la próxima misa y cuánto falta, calculado al momento.' },
+  relacion: { nombre: 'Relación de cargos', descripcion: 'Los cargos de la Junta, con quién los ocupa y qué hace cada uno.' },
+  programa: { nombre: 'Programa', descripcion: 'Los cultos del año mes a mes, con el próximo marcado solo y su fecha de la Agenda.' },
+  puertas: { nombre: 'Dos puertas', descripcion: 'Dos paneles para dos lectores, como «Necesito ayuda» y «Quiero ayudar», con sus datos y un botón.' },
+  anillos: { nombre: 'Tres fines', descripcion: 'Tres fines que van juntos: en anillos entrelazados, o en foco, una palabra nítida y las otras dos desenfocadas.' },
+  dibujo: { nombre: 'Dibujo con texto', descripcion: 'Un dibujo de líneas que se traza al bajar, con un texto al lado.' },
+  cuentaAtras: { nombre: 'Cuenta atrás', descripcion: 'Días, horas y minutos que faltan para una fecha.' },
+  listado: { nombre: 'Listado', descripcion: 'Noticias, actos o publicaciones, que salen solos de otras pantallas.' },
+  contacto: { nombre: 'Formulario de contacto', descripcion: 'El formulario que llega por correo, con los datos al lado.' },
 }
 
-/** El orden de los grupos en la galería. */
-export const GRUPOS_DE_BLOQUES = ['Texto', 'Imagen y vídeo', 'Composición', 'Información', 'Automáticos']
+/**
+ * Las carpetas de la galería, en su orden, y los tipos de cada una en el suyo:
+ * de lo más corriente a lo más especial. Un tipo nuevo que no esté en ninguna
+ * no se ofrecería: lo vigila la prueba de la galería.
+ */
+export const CARPETAS_DE_BLOQUES: { nombre: string; tipos: string[] }[] = [
+  { nombre: 'Texto', tipos: ['texto', 'cita', 'preguntas'] },
+  { nombre: 'Fotos y vídeo', tipos: ['foto', 'fotoTexto', 'galeria', 'carrusel', 'fotoFija', 'video', 'dibujo'] },
+  { nombre: 'Composición', tipos: ['tarjetas', 'llamada', 'botones', 'puertas', 'anillos', 'espacio'] },
+  { nombre: 'Información', tipos: ['datos', 'itinerario', 'cronologia', 'horario', 'mapa', 'relacion', 'descargas', 'cuentaAtras'] },
+  { nombre: 'Automáticos', tipos: ['listado', 'programa'] },
+  { nombre: 'Formularios y pagos', tipos: ['contacto', 'donativo'] },
+]
