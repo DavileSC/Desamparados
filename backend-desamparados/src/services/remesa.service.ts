@@ -7,6 +7,11 @@
  * consultas, la transacción y el rastro. Los datos del Grupo como acreedor
  * salen del entorno (`SEPA_ACREEDOR_*`): sin ellos se puede ver qué entraría,
  * pero no generar nada.
+ *
+ * Al generarla, cada cuenta recibe por correo el aviso previo del cargo
+ * (qué recibos, cuánto y qué día), como pide la norma SEPA. Va por la cola de
+ * correos: una remesa son cientos de cuentas y no caben en el tope de un día
+ * si coincide con otro envío.
  */
 import { randomUUID } from 'node:crypto';
 import { EstadoPago, EstadoRemesa, MetodoPago, Prisma, TipoRecibo } from '@prisma/client';
@@ -18,9 +23,16 @@ import { ReciboService } from './recibo.service.js';
 import { diaDeHoy } from '../domain/fechas-hermano.js';
 import { instanteDelApunte } from '../domain/contabilidad.js';
 import { deLaCorporacion } from '../domain/articulos.js';
+import { enmascararIban } from '../domain/iban.js';
+import { esDireccionDeNadie } from '../domain/cuenta-de-custodia.js';
+import { DOMINIO_CUENTA_ELIMINADA } from '../domain/cuenta-anonimizada.js';
+import { eurosDeCentimos } from '../utils/euros.js';
+import { EmailService, type LineaDeImporte } from './email.service.js';
+import { despertarCola } from './correos/cola.js';
+import type { Sexo } from './correos/plantilla.js';
 import {
-  TEXTO_EXCLUSION, aCentimos, clasificarRecibos, fechaCobroMinima, generarPain008, importeXml, leerAcreedorSepa,
-  mensajeIdDeRemesa, problemaFechaCobro, type MotivoExclusion, type ReciboCandidato,
+  TEXTO_EXCLUSION, aCentimos, avisoSinPlazo, clasificarRecibos, fechaCobroMinima, generarPain008, importeXml, leerAcreedorSepa,
+  mensajeIdDeRemesa, problemaFechaCobro, type AcreedorSepa, type MotivoExclusion, type ReciboCandidato,
 } from '../domain/sepa.js';
 
 export interface FiltroRemesa {
@@ -57,6 +69,51 @@ async function candidatos(cliente: Cliente, filtro: FiltroRemesa) {
     id: f.id, concepto: f.concepto, centimos: aCentimos(f.importe), hermano: f.hermano,
   }));
   return { filas, ...clasificarRecibos(lista) };
+}
+
+/** «viernes, 6 de noviembre de 2026», como lo dice el aviso del cargo. */
+const diaDelCargo = (fechaCobro: string) =>
+  new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${fechaCobro}T12:00:00Z`));
+
+/**
+ * El aviso previo del cargo, uno por cuenta con todos sus recibos (una
+ * familia que domicilia varias fichas recibe uno, no uno por ficha). Va por
+ * correo aunque la cuenta tenga los avisos al móvil: es el aviso que pide la
+ * norma, y tiene que quedar por escrito.
+ */
+async function ponerAvisosEnCola(remesaId: number, fechaCobro: string, mandatos: Map<number, string>, acreedor: AcreedorSepa) {
+  const recibos = await db.recibo.findMany({
+    where: { remesaId },
+    select: {
+      id: true, concepto: true, importe: true,
+      hermano: { select: { nombre: true, apellidos: true, iban: true, user: { select: { id: true, email: true, nombre: true, hermanos: { where: { esTitular: true }, select: { sexo: true }, take: 1 } } } } },
+    },
+    orderBy: { id: 'asc' },
+  });
+  const porCuenta = new Map<number, { email: string; nombre: string; sexo: Sexo; lineas: LineaDeImporte[]; centimos: number }>();
+  for (const r of recibos) {
+    const u = r.hermano.user;
+    // Sin cuenta, o con la de nadie (custodia del censo importado, cuenta suprimida): no hay a quién avisar.
+    if (!u?.email || esDireccionDeNadie(u.email) || u.email.endsWith(DOMINIO_CUENTA_ELIMINADA)) continue;
+    const cuenta = porCuenta.get(u.id) ?? { email: u.email, nombre: u.nombre, sexo: u.hermanos[0]?.sexo ?? undefined, lineas: [], centimos: 0 };
+    const centimos = aCentimos(r.importe);
+    const detalle = [`${r.hermano.nombre} ${r.hermano.apellidos ?? ''}`.trim(), `cuenta ${enmascararIban(r.hermano.iban) ?? '—'}`, mandatos.has(r.id) ? `mandato ${mandatos.get(r.id)}` : null].filter(Boolean).join(' · ');
+    cuenta.lineas.push({ concepto: r.concepto, detalle, importe: eurosDeCentimos(centimos) });
+    cuenta.centimos += centimos;
+    porCuenta.set(u.id, cuenta);
+  }
+  const lote = `remesa:${remesaId}`;
+  const titulo = `Aviso de cargo en cuenta · ${fechaCobro.split('-').reverse().join('/')}`;
+  const filas: Prisma.CorreoEnColaCreateManyInput[] = [];
+  for (const [userId, c] of porCuenta) {
+    const { asunto, html, uso } = await EmailService.correoCargoDomiciliado(c.nombre, c.sexo, {
+      fechaCobro: diaDelCargo(fechaCobro), total: eurosDeCentimos(c.centimos), lineas: c.lineas, acreedor: { nombre: acreedor.nombre, id: acreedor.id },
+    });
+    filas.push({ lote, titulo, userId, porMovil: false, para: c.email, asunto: asunto.slice(0, 200), html, uso });
+  }
+  for (let i = 0; i < filas.length; i += 100) await db.correoEnCola.createMany({ data: filas.slice(i, i + 100) });
+  void despertarCola();
+  return filas.length;
 }
 
 function comprobarFecha(fechaCobro: string) {
@@ -116,6 +173,8 @@ export class RemesaService {
     const porId = new Map(filas.map((f) => [f.id, f]));
     return {
       fechaCobro: filtro.fechaCobro,
+      // El aviso a cada cuenta sale al generarla: con menos de 14 días, la norma pide haberlo pactado en el mandato.
+      avisoPlazo: avisoSinPlazo(filtro.fechaCobro, diaDeHoy()),
       numRecibos: adeudos.length,
       total: Number(importeXml(adeudos.reduce((s, a) => s + a.centimos, 0))),
       excluidos: excluidos.map((e) => {
@@ -146,7 +205,7 @@ export class RemesaService {
       ? await db.user.findUnique({ where: { id: meta.userId }, select: { nombre: true, apellidos: true } })
       : null;
 
-    const remesa = await transactionWithRetry(async (tx) => {
+    const { remesa, mandatos } = await transactionWithRetry(async (tx) => {
       const { adeudos } = await candidatos(tx, filtro);
       if (adeudos.length === 0) throw new HttpError('No hay recibos que se puedan mandar al banco con estos filtros.', 409);
       const centimos = adeudos.reduce((s, a) => s + a.centimos, 0);
@@ -179,16 +238,26 @@ export class RemesaService {
       if (cambiados.count !== adeudos.length) {
         throw new HttpError('Algún recibo cambió mientras se preparaba la remesa. Vuelve a intentarlo.', 409);
       }
-      return tx.remesa.update({ where: { id: creada.id }, data: { mensajeId, xml }, select: SELECT_RESUMEN });
+      const remesa = await tx.remesa.update({ where: { id: creada.id }, data: { mensajeId, xml }, select: SELECT_RESUMEN });
+      return { remesa, mandatos: new Map(adeudos.map((a) => [a.reciboId, a.mandato.referencia])) };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+    // El aviso a cada cuenta, fuera de la transacción: si no se pudiera poner
+    // en cola, la remesa ya está hecha y Tesorería lo ve en el registro.
+    let avisados = 0;
+    try {
+      avisados = await ponerAvisosEnCola(remesa.id, filtro.fechaCobro, mandatos, acreedor);
+    } catch (error) {
+      console.error(`[Remesa] No se han podido poner en cola los avisos de cargo de la remesa ${remesa.id}`, error);
+    }
 
     await AuditoriaService.log(ACCIONES_AUDITORIA.REMESA_GENERAR, meta ?? {}, 'remesa', remesa.id, {
       despues: {
-        fechaCobro: filtro.fechaCobro, numRecibos: remesa.numRecibos, total: remesa.total.toString(),
+        fechaCobro: filtro.fechaCobro, numRecibos: remesa.numRecibos, total: remesa.total.toString(), avisados,
         ...(filtro.year ? { year: filtro.year } : {}), ...(filtro.tipo ? { tipo: filtro.tipo } : {}),
       },
     });
-    return resumenRemesa(remesa);
+    return { ...resumenRemesa(remesa), avisados };
   }
 
   /** El fichero tal cual salió, para subirlo (o volver a subirlo) al banco. */

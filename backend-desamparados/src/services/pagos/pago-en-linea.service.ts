@@ -21,6 +21,9 @@ import { MENSAJE_YA_REEMITIDO, reemitidosDe } from '../recibos/comunes.js';
 import { ZonasService } from '../procesion/zonas.service.js';
 import { DonativoService } from './donativo.service.js';
 import { aCentimos, claveDelCobro, urlDelAviso, type InicioDePago, type MetodoEnLinea } from './comunes.js';
+import { EmailService } from '../email.service.js';
+import { fechaYHoraParaCorreo } from '../../domain/fecha-y-hora.js';
+import { eurosDeCentimos } from '../../utils/euros.js';
 
 export type {  MetodoEnLinea } from './comunes.js';
 
@@ -70,6 +73,58 @@ export const intentosVigentesDesde = () => new Date(Date.now() - INTENTO_CADUCA_
 
 export function registrarOrigenDePago(origen: OrigenPago, o: OrigenDePago) {
   ORIGENES[origen] = o;
+}
+
+type PagoGuardado = Prisma.PagoEnLineaGetPayload<object>;
+
+/**
+ * A quién hay que devolverle el dinero de un pago: el correo de su cuenta;
+ * sin cuenta, el que dejó el donante o el que dé el servicio del pedido (la
+ * tienda, un apadrinamiento).
+ */
+async function correoDeQuienPago(p: PagoGuardado): Promise<string | null> {
+  if (p.userId !== null) return (await db.user.findUnique({ where: { id: p.userId }, select: { email: true } }))?.email ?? null;
+  const delDonativo = (p.donativo as { email?: string | null } | null)?.email;
+  if (delDonativo) return delDonativo;
+  return p.referenciaId !== null ? (await ORIGENES[p.origen]?.correo(p.referenciaId)) ?? null : null;
+}
+
+/**
+ * Se le dice a quien pagó que se le devuelve el dinero. Nunca lanza: la
+ * incidencia ya está apuntada, y es lo que importa para devolverlo.
+ */
+async function avisarDeLaDevolucion(p: PagoGuardado, centimos: number) {
+  try {
+    const para = await correoDeQuienPago(p);
+    if (!para) return;
+    await EmailService.enviarPagoDevuelto(para, { importe: eurosDeCentimos(centimos), pedido: p.pedido ?? String(p.id), fecha: fechaYHoraParaCorreo(p.createdAt) });
+  } catch (e) {
+    console.error(`[Pagos] No se ha podido avisar de la devolución del pedido ${p.pedido}`, e);
+  }
+}
+
+/**
+ * El justificante de lo pagado desde el área de hermanos: cada recibo con la
+ * ficha de quien es. Nunca lanza: el pago ya está cobrado y apuntado.
+ */
+async function mandarJustificante(p: PagoGuardado, userId: number, cobrados: { hermanoId: number; concepto: string; importe: number }[], centimos: number) {
+  try {
+    const [cuenta, fichas] = await Promise.all([
+      db.user.findUnique({ where: { id: userId }, select: { email: true, nombre: true, hermanos: { where: { esTitular: true }, select: { sexo: true }, take: 1 } } }),
+      db.hermano.findMany({ where: { id: { in: [...new Set(cobrados.map((c) => c.hermanoId))] } }, select: { id: true, nombre: true, apellidos: true } }),
+    ]);
+    if (!cuenta?.email || cobrados.length === 0) return;
+    const nombreDe = new Map(fichas.map((f) => [f.id, `${f.nombre} ${f.apellidos ?? ''}`.trim()]));
+    await EmailService.enviarJustificantePago(cuenta.email, cuenta.nombre, cuenta.hermanos[0]?.sexo ?? undefined, {
+      total: eurosDeCentimos(centimos),
+      metodo: p.metodo === 'BIZUM' ? 'Bizum' : 'tarjeta',
+      fecha: fechaYHoraParaCorreo(new Date()),
+      pedido: p.pedido ?? String(p.id),
+      lineas: cobrados.map((c) => ({ concepto: c.concepto, detalle: nombreDe.get(c.hermanoId), importe: eurosDeCentimos(aCentimos(c.importe)) })),
+    });
+  } catch (e) {
+    console.error(`[Pagos] No se ha podido mandar el justificante del pedido ${p.pedido}`, e);
+  }
 }
 
 export class PagoEnLineaService {
@@ -212,9 +267,12 @@ export class PagoEnLineaService {
         await PagoEnLineaService.marcarPagado(pago.id, banco);
         return;
       }
-      await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.INCIDENCIA, motivo, ...banco } });
+      const { count } = await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.INCIDENCIA, motivo, ...banco } });
       console.error(`[Pagos] Incidencia en el pedido ${aviso.pedido}: ${motivo}`);
       await AuditoriaService.log(ACCIONES_AUDITORIA.PAGO_EN_LINEA_INCIDENCIA, { ...meta, userId: pago.userId ?? undefined }, 'PagoEnLinea', pago.id, { pedido: aviso.pedido, motivo });
+      // Solo quien la apuntó avisa: un aviso repetido del banco no manda otro correo.
+      // Lo que se devuelve es lo que cobró el banco, no lo que se esperaba.
+      if (count === 1) void avisarDeLaDevolucion(pago, aviso.centimos);
     };
 
     const esperado = aCentimos(pago.importe);
@@ -286,11 +344,13 @@ export class PagoEnLineaService {
         await incidencia(`Mientras pagaba cambió lo que debía: ahora son ${(ahora.centimos / 100).toFixed(2)} €.`);
         return true;
       }
-      await ZonasService.cobrar(
+      const cobro = await ZonasService.cobrar(
         { hermanoId: ahora.hermanoId, reciboIds, solicitudes: solicitudIds.map((solicitudId) => ({ solicitudId })), metodoPago: pago.metodo as MetodoEnLinea },
         claveDelCobro(aviso.pedido), { ...meta, userId }, ACCIONES_AUDITORIA.PAGO_EN_LINEA,
       );
       await PagoEnLineaService.marcarPagado(pago.id, banco);
+      // Un aviso repetido del banco no manda otro justificante.
+      if (!cobro.repetida) void mandarJustificante(pago, userId, cobro.cobrados, aviso.centimos);
     } catch (e) {
       // Lo que ya no se puede cobrar (pagado en Secretaría, solicitud anulada…) es incidencia; lo demás, un fallo de verdad.
       if (!(e instanceof HttpError)) throw e;

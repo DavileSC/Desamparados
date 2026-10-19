@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import {
   aCentimos,
+  avisoSinPlazo,
   clasificarRecibos,
   esDiaHabilBancario,
   esIdentificadorAcreedorValido,
@@ -215,4 +216,14 @@ describe('el mandato y el arranque', () => {
     assert.ok(validarEntorno({ ...base, SEPA_ACREEDOR_ID: 'ES26000G12345678' }).errores.some((e) => e.includes('SEPA_ACREEDOR_IBAN')));
     assert.deepEqual(validarEntorno({ ...base, SEPA_ACREEDOR_NOMBRE: 'Grupo', SEPA_ACREEDOR_ID: 'ES26000G12345678', SEPA_ACREEDOR_IBAN: IBAN_VALIDO }).errores, []);
   });
+});
+
+// El aviso a cada cuenta sale al generar la remesa: con menos de 14 días, se
+// le dice a Tesorería (la norma los pide salvo pacto en el mandato), sin
+// impedirle generarla.
+test('el aviso del cargo con menos de 14 días de antelación se le dice a Tesorería', () => {
+  assert.match(avisoSinPlazo('2026-10-02', '2026-09-30') ?? '', /menos de 14 días/);
+  assert.match(avisoSinPlazo('2026-10-13', '2026-09-30') ?? '', /menos de 14 días/);
+  assert.equal(avisoSinPlazo('2026-10-14', '2026-09-30'), null);
+  assert.equal(avisoSinPlazo('no es fecha', '2026-09-30'), null);
 });

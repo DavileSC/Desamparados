@@ -97,7 +97,7 @@ export default function Remesas() {
     catch (err: unknown) { setErrorGenerar(mensaje(err, 'No se ha podido generar la remesa.')); return }
     finally { setGenerando(false) }
     setAbierta(false)
-    setAviso(`Remesa generada: ${remesa.numRecibos} ${remesa.numRecibos === 1 ? 'recibo' : 'recibos'} por ${euros(remesa.total)}, al cobro el ${dia(remesa.fechaCobro)}. Sube el fichero a la banca en línea.`)
+    setAviso(`Remesa generada: ${remesa.numRecibos} ${remesa.numRecibos === 1 ? 'recibo' : 'recibos'} por ${euros(remesa.total)}, al cobro el ${dia(remesa.fechaCobro)}. Sube el fichero a la banca en línea.${remesa.avisados ? ` ${remesa.avisados === 1 ? 'La cuenta recibe' : `Las ${remesa.avisados} cuentas reciben`} por correo el aviso del cargo.` : ''}`)
     await descargar(remesa)
     await cargar().catch(() => undefined)
   }
@@ -219,6 +219,7 @@ export default function Remesas() {
             ? `${previa.numRecibos} ${previa.numRecibos === 1 ? 'recibo' : 'recibos'} por ${euros(previa.total)}.`
             : 'Con estos filtros no hay ningún recibo que mandar al banco.'}
         </Alert>
+        {previa.numRecibos > 0 && previa.avisoPlazo && <Alert severity="warning">{previa.avisoPlazo}</Alert>}
         {previa.excluidos.length > 0 && (
           <Box>
             <Typography variant="subtitle2" sx={{ mb: 0.5 }}>

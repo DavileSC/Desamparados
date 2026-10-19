@@ -65,7 +65,7 @@ export const COLORES = {
 };
 
 const SERIF = "Georgia, 'Times New Roman', Times, serif";
-const SANS = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+export const SANS = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 
 /**
  * Escapa caracteres HTML de datos que vienen de la BD (nombres, puestos...)
@@ -205,6 +205,28 @@ export function datos(filas: [string, string][]): string {
         <td valign="top" style="padding: 9px 0; border-bottom: 1px solid ${linea}; font-size: 15px;">${valor}</td>
       </tr>`).join('');
   return `<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 4px 0 24px 0; border-top: 1px solid ${linea};">${celdas}</table>`;
+}
+
+/**
+ * Tabla de lo que se cobra o se ha pagado: cada línea con su concepto, un
+ * detalle en pequeño debajo (la ficha, la cuenta) y el importe a la derecha;
+ * al final, el total. Todo es texto y se escapa aquí.
+ */
+export function tablaDeImportes(lineas: { concepto: string; detalle?: string; importe: string }[], total: string): string {
+  const { linea, suave } = COLORES;
+  const filas = lineas.map((l) => `
+      <tr>
+        <td valign="top" style="padding: 9px 16px 9px 0; border-bottom: 1px solid ${linea}; font-size: 15px;">
+          ${esc(l.concepto)}${l.detalle ? `<br><span style="font-family: ${SANS}; font-size: 12px; color: ${suave};">${esc(l.detalle)}</span>` : ''}
+        </td>
+        <td valign="top" align="right" style="padding: 9px 0; border-bottom: 1px solid ${linea}; font-size: 15px; white-space: nowrap;">${esc(l.importe)}</td>
+      </tr>`).join('');
+  return `<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 4px 0 24px 0; border-top: 1px solid ${linea};">${filas}
+      <tr>
+        <td style="padding: 10px 16px 0 0;">${rotulo('Total')}</td>
+        <td align="right" style="padding: 10px 0 0 0; font-size: 16px; font-weight: bold; white-space: nowrap;">${esc(total)}</td>
+      </tr>
+    </table>`;
 }
 
 /** Cita larga (el mensaje del formulario de contacto). `html` va tal cual. */

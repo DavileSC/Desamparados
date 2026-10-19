@@ -4,7 +4,8 @@
 // admite otro pedido ni un dato cambiado. Con la base, el camino entero: el
 // hermano empieza el pago, el banco avisa por la ruta de verdad (en
 // formulario, sin sesión) y el recibo queda pagado una sola vez aunque el
-// aviso se repita. Lo que ya no cuadra queda como incidencia para Tesorería.
+// aviso se repita, con su justificante por correo. Lo que ya no cuadra queda
+// como incidencia para Tesorería, y a quien pagó se le dice que se le devuelve.
 
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
@@ -19,6 +20,7 @@ import {
 import { PagoEnLineaService } from '../src/services/pagos/pago-en-linea.service.js';
 import { ZonasService } from '../src/services/procesion/zonas.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { ponerTransporte, type TransporteDeCorreo } from '../src/services/correos/envio.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 
 const PRUEBAS = configuracionRedsys({});
@@ -95,6 +97,15 @@ let baseUrl: string;
 const VARIABLES = ['PAGO_EN_LINEA', 'REDSYS_ENTORNO', 'REDSYS_COMERCIO', 'REDSYS_TERMINAL', 'REDSYS_CLAVE', 'REDSYS_BIZUM'] as const;
 const previas = Object.fromEntries(VARIABLES.map((v) => [v, process.env[v]]));
 
+// Los correos, en una lista en vez de a la red: el justificante y el aviso de devolución.
+const enviados: Parameters<TransporteDeCorreo['sendMail']>[0][] = [];
+/** Los correos a esa dirección cuyo asunto casa, esperando un poco: salen sin que nadie los espere. */
+async function correosA(para: string, asunto: RegExp, cuantos = 1) {
+  const de = () => enviados.filter((c) => c.to === para && asunto.test(c.subject));
+  for (let i = 0; i < 50 && de().length < cuantos; i++) await new Promise((r) => setTimeout(r, 20));
+  return de();
+}
+
 before(async () => {
   server = app.listen(0);
   await new Promise<void>((resolve) => server.once('listening', resolve));
@@ -103,6 +114,7 @@ before(async () => {
   dbDisponible = await Promise.race([db.$queryRaw`SELECT 1`.then(() => true).catch(() => false), timeout]);
   for (const v of VARIABLES) delete process.env[v];
   process.env.PAGO_EN_LINEA = 'redsys';
+  ponerTransporte({ sendMail: async (c) => { enviados.push(c); return {}; } });
 });
 
 after(async () => {
@@ -110,6 +122,7 @@ after(async () => {
     if (previas[v] === undefined) delete process.env[v];
     else process.env[v] = previas[v];
   }
+  ponerTransporte(undefined);
   await new Promise<void>((resolve, reject) => server.close((e) => e ? reject(e) : resolve()));
   await db.$disconnect();
 });
@@ -182,6 +195,15 @@ test('el banco avisa del cobro: el recibo queda pagado una sola vez', async (t) 
     assert.equal(pago.estado, EstadoPagoEnLinea.PAGADO);
     assert.equal(pago.autorizacion, '654321');
 
+    // El justificante, uno aunque el banco avise dos veces, con lo pagado y de quién.
+    const [justificante] = await correosA(e.usuario.email, /^Justificante de su pago de 30,00/);
+    assert.ok(justificante, 'sale el justificante');
+    assert.ok(justificante.html.includes(recibo.concepto));
+    assert.ok(justificante.html.includes(`Rafael ${e.hermano.apellidos}`));
+    assert.ok(justificante.html.includes(inicio.pedido));
+    await new Promise((r) => setTimeout(r, 100));
+    assert.equal(enviados.filter((c) => c.to === e.usuario.email && /^Justificante/.test(c.subject)).length, 1, 'el aviso repetido no manda otro');
+
     // Otro usuario no ve ese pago.
     const otro = await crearUsuarioPrueba(Role.USER);
     try {
@@ -218,6 +240,13 @@ test('denegado: no se paga nada; si ya no cuadra, incidencia para Tesorería', a
     await avisar(aviso({ Ds_Order: i3.pedido, Ds_Amount: '2999', Ds_Response: '0000' }));
     assert.equal((await PagoEnLineaService.estado(e.usuario.id, i3.pedido)).estado, EstadoPagoEnLinea.INCIDENCIA);
     assert.equal((await db.recibo.findUniqueOrThrow({ where: { id: otra.id } })).estado, EstadoPago.PENDIENTE);
+
+    // A quien pagó se le dice que se le devuelve lo que cobró el banco, sin
+    // contarle el motivo interno. A la tarjeta denegada, nada.
+    const devoluciones = await correosA(e.usuario.email, /^Le devolvemos su pago/, 2);
+    assert.deepEqual(devoluciones.map((c) => c.subject).sort(), ['Le devolvemos su pago de 29,99 €', 'Le devolvemos su pago de 30,00 €']);
+    assert.ok(devoluciones.every((c) => !/no está pendiente|se esperaban/.test(c.html)));
+    assert.ok(devoluciones.some((c) => c.html.includes(i2.pedido)));
 
     const incidencias = (await PagoEnLineaService.incidencias()).filter((x) => x.pedido === i2.pedido || x.pedido === i3.pedido);
     assert.equal(incidencias.length, 2);

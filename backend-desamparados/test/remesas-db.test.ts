@@ -4,7 +4,8 @@
 //
 // Cada prueba siembra sus fichas en un año que nadie usa (2097) para no
 // arrastrar recibos pendientes de la base de desarrollo, y las recoge al
-// terminar. El correo va simulado.
+// terminar. El correo va simulado: el aviso del cargo a cada cuenta, a una
+// lista.
 
 import assert from 'node:assert/strict';
 import { after, before, mock, test } from 'node:test';
@@ -27,6 +28,8 @@ import { extracto } from './fixtures/norma43.js';
 import { Norma43Service } from '../src/services/norma43.service.js';
 import { inicioDiaMadrid } from '../src/domain/contabilidad.js';
 import { SIN_DB } from './fixtures/sin-db.js';
+import { ponerTransporte, type TransporteDeCorreo } from '../src/services/correos/envio.js';
+import { despertarCola } from '../src/services/correos/cola.js';
 
 const YEAR = 2097;
 const IBAN_VALIDO = 'ES9121000418450200051332';
@@ -42,9 +45,11 @@ let baseUrl: string;
 const entornoPrevio = Object.fromEntries(Object.keys(ACREEDOR).map((k) => [k, process.env[k]]));
 
 mock.method(EmailService, 'enviarPapeleta', async () => undefined);
+const enviados: Parameters<TransporteDeCorreo['sendMail']>[0][] = [];
 
 before(async () => {
   Object.assign(process.env, ACREEDOR);
+  ponerTransporte({ sendMail: async (c) => { enviados.push(c); return {}; } });
   server = app.listen(0);
   await new Promise<void>((resolve) => server.once('listening', resolve));
   baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -58,6 +63,7 @@ after(async () => {
     else process.env[k] = v;
   }
   mock.restoreAll();
+  ponerTransporte(undefined);
   await new Promise<void>((resolve, reject) => server.close((e) => e ? reject(e) : resolve()));
   await db.$disconnect();
 });
@@ -92,13 +98,14 @@ async function escenario() {
     await db.auditLog.deleteMany({ where: { userId: admin.id } });
     await db.transaccion.deleteMany({ where: { hermanoId: { in: hermanos } } });
     await db.recibo.deleteMany({ where: { hermanoId: { in: hermanos } } });
+    await db.correoEnCola.deleteMany({ where: { lote: { in: remesas.map((r) => `remesa:${r.remesaId}`) } } });
     await db.remesa.deleteMany({ where: { id: { in: remesas.map((r) => r.remesaId!) } } });
     await db.hermano.deleteMany({ where: { id: { in: hermanos } } });
     await borrarUsuarioPrueba(usuario.id);
     await borrarUsuarioPrueba(admin.id);
   };
 
-  return { admin, meta, hermano, recibo, recoger };
+  return { admin, usuario, meta, hermano, recibo, recoger };
 }
 
 const fechaCobro = () => fechaCobroMinima(diaDeHoy());
@@ -363,6 +370,34 @@ test('las rutas del extracto piden sesión y leen el fichero subido', async (t) 
 
     const sinFichero = await fetch(`${baseUrl}/api/recibos/admin/remesas/norma43/previa`, { method: 'POST', headers: cookie });
     assert.equal(sinFichero.status, 400);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('al generar, cada cuenta recibe por correo un aviso del cargo con todos sus recibos', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    // Dos fichas de la misma cuenta: un solo aviso, con los dos recibos.
+    const a = await e.hermano();
+    const b = await e.hermano();
+    await e.recibo(a.id, '30.00');
+    await e.recibo(b.id, '12.50');
+
+    const remesa = await RemesaService.generar({ fechaCobro: fechaCobro(), year: YEAR }, e.meta);
+    assert.equal(remesa.avisados, 1);
+    const enCola = await db.correoEnCola.findMany({ where: { lote: `remesa:${remesa.id}` } });
+    assert.equal(enCola.length, 1);
+    assert.equal(enCola[0].porMovil, false, 'el aviso que pide la norma va por correo, tenga o no el móvil');
+
+    await despertarCola();
+    const aviso = enviados.find((c) => c.to === e.usuario.email && /^Aviso de cargo en su cuenta: 42,50 €/.test(c.subject));
+    assert.ok(aviso, 'sale el aviso con el total de la cuenta');
+    assert.ok(aviso.html.includes(ACREEDOR.SEPA_ACREEDOR_ID), 'con el identificador del acreedor');
+    assert.match(aviso.html, /mandato HERMANO-\d{6}-\d{8}/);
+    assert.ok(!aviso.html.includes(IBAN_VALIDO), 'la cuenta va tapada');
+    assert.ok(aviso.html.includes('1332'), 'con sus cuatro últimas cifras');
   } finally {
     await e.recoger();
   }

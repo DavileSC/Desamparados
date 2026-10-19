@@ -243,6 +243,53 @@
       }
     },
     {
+      "clave": "cuenta_bancaria_cambiada",
+      "grupo": "Cuenta",
+      "nombre": "Cuenta bancaria cambiada",
+      "descripcion": "Cuando alguien cambia desde el área de hermanos la cuenta en la que se cargan los recibos de una ficha.",
+      "antetitulo": "Su cuenta",
+      "firma": "Tesorería",
+      "campos": [
+        {
+          "clave": "saludo",
+          "etiqueta": "Saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "etiqueta": "Nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "ficha",
+          "etiqueta": "Ficha",
+          "ayuda": "Nombre y apellidos de la ficha cuya cuenta se cambió",
+          "ejemplo": "Juan Pérez Ruiz"
+        },
+        {
+          "clave": "cuenta",
+          "etiqueta": "Cuenta que queda",
+          "ayuda": "La cuenta nueva, con los números del centro tapados, o «ninguna» si se quitó",
+          "ejemplo": "ES12 •••• •••• •••• •••• 3456"
+        },
+        {
+          "clave": "fecha",
+          "etiqueta": "Fecha del cambio",
+          "ayuda": "Cuándo se cambió",
+          "ejemplo": "8 de octubre de 2026, a las 18:05"
+        }
+      ],
+      "bloques": [],
+      "porDefecto": {
+        "asunto": "Se ha cambiado la cuenta bancaria de {{ficha}}",
+        "titulo": "Cuenta bancaria cambiada",
+        "cuerpo": "{{saludo}}\n\nEl {{fecha}} se cambió, desde el área de hermanos, la cuenta en la que se cargan los recibos de **{{ficha}}**. La cuenta que queda es: **{{cuenta}}**.\n\nLos próximos recibos domiciliados se cargarán en esa cuenta.\n\n> **Si no ha sido usted**\n> Alguien ha entrado en su cuenta. Elija una contraseña nueva cuanto antes desde «He olvidado mi contraseña», en el acceso de la web, y responda a este correo para que no se cargue nada en esa cuenta.",
+        "despedida": ""
+      }
+    },
+    {
       "clave": "solicitud_recibida",
       "grupo": "Altas y bajas",
       "nombre": "Solicitud de ingreso recibida",
@@ -861,6 +908,156 @@
         "titulo": "Tu certificado de donativos",
         "cuerpo": "Hola, {{nombre}}:\n\nTe mandamos el certificado de tus donativos de {{ejercicio}} ({{importe}}). Va también en la declaración que presentamos a Hacienda (el Modelo 182), así que te saldrá en el borrador de la renta; guárdalo por si te lo piden.\n\nGracias por tu generosidad.",
         "despedida": ""
+      }
+    },
+    {
+      "clave": "cargo_domiciliado",
+      "grupo": "Cuotas y pagos",
+      "nombre": "Aviso del cargo en cuenta",
+      "descripcion": "Cuando Tesorería prepara una remesa: a cada cuenta, qué recibos se le van a cargar, cuánto y qué día. La norma SEPA pide avisar antes del cargo.",
+      "antetitulo": "Tesorería",
+      "firma": "Tesorería",
+      "campos": [
+        {
+          "clave": "saludo",
+          "etiqueta": "Saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "etiqueta": "Nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "fecha_cobro",
+          "etiqueta": "Día del cargo",
+          "ayuda": "El día en que el banco cargará los recibos",
+          "ejemplo": "viernes, 6 de noviembre de 2026"
+        },
+        {
+          "clave": "total",
+          "etiqueta": "Total",
+          "ayuda": "Lo que se cargará entre todos los recibos",
+          "ejemplo": "45,00 €"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "cargos",
+          "ayuda": "La tabla de los recibos que se cargarán: ficha, concepto, importe y cuenta, con la referencia del mandato",
+          "obligatorio": true
+        },
+        {
+          "clave": "secretaria",
+          "ayuda": "El horario y la dirección de Secretaría"
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Aviso de cargo en su cuenta: {{total}} el {{fecha_cobro}}",
+        "titulo": "Próximo cargo en su cuenta",
+        "cuerpo": "{{saludo}}\n\nLe avisamos de que el **{{fecha_cobro}}** se cargarán en su cuenta los recibos domiciliados que tiene pendientes con {{la_corporacion}}, por un total de **{{total}}**.\n\n[[cargos]]\n\nNo tiene que hacer nada: el cargo aparecerá en su banco a nombre {{de_la_corporacion}}. Si algún dato no es correcto o prefiere pagar de otra forma, avísenos antes de ese día respondiendo a este correo.\n\n[[secretaria]]",
+        "despedida": "Gracias por su colaboración."
+      }
+    },
+    {
+      "clave": "justificante_pago",
+      "grupo": "Cuotas y pagos",
+      "nombre": "Justificante de un pago en línea",
+      "descripcion": "Cuando un hermano paga desde su área, con tarjeta o Bizum, sus cuotas o lo de una salida.",
+      "antetitulo": "Tesorería",
+      "firma": "Tesorería",
+      "campos": [
+        {
+          "clave": "saludo",
+          "etiqueta": "Saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "etiqueta": "Nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "total",
+          "etiqueta": "Total pagado",
+          "ayuda": "Lo que se pagó",
+          "ejemplo": "45,00 €"
+        },
+        {
+          "clave": "metodo",
+          "etiqueta": "Cómo pagó",
+          "ayuda": "«tarjeta» o «Bizum»",
+          "ejemplo": "tarjeta"
+        },
+        {
+          "clave": "fecha",
+          "etiqueta": "Fecha del pago",
+          "ayuda": "Cuándo se pagó",
+          "ejemplo": "8 de octubre de 2026, a las 18:05"
+        },
+        {
+          "clave": "pedido",
+          "etiqueta": "N.º de operación",
+          "ayuda": "El número del pago en el banco, por si hay que reclamar",
+          "ejemplo": "2610081805AB"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "detalle",
+          "ayuda": "La tabla de lo pagado: concepto, ficha e importe",
+          "obligatorio": true
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Justificante de su pago de {{total}}",
+        "titulo": "Hemos recibido su pago",
+        "cuerpo": "{{saludo}}\n\nHemos recibido su pago de **{{total}}** con {{metodo}} el {{fecha}} (operación {{pedido}}). Muchas gracias.\n\n[[detalle]]\n\nGuarde este correo como justificante. También puede ver y descargar sus recibos cuando quiera en el área de hermanos, en «Recibos».",
+        "despedida": "Que {{titular}} le guarde y bendiga."
+      }
+    },
+    {
+      "clave": "pago_devuelto",
+      "grupo": "Cuotas y pagos",
+      "nombre": "Pago que se devuelve",
+      "descripcion": "Cuando alguien paga en línea y no se puede aplicar a lo que pagaba (ya estaba pagado, se agotó, cambió mientras pagaba): se le dice que se le devuelve el dinero.",
+      "antetitulo": "Tesorería",
+      "firma": "Tesorería",
+      "campos": [
+        {
+          "clave": "importe",
+          "etiqueta": "Importe",
+          "ayuda": "Lo que pagó y se le devuelve",
+          "ejemplo": "35,00 €"
+        },
+        {
+          "clave": "pedido",
+          "etiqueta": "N.º de operación",
+          "ayuda": "El número del pago en el banco",
+          "ejemplo": "2610081805AB"
+        },
+        {
+          "clave": "fecha",
+          "etiqueta": "Fecha del pago",
+          "ayuda": "Cuándo pagó",
+          "ejemplo": "8 de octubre de 2026, a las 18:05"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "secretaria",
+          "ayuda": "El horario y la dirección de Secretaría"
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Le devolvemos su pago de {{importe}}",
+        "titulo": "Le devolvemos su pago",
+        "cuerpo": "Hemos recibido su pago de **{{importe}}** del {{fecha}} (operación {{pedido}}), pero no hemos podido aplicarlo a lo que pagaba: puede que ya estuviera pagado, que se hubiera agotado o que cambiara mientras pagaba.\n\nTesorería le devolverá el importe completo por el mismo medio con el que pagó. No tiene que hacer nada; la devolución puede tardar unos días en verse en su banco.\n\nSi tiene cualquier duda, responda a este correo.\n\n[[secretaria]]",
+        "despedida": "Disculpe las molestias."
       }
     },
     {

@@ -2,7 +2,9 @@
  * Los correos que manda la casa: recuperar la contraseña, la papeleta de
  * sitio, la confirmación de un alta, el aviso a Secretaría de una solicitud
  * nueva, su aprobación o rechazo, la baja, la apertura de las papeletas, el
- * recordatorio de una papeleta sin recoger y el formulario de contacto.
+ * recordatorio de una papeleta sin recoger, los avisos de dinero (la cuenta
+ * bancaria cambiada, el cargo en cuenta, el justificante de un pago y el pago
+ * que se devuelve) y el formulario de contacto.
  *
  * El texto de los correos a hermanos y donantes es una plantilla que se
  * edita en el CMS (Emails; ver `plantillas-correo.service`): aquí cada correo
@@ -19,7 +21,7 @@ import { ContactoDto } from '../dtos/contacto.dto';
 import { conArticulo, deArticulo, deLaCorporacion, type Articulo } from '../domain/articulos.js';
 import {
   COLORES, bloqueDeSecretaria, boton, cita, datos, esc, lista, maquetar, rotulo,
-  parrafo, recuadro, segunSexo, urlDeLaWeb, type Sexo,
+  parrafo, recuadro, SANS, segunSexo, tablaDeImportes, urlDeLaWeb, type Sexo,
 } from './correos/plantilla.js';
 import { cuentaDeContacto, direccionDeEnvio, enviarCorreo } from './correos/envio.js';
 import { PlantillasCorreoService } from './plantillas-correo.service.js';
@@ -51,6 +53,9 @@ function plazo(horas: number): string {
   if (horas % 24 === 0) return horas === 24 ? 'un día' : `${horas / 24} días`;
   return `${horas} horas`;
 }
+
+/** Una línea de dinero de un correo: qué, de quién (y de qué cuenta) y cuánto, ya en texto. */
+export interface LineaDeImporte { concepto: string; detalle?: string; importe: string }
 
 /** Lo de la salida que dice el correo de apertura. */
 type DatosDeLaApertura = { nombre: string; cobro: 'CUOTA' | 'DONATIVO'; indicaciones: string | null; articulo: Articulo };
@@ -111,6 +116,55 @@ export class EmailService {
   static async enviarDobleFactorBloqueado(emailDestino: string, nombre: string, plazoTexto: string, sexo?: Sexo) {
     const { asunto, html, uso } = await PlantillasCorreoService.correo('doble_factor_bloqueado', {
       campos: { saludo: textoDeSaludo(nombre, sexo), nombre, plazo: plazoTexto },
+    });
+    return await enviarCorreo(emailDestino, asunto, html, { uso });
+  }
+
+  /**
+   * La cuenta en la que se cargan los recibos de una ficha ha cambiado desde
+   * el área de hermanos. Va al correo de la cuenta y no a un aviso en la web:
+   * si quien la cambió no era su dueño, el aviso en la web lo leería él.
+   */
+  static async enviarCuentaBancariaCambiada(emailDestino: string, nombre: string, d: { ficha: string; cuenta: string | null; fecha: string }, sexo?: Sexo) {
+    const { asunto, html, uso } = await PlantillasCorreoService.correo('cuenta_bancaria_cambiada', {
+      campos: { saludo: textoDeSaludo(nombre, sexo), nombre, ficha: d.ficha, cuenta: d.cuenta ?? 'ninguna', fecha: d.fecha },
+    });
+    return await enviarCorreo(emailDestino, asunto, html, { uso });
+  }
+
+  /**
+   * El aviso previo de un cargo en cuenta (la «prenotificación» SEPA), ya
+   * maquetado y sin enviar: la remesa lo deja en la cola de correos, uno por
+   * cuenta con todos sus recibos. Debajo de la tabla, el acreedor y su
+   * identificador, que es lo que el hermano verá en su banco.
+   */
+  static async correoCargoDomiciliado(nombre: string, sexo: Sexo | undefined, d: { fechaCobro: string; total: string; lineas: LineaDeImporte[]; acreedor: { nombre: string; id: string } }) {
+    const cargos = tablaDeImportes(d.lineas, d.total)
+      + parrafo(`Acreedor: ${esc(d.acreedor.nombre)} · Identificador de acreedor: ${esc(d.acreedor.id)}`, `font-family: ${SANS}; font-size: 12px; color: ${COLORES.suave};`);
+    return await PlantillasCorreoService.correo('cargo_domiciliado', {
+      campos: { saludo: textoDeSaludo(nombre, sexo), nombre, fecha_cobro: d.fechaCobro, total: d.total },
+      bloques: { cargos, secretaria: bloqueDeSecretaria('Contacto con Secretaría') },
+    });
+  }
+
+  /** El justificante de lo pagado en línea desde el área de hermanos. */
+  static async enviarJustificantePago(emailDestino: string, nombre: string, sexo: Sexo | undefined, d: { total: string; metodo: string; fecha: string; pedido: string; lineas: LineaDeImporte[] }) {
+    const { asunto, html, uso } = await PlantillasCorreoService.correo('justificante_pago', {
+      campos: { saludo: textoDeSaludo(nombre, sexo), nombre, total: d.total, metodo: d.metodo, fecha: d.fecha, pedido: d.pedido },
+      bloques: { detalle: tablaDeImportes(d.lineas, d.total) },
+    });
+    return await enviarCorreo(emailDestino, asunto, html, { uso });
+  }
+
+  /**
+   * Un pago en línea que el banco cobró y no se pudo aplicar: se le dice a
+   * quien pagó que se le devuelve. Sin saludo con nombre: muchos pagan sin
+   * cuenta (la tienda, un donativo) y el pago no siempre lo sabe.
+   */
+  static async enviarPagoDevuelto(emailDestino: string, d: { importe: string; pedido: string; fecha: string }) {
+    const { asunto, html, uso } = await PlantillasCorreoService.correo('pago_devuelto', {
+      campos: { importe: d.importe, pedido: d.pedido, fecha: d.fecha },
+      bloques: { secretaria: bloqueDeSecretaria('Contacto con Secretaría') },
     });
     return await enviarCorreo(emailDestino, asunto, html, { uso });
   }

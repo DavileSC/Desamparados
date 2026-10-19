@@ -184,6 +184,19 @@ export function problemaFechaCobro(fechaCobro: string, hoy: string): string | nu
   return null;
 }
 
+/** Días naturales de antelación con que la norma SEPA pide avisar del cargo, salvo que el mandato pacte menos. */
+export const DIAS_DE_AVISO_PREVIO = 14;
+
+/**
+ * Si el aviso a cada cuenta llegaría con menos antelación de la que pide la
+ * norma, la frase para Tesorería; si no, null. No impide generar la remesa:
+ * el mandato puede haber pactado un plazo más corto.
+ */
+export function avisoSinPlazo(fechaCobro: string, hoy: string): string | null {
+  if (!esDiaValido(fechaCobro) || fechaCobro >= sumarDias(hoy, DIAS_DE_AVISO_PREVIO)) return null;
+  return `Cada cuenta recibe hoy el aviso del cargo, con menos de ${DIAS_DE_AVISO_PREVIO} días de antelación. La norma SEPA pide ${DIAS_DE_AVISO_PREVIO}, salvo que el mandato que firman los hermanos diga otro plazo.`;
+}
+
 const formatoDia = (dia: string) => `${dia.slice(8, 10)}/${dia.slice(5, 7)}/${dia.slice(0, 4)}`;
 
 // --- Qué recibos entran -------------------------------------------------

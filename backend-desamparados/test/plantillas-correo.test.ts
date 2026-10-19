@@ -10,7 +10,7 @@ import {
   type Pieza, type PiezaDeTexto, type PlantillaDeCorreo,
 } from '../src/domain/plantillas-correo.js';
 import { componer } from '../src/services/correos/componer.js';
-import { maquetar, medidaDelEscudo } from '../src/services/correos/plantilla.js';
+import { maquetar, medidaDelEscudo, tablaDeImportes } from '../src/services/correos/plantilla.js';
 import { PlantillasCorreoService, cuerpoParaElEditor } from '../src/services/plantillas-correo.service.js';
 import { direccionDeLaSede, identidad, secretaria, type Identidad } from '../src/domain/datos-entidad.js';
 import { aLaCorporacion, deLaCorporacion, nuestraCorporacion } from '../src/domain/articulos.js';
@@ -193,4 +193,11 @@ test('el escudo del membrete: 56 de alto y el ancho que pida su proporción', ()
 
   const html = maquetar({ titulo: 'Prueba', antetitulo: 'Secretaría', resumen: 'Prueba', contenido: '<p>Hola.</p>' });
   assert.match(html, /src="cid:escudo@marca"[^>]* width="46" height="56" style="[^"]*width: 46px; height: 56px;/);
+});
+
+test('la tabla de importes escapa lo que viene de la base y cierra con el total', () => {
+  const html = tablaDeImportes([{ concepto: 'Cuota <2027>', detalle: 'Juan "el" Pérez · cuenta ES12•• 3456', importe: '30,00 €' }], '30,00 €');
+  assert.ok(html.includes('Cuota &lt;2027&gt;'));
+  assert.ok(html.includes('Juan &quot;el&quot; Pérez'));
+  assert.match(html, /Total[\s\S]*30,00 €/);
 });

@@ -182,6 +182,8 @@ export type MotivoExclusion = 'SIN_IBAN' | 'IBAN_NO_VALIDO' | 'DE_BAJA' | 'IMPOR
 /** Qué entraría en una remesa y qué se queda fuera, con el porqué. */
 export interface PreviaRemesa {
   fechaCobro: string
+  /** Si el aviso a cada cuenta llegaría con menos antelación de la que pide la norma SEPA. */
+  avisoPlazo: string | null
   numRecibos: number
   total: number
   excluidos: {
@@ -201,8 +203,9 @@ export const estadoRemesas = () => llamarApi<EstadoRemesas>('/recibos/admin/reme
 export const previaRemesa = (filtro: FiltroRemesa) =>
   llamarApi<PreviaRemesa>('/recibos/admin/remesas/previa', { method: 'POST', json: filtro })
 
+/** `avisados`: las cuentas a las que sale por correo el aviso del cargo. */
 export const generarRemesa = (filtro: FiltroRemesa) =>
-  llamarApi<Omit<Remesa, 'enElBanco'>>('/recibos/admin/remesas', { method: 'POST', json: filtro })
+  llamarApi<Omit<Remesa, 'enElBanco'> & { avisados: number }>('/recibos/admin/remesas', { method: 'POST', json: filtro })
 
 /** El fichero XML de la remesa, para subirlo a la banca en línea. */
 export const traerFicheroRemesa = (id: number) => traerArchivo(`/recibos/admin/remesas/${id}/fichero`)

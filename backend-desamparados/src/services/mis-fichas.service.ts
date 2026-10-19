@@ -16,6 +16,8 @@ import { comprobarBautismo, comprobarEsAdulto, comprobarEsMenor, comprobarFechas
 import { diferenciasFicha, valorParaAuditoria } from '../domain/cambios-ficha';
 import { apellidosTrasCambio, partirApellidos } from '../domain/apellidos.js';
 import { enmascararIban } from '../domain/iban.js';
+import { fechaYHoraParaCorreo } from '../domain/fecha-y-hora.js';
+import { EmailService } from './email.service.js';
 import { renuevaMandato } from '../domain/sepa.js';
 import { borrarDocumentosPrivados, documentosDe } from '../utils/documentos-privados.js';
 import { PapeletasService, type SolicitudConRecibo } from './procesion/papeletas.service.js';
@@ -74,6 +76,17 @@ async function exigirDniLibreSinDelatar(dni: string, exceptoId: number | null, m
  * de los nombres): es la puerta por la que un hermano podría llegar a la ficha de
  * otro cambiando un número en la URL.
  */
+/** El aviso de la cuenta bancaria cambiada, al correo de la cuenta. Nunca lanza: el cambio ya está hecho. */
+async function avisarCuentaBancariaCambiada(userId: number, ficha: string, cuenta: string | null) {
+  try {
+    const u = await db.user.findUnique({ where: { id: userId }, select: { email: true, nombre: true, hermanos: { where: { esTitular: true }, select: { sexo: true }, take: 1 } } });
+    if (!u?.email) return;
+    await EmailService.enviarCuentaBancariaCambiada(u.email, u.nombre, { ficha, cuenta, fecha: fechaYHoraParaCorreo(new Date()) }, u.hermanos[0]?.sexo ?? undefined);
+  } catch (e) {
+    console.error('No se ha podido avisar del cambio de cuenta bancaria', e);
+  }
+}
+
 export class MisFichasService {
 
   static async getProfilesByUserId(userId: number, query: { page?: unknown; limit?: unknown } = {}) {
@@ -215,6 +228,12 @@ export class MisFichasService {
 
     // Auditoría tras confirmar: el hermano cambió datos de su ficha o de la de un familiar
     if (detalles) await AuditoriaService.log(ACCIONES_AUDITORIA.FAMILIAR_ACTUALIZAR, meta ?? {}, 'hermano', hermanoId, detalles);
+    // Cambiar la cuenta de cargo es lo primero que haría quien entrara en una
+    // cuenta ajena: se avisa al correo de la cuenta, por si no fue su dueño.
+    const sinEspacios = (iban: unknown) => (typeof iban === 'string' ? iban.replace(/\s/g, '').toUpperCase() : '');
+    if (dataToUpdate.iban !== undefined && sinEspacios(dataToUpdate.iban) !== sinEspacios(hermano.iban)) {
+      void avisarCuentaBancariaCambiada(managerUserId, `${actualizado.nombre} ${actualizado.apellidos ?? ''}`.trim(), enmascararIban(actualizado.iban));
+    }
     const { iban: cuentaGuardada, ...resto } = actualizado;
     return { ...resto, ibanEnmascarado: enmascararIban(cuentaGuardada) };
   }
