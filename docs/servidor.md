@@ -26,7 +26,7 @@ Comprobado el 05-10-2026.
 | Además | fail2ban (jaula `sshd`) y `unattended-upgrades`, activos |
 | nginx | **El del sistema** (1.28), con el 80 y el 443. Un solo sitio: `/etc/nginx/sites-available/desamparadosmalaga.com` |
 | Certificados | certbot del sistema. `desamparadosmalaga.com` y `www`, renovación automática probada |
-| Página de mantenimiento | `/var/www/desamparadosmalaga/`, servida en el dominio principal |
+| Página de mantenimiento | `/var/www/desamparadosmalaga/`, ya sin servir: desde el 19-10-2026 el dominio principal lleva a la web (cerrada, «Próximamente»). Su sitio del nginx, guardado en `~/desamparadosmalaga.com.mantenimiento` |
 
 El dominio está en **IONOS** (registro y DNS) y el servidor en OVH: los
 registros se cambian en el panel de IONOS. `@` es un A a la IP; `www`, un CNAME
@@ -802,6 +802,17 @@ para quien no tenga sesión del CMS.
 Queda aparte, también antes: la base buena con su propia `TOTP_ENC_KEY`, las
 copias de seguridad configuradas antes de cargar datos reales, el correo del
 Grupo en lugar del personal y las claves de Redsys del banco.
+
+**Hecho el 19-10-2026: pasos 1 a 3 y comprobación (5).** El dominio principal
+enseña «Próximamente». El 4 y el 6 se dejan para cuando se cargue la base
+buena: con `FRONTEND_URL` en `www`, los enlaces de los correos mandados desde
+`pruebas` llevarían al dominio principal, donde un hermano de prueba sin
+sesión del CMS vería «Próximamente», y con los dos webhooks de Brevo cada
+aviso llegaría dos veces.
+
+Quien abrió el dominio antes del cambio puede seguir viendo la página de
+mantenimiento guardada en su navegador: se va recargando sin caché
+(Ctrl+F5) o en una ventana privada.
 
 **1. Cerrar la web** en CMS → Sistema → «Abrir la web». Comprobar desde una
 ventana privada, en `pruebas`, que sale «Próximamente».
