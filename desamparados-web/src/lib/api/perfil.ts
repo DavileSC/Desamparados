@@ -64,6 +64,12 @@ export interface ApiProfile {
   ibanEnmascarado: string | null
   titularCuenta: string | null
   titularidadCuenta: TitularidadCuenta | null
+  /** El día en que autorizó la domiciliación con la cuenta de ahora (el mandato). */
+  fechaMandato: string | null
+  /** La última cuota que se le emitió: cuánto paga al año. */
+  cuota: { year: number; importe: number } | null
+  /** Si Tesorería ya mandó la remesa al banco: qué día se carga y cuánto. */
+  proximoCargo: { fecha: string; importe: number } | null
 }
 
 /**

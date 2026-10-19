@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import db from '../config/db';
-import { Prisma, Role } from '@prisma/client';
+import { EstadoPago, Prisma, Role, TipoRecibo } from '@prisma/client';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
@@ -12,7 +12,7 @@ import {
 } from './hermanos/comunes.js';
 import { encrypt } from '../utils/bcrypt.handle';
 import { CreateHermanoDto, UpdateHermanoDto, EmancipateHermanoDto } from '../dtos/hermano.dto';
-import { comprobarBautismo, comprobarEsAdulto, comprobarEsMenor, comprobarFechasHermano } from '../domain/fechas-hermano';
+import { comprobarBautismo, comprobarEsAdulto, comprobarEsMenor, comprobarFechasHermano, diaDeHoy } from '../domain/fechas-hermano';
 import { diferenciasFicha, valorParaAuditoria } from '../domain/cambios-ficha';
 import { apellidosTrasCambio, partirApellidos } from '../domain/apellidos.js';
 import { enmascararIban } from '../domain/iban.js';
@@ -112,9 +112,40 @@ export class MisFichasService {
       db.hermano.count({ where })
     ]);
 
+    // Lo que sabe cada ficha de su cuota: cuánto es (la última que se le
+    // emitió) y, si Tesorería ya mandó la remesa al banco, qué día se carga y
+    // cuánto. Es el aviso previo que se ve siempre, además del correo.
+    const ids = data.map((h) => h.id);
+    const [cuotas, enElBanco] = await Promise.all([
+      db.recibo.findMany({
+        where: { hermanoId: { in: ids }, tipo: TipoRecibo.CUOTA_HERMANO },
+        orderBy: [{ year: 'desc' }, { id: 'desc' }],
+        select: { hermanoId: true, year: true, importe: true },
+      }),
+      db.recibo.findMany({
+        where: { hermanoId: { in: ids }, estado: EstadoPago.REMESADO, remesa: { fechaCobro: { gte: new Date(`${diaDeHoy()}T00:00:00Z`) } } },
+        select: { hermanoId: true, importe: true, remesa: { select: { fechaCobro: true } } },
+      }),
+    ]);
+    const cuotaDe = new Map<number, { year: number; importe: number }>();
+    for (const c of cuotas) if (!cuotaDe.has(c.hermanoId)) cuotaDe.set(c.hermanoId, { year: c.year, importe: Number(c.importe) });
+    const cargoDe = new Map<number, { fecha: string; importe: number }>();
+    for (const r of enElBanco) {
+      const fecha = r.remesa!.fechaCobro.toISOString().slice(0, 10);
+      const antes = cargoDe.get(r.hermanoId);
+      // Con dos remesas en el banco, la más próxima; dentro de ella, la suma de sus recibos.
+      if (!antes || fecha < antes.fecha) cargoDe.set(r.hermanoId, { fecha, importe: Number(r.importe) });
+      else if (fecha === antes.fecha) antes.importe += Number(r.importe);
+    }
+
     // La cuenta bancaria nunca vuelve entera: basta para reconocerla. Para
     // cambiarla se escribe la nueva.
-    const fichas = data.map(({ iban, ...ficha }) => ({ ...ficha, ibanEnmascarado: enmascararIban(iban) }));
+    const fichas = data.map(({ iban, ...ficha }) => ({
+      ...ficha,
+      ibanEnmascarado: enmascararIban(iban),
+      cuota: cuotaDe.get(ficha.id) ?? null,
+      proximoCargo: cargoDe.get(ficha.id) ?? null,
+    }));
     return respuestaPaginada(fichas, total, paginacion);
   }
 

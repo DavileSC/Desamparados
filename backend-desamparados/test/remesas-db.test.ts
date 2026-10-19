@@ -18,6 +18,7 @@ import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { EmailService } from '../src/services/email.service.js';
 import { RemesaService } from '../src/services/remesa.service.js';
+import { MisFichasService } from '../src/services/mis-fichas.service.js';
 import { ReciboService } from '../src/services/recibo.service.js';
 import { ACCIONES_AUDITORIA } from '../src/services/auditoria.service.js';
 import { HttpError } from '../src/utils/error.handle.js';
@@ -375,7 +376,7 @@ test('las rutas del extracto piden sesión y leen el fichero subido', async (t) 
   }
 });
 
-test('al generar, cada cuenta recibe por correo un aviso del cargo con todos sus recibos', async (t) => {
+test('al generar, cada cuenta recibe por correo un aviso del cargo con todos sus recibos, y su perfil lo enseña', async (t) => {
   if (!dbDisponible) { t.skip(SIN_DB); return; }
   const e = await escenario();
   try {
@@ -398,6 +399,13 @@ test('al generar, cada cuenta recibe por correo un aviso del cargo con todos sus
     assert.match(aviso.html, /mandato HERMANO-\d{6}-\d{8}/);
     assert.ok(!aviso.html.includes(IBAN_VALIDO), 'la cuenta va tapada');
     assert.ok(aviso.html.includes('1332'), 'con sus cuatro últimas cifras');
+
+    // Y en su perfil, siempre a la vista: la cuota y el próximo cargo de cada ficha.
+    const { data } = await MisFichasService.getProfilesByUserId(e.usuario.id);
+    const deA = data.find((f) => f.id === a.id)!;
+    assert.deepEqual(deA.cuota, { year: YEAR, importe: 30 });
+    assert.deepEqual(deA.proximoCargo, { fecha: fechaCobro(), importe: 30 });
+    assert.deepEqual(data.find((f) => f.id === b.id)!.proximoCargo, { fecha: fechaCobro(), importe: 12.5 });
   } finally {
     await e.recoger();
   }

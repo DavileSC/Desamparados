@@ -13,6 +13,7 @@ import Apartado, { Dato, Rejilla } from './Apartado'
 import { enfocarCampo } from './enfocarCampo'
 import { ESTADO_CIVIL, FORMAS_DE_PAGO, FORMA_DE_PAGO, PARENTESCO, SEXO, TITULARIDAD_CUENTA, aDia, diaLegible } from './etiquetas'
 import { deLaCorporacion } from '../../../domain/articulos'
+import { euros } from '../../../lib/euros'
 
 /**
  * Cómo se usa el apartado dentro de la revisión del primer acceso: sin lápiz
@@ -433,6 +434,9 @@ export function VidaDeHermano({ ficha, onGuardada, revision, onSucio }: PropsApa
 
 // --------------------------------------------------------------- Cuota y pago
 
+/** «15 de noviembre de 2026», del día AAAA-MM-DD del cargo. */
+const diaLargo = (dia: string) => new Date(`${dia}T12:00:00Z`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Madrid' })
+
 export function CuotaYPago({ ficha, onGuardada, revision, onSucio }: PropsApartado) {
   const a = useApartado(
     ficha,
@@ -477,7 +481,12 @@ export function CuotaYPago({ ficha, onGuardada, revision, onSucio }: PropsAparta
       guardando={a.guardando} error={a.error} hecho={a.hecho}
       vista={
         <Rejilla lista>
+          {/* Cuánto, cada cuánto, desde cuándo y el próximo cargo: lo que el
+              hermano tiene que saber antes de que se le cobre, siempre a la vista. */}
+          {ficha.cuota && <Dato etiqueta="Cuota" valor={`${euros(ficha.cuota.importe)} al año`} />}
           <Dato etiqueta="Forma de pago" valor={FORMA_DE_PAGO[ficha.formaPagoPref]} />
+          {ficha.formaPagoPref === 'DOMICILIACION' && ficha.fechaMandato && <Dato etiqueta="Domiciliada desde" valor={diaLegible(ficha.fechaMandato)} />}
+          {ficha.proximoCargo && <Dato etiqueta="Próximo cargo" valor={`${diaLargo(ficha.proximoCargo.fecha)}: ${euros(ficha.proximoCargo.importe)}`} />}
           {conCuenta && <Dato etiqueta="Titular de la cuenta" valor={titular} />}
           {conCuenta && <Dato etiqueta="IBAN" valor={ficha.ibanEnmascarado} completo />}
         </Rejilla>

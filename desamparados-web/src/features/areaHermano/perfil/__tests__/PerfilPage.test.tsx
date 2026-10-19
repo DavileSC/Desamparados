@@ -184,6 +184,35 @@ describe('PerfilPage', () => {
     expect(screen.getByRole('tab', { name: 'Cuota y pago' })).toBeInTheDocument()
   })
 
+  // Lo que el hermano tiene que saber antes de que se le cobre: cuánto, desde
+  // cuándo domicilia y, con la remesa ya en el banco, qué día y cuánto.
+  it('Cuota y pago dice la cuota, desde cuándo domicilia y el próximo cargo', async () => {
+    const user = userEvent.setup()
+    responder([ficha(1, 'Ana', {
+      fechaMandato: '2024-01-30T10:00:00.000Z',
+      cuota: { year: 2026, importe: 45 },
+      proximoCargo: { fecha: '2026-11-16', importe: 45 },
+    })])
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true, modulos: ['area-hermanos', 'remesas'] })
+    await user.click(await screen.findByRole('tab', { name: 'Cuota y pago' }))
+
+    expect(await screen.findByText(/^45,00\s€ al año$/)).toBeInTheDocument()
+    expect(screen.getByText('Domiciliada desde')).toBeInTheDocument()
+    expect(screen.getByText('30/01/2024')).toBeInTheDocument()
+    expect(screen.getByText(/^16 de noviembre de 2026: 45,00\s€$/)).toBeInTheDocument()
+  })
+
+  it('sin remesa en el banco no hay próximo cargo, y pagando en mano no hay fecha de domiciliación', async () => {
+    const user = userEvent.setup()
+    responder([ficha(1, 'Ana', { formaPagoPref: 'EFECTIVO', ibanEnmascarado: null, fechaMandato: '2024-01-30T10:00:00.000Z', cuota: { year: 2026, importe: 45 }, proximoCargo: null })])
+    renderWithProviders(<PerfilPage />, { routerDeDatos: true, modulos: ['area-hermanos', 'remesas'] })
+    await user.click(await screen.findByRole('tab', { name: 'Cuota y pago' }))
+
+    expect(await screen.findByText(/^45,00\s€ al año$/)).toBeInTheDocument()
+    expect(screen.queryByText('Domiciliada desde')).not.toBeInTheDocument()
+    expect(screen.queryByText('Próximo cargo')).not.toBeInTheDocument()
+  })
+
   // Quien solo apuntó a menores no tiene ficha: antes se le enseñaba la de su
   // hijo como si fuera la suya. Ahora ve las de sus menores, y le ofrece hacerse hermano.
   it('sin ficha propia ofrece hacerse hermano y enseña las de sus menores', async () => {
