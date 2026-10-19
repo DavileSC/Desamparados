@@ -22,6 +22,18 @@ test('un campo que no está guardado sale del valor por defecto', () => {
   assert.equal(mezclado.publicaciones.boton, 'Archivo de publicaciones', 'un bloque entero que falta, también');
 });
 
+test('la cuenta atrás de la portada apagada se queda apagada', () => {
+  // Sin `cuentaAtras` en el contenido de partida, la mezcla la tiraba al leer:
+  // el interruptor de Portada → Cabecera se guardaba y la cuenta atrás seguía
+  // saliendo (05 a 19-10-2026).
+  const apagada = mezclarConDefectos('portada', { hero: { cuentaAtras: false } }) as any;
+  assert.equal(apagada.hero.cuentaAtras, false);
+
+  // Una portada guardada antes del interruptor, sin el campo: sale, como siempre.
+  const deAntes = mezclarConDefectos('portada', { hero: { titulo: 'Otro título' } }) as any;
+  assert.equal(deAntes.hero.cuentaAtras, true);
+});
+
 test('una lista guardada sustituye a la de por defecto, no se mezcla con ella', () => {
   // Con el recorrido ya convertido a bloques, la lista que manda es `bloques`.
   const soloTexto = [{ tipo: 'texto', titulo: '', html: '<p>Solo esto</p>' }];

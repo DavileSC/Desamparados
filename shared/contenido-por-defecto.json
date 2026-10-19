@@ -6,7 +6,8 @@
       "parrafo": "Devoción, historia y patrimonio al servicio de nuestra comunidad. Acompáñanos a lo largo de todo el año.",
       "botonPrincipal": "Nuestra historia",
       "enlaceSecundario": "Agenda y cultos",
-      "video": ""
+      "video": "",
+      "cuentaAtras": true
     },
     "actualidad": {
       "titulo": "Últimas noticias",
