@@ -24,6 +24,14 @@ export const FOTO_DE_CULTO = '/images/triduo.jpg'
 export const FOTO_DE_SALIDA = '/images/trono-comitiva.webp'
 
 /**
+ * Veladas tras las dos puertas del acceso de hermanos: la Virgen de perfil
+ * detrás del formulario y los nazarenos con sus cirios detrás del alta. Van en
+ * la copia de 1000 px: a un 7 % de opacidad no se distingue más.
+ */
+export const FOTO_DEL_ACCESO = '/images/cabeceras/virgen-de-perfil-1000.webp'
+export const FOTO_DE_LA_PUERTA_DEL_ALTA = '/images/cabeceras/nazarenos-con-cirios-1000.webp'
+
+/**
  * Las fotos fijas que tienen copias más pequeñas al lado, con su `srcset`. Solo
  * cuentan si el contenido nombra esa foto: sin ella en la instalación, nadie la
  * nombra y la tabla no pide nada.

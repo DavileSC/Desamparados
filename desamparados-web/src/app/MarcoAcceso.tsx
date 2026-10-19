@@ -10,6 +10,9 @@ export default function MarcoAcceso() {
     <Box
       sx={{
         minHeight: '100vh',
+        // En el móvil, 100vh es el alto sin las barras del navegador: con ellas a
+        // la vista, la página se pasaba y pedía scroll aunque el contenido cupiera.
+        '@supports (height: 100dvh)': { minHeight: '100dvh' },
         display: 'flex',
         flexDirection: 'column',
         backgroundColor: 'background.default',
@@ -20,7 +23,7 @@ export default function MarcoAcceso() {
         to="/"
         sx={{
           position: 'absolute',
-          top: 24,
+          top: { xs: 16, md: 24 },
           left: { xs: '20px', md: '64px' },
           display: 'flex',
           alignItems: 'center',
@@ -33,18 +36,23 @@ export default function MarcoAcceso() {
           zIndex: 10,
         }}
       >
-        <EscudoDelGrupo alto={38} />
+        <EscudoDelGrupo alto={38} sx={{ height: { xs: 32, md: 38 } }} />
         {site.nombreCorto.toUpperCase()}
       </Box>
 
+      {/* Ancho del acceso de hermanos, con sus dos puertas: las demás pantallas
+          de este marco (nueva contraseña, primer acceso) fijan el suyo, más estrecho. */}
       <Container
-        maxWidth="sm"
+        maxWidth="lg"
         sx={{
           flex: 1,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          py: 8,
+          // En el móvil, lo justo para no pegarse al escudo, que va encima, y
+          // casi nada abajo: el acceso tiene que caber sin hacer scroll.
+          pt: { xs: 7, md: 8 },
+          pb: { xs: 2, md: 8 },
         }}
       >
         <TransicionDePagina>
