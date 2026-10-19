@@ -121,7 +121,7 @@ export function boton(texto: string, url: string): string {
     <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 28px 0 10px 0;">
       <tr>
         <td bgcolor="${negro}" style="background-color: ${negro}; border-radius: 2px;">
-          <a href="${url}" target="_blank" style="display: inline-block; padding: 14px 28px; font-family: ${SANS}; font-size: 14px; font-weight: bold; letter-spacing: 0.3px; color: #ffffff; text-decoration: none;">${esc(texto)}&nbsp;&nbsp;&rarr;</a>
+          <a href="${esc(url)}" target="_blank" style="display: inline-block; padding: 14px 28px; font-family: ${SANS}; font-size: 14px; font-weight: bold; letter-spacing: 0.3px; color: #ffffff; text-decoration: none;">${esc(texto)}&nbsp;&nbsp;&rarr;</a>
         </td>
       </tr>
     </table>
@@ -130,6 +130,41 @@ export function boton(texto: string, url: string): string {
       <a href="${url}" style="color: ${suave}; word-break: break-all;">${esc(url)}</a>
     </p>`;
 }
+
+/**
+ * Una foto subida desde el CMS, a lo ancho de la carta. Va como adjunto en
+ * línea (`cid:`) igual que el escudo: el envío la lee del disco y la pasa a
+ * JPEG (`correos/fotos.ts`), porque las subidas son WebP y Outlook no lo pinta.
+ * `nombre` es el de la subida, ya comprobado por quien llama.
+ */
+export function foto(nombre: string, alt: string, pie: string): string {
+  const { suave } = COLORES;
+  return `
+    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 4px 0 22px 0;">
+      <tr>
+        <td style="line-height: 0; font-size: 0;">
+          <img src="cid:${cidDeFoto(nombre)}" alt="${esc(alt)}" width="512" style="display: block; width: 100%; max-width: 512px; height: auto; border: 0;">
+        </td>
+      </tr>
+      ${pie ? `<tr><td style="padding-top: 8px; font-family: ${SERIF}; font-size: 13px; font-style: italic; line-height: 1.5; color: ${suave};">${esc(pie)}</td></tr>` : ''}
+    </table>`;
+}
+
+/** El `cid` de una foto subida: lleva su nombre, que es lo que el envío necesita para leerla. */
+export const cidDeFoto = (nombre: string) => `foto-${nombre}@subida`;
+export const FOTO_EN_CID = /cid:foto-([a-f0-9]{32}\.(?:jpe?g|png|webp))@subida/gi;
+
+/** Una oración o una cita: centrada y en cursiva, sin recuadro. `html` va tal cual. */
+export const oracion = (html: string) =>
+  `<p style="margin: 6px 28px 22px 28px; text-align: center; font-family: ${SERIF}; font-size: 17px; font-style: italic; line-height: 1.6; color: ${COLORES.texto};">${html}</p>`;
+
+/** Una raya fina para separar partes de la carta. */
+export const separador = () =>
+  `<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 6px 0 24px 0;"><tr><td style="border-top: 1px solid ${COLORES.linea}; font-size: 0; line-height: 0;">&nbsp;</td></tr></table>`;
+
+/** Un enlace dentro del texto, subrayado y del color del texto. `html` va tal cual; la dirección se escapa aquí. */
+export const enlace = (url: string, html: string) =>
+  `<a href="${esc(url)}" target="_blank" style="color: ${COLORES.texto}; text-decoration: underline;">${html}</a>`;
 
 /**
  * Recuadro para lo que el lector tiene que hacer o no pasar por alto: papel
@@ -350,7 +385,10 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
 let enLinea: [string, string][] | null = null;
 export function conImagenesEnLinea(html: string): string {
   enLinea ??= conImagen.map(([, i]) => [`cid:${i.cid}`, `data:${i.tipo};base64,${readFileSync(i.archivo).toString('base64')}`]);
-  return enLinea.reduce((h, [cid, datos]) => h.split(cid).join(datos), html);
+  // Las fotos subidas, por su ruta pública: la vista previa se mira desde el
+  // CMS, que ya las sirve, y meterlas en base64 haría pesar cada vista megas.
+  return enLinea.reduce((h, [cid, datos]) => h.split(cid).join(datos), html)
+    .replace(FOTO_EN_CID, (_, nombre: string) => `/storage/public/${nombre}`);
 }
 
 // La extensión del adjunto sale del tipo que ha leído la marca en los bytes, no

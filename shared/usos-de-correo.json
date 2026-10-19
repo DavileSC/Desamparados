@@ -1,41 +1,50 @@
 {
   "_comentario": [
     "Los usos de las plantillas de correo (sección Emails del CMS): qué correo es cada uno, qué campos y bloques admite y su texto original.",
-    "El texto original es el que sale si no hay ninguna plantilla en uso para ese correo. Se edita aquí para otra instalación.",
+    "El texto original es el que sale si no hay ninguna plantilla en uso para ese correo. Se edita aquí para otra instalación. Las plantillas del CMS se guardan en piezas (domain/plantillas-correo.ts); este texto se pasa a piezas al leerlo.",
+    "Cada campo lleva su «etiqueta»: el nombre con que lo ve en el editor quien escribe la plantilla («Nombre», «Día de la salida»).",
     "Formato del cuerpo: párrafos separados por una línea en blanco; **negrita**; líneas con «- » son una lista; líneas con «> » son un recuadro (si la primera va entera en negrita, es su título); un bloque fijo va solo en su línea, [[asi]]; los campos van entre llaves, {{asi}}.",
     "Campos de todos los correos: {{grupo}} (el nombre de la corporación) y {{titular}}, más los que la nombran con su artículo: {{la_corporacion}}, {{de_la_corporacion}}, {{a_la_corporacion}}, {{nuestra_corporacion}}, {{la_corporacion_corto}} y {{de_la_corporacion_corto}} (domain/articulos.ts, para no escribir «Grupo Parroquial» a mano). Cada uso añade los suyos; la apertura, la papeleta y el recordatorio de papeleta sin recoger añaden además {{de_la_salida}} y {{la_salida}}, con el artículo de esa salida."
   ],
   "comunes": [
     {
       "clave": "grupo",
+      "etiqueta": "Nombre oficial",
       "ayuda": "El nombre de la corporación"
     },
     {
       "clave": "titular",
+      "etiqueta": "Titular",
       "ayuda": "La advocación titular"
     },
     {
       "clave": "la_corporacion",
+      "etiqueta": "Con «el» o «la»",
       "ayuda": "La corporación con su artículo"
     },
     {
       "clave": "de_la_corporacion",
+      "etiqueta": "Con «del» o «de la»",
       "ayuda": "«de» y la corporación con su artículo, contraído si toca"
     },
     {
       "clave": "a_la_corporacion",
+      "etiqueta": "Con «al» o «a la»",
       "ayuda": "«a» y la corporación con su artículo, contraído si toca"
     },
     {
       "clave": "nuestra_corporacion",
+      "etiqueta": "Con «nuestro» o «nuestra»",
       "ayuda": "La corporación con «nuestro», «nuestra», «nuestros» o «nuestras»"
     },
     {
       "clave": "la_corporacion_corto",
+      "etiqueta": "Corto, con «el» o «la»",
       "ayuda": "La corporación en corto, con su artículo"
     },
     {
       "clave": "de_la_corporacion_corto",
+      "etiqueta": "Corto, con «del» o «de la»",
       "ayuda": "«de» y la corporación en corto, con su artículo, contraído si toca"
     }
   ],
@@ -50,16 +59,19 @@
       "campos": [
         {
           "clave": "saludo",
+          "etiqueta": "Saludo",
           "ayuda": "«Estimado Juan:», según el sexo de la ficha",
           "ejemplo": "Estimado Juan:"
         },
         {
           "clave": "nombre",
+          "etiqueta": "Nombre",
           "ayuda": "El nombre de pila",
           "ejemplo": "Juan"
         },
         {
           "clave": "plazo",
+          "etiqueta": "Plazo del enlace",
           "ayuda": "Cuánto vale el enlace",
           "ejemplo": "una hora"
         }
@@ -88,16 +100,19 @@
       "campos": [
         {
           "clave": "saludo",
+          "etiqueta": "Saludo",
           "ayuda": "«Estimado Juan:», según el sexo de la ficha",
           "ejemplo": "Estimado Juan:"
         },
         {
           "clave": "nombre",
+          "etiqueta": "Nombre",
           "ayuda": "El nombre de pila",
           "ejemplo": "Juan"
         },
         {
           "clave": "plazo",
+          "etiqueta": "Plazo del enlace",
           "ayuda": "Cuánto vale el enlace",
           "ejemplo": "3 días"
         }
@@ -126,16 +141,19 @@
       "campos": [
         {
           "clave": "saludo",
+          "etiqueta": "Saludo",
           "ayuda": "«Estimado Juan:», según el sexo de la ficha",
           "ejemplo": "Estimado Juan:"
         },
         {
           "clave": "nombre",
+          "etiqueta": "Nombre",
           "ayuda": "El nombre de pila",
           "ejemplo": "Juan"
         },
         {
           "clave": "plazo",
+          "etiqueta": "Plazo del enlace",
           "ayuda": "Cuánto vale el enlace",
           "ejemplo": "14 días"
         }
@@ -164,16 +182,19 @@
       "campos": [
         {
           "clave": "saludo",
+          "etiqueta": "Saludo",
           "ayuda": "«Estimado Juan:», según el sexo de la ficha",
           "ejemplo": "Estimado Juan:"
         },
         {
           "clave": "nombre",
+          "etiqueta": "Nombre",
           "ayuda": "El nombre de pila",
           "ejemplo": "Juan"
         },
         {
           "clave": "fecha",
+          "etiqueta": "Fecha del cambio",
           "ayuda": "Cuándo se cambió",
           "ejemplo": "8 de octubre de 2026, a las 18:05"
         }
@@ -196,16 +217,19 @@
       "campos": [
         {
           "clave": "saludo",
+          "etiqueta": "Saludo",
           "ayuda": "«Estimado Juan:», según el sexo de la ficha",
           "ejemplo": "Estimado Juan:"
         },
         {
           "clave": "nombre",
+          "etiqueta": "Nombre",
           "ayuda": "El nombre de pila",
           "ejemplo": "Juan"
         },
         {
           "clave": "plazo",
+          "etiqueta": "Duración del bloqueo",
           "ayuda": "Cuánto dura el bloqueo",
           "ejemplo": "15 minutos"
         }
@@ -228,11 +252,13 @@
       "campos": [
         {
           "clave": "saludo",
+          "etiqueta": "Saludo",
           "ayuda": "«Estimado Juan:», según el sexo de la ficha",
           "ejemplo": "Estimado Juan:"
         },
         {
           "clave": "nombre",
+          "etiqueta": "Nombre",
           "ayuda": "El nombre de pila",
           "ejemplo": "Juan"
         }
@@ -264,11 +290,13 @@
       "campos": [
         {
           "clave": "saludo",
+          "etiqueta": "Saludo",
           "ayuda": "«Estimado Juan:», según el sexo de la ficha",
           "ejemplo": "Estimado Juan:"
         },
         {
           "clave": "nombre",
+          "etiqueta": "Nombre",
           "ayuda": "El nombre de pila",
           "ejemplo": "Juan"
         }
@@ -296,21 +324,25 @@
       "campos": [
         {
           "clave": "saludo",
+          "etiqueta": "Saludo",
           "ayuda": "«Estimado Juan:», según el sexo de la ficha",
           "ejemplo": "Estimado Juan:"
         },
         {
           "clave": "nombre",
+          "etiqueta": "Nombre",
           "ayuda": "El nombre de pila",
           "ejemplo": "Juan"
         },
         {
           "clave": "bienvenido",
+          "etiqueta": "«Bienvenido» o «Bienvenida»",
           "ayuda": "«Bienvenido», «Bienvenida» o «Bienvenidos»",
           "ejemplo": "Bienvenido"
         },
         {
           "clave": "forma_parte",
+          "etiqueta": "«forma parte» o «forman parte»",
           "ayuda": "«forma parte» o «forman parte», si entran varios",
           "ejemplo": "forma parte"
         }
@@ -343,11 +375,13 @@
       "campos": [
         {
           "clave": "saludo",
+          "etiqueta": "Saludo",
           "ayuda": "«Estimado Juan:», según el sexo de la ficha",
           "ejemplo": "Estimado Juan:"
         },
         {
           "clave": "nombre",
+          "etiqueta": "Nombre",
           "ayuda": "El nombre de pila",
           "ejemplo": "Juan"
         }
@@ -375,11 +409,13 @@
       "campos": [
         {
           "clave": "saludo",
+          "etiqueta": "Saludo",
           "ayuda": "«Estimado Juan:», según el sexo de la ficha",
           "ejemplo": "Estimado Juan:"
         },
         {
           "clave": "nombre",
+          "etiqueta": "Nombre",
           "ayuda": "El nombre de pila",
           "ejemplo": "Juan"
         }
@@ -407,11 +443,13 @@
       "campos": [
         {
           "clave": "saludo",
+          "etiqueta": "Saludo",
           "ayuda": "«Estimado Juan:», según el sexo de la ficha",
           "ejemplo": "Estimado Juan:"
         },
         {
           "clave": "nombre",
+          "etiqueta": "Nombre",
           "ayuda": "El nombre de pila",
           "ejemplo": "Juan"
         }
@@ -439,36 +477,43 @@
       "campos": [
         {
           "clave": "saludo",
+          "etiqueta": "Saludo",
           "ayuda": "«Estimado Juan:», según el sexo de la ficha",
           "ejemplo": "Estimado Juan:"
         },
         {
           "clave": "nombre",
+          "etiqueta": "Nombre",
           "ayuda": "El nombre de pila",
           "ejemplo": "Juan"
         },
         {
           "clave": "salida",
+          "etiqueta": "Salida",
           "ayuda": "El nombre de la salida",
           "ejemplo": "Procesión de Gloria"
         },
         {
           "clave": "anio",
+          "etiqueta": "Año",
           "ayuda": "El año de la salida",
           "ejemplo": "2027"
         },
         {
           "clave": "primer_dia",
+          "etiqueta": "Primer día de reparto",
           "ayuda": "El primer día de reparto",
           "ejemplo": "lunes, 5 de octubre"
         },
         {
           "clave": "de_la_salida",
+          "etiqueta": "Salida, con «de la»",
           "ayuda": "«de» y la salida con su artículo, contraído si toca",
           "ejemplo": "de la Procesión de Gloria"
         },
         {
           "clave": "la_salida",
+          "etiqueta": "Salida, con «la»",
           "ayuda": "La salida con su artículo",
           "ejemplo": "la Procesión de Gloria"
         }
@@ -512,51 +557,61 @@
       "campos": [
         {
           "clave": "saludo",
+          "etiqueta": "Saludo",
           "ayuda": "«Estimado Juan:», según el sexo de la ficha",
           "ejemplo": "Estimado Juan:"
         },
         {
           "clave": "nombre",
+          "etiqueta": "Nombre",
           "ayuda": "El nombre de pila",
           "ejemplo": "Juan"
         },
         {
           "clave": "salida",
+          "etiqueta": "Salida",
           "ayuda": "El nombre de la salida",
           "ejemplo": "Procesión de Gloria"
         },
         {
           "clave": "anio",
+          "etiqueta": "Año",
           "ayuda": "El año de la salida",
           "ejemplo": "2027"
         },
         {
           "clave": "fecha",
+          "etiqueta": "Día de la salida",
           "ayuda": "El día de la salida",
           "ejemplo": "sábado, 17 de octubre"
         },
         {
           "clave": "hora",
+          "etiqueta": "Hora de entrada",
           "ayuda": "La hora de entrada",
           "ejemplo": "19:00"
         },
         {
           "clave": "puesto",
+          "etiqueta": "Puesto",
           "ayuda": "El puesto en el cortejo",
           "ejemplo": "Vela"
         },
         {
           "clave": "nombre_completo",
+          "etiqueta": "Nombre y apellidos",
           "ayuda": "Nombre y apellidos",
           "ejemplo": "Juan Pérez Ruiz"
         },
         {
           "clave": "de_la_salida",
+          "etiqueta": "Salida, con «de la»",
           "ayuda": "«de» y la salida con su artículo, contraído si toca",
           "ejemplo": "de la Procesión de Gloria"
         },
         {
           "clave": "la_salida",
+          "etiqueta": "Salida, con «la»",
           "ayuda": "La salida con su artículo",
           "ejemplo": "la Procesión de Gloria"
         }
@@ -597,31 +652,37 @@
       "campos": [
         {
           "clave": "saludo",
+          "etiqueta": "Saludo",
           "ayuda": "«Estimado Juan:», según el sexo de la ficha",
           "ejemplo": "Estimado Juan:"
         },
         {
           "clave": "nombre",
+          "etiqueta": "Nombre",
           "ayuda": "El nombre de pila",
           "ejemplo": "Juan"
         },
         {
           "clave": "salida",
+          "etiqueta": "Salida",
           "ayuda": "El nombre de la salida",
           "ejemplo": "Procesión de Gloria"
         },
         {
           "clave": "fecha_cita",
+          "etiqueta": "Día de la cita",
           "ayuda": "El día de la cita",
           "ejemplo": "lunes, 8 de marzo"
         },
         {
           "clave": "de_la_salida",
+          "etiqueta": "Salida, con «de la»",
           "ayuda": "«de» y la salida con su artículo, contraído si toca",
           "ejemplo": "de la Procesión de Gloria"
         },
         {
           "clave": "la_salida",
+          "etiqueta": "Salida, con «la»",
           "ayuda": "La salida con su artículo",
           "ejemplo": "la Procesión de Gloria"
         }
@@ -653,16 +714,19 @@
       "campos": [
         {
           "clave": "saludo",
+          "etiqueta": "Saludo",
           "ayuda": "«Estimado/a María:», o «Estimado/a amigo/a:» si no dio su nombre",
           "ejemplo": "Estimado/a María:"
         },
         {
           "clave": "importe",
+          "etiqueta": "Importe",
           "ayuda": "Lo donado",
           "ejemplo": "20,00 €"
         },
         {
           "clave": "para_destino",
+          "etiqueta": "Destino del donativo",
           "ayuda": "« para Caridad», o nada si no eligió destino",
           "ejemplo": " para Caridad"
         }
@@ -685,16 +749,19 @@
       "campos": [
         {
           "clave": "nombre",
+          "etiqueta": "Nombre",
           "ayuda": "El nombre de pila",
           "ejemplo": "Juan"
         },
         {
           "clave": "pieza",
+          "etiqueta": "Pieza apadrinada",
           "ayuda": "La pieza apadrinada",
           "ejemplo": "Vela 12"
         },
         {
           "clave": "campana",
+          "etiqueta": "Campaña",
           "ayuda": "La campaña",
           "ejemplo": "Candelería de la Virgen"
         }
@@ -726,16 +793,19 @@
       "campos": [
         {
           "clave": "nombre",
+          "etiqueta": "Nombre",
           "ayuda": "El nombre de pila",
           "ejemplo": "Juan"
         },
         {
           "clave": "numero",
+          "etiqueta": "N.º de pedido",
           "ayuda": "El número del pedido",
           "ejemplo": "42"
         },
         {
           "clave": "total",
+          "etiqueta": "Total del pedido",
           "ayuda": "El total",
           "ejemplo": "35,00 €"
         }
@@ -768,16 +838,19 @@
       "campos": [
         {
           "clave": "nombre",
+          "etiqueta": "Nombre",
           "ayuda": "El nombre de pila",
           "ejemplo": "Juan"
         },
         {
           "clave": "ejercicio",
+          "etiqueta": "Año de los donativos",
           "ayuda": "El año de los donativos",
           "ejemplo": "2026"
         },
         {
           "clave": "importe",
+          "etiqueta": "Importe",
           "ayuda": "Lo donado en el año",
           "ejemplo": "120,00 €"
         }
@@ -800,11 +873,13 @@
       "campos": [
         {
           "clave": "difunto",
+          "etiqueta": "Difunto",
           "ayuda": "Nombre y apellidos del difunto",
           "ejemplo": "José García Ruiz"
         },
         {
           "clave": "hermano",
+          "etiqueta": "«hermano» o «hermana»",
           "ayuda": "«hermano» o «hermana»",
           "ejemplo": "hermano"
         }
@@ -827,21 +902,25 @@
       "campos": [
         {
           "clave": "difunto",
+          "etiqueta": "Difunto",
           "ayuda": "Nombre y apellidos del difunto",
           "ejemplo": "José García Ruiz"
         },
         {
           "clave": "que",
+          "etiqueta": "Qué se ofrece",
           "ayuda": "Qué se ofrece",
           "ejemplo": "Misa"
         },
         {
           "clave": "que_minusculas",
+          "etiqueta": "Qué se ofrece, en minúscula",
           "ayuda": "Lo mismo, en minúscula, para mitad de frase",
           "ejemplo": "misa"
         },
         {
           "clave": "cuando",
+          "etiqueta": "Día y hora",
           "ayuda": "Día y hora",
           "ejemplo": "viernes, 6 de noviembre, 20:00"
         }

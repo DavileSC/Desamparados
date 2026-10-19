@@ -8,6 +8,7 @@ import { enmascararEmail } from '../../utils/log-privacidad.js';
 import { buzonDePruebas, buzonPedido, type CorreoParaBuzon } from '../../utils/buzon-pruebas.js';
 import { AuditoriaService, ACCIONES_AUDITORIA } from '../auditoria.service.js';
 import { aTexto, imagenesDe } from './plantilla.js';
+import { fotosDe } from './fotos.js';
 import { esDireccionDeNadie } from '../../domain/cuenta-de-custodia.js';
 import { identidad } from '../../domain/datos-entidad.js';
 
@@ -212,8 +213,9 @@ export async function enviarCorreo(
       subject,
       html,
       text: aTexto(html),
-      // El escudo y la cabecera de la marca van dentro del correo, no enlazados a la web.
-      attachments: [...imagenesDe(html), ...adjuntos],
+      // El escudo, la cabecera de la marca y las fotos de la plantilla van
+      // dentro del correo, no enlazados a la web.
+      attachments: [...imagenesDe(html), ...(await fotosDe(html)), ...adjuntos],
       ...(cabeceras ? { headers: cabeceras } : {}),
       // Sin Reply-To propio, las respuestas van al buzón de Secretaría si es
       // otro distinto de la cuenta que envía.

@@ -1,18 +1,19 @@
 /**
- * De una plantilla al correo: el texto de Secretaría (o el original del uso)
+ * De una plantilla al correo: las piezas de Secretaría (o el original del uso)
  * con sus campos rellenos y sus bloques fijos, dentro de la maqueta común
  * (escudo, firma del cargo, pie).
  *
  * Todo lo que escribe Secretaría y todo campo se escapa: el único HTML que
- * entra es el de esta función y el de los bloques fijos, que pone el código.
+ * entra es el de las piezas de `plantilla.ts` y el de los bloques fijos, que
+ * pone el código.
  */
 import { identidad, type Identidad } from '../../domain/datos-entidad.js';
 import { aLaCorporacion, deLaCorporacion, laCorporacion, nuestraCorporacion } from '../../domain/articulos.js';
 import {
-  leerCuerpo, leerLinea, rellenar, resumenDe, usoDe,
-  type Bloque, type ClaveDeUso, type TextoDePlantilla, type UsoDeCorreo,
+  RUTA_DE_FOTO, enlaceValido, rellenar, resumenDe, usoDe,
+  type ClaveDeUso, type Linea, type Pieza, type PlantillaDeCorreo, type UsoDeCorreo,
 } from '../../domain/plantillas-correo.js';
-import { esc, firma, maquetar, parrafo, recuadro, type Destinatario } from './plantilla.js';
+import { boton, enlace, esc, firma, foto, maquetar, oracion, parrafo, recuadro, separador, urlDeLaWeb, type Destinatario } from './plantilla.js';
 
 export interface Relleno {
   /** Los valores de los campos, en texto plano: se escapan aquí. */
@@ -41,29 +42,55 @@ export const comunes = (identidadInstalacion: Identidad = identidad) => ({
   de_la_corporacion_corto: deLaCorporacion({ corto: true, identidad: identidadInstalacion }),
 });
 
-function lineaHtml(linea: string, campos: Record<string, string>): string {
-  return leerLinea(linea)
+/** Una dirección de la plantilla, lista para el correo: las de la web, con su dominio. */
+const direccion = (e: string) => (e.startsWith('/') ? urlDeLaWeb(e) : e);
+
+function lineaHtml(linea: Linea, campos: Record<string, string>): string {
+  return linea
     .map((t) => {
-      const html = esc(rellenar(t.texto, campos));
-      return t.tipo === 'negrita' ? `<strong>${html}</strong>` : html;
+      let html = esc(rellenar(t.texto, campos)).replace(/\n/g, '<br>');
+      if (t.cursiva) html = `<em>${html}</em>`;
+      if (t.negrita) html = `<strong>${html}</strong>`;
+      // Un enlace que no vale (la revisión no deja guardarlo) se queda en texto.
+      if (t.enlace !== undefined && enlaceValido(t.enlace)) html = enlace(direccion(t.enlace.trim()), html);
+      return html;
     })
     .join('');
 }
 
-function bloqueHtml(b: Bloque, campos: Record<string, string>, fijos: Record<string, string>, enRecuadro = false): string {
+const vacio = (html: string) => !html.replace(/<br>|<\/?(strong|em)>|\s/g, '');
+
+function piezaHtml(x: Pieza, campos: Record<string, string>, fijos: Record<string, string>, enRecuadro = false): string {
   // Dentro de un recuadro, menos aire entre párrafos: el recuadro ya tiene el suyo.
   const margen = enRecuadro ? 'margin: 0 0 8px 0;' : 'margin: 0 0 16px 0;';
-  switch (b.tipo) {
-    case 'fijo': return fijos[b.clave] ?? '';
+  switch (x.tipo) {
+    case 'fijo': return fijos[x.clave] ?? '';
     case 'parrafo': {
-      const html = b.lineas.map((l) => lineaHtml(l, campos)).join('<br>');
-      if (!html.replace(/<br>|\s/g, '')) return '';
+      const html = lineaHtml(x.trozos, campos);
+      if (vacio(html)) return '';
       return enRecuadro ? `<p style="${margen}">${html}</p>` : parrafo(html);
     }
-    case 'lista':
-      return `<ul style="${margen} padding-left: 22px;">${b.elementos.map((e) => `<li style="margin: 0 0 6px 0;">${lineaHtml(e, campos)}</li>`).join('')}</ul>`;
-    case 'recuadro':
-      return recuadro(b.titulo ? rellenar(b.titulo, campos) : null, b.bloques.map((x) => bloqueHtml(x, campos, fijos, true)).join(''));
+    case 'lista': {
+      const elementos = x.elementos.map((e) => lineaHtml(e, campos)).filter((h) => !vacio(h));
+      if (!elementos.length) return '';
+      return `<ul style="${margen} padding-left: 22px;">${elementos.map((e) => `<li style="margin: 0 0 6px 0;">${e}</li>`).join('')}</ul>`;
+    }
+    case 'recuadro': {
+      const dentro = x.piezas.map((p) => piezaHtml(p, campos, fijos, true)).join('');
+      if (!dentro && !x.titulo.trim()) return '';
+      return recuadro(x.titulo.trim() ? rellenar(x.titulo, campos) : null, dentro);
+    }
+    case 'oracion': {
+      const html = lineaHtml(x.trozos, campos);
+      return vacio(html) ? '' : oracion(html);
+    }
+    case 'boton':
+      return x.texto.trim() && enlaceValido(x.enlace) ? boton(rellenar(x.texto, campos), direccion(x.enlace.trim())) : '';
+    case 'foto': {
+      const nombre = RUTA_DE_FOTO.exec(x.src)?.[1];
+      return nombre ? foto(nombre, rellenar(x.alt, campos), rellenar(x.pie, campos)) : '';
+    }
+    case 'separador': return separador();
   }
 }
 
@@ -73,21 +100,21 @@ const aTexto = (campos: Relleno['campos'] = {}, identidadInstalacion?: Identidad
   ...Object.fromEntries(Object.entries(campos).map(([k, v]) => [k, v === null || v === undefined ? '' : String(v)])),
 });
 
-/** Compone el correo de un uso con el texto dado. */
-export function componer(uso: UsoDeCorreo, texto: TextoDePlantilla, r: Relleno = {}): { asunto: string; html: string; uso: string } {
+/** Compone el correo de un uso con la plantilla dada. */
+export function componer(uso: UsoDeCorreo, plantilla: PlantillaDeCorreo, r: Relleno = {}): { asunto: string; html: string; uso: string } {
   const campos = aTexto(r.campos, r.identidad);
-  const contenido = leerCuerpo(texto.cuerpo).map((b) => bloqueHtml(b, campos, r.bloques ?? {})).join('');
-  const despedida = rellenar(texto.despedida, campos).trim();
+  const contenido = plantilla.contenido.map((x) => piezaHtml(x, campos, r.bloques ?? {})).join('');
+  const despedida = rellenar(plantilla.despedida, campos).trim();
   return {
     // La clave del uso viaja con el correo: si el envío falla, es lo que se
     // apunta en la auditoría en vez del asunto, que puede llevar un nombre.
     uso: uso.clave,
     // El asunto es texto, no HTML: sin escapar («O'Brien» llegaba como «O&#39;Brien»).
-    asunto: rellenar(texto.asunto, campos).replace(/\s+/g, ' ').trim(),
+    asunto: rellenar(plantilla.asunto, campos).replace(/\s+/g, ' ').trim(),
     html: maquetar({
-      titulo: rellenar(texto.titulo, campos),
+      titulo: rellenar(plantilla.titulo, campos),
       antetitulo: rellenar(uso.antetitulo, campos),
-      resumen: resumenDe(texto.cuerpo, campos),
+      resumen: resumenDe(plantilla, campos),
       contenido: contenido + firma(despedida || null, uso.firma, r.identidad),
       para: r.para,
       identidad: r.identidad,

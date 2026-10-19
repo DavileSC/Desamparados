@@ -1,98 +1,146 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Box, Button, Chip, CircularProgress, Paper, Stack, TextField, Tooltip, Typography } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, Paper, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEditor, type Editor } from '@tiptap/react'
 import PantallaEdicion from '../PantallaEdicion'
 import {
   catalogoDeEmails, crearPlantilla, guardarPlantilla, pruebaDePlantilla, traerPlantilla, usarPlantilla, vistaPreviaDePlantilla,
-  type DatosPlantilla, type TextoDePlantilla, type UsoDeCorreo,
+  type CatalogoDeEmails, type DatosPlantilla, type PlantillaDeCorreo, type UsoDeCorreo, type VistaPrevia,
 } from '../../../lib/api/emails'
 import { site } from '../../../config/site'
+import { SIN_PROTECCION, extensionesDelCuerpo } from './editor/extensiones'
+import { piezasAlEditor, piezasDelEditor } from './editor/piezas'
+import { PIEZAS_NUEVAS, insertarCampo, insertarPieza } from './editor/acciones'
+import HojaDelCorreo, { type Cabecera } from './editor/HojaDelCorreo'
+import BarraDeFormato from './editor/BarraDeFormato'
+import PanelPiezas from './editor/PanelPiezas'
+import PanelDeLaPieza from './editor/PanelDeLaPieza'
+import Repaso from './editor/Repaso'
+import Revision from './editor/Revision'
+import Versiones from './editor/Versiones'
 
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
-type Campo = 'asunto' | 'titulo' | 'cuerpo' | 'despedida'
 
 /**
  * Crear o editar una plantilla de un correo. Una nueva parte del texto
- * original de ese correo. Los campos ({{nombre}}) se meten donde esté el
- * cursor; los bloques fijos ([[papeleta]]), en su propia línea del texto.
- * A la derecha, cómo queda con datos de ejemplo.
+ * original de ese correo.
+ *
+ * Se escribe sobre la propia carta (forma A de las maquetas del 19-10-2026):
+ * a la izquierda, lo que se puede añadir y los datos que se rellenan solos; a
+ * la derecha, la pieza elegida y el repaso. «Revisar» enseña el correo de
+ * verdad, compuesto por el servidor, en la bandeja, el ordenador y el móvil.
  */
 export default function EmailEditPage() {
   const { id } = useParams()
   const [params] = useSearchParams()
   const nueva = id === undefined || id === 'nueva'
-  const navegar = useNavigate()
-  const cliente = useQueryClient()
   const { data: catalogo } = useQuery({ queryKey: ['emails'], queryFn: catalogoDeEmails })
   const { data: guardada, error: errorCarga } = useQuery({ queryKey: ['emails', 'plantilla', id], queryFn: () => traerPlantilla(Number(id)), enabled: !nueva })
 
-  const [form, setForm] = useState<DatosPlantilla | null>(null)
-  const [inicial, setInicial] = useState('')
+  const usoClave = nueva ? params.get('uso') ?? '' : guardada?.uso ?? ''
+  const uso = catalogo?.usos.find((u) => u.clave === usoClave)
+
+  if (errorCarga) return <Alert severity="error">{mensaje(errorCarga, 'No se ha podido cargar la plantilla.')}</Alert>
+  if (catalogo && !uso) return <Alert severity="error">Ese correo no existe.</Alert>
+  if (!catalogo || !uso || (!nueva && !guardada)) return <CircularProgress aria-label="Cargando la plantilla" />
+
+  // Un correo que aún sale con el texto de la web: «Editar» abre ese texto, y la
+  // plantilla se llama como el correo hasta que alguien le ponga otro nombre.
+  const primera = nueva && !uso.libre && !uso.plantillas.some((p) => p.enUso)
+  const inicial: DatosPlantilla = nueva
+    ? { nombre: primera && uso.plantillas.length === 0 ? uso.nombre : '', uso: uso.clave, ...uso.original }
+    : { nombre: guardada!.nombre, uso: guardada!.uso, asunto: guardada!.asunto, resumen: guardada!.resumen, titulo: guardada!.titulo, contenido: guardada!.contenido, despedida: guardada!.despedida }
+
+  return <EditorDePlantilla key={id ?? 'nueva'} catalogo={catalogo} uso={uso} inicial={inicial} id={nueva ? null : Number(id)} enUso={Boolean(guardada?.enUso)} primera={primera} />
+}
+
+interface PropsEditor {
+  catalogo: CatalogoDeEmails
+  uso: UsoDeCorreo
+  inicial: DatosPlantilla
+  id: number | null
+  enUso: boolean
+  /**
+   * Se está editando el texto de la web de un correo sin plantilla en uso: al
+   * guardar, la plantilla pasa a usarse. Guardarla sin usarla dejaría el
+   * correo igual, y quien pulsó «Editar» creería que lo ha cambiado.
+   */
+  primera: boolean
+}
+
+function EditorDePlantilla({ catalogo, uso, inicial, id, enUso, primera }: PropsEditor) {
+  const navegar = useNavigate()
+  const cliente = useQueryClient()
+  const campos = useMemo(() => new Map([...catalogo.comunes, ...uso.campos].map((c) => [c.clave, c])), [catalogo, uso])
+  const bloques = useMemo(() => new Map(uso.bloques.map((b) => [b.clave, b])), [uso])
+
+  const [nombre, setNombre] = useState(inicial.nombre)
+  const [cabecera, setCabecera] = useState<Cabecera>({ asunto: inicial.asunto, resumen: inicial.resumen, titulo: inicial.titulo, despedida: inicial.despedida })
+  const [contenido, setContenido] = useState(inicial.contenido)
+  // Con qué se compara para saber si hay cambios: lo cargado, ya pasado por el editor.
+  const [referencia, setReferencia] = useState<string | null>(null)
+  const [modo, setModo] = useState<'escribir' | 'revisar'>('escribir')
+  const [movil, setMovil] = useState(false)
+  const [previa, setPrevia] = useState<VistaPrevia | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
-  const [previa, setPrevia] = useState<{ asunto: string; html: string; problemas: string[] } | null>(null)
-  const ultimoCampo = useRef<{ campo: Campo; el: HTMLInputElement | HTMLTextAreaElement } | null>(null)
+  const [probando, setProbando] = useState(false)
+  const [versiones, setVersiones] = useState(false)
+  // El último sitio donde estuvo el cursor: ahí van los datos que se pulsan en el panel.
+  const activo = useRef<Editor | null>(null)
+  // Hasta que no se entra en el cuerpo, las piezas nuevas van al final.
+  const cuerpoTocado = useRef(false)
 
-  const usoClave = nueva ? params.get('uso') ?? '' : guardada?.uso ?? ''
-  const uso: UsoDeCorreo | undefined = catalogo?.usos.find((u) => u.clave === usoClave)
+  const firma = (n: string, c: Cabecera, piezas: PlantillaDeCorreo['contenido']) => JSON.stringify({ n, ...c, piezas })
 
-  // El formulario nace una vez, de lo guardado o del texto original del correo.
-  if (!form && uso && (nueva || guardada)) {
-    const datos: DatosPlantilla = nueva
-      ? { nombre: '', uso: uso.clave, ...uso.original }
-      : { nombre: guardada!.nombre, uso: guardada!.uso, asunto: guardada!.asunto, titulo: guardada!.titulo, cuerpo: guardada!.cuerpo, despedida: guardada!.despedida }
-    setForm(datos)
-    setInicial(JSON.stringify(datos))
-  }
+  const editor = useEditor({
+    extensions: extensionesDelCuerpo(campos, bloques),
+    content: piezasAlEditor(inicial.contenido),
+    editorProps: { attributes: { 'aria-label': 'Texto de la carta', role: 'textbox', 'aria-multiline': 'true', spellcheck: 'true' } },
+    onCreate: ({ editor: e }) => {
+      const piezas = piezasDelEditor(e.getJSON())
+      setContenido(piezas)
+      setReferencia(firma(inicial.nombre, { asunto: inicial.asunto, resumen: inicial.resumen, titulo: inicial.titulo, despedida: inicial.despedida }, piezas))
+    },
+    onUpdate: ({ editor: e }) => setContenido(piezasDelEditor(e.getJSON())),
+    onFocus: ({ editor: e }) => { activo.current = e; cuerpoTocado.current = true },
+  })
 
-  const texto: TextoDePlantilla | null = useMemo(() => (form ? { asunto: form.asunto, titulo: form.titulo, cuerpo: form.cuerpo, despedida: form.despedida } : null), [form])
+  const plantilla: PlantillaDeCorreo = useMemo(() => ({ ...cabecera, contenido }), [cabecera, contenido])
 
-  // La vista previa, medio segundo después de dejar de escribir.
+  // La vista previa (y el repaso), medio segundo después de dejar de escribir.
   useEffect(() => {
-    if (!texto || !usoClave) return
     let cancelado = false
     const reloj = window.setTimeout(() => {
-      vistaPreviaDePlantilla(usoClave, texto)
+      vistaPreviaDePlantilla(uso.clave, plantilla)
         .then((p) => { if (!cancelado) setPrevia(p) })
         .catch(() => { /* la vista previa es una ayuda: si falla, se queda la anterior */ })
     }, 500)
     return () => { cancelado = true; window.clearTimeout(reloj) }
-  }, [texto, usoClave])
+  }, [plantilla, uso.clave])
 
-  if (errorCarga) return <Alert severity="error">{mensaje(errorCarga, 'No se ha podido cargar la plantilla.')}</Alert>
-  if (catalogo && !uso) return <Alert severity="error">Ese correo no existe.</Alert>
-  if (!form || !uso) return <CircularProgress aria-label="Cargando la plantilla" />
+  if (!editor) return <CircularProgress aria-label="Preparando el editor" />
 
-  const cambiar = (c: Partial<DatosPlantilla>) => setForm({ ...form, ...c })
-  const recordar = (campo: Campo) => (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { ultimoCampo.current = { campo, el: e.target } }
+  const sucio = referencia !== null && firma(nombre, cabecera, contenido) !== referencia
+  const problemas = previa?.problemas ?? []
+  const datos: DatosPlantilla = { nombre, uso: uso.clave, ...plantilla }
 
-  /** Mete el texto donde estaba el cursor (o al final del texto). */
-  const insertar = (trozo: string, soloEnElCuerpo = false) => {
-    const ultimo = ultimoCampo.current
-    const campo: Campo = soloEnElCuerpo || !ultimo ? 'cuerpo' : ultimo.campo
-    const actual = form[campo]
-    const el = ultimo?.campo === campo ? ultimo.el : null
-    const desde = el?.selectionStart ?? actual.length
-    const hasta = el?.selectionEnd ?? actual.length
-    let nuevoTexto: string
-    if (soloEnElCuerpo) {
-      // Un bloque va solo en su línea, con una en blanco antes y después.
-      const antes = actual.slice(0, desde).replace(/\s*$/, '')
-      const despues = actual.slice(hasta).replace(/^\s*/, '')
-      nuevoTexto = [antes, trozo, despues].filter(Boolean).join('\n\n')
-    } else {
-      nuevoTexto = actual.slice(0, desde) + trozo + actual.slice(hasta)
-    }
-    cambiar({ [campo]: nuevoTexto } as Partial<DatosPlantilla>)
+  /** Carga unas piezas en el editor, aunque quiten un bloque obligatorio (lo dirá el repaso). */
+  const cargar = (p: PlantillaDeCorreo) => {
+    setCabecera({ asunto: p.asunto, resumen: p.resumen, titulo: p.titulo, despedida: p.despedida })
+    const doc = editor.schema.nodeFromJSON(piezasAlEditor(p.contenido))
+    editor.view.dispatch(editor.state.tr.replaceWith(0, editor.state.doc.content.size, doc.content).setMeta(SIN_PROTECCION, true))
   }
 
   const guardar = async (yUsar = false) => {
+    if (!nombre.trim()) { setError('Ponle un nombre a la plantilla: solo lo ves tú, para reconocerla.'); return }
+    if (problemas.length) { setError(problemas.join(' ')); setModo('revisar'); return }
     setGuardando(true); setError(null)
     try {
-      const p = nueva ? await crearPlantilla(form) : await guardarPlantilla(Number(id), form)
+      const p = id === null ? await crearPlantilla(datos) : await guardarPlantilla(id, datos)
       if (yUsar) await usarPlantilla(uso.clave, p.id)
       await cliente.invalidateQueries({ queryKey: ['emails'] })
       navegar('/cms/emails')
@@ -103,85 +151,99 @@ export default function EmailEditPage() {
   }
 
   const probar = async () => {
-    setError(null); setAviso(null)
-    try { setAviso((await pruebaDePlantilla(uso.clave, texto!)).message) }
+    setError(null); setAviso(null); setProbando(true)
+    try { setAviso((await pruebaDePlantilla(uso.clave, plantilla)).message) }
     catch (err: unknown) { setError(mensaje(err, 'No se ha podido mandar la prueba.')) }
+    finally { setProbando(false) }
   }
 
-  const campos = [...(catalogo?.comunes ?? []), ...uso.campos]
-  const problemas = previa?.problemas ?? []
-  const puedeGuardar = form.nombre.trim() !== '' && problemas.length === 0
+  const titulo = primera ? 'Editar el correo' : id === null ? 'Nueva plantilla' : 'Editar plantilla'
+
+  const extra = (
+    <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+      {id !== null && <Button onClick={() => setVersiones(true)} disabled={guardando}>Versiones</Button>}
+      <Button onClick={() => void probar()} disabled={guardando || probando || problemas.length > 0}>{probando ? 'Mandando…' : 'Mandarme una prueba'}</Button>
+      {!uso.libre && !enUso && !primera && <Button variant="outlined" onClick={() => void guardar(true)} disabled={guardando}>Guardar y usar</Button>}
+    </Stack>
+  )
 
   return <>
-    <Helmet><title>{`${nueva ? 'Nueva plantilla' : 'Editar plantilla'} | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
-    {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
-    {aviso && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setAviso(null)}>{aviso}</Alert>}
+    <Helmet><title>{`${titulo} | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <PantallaEdicion
-      titulo={nueva ? 'Nueva plantilla' : 'Editar plantilla'}
+      titulo={titulo}
       nombre={uso.nombre}
-      sucio={JSON.stringify(form) !== inicial}
+      sucio={sucio}
       guardando={guardando}
       volverA="/cms/emails"
-      onGuardar={() => (puedeGuardar ? guardar() : setError(form.nombre.trim() ? problemas.join(' ') : 'Ponle un nombre a la plantilla.'))}
+      onGuardar={() => guardar(primera)}
+      onDescartar={() => { setNombre(inicial.nombre); cargar(inicial) }}
       anchoCompleto
-      extra={!uso.libre && !guardada?.enUso ? <Button onClick={() => void guardar(true)} disabled={guardando || !puedeGuardar}>Guardar y usar</Button> : undefined}
+      extra={extra}
     >
-      <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: 'minmax(0, 1fr) minmax(0, 1fr)' }, alignItems: 'start' }}>
-        <Stack spacing={2}>
-          <Typography variant="body2" color="text.secondary">{uso.descripcion}</Typography>
-          <TextField label="Nombre de la plantilla" value={form.nombre} onChange={(e) => cambiar({ nombre: e.target.value })} required
-            helperText="Solo lo ves tú, para reconocerla: «Bienvenida 2027», «Pésame breve»…" slotProps={{ htmlInput: { maxLength: 120 } }} fullWidth />
-          <TextField label="Asunto" value={form.asunto} onChange={(e) => cambiar({ asunto: e.target.value })} onFocus={recordar('asunto')} slotProps={{ htmlInput: { maxLength: 200 } }} fullWidth />
-          {!uso.libre && (
-            <TextField label="Título" value={form.titulo} onChange={(e) => cambiar({ titulo: e.target.value })} onFocus={recordar('titulo')}
-              helperText="El que va grande arriba, bajo el escudo" slotProps={{ htmlInput: { maxLength: 200 } }} fullWidth />
-          )}
-          <TextField label="Texto" value={form.cuerpo} onChange={(e) => cambiar({ cuerpo: e.target.value })} onFocus={recordar('cuerpo')} multiline minRows={12}
-            slotProps={{ htmlInput: { maxLength: 20000, spellCheck: true }, input: { sx: { fontFamily: 'ui-monospace, Menlo, Consolas, monospace', fontSize: 14, lineHeight: 1.55 } } }} fullWidth />
-          {!uso.libre && (
-            <TextField label="Despedida (opcional)" value={form.despedida} onChange={(e) => cambiar({ despedida: e.target.value })} onFocus={recordar('despedida')}
-              helperText="En cursiva, encima de la firma: «Que Nuestra Señora le guarde y bendiga.»" slotProps={{ htmlInput: { maxLength: 300 } }} fullWidth />
-          )}
-
-          <Paper variant="outlined" sx={{ p: 2 }}>
-            <Typography sx={{ fontWeight: 600, mb: 1 }}>Campos</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>Se rellenan con los datos de cada correo. Pulsa uno para meterlo donde tengas el cursor.</Typography>
-            <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
-              {campos.map((c) => (
-                <Tooltip describeChild key={c.clave} title={`${c.ayuda}${c.ejemplo ? ` · p. ej. «${c.ejemplo}»` : ''}`}>
-                  <Chip label={`{{${c.clave}}}`} onClick={() => insertar(`{{${c.clave}}}`)} variant="outlined" />
-                </Tooltip>
-              ))}
-            </Stack>
-            {uso.bloques.length > 0 && <>
-              <Typography sx={{ fontWeight: 600, mt: 2, mb: 1 }}>Bloques fijos</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>Los pone el sistema tal cual: van solos en su línea. Los marcados con * no pueden faltar.</Typography>
-              <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
-                {uso.bloques.map((b) => (
-                  <Tooltip describeChild key={b.clave} title={b.ayuda}>
-                    <Chip label={`[[${b.clave}]]${b.obligatorio ? ' *' : ''}`} onClick={() => insertar(`[[${b.clave}]]`, true)} color={b.obligatorio ? 'primary' : 'default'} variant="outlined" />
-                  </Tooltip>
-                ))}
-              </Stack>
-            </>}
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              Formato: deja una línea en blanco entre párrafos · <code>**negrita**</code> · líneas que empiezan por <code>- </code> son una lista · líneas que empiezan por <code>&gt; </code> son un recuadro (si la primera va entera en negrita, es su título).
-            </Typography>
-          </Paper>
-        </Stack>
-
-        <Stack spacing={1.5} sx={{ position: { lg: 'sticky' }, top: { lg: 16 } }}>
-          <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography sx={{ fontWeight: 600 }}>Vista previa</Typography>
-            <Button size="small" onClick={() => void probar()} disabled={problemas.length > 0}>Mandarme una prueba</Button>
+      <Stack spacing={2.5}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ alignItems: { md: 'flex-start' }, justifyContent: 'space-between' }}>
+          <Box sx={{ flex: '1 1 auto', maxWidth: 520 }}>
+            <TextField
+              label="Nombre de la plantilla" value={nombre} onChange={(e) => setNombre(e.target.value)} required size="small" fullWidth
+              helperText="Solo lo ves tú, para reconocerla: «Bienvenida 2027», «Pésame breve»…" slotProps={{ htmlInput: { maxLength: 120 } }}
+            />
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{uso.descripcion}</Typography>
+          </Box>
+          <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', gap: 1.5 }}>
+            <ToggleButtonGroup exclusive size="small" value={modo} onChange={(_, v) => { if (v) setModo(v) }} aria-label="Escribir o revisar">
+              <ToggleButton value="escribir">Escribir</ToggleButton>
+              <ToggleButton value="revisar">Revisar</ToggleButton>
+            </ToggleButtonGroup>
+            {modo === 'escribir' && (
+              <ToggleButtonGroup exclusive size="small" value={movil ? 'movil' : 'ordenador'} onChange={(_, v) => { if (v) setMovil(v === 'movil') }} aria-label="Ver como">
+                <ToggleButton value="ordenador">Ordenador</ToggleButton>
+                <ToggleButton value="movil">Móvil</ToggleButton>
+              </ToggleButtonGroup>
+            )}
           </Stack>
-          {problemas.length > 0 && <Alert severity="warning">{problemas.map((p) => <div key={p}>{p}</div>)}</Alert>}
-          {previa && <Typography variant="body2"><strong>Asunto:</strong> {previa.asunto}</Typography>}
-          <Box component="iframe" title="Vista previa del correo" sandbox="" srcDoc={previa?.html ?? ''}
-            sx={{ width: '100%', height: { xs: 520, lg: 'calc(100vh - 220px)' }, border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: '#fff' }} />
-          <Typography variant="caption" color="text.secondary">Con datos de ejemplo. Los bloques fijos salen como un recuadro que dice qué irá en su sitio.</Typography>
         </Stack>
-      </Box>
+
+        {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
+        {aviso && <Alert severity="success" onClose={() => setAviso(null)}>{aviso}</Alert>}
+
+        {/* Los dos modos siguen montados: el editor no se pierde al ir a revisar y volver. */}
+        <Box sx={{ display: modo === 'escribir' ? 'grid' : 'none', gap: 3, gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: '250px minmax(0, 1fr) 290px' }, alignItems: 'start' }}>
+          <Box sx={{ order: { xs: 2, lg: 0 } }}>
+            <PanelPiezas
+              bloques={uso.bloques}
+              campos={uso.campos}
+              comunes={catalogo.comunes}
+              contenido={contenido}
+              onAnadir={(tipo) => { insertarPieza(editor, PIEZAS_NUEVAS[tipo], cuerpoTocado.current); cuerpoTocado.current = true }}
+              onPonerBloque={(clave) => { insertarPieza(editor, { type: 'fijo', attrs: { clave } }, cuerpoTocado.current); cuerpoTocado.current = true }}
+              onDato={(clave) => insertarCampo(activo.current ?? editor, clave)}
+            />
+          </Box>
+          <Stack spacing={1.5} sx={{ minWidth: 0 }}>
+            <BarraDeFormato editor={editor} />
+            <HojaDelCorreo
+              uso={uso}
+              conCabecera={catalogo.conCabecera}
+              cabecera={cabecera}
+              onCabecera={(c) => setCabecera((antes) => ({ ...antes, ...c }))}
+              cuerpo={editor}
+              campos={campos}
+              onActivarLinea={(e) => { activo.current = e }}
+              movil={movil}
+            />
+          </Stack>
+          <Stack spacing={2} sx={{ position: { lg: 'sticky' }, top: { lg: 16 }, order: { xs: 1, lg: 0 } }}>
+            <Paper variant="outlined" sx={{ p: 2 }}><PanelDeLaPieza editor={editor} bloques={bloques} /></Paper>
+            <Paper variant="outlined" sx={{ p: 2, bgcolor: 'action.hover' }}><Repaso previa={previa} asunto={cabecera.asunto} bloques={uso.bloques} /></Paper>
+          </Stack>
+        </Box>
+
+        {modo === 'revisar' && <Revision previa={previa} asunto={cabecera.asunto} bloques={uso.bloques} firma={uso.firma} onProbar={() => void probar()} probando={probando} />}
+      </Stack>
     </PantallaEdicion>
+
+    {id !== null && (
+      <Versiones id={id} abierto={versiones} onCerrar={() => setVersiones(false)} onElegir={(v) => { cargar(v); setVersiones(false); setAviso('Versión cargada. Guarda para quedarte con ella.') }} />
+    )}
   </>
 }

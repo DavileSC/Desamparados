@@ -21,7 +21,9 @@ plantillasCorreoRoutes.post('/', validate(plantillaSchema), C.crear);
 plantillasCorreoRoutes.post('/vista-previa', validate(vistaPreviaSchema), C.vistaPrevia);
 plantillasCorreoRoutes.post('/prueba', validate(vistaPreviaSchema), C.prueba);
 plantillasCorreoRoutes.post('/usar', validate(usarPlantillaSchema), C.usar);
+plantillasCorreoRoutes.get('/marca/:pieza', C.marca);
 plantillasCorreoRoutes.get('/:id', validate(plantillaIdSchema), C.obtener);
+plantillasCorreoRoutes.get('/:id/versiones', validate(plantillaIdSchema), C.versiones);
 plantillasCorreoRoutes.put('/:id', validate(plantillaIdSchema.and(plantillaSchema)), C.actualizar);
 plantillasCorreoRoutes.delete('/:id', validate(plantillaIdSchema), C.borrar);
 

@@ -1,21 +1,28 @@
 import { useState } from 'react'
-import { Alert, Box, Button, Chip, CircularProgress, List, ListItem, ListItemText, Paper, Stack, Typography } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, Paper, Stack, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import CabeceraSeccion from '../CabeceraSeccion'
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
-import { borrarPlantilla, catalogoDeEmails, usarPlantilla, type CatalogoDeEmails, type ResumenDePlantilla, type UsoDeCorreo } from '../../../lib/api/emails'
+import { borrarPlantilla, catalogoDeEmails, usarPlantilla, type CampoDeUso, type CatalogoDeEmails, type ResumenDePlantilla, type UsoDeCorreo } from '../../../lib/api/emails'
 import { site } from '../../../config/site'
 
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
 const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
 
+/** Un texto con sus campos cambiados por el ejemplo: el asunto como lo leerá quien lo recibe. */
+function conEjemplos(texto: string, campos: CampoDeUso[]) {
+  const ejemplos = new Map(campos.map((c) => [c.clave, c.ejemplo ?? c.etiqueta]))
+  return texto.replace(/\{\{\s*([a-z_]+)\s*\}\}/g, (_, clave: string) => ejemplos.get(clave) ?? '')
+}
+
 /**
- * Emails: las plantillas de los correos que manda la web. Cada correo (la
- * bienvenida, la papeleta, el pésame…) puede tener varias plantillas y una en
- * uso; sin ninguna, sale el texto original. Las libres son para empezar un
- * aviso en «Boletín y avisos».
+ * Emails: los correos que manda la web, uno por fila, con cuándo sale y qué
+ * asunto lleva. «Editar» abre el que sale hoy: la plantilla en uso o, sin
+ * ninguna, el texto de la web (y al guardarlo, ese pasa a ser el que sale).
+ * Las demás plantillas de un correo, y volver al texto de la web, debajo.
+ * Las libres son para empezar un aviso en «Boletín y avisos».
  */
 export default function EmailsPage() {
   const cliente = useQueryClient()
@@ -31,7 +38,7 @@ export default function EmailsPage() {
     setOcupado(true); setError(null); setAviso(null)
     try {
       poner(await usarPlantilla(uso.clave, p?.id ?? null))
-      setAviso(`«${uso.nombre}» sale ahora con ${p ? `la plantilla «${p.nombre}»` : 'el texto original'}.`)
+      setAviso(`«${uso.nombre}» sale ahora con ${p ? `la plantilla «${p.nombre}»` : 'el texto de la web'}.`)
     } catch (err: unknown) { setError(mensaje(err, 'No se ha podido cambiar la plantilla en uso.')) }
     finally { setOcupado(false) }
   }
@@ -52,7 +59,7 @@ export default function EmailsPage() {
 
   return <>
     <Helmet><title>{`Emails | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
-    <CabeceraSeccion titulo="Emails" subtitulo="Las plantillas de los correos que manda la web. Cada correo sale con la plantilla en uso; sin ninguna, con su texto original." />
+    <CabeceraSeccion titulo="Emails" subtitulo="Los correos que la web manda sola a los hermanos y donantes. Pulsa «Editar» para cambiar lo que dicen." />
 
     {errorCarga && !data && <Alert severity="error">{mensaje(errorCarga, 'No se han podido cargar las plantillas.')}</Alert>}
     {!data && !errorCarga && <CircularProgress aria-label="Cargando las plantillas" />}
@@ -63,11 +70,11 @@ export default function EmailsPage() {
       {grupos.map((grupo) => (
         <Box key={grupo} component="section" aria-labelledby={`grupo-${grupo}`}>
           <Typography id={`grupo-${grupo}`} component="h2" sx={{ fontSize: 18, fontWeight: 600, mb: 1.5 }}>{grupo}</Typography>
-          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: 'repeat(2, minmax(0, 1fr))' } }}>
-            {data!.usos.filter((u) => u.grupo === grupo).map((u) => (
-              <TarjetaDeUso key={u.clave} uso={u} ocupado={ocupado} onUsar={(p) => void usar(u, p)} onBorrar={setABorrar} />
+          <Paper sx={{ overflow: 'hidden' }}>
+            {data!.usos.filter((u) => u.grupo === grupo).map((u, i) => (
+              <FilaDeCorreo key={u.clave} uso={u} comunes={data!.comunes} primera={i === 0} ocupado={ocupado} onUsar={(p) => void usar(u, p)} onBorrar={setABorrar} />
             ))}
-          </Box>
+          </Paper>
         </Box>
       ))}
     </Stack>
@@ -84,40 +91,72 @@ export default function EmailsPage() {
   </>
 }
 
-function TarjetaDeUso({ uso, ocupado, onUsar, onBorrar }: { uso: UsoDeCorreo; ocupado: boolean; onUsar: (p: ResumenDePlantilla | null) => void; onBorrar: (p: ResumenDePlantilla) => void }) {
+interface PropsFila {
+  uso: UsoDeCorreo
+  comunes: CampoDeUso[]
+  primera: boolean
+  ocupado: boolean
+  onUsar: (p: ResumenDePlantilla | null) => void
+  onBorrar: (p: ResumenDePlantilla) => void
+}
+
+function FilaDeCorreo({ uso, comunes, primera, ocupado, onUsar, onBorrar }: PropsFila) {
   const enUso = uso.plantillas.find((p) => p.enUso)
+  const otras = uso.plantillas.filter((p) => !p.enUso)
+  const asunto = conEjemplos(enUso?.asunto ?? uso.original.asunto, [...comunes, ...uso.campos])
+  const nueva = `/cms/emails/nueva?uso=${uso.clave}`
+  const rotulo = { fontSize: 12, color: 'text.secondary' } as const
+
   return (
-    <Paper sx={{ p: 2 }} aria-label={uso.nombre}>
-      <Stack direction="row" spacing={1} sx={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+    <Box aria-label={uso.nombre} role="group" sx={{ px: { xs: 2, md: 2.5 }, py: 2, borderTop: primera ? 0 : 1, borderColor: 'divider' }}>
+      <Box sx={{ display: 'grid', gap: { xs: 1.5, md: 3 }, gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1.1fr) minmax(0, 1fr) auto' }, alignItems: 'center' }}>
         <Box sx={{ minWidth: 0 }}>
           <Typography component="h3" sx={{ fontWeight: 600 }}>{uso.nombre}</Typography>
           <Typography variant="body2" color="text.secondary">{uso.descripcion}</Typography>
         </Box>
-        <Button size="small" variant="outlined" component={Link} to={`/cms/emails/nueva?uso=${uso.clave}`} sx={{ flexShrink: 0 }}>Nueva</Button>
-      </Stack>
-      {!uso.libre && (
-        <Typography variant="body2" sx={{ mt: 1 }}>
-          Sale con: <strong>{enUso ? enUso.nombre : 'el texto original'}</strong>
-        </Typography>
-      )}
-      <List dense disablePadding sx={{ mt: 1 }}>
-        {!uso.libre && (
-          <ListItem disableGutters divider secondaryAction={enUso ? <Button size="small" disabled={ocupado} onClick={() => onUsar(null)}>Usar</Button> : <Chip size="small" color="success" label="En uso" />} sx={{ pr: 10 }}>
-            <ListItemText primary="Texto original" secondary="El que trae la web" />
-          </ListItem>
+
+        {uso.libre ? (
+          <Typography variant="body2" color="text.secondary">
+            {uso.plantillas.length ? `${uso.plantillas.length} para empezar un aviso en «Boletín y avisos»` : 'Ninguna todavía: sirven para empezar un aviso en «Boletín y avisos»'}
+          </Typography>
+        ) : (
+          <Box sx={{ minWidth: 0 }}>
+            <Typography sx={rotulo}>Asunto</Typography>
+            <Typography sx={{ fontSize: 14.5, fontWeight: 500, overflowWrap: 'anywhere' }}>{asunto}</Typography>
+            <Typography sx={{ ...rotulo, mt: 0.25 }}>{enUso ? `Plantilla «${enUso.nombre}»` : 'Texto de la web, sin cambiar'}</Typography>
+          </Box>
         )}
-        {uso.plantillas.map((p) => (
-          <ListItem key={p.id} disableGutters divider sx={{ pr: 0, flexWrap: 'wrap' }}>
-            <ListItemText primary={p.nombre} secondary={`${p.asunto} · ${fecha(p.updatedAt)}${p.autorNombre ? `, ${p.autorNombre}` : ''}`} sx={{ minWidth: 180 }} />
-            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-              {!uso.libre && (p.enUso ? <Chip size="small" color="success" label="En uso" /> : <Button size="small" disabled={ocupado} onClick={() => onUsar(p)}>Usar</Button>)}
-              <Button size="small" component={Link} to={`/cms/emails/${p.id}`}>Editar</Button>
-              <Button size="small" color="error" disabled={ocupado || p.enUso} onClick={() => onBorrar(p)}
-                title={p.enUso ? 'Es la plantilla en uso: pon antes otra para borrarla' : undefined}>Borrar</Button>
+
+        <Box sx={{ justifySelf: { md: 'end' } }}>
+          {uso.libre
+            ? <Button variant="outlined" component={Link} to={nueva}>Crear una</Button>
+            : <Button variant="outlined" component={Link} to={enUso ? `/cms/emails/${enUso.id}` : nueva}>Editar</Button>}
+        </Box>
+      </Box>
+
+      {/* Lo de más, solo si lo hay: otras plantillas guardadas y volver al texto de la web. */}
+      {(uso.libre ? uso.plantillas.length > 0 : otras.length > 0 || enUso) && (
+        <Stack spacing={0.5} sx={{ mt: 1.5, pl: { md: 2 }, borderLeft: { md: 2 }, borderColor: { md: 'divider' } }}>
+          {(uso.libre ? uso.plantillas : otras).map((p) => (
+            <Stack key={p.id} direction={{ xs: 'column', sm: 'row' }} sx={{ alignItems: { sm: 'center' }, justifyContent: 'space-between', gap: 0.5 }}>
+              <Typography variant="body2" sx={{ minWidth: 0 }}>
+                <strong>{p.nombre}</strong>
+                <Box component="span" sx={{ color: 'text.secondary' }}> · {fecha(p.updatedAt)}{p.autorNombre ? `, ${p.autorNombre}` : ''}</Box>
+              </Typography>
+              <Stack direction="row" spacing={0.5}>
+                {!uso.libre && <Button size="small" disabled={ocupado} onClick={() => onUsar(p)}>Usar esta</Button>}
+                {/* Con su nombre: el «Editar» de la fila es el del correo que sale hoy. */}
+                <Button size="small" component={Link} to={`/cms/emails/${p.id}`} aria-label={`Editar «${p.nombre}»`}>Editar</Button>
+                <Button size="small" color="error" disabled={ocupado} onClick={() => onBorrar(p)}>Borrar</Button>
+              </Stack>
             </Stack>
-          </ListItem>
-        ))}
-      </List>
-    </Paper>
+          ))}
+          <Stack direction="row" spacing={1} sx={{ pt: 0.5, flexWrap: 'wrap' }}>
+            {enUso && <Button size="small" disabled={ocupado} onClick={() => onUsar(null)}>Volver al texto de la web</Button>}
+            {!uso.libre && <Button size="small" component={Link} to={nueva}>Preparar otra plantilla</Button>}
+          </Stack>
+        </Stack>
+      )}
+    </Box>
   )
 }

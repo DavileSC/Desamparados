@@ -1276,10 +1276,10 @@ enum EstadoEnvio {
 
 /// Por qué una dirección no recibe correo, según el aviso del servicio de envío.
 enum MotivoRebote {
-  REBOTE    // El buzón no existe o el dominio no recibe correo
-  INVALIDO  // La dirección está mal escrita
+  REBOTE // El buzón no existe o el dominio no recibe correo
+  INVALIDO // La dirección está mal escrita
   BLOQUEADO // El servicio ya no le envía (rebotó antes o se quejó)
-  SPAM      // Quien la usa marcó un correo nuestro como correo no deseado
+  SPAM // Quien la usa marcó un correo nuestro como correo no deseado
 }
 
 /// Una dirección a la que no llegan los correos. Por dirección y no por ficha:
@@ -1542,20 +1542,45 @@ model PedidoTienda {
 /// (la bienvenida, la papeleta, el pésame… ver shared/usos-de-correo.json) y
 /// de cada uso hay como mucho una en uso; sin ninguna, sale el texto original.
 model PlantillaCorreo {
-  id          Int      @id @default(autoincrement())
-  nombre      String   @db.VarChar(120)
-  uso         String   @db.VarChar(40)
-  asunto      String   @db.VarChar(200)
-  titulo      String   @db.VarChar(200)
-  cuerpo      String   @db.Text
-  despedida   String   @default("") @db.VarChar(300)
-  enUso       Boolean  @default(false)
+  id          Int                      @id @default(autoincrement())
+  nombre      String                   @db.VarChar(120)
+  uso         String                   @db.VarChar(40)
+  asunto      String                   @db.VarChar(200)
+  /// Lo que la bandeja enseña junto al asunto. Vacío, el primer párrafo.
+  resumen     String                   @default("") @db.VarChar(200)
+  titulo      String                   @db.VarChar(200)
+  /// Las piezas del correo (domain/plantillas-correo.ts). Null en las
+  /// guardadas antes del editor por piezas: esas se leen de `cuerpo`, en el
+  /// formato de texto, y pasan a piezas la próxima vez que se guardan.
+  contenido   Json?
+  /// El cuerpo en el formato de texto de antes. Las nuevas lo dejan vacío.
+  cuerpo      String                   @db.Text
+  despedida   String                   @default("") @db.VarChar(300)
+  enUso       Boolean                  @default(false)
   /// Quién la cambió por última vez, copiado: sobrevive a la cuenta.
-  autorNombre String?  @db.VarChar(120)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  autorNombre String?                  @db.VarChar(120)
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+  versiones   VersionPlantillaCorreo[]
 
   @@index([uso, enUso])
+}
+
+/// Cómo era una plantilla de correo cada vez que se guardó, para volver a
+/// una anterior desde el editor. Se guardan las 20 últimas de cada una.
+///
+/// OJO: sus fotos cuentan en `utils/ficheros-publicos.ts`, como las de
+/// `VersionContenido`: volver a una versión no puede traer una foto borrada.
+model VersionPlantillaCorreo {
+  id          Int             @id @default(autoincrement())
+  plantillaId Int
+  plantilla   PlantillaCorreo @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
+  /// asunto, resumen, titulo, contenido y despedida, como en la plantilla.
+  datos       Json
+  autorNombre String          @default("") @db.VarChar(120)
+  createdAt   DateTime        @default(now())
+
+  @@index([plantillaId, createdAt])
 }
 
 /// Una caja de la tienda, del abrir al cerrar. Ya no se usa: el Grupo no

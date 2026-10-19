@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { Prisma } from '@prisma/client';
 import db from '../config/db.js';
 import { publicStorageDir } from '../middleware/upload.middleware.js';
 import { ANCHOS_VARIANTES, fotoDeVariante, nombreDeVariante } from '../domain/variantes-de-foto.js';
@@ -169,21 +170,28 @@ export async function contarReferencias(nombre: string): Promise<number> {
 
 /**
  * El texto de todos los JSON del constructor de páginas: los documentos
- * publicados, sus versiones anteriores y las secciones guardadas. Las tres
+ * publicados, sus versiones anteriores y las secciones guardadas (y las
+ * plantillas de correo con las suyas). Todas
  * cuentan: una foto que ya no está en la página pero sí en una versión tiene
  * que seguir en el disco, o restaurar esa versión la dejaría rota. Se libera
  * cuando la versión sale del historial (`ContenidoService`).
  */
 async function jsonDeContenido(): Promise<string[]> {
-  const [paginas, versiones, secciones] = await Promise.all([
+  const [paginas, versiones, secciones, plantillas, versionesDePlantillas] = await Promise.all([
     db.contenidoPagina.findMany({ select: { datos: true } }),
     db.versionContenido.findMany({ select: { datos: true } }),
     db.seccionGuardada.findMany({ select: { bloques: true } }),
+    // Las plantillas de correo y su historial, por lo mismo: llevan sus
+    // fotos dentro de las piezas, en JSON.
+    db.plantillaCorreo.findMany({ where: { contenido: { not: Prisma.DbNull } }, select: { contenido: true } }),
+    db.versionPlantillaCorreo.findMany({ select: { datos: true } }),
   ]);
   return [
     ...paginas.map((p) => JSON.stringify(p.datos)),
     ...versiones.map((v) => JSON.stringify(v.datos)),
     ...secciones.map((s) => JSON.stringify(s.bloques)),
+    ...plantillas.map((p) => JSON.stringify(p.contenido)),
+    ...versionesDePlantillas.map((v) => JSON.stringify(v.datos)),
   ];
 }
 
@@ -223,6 +231,15 @@ export async function subidasReferenciadas(): Promise<Set<string>> {
 }
 
 /**
+ * La copia en JPEG que hace el envío de correos de una foto subida
+ * (`correos/fotos.ts`): `<hex>.webp` → `storage/fotos-de-correo/<hex>.jpg`.
+ * Vive aquí, con el resto de rutas de las subidas, para que borrar la foto
+ * borre también su copia.
+ */
+export const carpetaFotosDeCorreo = () => path.join(process.cwd(), 'storage', 'fotos-de-correo');
+export const jpegDeFoto = (nombre: string) => path.join(carpetaFotosDeCorreo(), `${path.parse(nombre).name.toLowerCase()}.jpg`);
+
+/**
  * Borra un fichero subido del disco. Vuelve a pasar el filtro justo antes del
  * `path.join`: esta función es la única puerta al sistema de ficheros y no se
  * fía de quien la llama. Que el fichero ya no exista no es un error.
@@ -236,6 +253,8 @@ export async function borrarSubida(nombre: string, directorio = publicStorageDir
   if (!esVariante && /\.webp$/i.test(seguro)) {
     for (const ancho of ANCHOS_VARIANTES) await borrarSiExiste(path.join(directorio, nombreDeVariante(seguro, ancho)));
   }
+  // Y su JPEG de los correos (correos/fotos.ts), por el mismo motivo.
+  if (!esVariante && directorio === publicStorageDir) await borrarSiExiste(jpegDeFoto(seguro));
   return borrarSiExiste(path.join(directorio, seguro));
 }
 

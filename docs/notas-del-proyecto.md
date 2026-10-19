@@ -396,6 +396,19 @@ El código solo prepara los campos (`{{nombre}}`…) y los bloques fijos
 (`[[papeleta]]`…). Para cambiar un texto de partida, se cambia ese JSON; para
 añadir un campo o un bloque a un correo, se declara allí y se rellena en su
 `enviar…`: la revisión de la plantilla rechaza lo que el catálogo no declara.
+
+**Las plantillas son piezas, no texto.** Desde el editor nuevo (octubre de
+2026) cada plantilla guarda una lista de piezas de una paleta cerrada en
+`PlantillaCorreo.contenido` (JSON; `domain/plantillas-correo.ts`). Los
+originales del catálogo siguen en el formato de texto de antes y las
+plantillas guardadas antes del editor tienen `contenido` a NULL: las dos se
+leen con `leerCuerpo` y pasan a piezas al volver a guardarse. Una pieza nueva
+se añade en cuatro sitios a la vez: el tipo y la revisión (`domain/`), el
+esquema arktype, su HTML en `correos/plantilla.ts` + `componer.ts`, y su nodo
+y su vista en `desamparados-web/src/features/cms/emails/editor/`. Las fotos de
+una plantilla viajan dentro del correo como adjuntos en línea, pasadas a JPEG
+(`correos/fotos.ts`: Outlook no pinta WebP), y cuentan como «en uso» en
+`utils/ficheros-publicos.ts` junto con las de su historial.
 El aviso interno a Secretaría y el del formulario de contacto siguen en el
 código: no los lee ningún hermano.
 
