@@ -63,17 +63,8 @@ export function subidasEnTexto(...textos: (string | null | undefined)[]): Set<st
   return nombres;
 }
 
-/**
- * Variables de entorno que pueden apuntar a un fichero subido desde el CMS: la
- * normativa que enlazan los correos (email.service.ts) suele ser un PDF subido.
- * Cuentan como «en uso»: si no, sustituir ese PDF en una publicación o pasar
- * `limpiar:huerfanos --borrar` dejaría el enlace de todos los correos muerto.
- */
-const VARIABLES_CON_RUTAS = ['NORMATIVA_URL'];
-
 /** Las claves de `Configuracion` del retablo del Inicio: guardan rutas de fotos subidas. */
 const PREFIJO_RETABLO = 'inicio_retablo_';
-const rutasDelEntorno = () => VARIABLES_CON_RUTAS.map((nombre) => process.env[nombre]);
 
 /** Un `OR` de `contains` para buscar varios nombres en varios campos de una tabla en una sola consulta. */
 function mencionaAlguno<C extends string>(campos: readonly C[], nombres: string[]) {
@@ -103,9 +94,6 @@ export async function subidasEnUso(nombres: Iterable<string>): Promise<Set<strin
   const candidatos = [...new Set([...nombres].map(clave))];
   const enUso = new Set<string>();
   if (candidatos.length === 0) return enUso;
-
-  // Las del entorno, en minúsculas como todo lo demás.
-  for (const n of subidasEnTexto(...rutasDelEntorno())) enUso.add(clave(n));
 
   // La consulta solo filtra; quién menciona a quién se decide aquí, con el
   // texto en minúsculas: es lo mismo que hacía el `contains` de antes (la
@@ -225,7 +213,6 @@ export async function subidasReferenciadas(): Promise<Set<string>> {
     ...retablo.map((r) => r.value),
     ...comunicados.map((c) => c.cuerpo),
     ...cabildos.map((c) => c.acta),
-    ...rutasDelEntorno(),
   ];
   return subidasEnTexto(...textos);
 }

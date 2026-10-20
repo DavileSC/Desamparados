@@ -8,7 +8,7 @@
 // lista.
 
 import assert from 'node:assert/strict';
-import { after, before, mock, test } from 'node:test';
+import { after, before, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import { EstadoPago, EstadoRemesa, MetodoPago, Role, TipoRecibo } from '@prisma/client';
@@ -16,7 +16,6 @@ import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
-import { EmailService } from '../src/services/email.service.js';
 import { RemesaService } from '../src/services/remesa.service.js';
 import { MisFichasService } from '../src/services/mis-fichas.service.js';
 import { ReciboService } from '../src/services/recibo.service.js';
@@ -45,7 +44,6 @@ let server: Server;
 let baseUrl: string;
 const entornoPrevio = Object.fromEntries(Object.keys(ACREEDOR).map((k) => [k, process.env[k]]));
 
-mock.method(EmailService, 'enviarPapeleta', async () => undefined);
 const enviados: Parameters<TransporteDeCorreo['sendMail']>[0][] = [];
 
 before(async () => {
@@ -63,7 +61,6 @@ after(async () => {
     if (v === undefined) delete process.env[k];
     else process.env[k] = v;
   }
-  mock.restoreAll();
   ponerTransporte(undefined);
   await new Promise<void>((resolve, reject) => server.close((e) => e ? reject(e) : resolve()));
   await db.$disconnect();

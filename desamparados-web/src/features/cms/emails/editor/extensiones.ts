@@ -122,7 +122,7 @@ function obligatoriosEn(doc: NodoPm, obligatorios: Set<string>) {
 export const SIN_PROTECCION = 'sinProteccion'
 
 /**
- * Un bloque obligatorio (la papeleta en el correo de la papeleta) no se puede
+ * Un bloque obligatorio (la tabla de recibos en el aviso del cargo) no se puede
  * borrar: ni con la tecla de borrar, ni seleccionando todo, ni cortando. Moverlo
  * sí, porque mover es quitar y poner en el mismo paso.
  */

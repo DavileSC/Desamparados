@@ -158,7 +158,7 @@ export function ponerCuentaDeContacto(nueva: CuentaDeContacto | null | undefined
 interface OpcionesDeEnvio {
   replyTo?: string;
   cuenta?: CuentaDeContacto | null;
-  /** Archivos que van con el correo (la papeleta en PDF), además de las imágenes de la plantilla. */
+  /** Archivos que van con el correo (el certificado de donativos en PDF), además de las imágenes de la plantilla. */
   adjuntos?: { filename: string; content: Buffer; contentType: string }[];
   /**
    * Qué correo es (la clave de shared/usos-de-correo.json, o «contacto»,

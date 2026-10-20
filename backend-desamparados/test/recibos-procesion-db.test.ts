@@ -27,7 +27,6 @@ import { diaMadrid, inicioDiaMadrid } from '../src/domain/contabilidad.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { conceptoDe, PASION, ROSARIO, salida } from './fixtures/salidas.js';
 import { reglaDe } from '../src/services/procesion/salidas.service.js';
-import { leerDatosEvento } from '../src/services/recibos/comunes.js';
 import { proximaFecha, sumarDias } from '../src/domain/fecha-salida.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 
@@ -35,7 +34,6 @@ let dbDisponible = false;
 let server: Server;
 let baseUrl: string;
 
-const papeletasEnviadas = mock.method(EmailService, 'enviarPapeleta', async () => undefined);
 const recordatoriosEnviados = mock.method(EmailService, 'enviarRecordatorioAusencia', async () => undefined);
 
 before(async () => {
@@ -390,45 +388,6 @@ test('D5/D19: un cambio de estado rechazado no deja auditoría ni toca el recibo
     assert.equal((await db.recibo.findUniqueOrThrow({ where: { id: recibo.id } })).estado, EstadoPago.PAGADO);
     // Antes se auditaba ANTES de la transacción: el registro daba fe de un cambio que no ocurrió.
     assert.equal(await auditoria(ACCIONES_AUDITORIA.RECIBO_ACTUALIZAR, recibo.id), null);
-  } finally {
-    await e.recoger();
-  }
-});
-
-// ============================================================================
-//  D6 · los dos caminos imprimen los mismos datos del evento
-// ============================================================================
-
-test('D6: la papeleta de mesa y la de tesorería llevan la misma fecha, hora y puerta', async (t) => {
-  if (!dbDisponible) return t.skip(SIN_DB);
-  const e = await escenario();
-  try {
-    await conLaPasion({ horaSalida: '20:15h', lugar: 'Puerta de prueba' }, async () => {
-      papeletasEnviadas.mock.resetCalls();
-
-      // Camino 1: la mesa, al dar la ropa.
-      const enMesa = await e.hermano();
-      await e.apuntarYCobrar(enMesa.id);
-
-      // Camino 2: cobro en tesorería de una papeleta que estaba pendiente.
-      const enTesoreria = await e.hermano();
-      const recibo = await db.recibo.create({
-        data: { hermanoId: enTesoreria.id, year: YEAR, concepto: await conceptoDe(PASION, YEAR), importe: 30, tipo: TipoRecibo.PAPELETA_SITIO }
-      });
-      await db.papeletaSitio.create({ data: { hermanoId: enTesoreria.id, reciboId: recibo.id, year: YEAR, puesto: 'Cirio', salidaId: e.pasion.id } });
-      await ReciboService.adminMarcarComoPagado(recibo.id, MetodoPago.EFECTIVO, e.meta);
-
-      // El día, calculado por la Pascua: el mismo que da la fila.
-      const { fechaSalida } = leerDatosEvento(await salida(PASION));
-      assert.notEqual(fechaSalida, 'Por anunciar');
-      const esperado = { fechaSalida, horaSalida: '20:15h', accesoPuerta: 'Puerta de prueba' };
-      const envios = papeletasEnviadas.mock.calls.map((c) => {
-        const datos = c.arguments[2] as { fechaSalida: string; horaSalida: string; accesoPuerta: string };
-        return { fechaSalida: datos.fechaSalida, horaSalida: datos.horaSalida, accesoPuerta: datos.accesoPuerta };
-      });
-      assert.equal(envios.length, 2, 'una papeleta por cada camino');
-      assert.deepEqual(envios, [esperado, esperado]);
-    });
   } finally {
     await e.recoger();
   }

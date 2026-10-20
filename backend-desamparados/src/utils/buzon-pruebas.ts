@@ -29,7 +29,7 @@ export interface CorreoParaBuzon {
   replyTo?: string;
   /**
    * Imágenes en línea (`cid:`), que el buzón incrusta para verlas al abrir el
-   * .html, y archivos adjuntos (la papeleta en PDF), que deja a su lado.
+   * .html, y archivos adjuntos (el certificado de donativos en PDF), que deja a su lado.
    */
   attachments?: ({ path: string; cid: string; contentType: string } | { filename: string; content: Buffer; contentType: string })[];
   /** Cabeceras propias (la baja en un clic del boletín). */

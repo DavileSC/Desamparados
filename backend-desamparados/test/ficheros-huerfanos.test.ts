@@ -265,28 +265,6 @@ describe('publicaciones (C1)', () => {
   });
 });
 
-describe('ficheros a los que apunta el entorno', () => {
-  test('el PDF de NORMATIVA_URL (el que enlazan los correos) cuenta como en uso', async (t) => {
-    if (!dbDisponible) return t.skip(SIN_DB);
-    const normativa = await subidaFalsa('pdf');
-    const otro = await subidaFalsa('pdf');
-    const antes = process.env.NORMATIVA_URL;
-    process.env.NORMATIVA_URL = `https://www.desamparados.es/storage/public/${normativa.nombre}`;
-    const res = await api('/publications', 'POST', { titulo: 'Normativa', archivoUrl: normativa.ruta, categoria: 'historia', visible: false });
-    assert.equal(res.status, 201, await res.clone().text());
-    const { id } = await res.json() as { id: number };
-    try {
-      assert.ok((await subidasReferenciadas()).has(normativa.nombre));
-      assert.equal((await api(`/publications/${id}`, 'PUT', { archivoUrl: otro.ruta })).status, 200);
-      assert.ok(normativa.existe(), 'los correos siguen enlazándolo: no puede borrarse');
-    } finally {
-      if (antes === undefined) delete process.env.NORMATIVA_URL;
-      else process.env.NORMATIVA_URL = antes;
-      await db.publicacion.deleteMany({ where: { id } });
-    }
-  });
-});
-
 describe('fotos del retablo del Inicio del CMS', () => {
   test('la foto de todo el año y las de cada tiempo (dentro de un JSON) cuentan como en uso', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);

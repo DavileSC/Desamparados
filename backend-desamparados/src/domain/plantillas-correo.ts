@@ -78,7 +78,7 @@ export type ClaveDeUso =
   | 'contrasena_recuperar' | 'contrasena_cuenta_nueva' | 'primer_acceso_invitacion' | 'contrasena_cambiada' | 'doble_factor_bloqueado'
   | 'cuenta_bancaria_cambiada'
   | 'solicitud_recibida' | 'solicitud_no_tramitada' | 'alta_aprobada' | 'solicitud_rechazada'
-  | 'baja' | 'baja_impago' | 'apertura' | 'papeleta'
+  | 'baja' | 'baja_impago' | 'apertura'
   | 'papeleta_sin_recoger' | 'donativo_gracias' | 'apadrinamiento' | 'pedido_tienda' | 'certificado_donativos'
   | 'cargo_domiciliado' | 'justificante_pago' | 'pago_devuelto'
   | 'pesame' | 'sufragio' | 'libre';

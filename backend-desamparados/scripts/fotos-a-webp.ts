@@ -125,12 +125,6 @@ try {
   const publicasRenombradas = renombradas.filter((c) => c.carpeta === publicStorageDir);
   const privadasRenombradas = renombradas.filter((c) => c.carpeta === privateStorageDir);
 
-  // Una variable de entorno que apunte a una foto que va a cambiar de nombre
-  // (NORMATIVA_URL suele ser un PDF) no se puede reescribir desde aquí: se avisa.
-  for (const c of publicasRenombradas) {
-    if (process.env.NORMATIVA_URL?.includes(c.antes)) console.warn(`  ! NORMATIVA_URL nombra ${c.antes}: cámbiala a mano a ${c.despues}`);
-  }
-
   // 3. Las direcciones, todas a la vez: o cambian todas o ninguna.
   let filas = 0;
   if (aplicar && renombradas.length) {

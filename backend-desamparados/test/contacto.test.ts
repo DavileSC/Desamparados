@@ -165,15 +165,11 @@ describe('EmailService', () => {
     process.env.EMAIL_USER = 'secretaria@example.es';
 
     await EmailService.enviarConfirmacionRegistro('hermano@example.es', "Seán O'Brien <b>");
-    await EmailService.enviarPapeleta('hermano@example.es', "Seán O'Brien", {
-      year: 2027, salida: { nombre: 'Sábado de Pasión', cobro: 'CUOTA', conRopa: true, indicaciones: null, articulo: 'el' }, importe: '25,00 €', concepto: 'Papeleta', fechaSalida: 'Jueves Santo', horaSalida: '19:30h', accesoPuerta: 'Puerta principal',
-    });
 
-    const [registro, papeleta] = general.enviados;
+    const [registro] = general.enviados;
     assert.equal(registro.subject, 'Hemos recibido su solicitud de ingreso');
     assert.match(registro.html, /Seán O&#39;Brien &lt;b&gt;/);
     assert.doesNotMatch(registro.html, /O'Brien <b>/);
-    assert.equal(papeleta.subject, "Papeleta del Sábado de Pasión 2027: Seán O'Brien");
   });
 
   test('con un servicio de envío, el remitente es EMAIL_FROM y no el usuario de entrada, y se responde a Secretaría', async () => {
@@ -199,27 +195,12 @@ describe('EmailService', () => {
     assert.partialDeepStrictEqual(opcionesDelServidor({ EMAIL_SMTP_HOST: 'smtp.x.es', EMAIL_SMTP_PORT: '465' }), { port: 465, secure: true, requireTLS: false });
   });
 
-  test('el asunto de la papeleta lleva el artículo de la salida, no siempre «del»', async () => {
-    const general = transporteFalso();
-    ponerTransporte(general);
-    process.env.EMAIL_USER = 'secretaria@example.es';
-
-    await EmailService.enviarPapeleta('hermano@example.es', 'Ana', {
-      year: 2027, salida: { nombre: 'Procesión Magna', cobro: 'CUOTA', conRopa: true, indicaciones: null, articulo: 'la' }, importe: '25,00 €', concepto: 'Papeleta', fechaSalida: 'Jueves Santo', horaSalida: '19:30h', accesoPuerta: 'Puerta principal',
-    });
-
-    assert.match(general.enviados[0].subject, /^Papeleta de la Procesión Magna/);
-  });
-
   test('las indicaciones de la salida conservan sus saltos de línea en los correos', async () => {
     const general = transporteFalso();
     ponerTransporte(general);
     process.env.EMAIL_USER = 'secretaria@example.es';
     const salida = { nombre: 'Rosario vespertino', cobro: 'DONATIVO' as const, conRopa: false, indicaciones: 'Puntualidad.\nMedalla <b>visible</b>.', articulo: 'el' as const };
 
-    await EmailService.enviarPapeleta('hermano@example.es', 'Ana', {
-      year: 2027, salida, importe: '', concepto: 'Papeleta', fechaSalida: 'sábado, 16 de octubre', horaSalida: '18:30h', accesoPuerta: 'Parroquia',
-    });
     await EmailService.enviarAperturaPapeletas('hermano@example.es', 'Ana', ['Ana'], ['lunes, 4 de octubre'], 2027, 'MUJER', salida);
 
     for (const correo of general.enviados) {

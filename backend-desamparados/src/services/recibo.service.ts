@@ -8,24 +8,20 @@
  * devolución de un cobro y la retirada de una papeleta— en `recibos/comunes`.
  */
 import db from '../config/db';
-import { EmailService } from './email.service';
 import { EmitirReciboDto, GenerarCuotasDto, UpdateReciboDto } from '../dtos/recibo.dto.js';
 import { EstadoCita, EstadoPago, Prisma, MetodoPago, TipoRecibo, TipoTransaccion } from '@prisma/client';
-import { DatosPapeleta } from '../dtos/email.dto.js';
-import { articuloDe } from '../domain/articulos.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { anulaPapeleta, estadosCobrablesCon, MENSAJE_REMESADO_EN_MANO, puedeCobrarse, puedeTransicionar, requiereReverso } from '../domain/recibo-estados.js';
 import { diaMadrid, instanteDelApunte } from '../domain/contabilidad.js';
-import { enmascararEmail } from '../utils/log-privacidad.js';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { agruparImpagos } from '../domain/impagos.js';
 import { diaDeHoy } from '../domain/fechas-hermano.js';
 import { ORDENES_RECIBOS, ordenDe } from '../domain/ordenacion.js';
 import {
   ESTADOS_CUOTA_VIVA, MENSAJE_ESTADO_CAMBIADO, apuntarComisionEnTransaccion, devolverCobroEnTransaccion, fotoRecibo,
-  idCategoriaComisiones, idCategoriaDevoluciones, idCategoriaIngresos, exigirSinReemision, leerDatosEvento, reemitidosDe, retirarPapeletaEnTransaccion,
+  idCategoriaComisiones, idCategoriaDevoluciones, idCategoriaIngresos, exigirSinReemision, reemitidosDe, retirarPapeletaEnTransaccion,
   whereRecibosAdmin, type ConsultaRecibos,
 } from './recibos/comunes.js';
 
@@ -387,41 +383,6 @@ export class ReciboService {
       antes: fotoRecibo(antes),
       despues: fotoRecibo(recibo)
     });
-
-    // La papeleta asociada, si la hay, se busca aparte.
-    const papeleta = await db.papeletaSitio.findUnique({
-      where: { reciboId },
-      include: { salida: { include: { acto: true } } },
-    });
-
-    if (recibo.hermano.user?.email && papeleta) {
-      const datosEmail: DatosPapeleta = {
-        year: recibo.year,
-        salida: { nombre: papeleta.salida.nombre, cobro: papeleta.salida.cobro, conRopa: papeleta.salida.conRopa, indicaciones: papeleta.salida.indicaciones, articulo: articuloDe(papeleta.salida) },
-        importe: `${Number(recibo.importe).toFixed(2)} €`,
-        concepto: recibo.concepto,
-        papeletaId: papeleta.id,
-        puesto: papeleta.puesto,
-        tramo: papeleta.tramo,
-        tunica: papeleta.numTunicaAsignada,
-        observaciones: papeleta.observaciones,
-        // Van impresos en la papeleta que recibe cada hermano: un valor
-        // equivocado se envía y ya no se puede corregir. Misma fuente que la
-        // inscripción en mesa.
-        ...leerDatosEvento(papeleta.salida, papeleta.year)
-      };
-
-      console.log(`📨 [Cola] Enviando papeleta recibo #${recibo.id} a ${enmascararEmail(recibo.hermano.user.email)}`);
-
-      EmailService.enviarPapeleta(
-        recibo.hermano.user.email,
-        recibo.hermano.nombre,
-        datosEmail,
-        recibo.hermano.sexo
-      ).catch(error => {
-        console.error(`❌ [Error Email] Fallo al enviar papeleta ID ${recibo.id}:`, error);
-      });
-    }
 
     return recibo;
   }

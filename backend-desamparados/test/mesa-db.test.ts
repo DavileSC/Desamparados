@@ -8,7 +8,7 @@
 import './fixtures/almacen-temporal.js';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { after, before, mock, test } from 'node:test';
+import { after, before, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import { EstadoCita, EstadoPago, EstadoPrenda, MetodoPago, Prisma, Role, TipoPrenda, TipoRecibo, TipoTransaccion } from '@prisma/client';
@@ -16,7 +16,6 @@ import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
-import { EmailService } from '../src/services/email.service.js';
 import { PapeletasService } from '../src/services/procesion/papeletas.service.js';
 import { MesaService } from '../src/services/procesion/mesa.service.js';
 import { PlazoPapeletasService } from '../src/services/procesion/plazo.service.js';
@@ -33,8 +32,6 @@ let dbDisponible = false;
 let server: Server;
 let baseUrl: string;
 
-mock.method(EmailService, 'enviarPapeleta', async () => undefined);
-
 before(async () => {
   server = app.listen(0);
   await new Promise<void>((resolve) => server.once('listening', resolve));
@@ -44,7 +41,6 @@ before(async () => {
 });
 
 after(async () => {
-  mock.restoreAll();
   await new Promise<void>((resolve, reject) => server.close((e) => e ? reject(e) : resolve()));
   await db.$disconnect();
 });

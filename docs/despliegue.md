@@ -310,7 +310,6 @@ Opcionales:
 | `CONTACT_EMAIL_USER`, `CONTACT_EMAIL_PASS` | Cuenta aparte para el formulario de contacto |
 | `TOTP_ENC_KEY_ANTERIOR` | Solo durante una rotación de `TOTP_ENC_KEY`. Ver «Rotar `TOTP_ENC_KEY`» |
 | `AUDIT_RETENTION_DAYS` | Días que se conserva la auditoría. Por defecto `730`; mínimo `30` |
-| `NORMATIVA_URL` | Sin ella, el enlace a la normativa no aparece en los correos. Puede apuntar a un PDF subido desde el CMS: ese fichero cuenta como «en uso» y no se borra con `limpiar:huerfanos --borrar` |
 | `SEED_ADMIN_EMAIL` | Obligatoria para sembrar en producción |
 
 ### El pago en línea (Redsys)

@@ -26,8 +26,7 @@ import {
 import db from '../../config/db.js';
 import { HttpError, NotFoundError } from '../../utils/error.handle.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../auditoria.service.js';
-import { EmailService } from '../email.service.js';
-import { exigirSinReemision, idCategoriaIngresos, leerDatosEvento } from '../recibos/comunes.js';
+import { exigirSinReemision, idCategoriaIngresos } from '../recibos/comunes.js';
 import { idsReemitidos } from '../../domain/reemisiones.js';
 import { estadosCobrablesCon, MENSAJE_REMESADO_EN_MANO } from '../../domain/recibo-estados.js';
 import { claveConcepto } from '../../domain/datos-procesion.js';
@@ -36,16 +35,13 @@ import { alturaHombroEnCm, CINGULO_SEGUN_TUNICA, normalizarNumeroPrenda, propues
 import {
   notaDePerdon, pendienteDeLaSalida, requisitosParaRecoger, tipoReciboDe, type CuotaDelHermano,
 } from '../../domain/salidas.js';
-import { articuloDe } from '../../domain/articulos.js';
 import { exigirProximaFecha, type SalidaConActo } from './salidas.service.js';
 import { PapeletasService, type SolicitudConRecibo } from './papeletas.service.js';
 import { PlazoPapeletasService } from './plazo.service.js';
-import { archivoDePapeleta, datosDeLaPapeleta, papeletaEnPdf } from './papeleta-pdf.js';
 import { comprobarQueNoVaEnOtraPapeleta, estadoAlDevolver, prestarRopaEnTransaccion, ropaPedida, tunicasLibres, type TipoRopa } from './ropa.js';
 import { cingulosSinDevolverDe, devolverCingulosEnTransaccion, prestarCinguloEnTransaccion, recuentoDeCingulos, type CinguloEnMesa } from './cingulos.js';
 import { unaVez } from './una-vez.js';
 import { avisarALaMesa } from './avisos-mesa.js';
-import { euros } from '../../utils/euros.js';
 
 type Tx = Prisma.TransactionClient;
 type Cliente = Tx | typeof db;
@@ -437,7 +433,6 @@ export class ZonasService {
         despues: { ...resultado, ...(alturaHombro !== undefined && { alturaHombro }) },
       });
       avisarALaMesa({ que: 'entregado', hermanoId: resultado.hermanoId, salidaId: resultado.salidaId });
-      await ZonasService.mandarPapeleta(resultado.papeletaId).catch(console.error);
     }
     return { ...resultado, repetida };
   }
@@ -508,36 +503,6 @@ export class ZonasService {
         cingulos: cingulos.filter((c) => c.hermanoId === h.id).map(({ hermanoId: _h, ...c }) => c),
       }))
       .sort((a, b) => a.hermano.apellidos.localeCompare(b.hermano.apellidos, 'es') || a.hermano.nombre.localeCompare(b.hermano.nombre, 'es'));
-  }
-
-  /**
-   * El correo con la papeleta recogida: el puesto confirmado y, si la salida
-   * lleva ropa, la túnica. No espera al envío: la mesa no se queda parada por el correo.
-   */
-  static async mandarPapeleta(papeletaId: number) {
-    const p = await db.papeletaSitio.findUnique({
-      where: { id: papeletaId },
-      include: { recibo: true, salida: { include: { acto: true } }, hermano: { select: { nombre: true, sexo: true, email: true, user: { select: { email: true } } } } },
-    });
-    const destino = p?.hermano.user.email ?? p?.hermano.email;
-    if (!p || !destino) return;
-    const importe = Number(p.recibo.importe);
-    // El PDF es un extra: si fallara, el correo sale igual, sin él.
-    const pdf = await datosDeLaPapeleta(p.id)
-      .then(async (d) => (d ? { nombre: archivoDePapeleta(d), contenido: await papeletaEnPdf(d) } : undefined))
-      .catch((e: unknown) => { console.error('[Papeleta] No se pudo generar el PDF para el correo:', e); return undefined; });
-    EmailService.enviarPapeleta(destino, p.hermano.nombre, {
-      year: p.year,
-      salida: { nombre: p.salida.nombre, cobro: p.salida.cobro, conRopa: p.salida.conRopa, indicaciones: p.salida.indicaciones, articulo: articuloDe(p.salida) },
-      concepto: p.recibo.concepto,
-      importe: importe > 0 && p.recibo.estado === EstadoPago.PAGADO ? euros(importe) : '',
-      papeletaId: p.id,
-      puesto: p.puesto,
-      tramo: p.tramo || '',
-      tunica: p.numTunicaAsignada,
-      observaciones: p.observaciones || '',
-      ...leerDatosEvento(p.salida, p.year),
-    }, p.hermano.sexo ?? undefined, pdf).catch(console.error);
   }
 
   // =================================================================

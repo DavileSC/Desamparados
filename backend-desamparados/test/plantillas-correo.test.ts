@@ -37,14 +37,14 @@ const plantilla = (contenido: Pieza[], resto: Partial<PlantillaDeCorreo> = {}): 
 const texto = (t: string): PiezaDeTexto => ({ tipo: 'parrafo', trozos: [{ texto: t }] });
 
 test('la revisión avisa de campos y bloques que el correo no tiene y de los obligatorios que faltan', () => {
-  const papeleta = usoDe('papeleta')!;
-  const problemas = problemasDePlantilla(papeleta, plantilla([texto('Hola {{nombr}}'), { tipo: 'fijo', clave: 'recibo' }], { asunto: 'Papeleta {{anio}}' }));
+  const cargo = usoDe('cargo_domiciliado')!;
+  const problemas = problemasDePlantilla(cargo, plantilla([texto('Hola {{nombr}}'), { tipo: 'fijo', clave: 'recibo' }], { asunto: 'Cargo de {{total}}' }));
   assert.ok(problemas.includes('Este correo no tiene el dato «nombr»: quítalo del texto.'));
   assert.ok(problemas.includes('Este correo no tiene el bloque «recibo»: quítalo.'));
   assert.ok(problemas.some((p) => p.startsWith('Falta un bloque que no puede faltar')));
-  const dosVeces = problemasDePlantilla(papeleta, plantilla([{ tipo: 'fijo', clave: 'papeleta' }, { tipo: 'fijo', clave: 'papeleta' }]));
+  const dosVeces = problemasDePlantilla(cargo, plantilla([{ tipo: 'fijo', clave: 'cargos' }, { tipo: 'fijo', clave: 'cargos' }]));
   assert.ok(dosVeces.some((p) => p.endsWith('está puesto 2 veces: va una sola.')), dosVeces.join(' | '));
-  assert.deepEqual(problemasDePlantilla(papeleta, plantilla([{ tipo: 'separador' }], { asunto: ' ', titulo: '' })).slice(0, 3), ['Falta el asunto.', 'Falta el título.', 'Falta el texto.']);
+  assert.deepEqual(problemasDePlantilla(cargo, plantilla([{ tipo: 'separador' }], { asunto: ' ', titulo: '' })).slice(0, 3), ['Falta el asunto.', 'Falta el título.', 'Falta el texto.']);
 
   // Los campos se buscan en todas partes: el resumen, el botón, el título de un recuadro, el pie de una foto.
   const pesame = usoDe('pesame')!;

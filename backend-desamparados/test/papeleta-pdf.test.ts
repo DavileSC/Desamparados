@@ -15,8 +15,6 @@ import { leerCodigoDePapeleta } from '../src/domain/papeleta-qr.js';
 import { datosDeLaPapeleta, papeletaEnPdf } from '../src/services/procesion/papeleta-pdf.js';
 import { MiProcesionService } from '../src/services/procesion/mi-procesion.service.js';
 import { PlazoPapeletasService } from '../src/services/procesion/plazo.service.js';
-import { ZonasService } from '../src/services/procesion/zonas.service.js';
-import { ponerTransporte, type TransporteDeCorreo } from '../src/services/correos/envio.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { PASION, salida } from './fixtures/salidas.js';
 import { SIN_DB } from './fixtures/sin-db.js';
@@ -34,7 +32,6 @@ before(async () => {
 });
 
 after(async () => {
-  ponerTransporte(undefined);
   await new Promise<void>((resolve, reject) => server.close((e) => e ? reject(e) : resolve()));
   await db.$disconnect();
 });
@@ -102,28 +99,6 @@ test('por HTTP: la imprime la mesa; un hermano no, ni sin sesión', async (t) =>
     assert.equal((await como(albacea.id, Role.ALBACERIA, `${baseUrl}/api/procesion/admin/papeletas/999999999/pdf`)).status, 404);
   } finally {
     await borrarUsuarioPrueba(albacea.id);
-    await e.recoger();
-  }
-});
-
-test('el correo de la papeleta lleva el PDF adjunto', async (t) => {
-  if (!dbDisponible) return t.skip(SIN_DB);
-  const e = await escenario();
-  const enviados: Parameters<TransporteDeCorreo['sendMail']>[0][] = [];
-  ponerTransporte({ sendMail: async (c) => { enviados.push(c); return {}; } });
-  try {
-    await ZonasService.mandarPapeleta(e.papeleta.id);
-    // El correo no se espera (la mesa no se para por él): se espera aquí a que salga.
-    for (let i = 0; i < 50 && enviados.length === 0; i++) await new Promise((r) => setTimeout(r, 20));
-    assert.equal(enviados.length, 1);
-    const adjunto = (enviados[0].attachments ?? []).find((a) => 'content' in a);
-    assert.ok(adjunto && 'content' in adjunto, 'lleva un archivo adjunto');
-    assert.match(adjunto.filename, /^papeleta-\d{4}-\d{4}\.pdf$/);
-    assert.equal(adjunto.contentType, 'application/pdf');
-    assert.equal(adjunto.content.subarray(0, 5).toString(), '%PDF-');
-    assert.match(enviados[0].html, /Le adjuntamos su papeleta en PDF/);
-  } finally {
-    ponerTransporte(undefined);
     await e.recoger();
   }
 });

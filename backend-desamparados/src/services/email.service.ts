@@ -1,7 +1,6 @@
 /**
- * Los correos que manda la casa: recuperar la contraseña, la papeleta de
- * sitio, la confirmación de un alta, el aviso a Secretaría de una solicitud
- * nueva, su aprobación o rechazo, la baja, la apertura de las papeletas, el
+ * Los correos que manda la casa: recuperar la contraseña, la confirmación
+ * de un alta, el aviso a Secretaría de una solicitud nueva, su aprobación o rechazo, la baja, la apertura de las papeletas, el
  * recordatorio de una papeleta sin recoger, los avisos de dinero (la cuenta
  * bancaria cambiada, el cargo en cuenta, el justificante de un pago y el pago
  * que se devuelve) y el formulario de contacto.
@@ -9,14 +8,13 @@
  * El texto de los correos a hermanos y donantes es una plantilla que se
  * edita en el CMS (Emails; ver `plantillas-correo.service`): aquí cada correo
  * prepara sus campos ({{nombre}}, {{fecha}}…) y sus bloques fijos (la
- * papeleta, el enlace…), que siguen siendo código para que nadie los rompa.
+ * tabla de un cargo, el enlace…), que siguen siendo código para que nadie los rompa.
  * El aviso interno a Secretaría y el del formulario de contacto no son
  * plantillas: no los lee ningún hermano.
  *
  * Criterio común: asuntos sin emojis y en minúscula normal, saludo según el
  * sexo de la ficha, firma del cargo y nada que el Grupo no haya confirmado.
  */
-import { DatosPapeleta } from '../dtos/email.dto';
 import { ContactoDto } from '../dtos/contacto.dto';
 import { conArticulo, deArticulo, deLaCorporacion, type Articulo } from '../domain/articulos.js';
 import {
@@ -182,72 +180,6 @@ export class EmailService {
       bloques: { secretaria: bloqueDeSecretaria('Atención en Secretaría') },
     });
     return await enviarCorreo(emailDestino, asunto, html, { uso });
-  }
-
-  /**
-   * La papeleta, cuando se recoge en la mesa (con la ropa en las salidas que
-   * la llevan; si no, con el puesto confirmado). El QR no va en el cuerpo, que
-   * muchos clientes de correo esconden o recortan: va en el PDF adjunto, el
-   * mismo que se imprime en la mesa. Lo que la identifica en Secretaría es su
-   * número.
-   */
-  static async enviarPapeleta(emailDestino: string, nombreHermano: string, datosPapeleta: DatosPapeleta, sexo?: Sexo, pdf?: { nombre: string; contenido: Buffer }) {
-    const { negro, burdeos, linea, sobreNegro } = COLORES;
-    const { salida } = datosPapeleta;
-    const donativo = salida.cobro === 'DONATIVO';
-    const nombrePapeleta = salida.nombre;
-    const referencia = datosPapeleta.papeletaId ? `${datosPapeleta.year}-${String(datosPapeleta.papeletaId).padStart(4, '0')}` : null;
-    const celda = (titulo: string, valor: string, columnas = 1) =>
-      `<td ${columnas === 2 ? 'colspan="2"' : 'width="50%"'} valign="top" style="padding: 12px 20px; border-top: 1px solid ${linea};">${rotulo(titulo)}<br><span style="font-size: 16px;">${esc(valor)}</span></td>`;
-
-    const filasExtra = [
-      datosPapeleta.tunica ? celda('Túnica', datosPapeleta.tunica) : '',
-      datosPapeleta.importe ? celda(donativo ? 'Donativo' : 'Limosna abonada', datosPapeleta.importe) : '',
-    ].filter(Boolean);
-
-    // Como la de papel: recuadro negro, cabecera con el año y el número, el
-    // puesto grande y los datos en rejilla.
-    const papeleta = `
-      <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 8px 0 28px 0; border: 1px solid ${negro};">
-        <tr>
-          <td colspan="2" bgcolor="${negro}" style="background-color: ${negro}; padding: 11px 20px;">
-            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0"><tr>
-              <td style="font-family: Georgia, serif; font-size: 15px; font-style: italic; color: #ffffff;">${esc(nombrePapeleta)} ${datosPapeleta.year}</td>
-              ${referencia ? `<td align="right" style="font-family: Georgia, serif; font-size: 14px; color: ${sobreNegro};">N.º ${referencia}</td>` : ''}
-            </tr></table>
-          </td>
-        </tr>
-        <tr>
-          <td colspan="2" style="padding: 20px 20px 18px 20px; border-bottom: 3px solid ${burdeos};">
-            ${rotulo('Puesto')}<br>
-            <span style="font-size: 28px; line-height: 1.25; color: ${burdeos};">${esc(datosPapeleta.puesto) || 'Por asignar'}</span>
-            ${datosPapeleta.tramo ? `<br><span style="font-size: 16px;">${esc(datosPapeleta.tramo)}</span>` : ''}
-          </td>
-        </tr>
-        <tr>${celda('Día', datosPapeleta.fechaSalida)}${celda('Hora de entrada', datosPapeleta.horaSalida)}</tr>
-        <tr>${celda('Acceso', datosPapeleta.accesoPuerta, 2)}</tr>
-        ${filasExtra.length ? `<tr>${filasExtra.join('')}${filasExtra.length === 1 ? `<td style="border-top: 1px solid ${linea};"></td>` : ''}</tr>` : ''}
-        ${datosPapeleta.observaciones ? `<tr><td colspan="2" style="padding: 12px 20px; border-top: 1px dashed ${linea};">${rotulo('Observaciones')}<br><span style="font-size: 15px;">${esc(datosPapeleta.observaciones)}</span></td></tr>` : ''}
-      </table>`;
-
-    const normativa = process.env.NORMATIVA_URL
-      ? parrafo(`Puede consultar la normativa completa de la salida en <a href="${process.env.NORMATIVA_URL}" style="color: ${burdeos};">este enlace</a>.`)
-      : '';
-    const adjunto = parrafo(pdf
-      ? 'Le adjuntamos su papeleta en PDF, con el código que se lee en la puerta del templo. También la tiene en el área de hermanos, en Procesión, para enseñarla desde el móvil.'
-      : 'Conserve este correo: puede enseñarlo en el acceso si se le pide. Su papeleta, con el código que se lee en la puerta, está en el área de hermanos, en Procesión.');
-
-    const { asunto, html, uso } = await PlantillasCorreoService.correo('papeleta', {
-      campos: {
-        saludo: textoDeSaludo(nombreHermano, sexo), nombre: nombreHermano.split(' ')[0], nombre_completo: nombreHermano,
-        salida: salida.nombre, anio: datosPapeleta.year, fecha: datosPapeleta.fechaSalida, hora: datosPapeleta.horaSalida,
-        puesto: datosPapeleta.puesto || 'Por asignar',
-        de_la_salida: deArticulo(salida.articulo, salida.nombre), la_salida: conArticulo(salida.articulo, salida.nombre),
-      },
-      // Las indicaciones las escribe el CMS para cada salida; sin ellas, no hay recuadro.
-      bloques: { papeleta, indicaciones: indicacionesDe(salida), adjunto, normativa: salida.conRopa ? normativa : '' },
-    });
-    return await enviarCorreo(emailDestino, asunto, html, { uso, adjuntos: pdf ? [{ filename: pdf.nombre, content: pdf.contenido, contentType: 'application/pdf' }] : [] });
   }
 
   /**
