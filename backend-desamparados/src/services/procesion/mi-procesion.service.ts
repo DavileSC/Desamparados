@@ -132,7 +132,7 @@ export class MiProcesionService {
         where: { hermanoId_turnoId: { hermanoId, turnoId } }
       });
       const cita = anterior
-        ? await tx.cita.update({ where: { id: anterior.id }, data: { estado: EstadoCita.RESERVADA } })
+        ? await tx.cita.update({ where: { id: anterior.id }, data: { estado: EstadoCita.RESERVADA, recordadaEl: null } })
         : await tx.cita.create({ data: { turnoId, hermanoId, estado: EstadoCita.RESERVADA } });
 
       // Comprueba dentro que no tenga ya solicitud ni papeleta de esta salida.
@@ -331,7 +331,7 @@ export class MiProcesionService {
       // Única por [hermano, turno]: si ya tuvo ese día y lo canceló, se recupera.
       const anterior = await tx.cita.findUnique({ where: { hermanoId_turnoId: { hermanoId: cita.hermanoId, turnoId } } });
       const nueva = anterior
-        ? await tx.cita.update({ where: { id: anterior.id }, data: { estado: EstadoCita.RESERVADA } })
+        ? await tx.cita.update({ where: { id: anterior.id }, data: { estado: EstadoCita.RESERVADA, recordadaEl: null } })
         : await tx.cita.create({ data: { turnoId, hermanoId: cita.hermanoId, estado: EstadoCita.RESERVADA } });
       await tx.solicitud.update({ where: { id: solicitud.id }, data: { citaId: nueva.id } });
       return { solicitud, antes: { citaId: cita.id, turnoId: cita.turnoId, estado: cita.estado }, nueva };

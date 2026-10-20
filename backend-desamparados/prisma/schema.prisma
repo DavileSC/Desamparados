@@ -191,6 +191,7 @@ model User {
 
   // Móviles que reciben los avisos del área de hermanos (ver MovilDeAvisos).
   movilesDeAvisos MovilDeAvisos[]
+  avisosPersonales AvisoPersonal[]
 
   // Registro de auditoría de las acciones que realiza este usuario (staff)
   auditLogs AuditLog[]
@@ -428,6 +429,8 @@ model Cita {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  /// Cuándo se le recordó la víspera. Vuelve a null si cambia de día.
+  recordadaEl DateTime?
 
   // Restricción: Un hermano solo sale una vez por turno
   @@unique([hermanoId, turnoId])
@@ -1082,6 +1085,26 @@ model MovilDeAvisos {
   usadoEn      DateTime?
 
   @@index([userId])
+}
+
+/// Lo que se le manda a una cuenta en concreto y no a todos (el justificante
+/// de un pago, el recordatorio de su cita): se lee en la página Avisos del
+/// área y llega al móvil, o por correo si la cuenta no tiene móvil. Guarda la
+/// carta entera, la misma que iría por correo.
+model AvisoPersonal {
+  id       Int      @id @default(autoincrement())
+  userId   Int
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// La clave del correo (`shared/usos-de-correo.json`).
+  uso      String   @db.VarChar(60)
+  asunto   String   @db.VarChar(200)
+  /// Lo que se lee en la lista y en el aviso del móvil.
+  resumen  String   @db.VarChar(300)
+  html     String   @db.LongText
+  creadoEn DateTime @default(now())
+
+  @@index([userId, creadoEn])
+  @@index([creadoEn])
 }
 
 // Intentos fallidos con bloqueo (login por red y por correo, 2FA, cambio de

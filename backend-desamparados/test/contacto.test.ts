@@ -209,16 +209,25 @@ describe('EmailService', () => {
   });
 
   test('el recordatorio de ausencia nombra su salida y no habla de Estación de Penitencia', async () => {
-    const general = transporteFalso();
-    ponerTransporte(general);
-    process.env.EMAIL_USER = 'secretaria@example.es';
+    const correo = await EmailService.correoRecordatorioAusencia('Ana', 'lunes, 4 de octubre', { nombre: 'Rosario vespertino', articulo: 'el' }, 'MUJER');
 
-    await EmailService.enviarRecordatorioAusencia('hermano@example.es', 'Ana', 'lunes, 4 de octubre', { nombre: 'Rosario vespertino', articulo: 'el' }, 'MUJER');
-
-    const [correo] = general.enviados;
     assert.doesNotMatch(correo.html, /Estación de Penitencia|papeleta de sitio/);
-    assert.doesNotMatch(correo.subject, /papeleta de sitio/);
+    assert.doesNotMatch(correo.asunto, /papeleta de sitio/);
     assert.match(correo.html, /papeleta del Rosario vespertino/);
+  });
+
+  test('el recordatorio de la cita junta las fichas de la cuenta y dice el día y la hora', async () => {
+    const correo = await EmailService.correoRecordatorioCita('Ana', 'MUJER', {
+      fichas: ['Ana Ruiz', 'Pablo Ruiz'], fechaCita: 'lunes, 8 de marzo', horario: 'de 19:00 a 21:00',
+      salida: { nombre: 'Procesión Magna', articulo: 'la' },
+    });
+
+    assert.equal(correo.asunto, 'Mañana, recogida de la papeleta de la Procesión Magna');
+    assert.match(correo.html, /mañana, lunes, 8 de marzo<\/strong>, de 19:00 a 21:00/);
+    assert.match(correo.html, /Tienen cita:/);
+    assert.match(correo.html, /Ana Ruiz[\s\S]*Pablo Ruiz/);
+    // El aviso del móvil: sin el saludo, va directo a lo que importa.
+    assert.match(correo.resumen, /^Le recordamos que mañana, lunes, 8 de marzo/);
   });
 
   // Con la marca de partida (la de las pruebas) no hay imagen de cabecera: la

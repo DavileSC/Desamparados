@@ -1,5 +1,7 @@
 import { manejar } from '../utils/manejar';
 import { AvisosHermanosService, MisAvisosService } from '../services/avisos-hermanos.service.js';
+import { AvisosPersonalesService } from '../services/avisos-personales.service.js';
+import { ModulosService } from '../services/modulos.service.js';
 
 export class AvisosHermanosController {
   static listarMoviles = manejar('No se han podido cargar tus móviles', async (req, res) => {
@@ -19,8 +21,25 @@ export class AvisosHermanosController {
     res.status(204).end();
   });
 
+  /**
+   * Los de la Junta (si están los comunicados) y los personales, juntos y los
+   * más recientes primero: para el hermano son todos «sus avisos».
+   */
   static listarAvisos = manejar('No se han podido cargar tus avisos', async (req, res) => {
-    res.status(200).json(await MisAvisosService.listar(req.user!.id));
+    const userId = req.user!.id;
+    const [deLaJunta, personales] = await Promise.all([
+      ModulosService.activo('comunicados').then((si) => (si ? MisAvisosService.listar(userId) : [])),
+      AvisosPersonalesService.listar(userId),
+    ]);
+    const todos = [
+      ...deLaJunta.map((a) => ({ ...a, tipo: 'junta' as const })),
+      ...personales.map((a) => ({ ...a, tipo: 'personal' as const })),
+    ].sort((a, b) => (b.enviadoEl ?? '').localeCompare(a.enviadoEl ?? ''));
+    res.status(200).json(todos.slice(0, 100));
+  });
+
+  static obtenerAvisoPersonal = manejar('No se ha podido cargar el aviso', async (req, res) => {
+    res.status(200).json(await AvisosPersonalesService.obtener(req.user!.id, Number(req.params.id)));
   });
 
   static obtenerAviso = manejar('No se ha podido cargar el aviso', async (req, res) => {

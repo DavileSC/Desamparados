@@ -14,10 +14,10 @@
 import db from '../../config/db';
 import { Cingulo, EstadoCita, EstadoPago, EstadoSolicitud, MetodoPago, OrigenSolicitud, Prisma } from '@prisma/client';
 import { EmailService } from '../email.service';
+import { AvisosPersonalesService } from '../avisos-personales.service.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from '../auditoria.service';
 import { devolverCobroEnTransaccion, idCategoriaDevoluciones, retirarPapeletaEnTransaccion } from '../recibos/comunes.js';
 import { HttpError, NotFoundError } from '../../utils/error.handle';
-import { enmascararEmail } from '../../utils/log-privacidad.js';
 import { puedeTransicionar } from '../../domain/recibo-estados.js';
 import { conceptoDeSalida, tipoReciboDe } from '../../domain/salidas.js';
 import { aArticulo, articuloDe, deArticulo } from '../../domain/articulos.js';
@@ -448,22 +448,26 @@ export class PapeletasService {
       select: { id: true }
     })).map(c => c.id));
 
+    // Como aviso personal y por la cola: al móvil si la cuenta lo tiene, y
+    // los correos con el tope del día (antes salían todos de golpe).
+    const filas = [];
     for (const cita of ausentes) {
       // Solo a fichas activas: la baja no cancela lo ya pagado y su cita
       // sigue en pie, y «pida una cita nueva» llegaba a la familia de un difunto.
       if (marcadas.has(cita.id) && cita.hermano?.activo && cita.hermano.user?.email) {
         const fechaStr = cita.turno.fecha.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Madrid' });
-        // Importante añadir 'await' para que no se sature el servidor si hay 500 emails
-        await EmailService.enviarRecordatorioAusencia(
-          cita.hermano.user.email,
+        const correo = await EmailService.correoRecordatorioAusencia(
           cita.hermano.nombre,
           fechaStr,
           { nombre: cita.turno.salida.nombre, articulo: articuloDe(cita.turno.salida) },
           cita.hermano.sexo
-        ).catch(() => console.error(`Error enviando email a ${enmascararEmail(cita.hermano.user.email)}`));
+        );
+        filas.push({ userId: cita.hermano.user.id, email: cita.hermano.user.email, correo });
       }
     }
+    const dia = fechaLimite.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Madrid' });
+    await AvisosPersonalesService.ponerEnCola(`sin-recoger:${fechaLimite.toISOString()}`, `Papeleta sin recoger · ${dia}`, filas);
 
-    return { message: `Se han procesado ${count} ausencias. Citas actualizadas a NO_PRESENTADO y correos enviados.`, procesadas: count };
+    return { message: `Se han procesado ${count} ausencias. Citas actualizadas a NO_PRESENTADO y avisos enviados.`, procesadas: count };
   }
 }

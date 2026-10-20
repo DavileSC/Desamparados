@@ -22,6 +22,7 @@ import { ZonasService } from '../procesion/zonas.service.js';
 import { DonativoService } from './donativo.service.js';
 import { aCentimos, claveDelCobro, urlDelAviso, type InicioDePago, type MetodoEnLinea } from './comunes.js';
 import { EmailService } from '../email.service.js';
+import { AvisosPersonalesService } from '../avisos-personales.service.js';
 import { fechaYHoraParaCorreo } from '../../domain/fecha-y-hora.js';
 import { eurosDeCentimos } from '../../utils/euros.js';
 
@@ -105,7 +106,8 @@ async function avisarDeLaDevolucion(p: PagoGuardado, centimos: number) {
 
 /**
  * El justificante de lo pagado desde el área de hermanos: cada recibo con la
- * ficha de quien es. Nunca lanza: el pago ya está cobrado y apuntado.
+ * ficha de quien es. Va como aviso personal (al móvil, o por correo si no
+ * tiene). Nunca lanza: el pago ya está cobrado y apuntado.
  */
 async function mandarJustificante(p: PagoGuardado, userId: number, cobrados: { hermanoId: number; concepto: string; importe: number }[], centimos: number) {
   try {
@@ -115,13 +117,14 @@ async function mandarJustificante(p: PagoGuardado, userId: number, cobrados: { h
     ]);
     if (!cuenta?.email || cobrados.length === 0) return;
     const nombreDe = new Map(fichas.map((f) => [f.id, `${f.nombre} ${f.apellidos ?? ''}`.trim()]));
-    await EmailService.enviarJustificantePago(cuenta.email, cuenta.nombre, cuenta.hermanos[0]?.sexo ?? undefined, {
+    const correo = await EmailService.correoJustificantePago(cuenta.nombre, cuenta.hermanos[0]?.sexo ?? undefined, {
       total: eurosDeCentimos(centimos),
       metodo: p.metodo === 'BIZUM' ? 'Bizum' : 'tarjeta',
       fecha: fechaYHoraParaCorreo(new Date()),
       pedido: p.pedido ?? String(p.id),
       lineas: cobrados.map((c) => ({ concepto: c.concepto, detalle: nombreDe.get(c.hermanoId), importe: eurosDeCentimos(aCentimos(c.importe)) })),
     });
+    await AvisosPersonalesService.mandar({ userId, email: cuenta.email }, correo);
   } catch (e) {
     console.error(`[Pagos] No se ha podido mandar el justificante del pedido ${p.pedido}`, e);
   }

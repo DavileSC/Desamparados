@@ -598,7 +598,7 @@
       "clave": "papeleta_sin_recoger",
       "grupo": "Procesión",
       "nombre": "Papeleta sin recoger",
-      "descripcion": "A quien tenía cita para recoger la papeleta y no pasó.",
+      "descripcion": "A quien tenía cita para recoger la papeleta y no pasó. Va como aviso personal: al móvil si la cuenta lo tiene activado y, si no, por correo.",
       "antetitulo": "{{salida}}",
       "firma": "La Secretaría",
       "campos": [
@@ -653,6 +653,78 @@
         "asunto": "Recordatorio: su papeleta {{de_la_salida}} está sin recoger",
         "titulo": "Su papeleta sigue sin recoger",
         "cuerpo": "{{saludo}}\n\nTenía cita el **{{fecha_cita}}** para recoger su papeleta {{de_la_salida}} y, según nuestros registros, no pudo pasar.\n\nLa organización del cortejo depende de que cada hermano recoja su papeleta dentro del plazo de reparto. Si quiere salir este año, pase a recogerla en cuanto pueda, o pida una cita nueva desde el área de hermanos.\n\n> **Qué llevar**\n> - DNI.\n> - El recibo de la cuota anual, si la tiene pendiente.\n\n[[secretaria]]\n\n[[boton]]\n\nSi ya la ha recogido en las últimas horas, no haga caso de este mensaje.",
+        "despedida": "Esperamos contar con su presencia acompañando a {{titular}}."
+      }
+    },
+    {
+      "clave": "cita_manana",
+      "grupo": "Procesión",
+      "nombre": "Recordatorio de la cita",
+      "descripcion": "La víspera de la cita para recoger la papeleta, a cada cuenta con las fichas que tienen cita ese día. Va como aviso personal: al móvil si la cuenta lo tiene activado y, si no, por correo.",
+      "antetitulo": "{{salida}}",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "etiqueta": "Saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de quien lleva la cuenta",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "etiqueta": "Nombre",
+          "ayuda": "El nombre de quien lleva la cuenta",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "salida",
+          "etiqueta": "Salida",
+          "ayuda": "El nombre de la salida",
+          "ejemplo": "Procesión de Gloria"
+        },
+        {
+          "clave": "fecha_cita",
+          "etiqueta": "Día de la cita",
+          "ayuda": "El día de la cita (mañana)",
+          "ejemplo": "lunes, 8 de marzo"
+        },
+        {
+          "clave": "horario",
+          "etiqueta": "Horario",
+          "ayuda": "Las horas del reparto ese día",
+          "ejemplo": "de 19:00 a 21:00"
+        },
+        {
+          "clave": "de_la_salida",
+          "etiqueta": "Salida, con «de la»",
+          "ayuda": "«de» y la salida con su artículo, contraído si toca",
+          "ejemplo": "de la Procesión de Gloria"
+        },
+        {
+          "clave": "la_salida",
+          "etiqueta": "Salida, con «la»",
+          "ayuda": "La salida con su artículo",
+          "ejemplo": "la Procesión de Gloria"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "fichas",
+          "ayuda": "Las fichas de la cuenta que tienen cita ese día"
+        },
+        {
+          "clave": "secretaria",
+          "ayuda": "Dirección, horario y contacto de Secretaría"
+        },
+        {
+          "clave": "boton",
+          "ayuda": "El botón para ir al área de hermanos"
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Mañana, recogida de la papeleta {{de_la_salida}}",
+        "titulo": "Mañana le esperamos",
+        "cuerpo": "{{saludo}}\n\nLe recordamos que **mañana, {{fecha_cita}}**, {{horario}}, tiene cita para recoger la papeleta {{de_la_salida}}.\n\n[[fichas]]\n\n> **Qué llevar**\n> - DNI.\n> - El recibo de la cuota anual, si la tiene pendiente.\n\n[[secretaria]]\n\nSi no puede venir, cambie el día desde el área de hermanos.\n\n[[boton]]",
         "despedida": "Esperamos contar con su presencia acompañando a {{titular}}."
       }
     },
@@ -870,7 +942,7 @@
       "clave": "justificante_pago",
       "grupo": "Cuotas y pagos",
       "nombre": "Justificante de un pago en línea",
-      "descripcion": "Cuando un hermano paga desde su área, con tarjeta o Bizum, sus cuotas o lo de una salida.",
+      "descripcion": "Cuando un hermano paga desde su área, con tarjeta o Bizum, sus cuotas o lo de una salida. Va como aviso personal: al móvil si la cuenta lo tiene activado y, si no, por correo.",
       "antetitulo": "Tesorería",
       "firma": "Tesorería",
       "campos": [

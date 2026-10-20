@@ -15,6 +15,7 @@ import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { EmailService } from '../src/services/email.service.js';
+import { AvisosPersonalesService } from '../src/services/avisos-personales.service.js';
 import { ReciboService } from '../src/services/recibo.service.js';
 import { devueltosPendientes, idCategoriaDeRecibos } from '../src/services/recibos/comunes.js';
 import { MiProcesionService } from '../src/services/procesion/mi-procesion.service.js';
@@ -34,7 +35,9 @@ let dbDisponible = false;
 let server: Server;
 let baseUrl: string;
 
-const recordatoriosEnviados = mock.method(EmailService, 'enviarRecordatorioAusencia', async () => undefined);
+// El aviso se compone de verdad; ponerlo en la cola, no: dejaría filas en la cola de la base de pruebas.
+const recordatoriosEnviados = mock.method(EmailService, 'correoRecordatorioAusencia');
+mock.method(AvisosPersonalesService, 'ponerEnCola', async () => 0);
 
 before(async () => {
   server = app.listen(0);

@@ -134,8 +134,9 @@ hermanoRouter.use('/mis-avisos-movil', conModulo('avisos-a-los-hermanos'));
 hermanoRouter.get('/mis-avisos-movil', AvisosHermanosController.listarMoviles);
 hermanoRouter.post('/mis-avisos-movil', validate(apuntarMovilDeAvisosSchema), AvisosHermanosController.apuntarMovil);
 hermanoRouter.delete('/mis-avisos-movil/:id', validate(conIdSchema), AvisosHermanosController.quitarMovil);
-hermanoRouter.use('/mis-avisos', conModulo('comunicados'));
+// Los personales (justificantes, recordatorios) no dependen de los comunicados: solo los de la Junta.
 hermanoRouter.get('/mis-avisos', AvisosHermanosController.listarAvisos);
-hermanoRouter.get('/mis-avisos/:id', validate(conIdSchema), AvisosHermanosController.obtenerAviso);
+hermanoRouter.get('/mis-avisos/personales/:id', validate(conIdSchema), AvisosHermanosController.obtenerAvisoPersonal);
+hermanoRouter.get('/mis-avisos/:id', conModulo('comunicados'), validate(conIdSchema), AvisosHermanosController.obtenerAviso);
 
 export { hermanoRouter as hermanoRoutes };

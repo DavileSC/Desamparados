@@ -144,8 +144,10 @@ export class MisDatosService {
         }
       });
 
-      // 2. Backup codes del 2FA fuera
+      // 2. Backup codes del 2FA fuera, y los avisos personales: llevan
+      // nombres, importes y la carta entera.
       await tx.twoFactorBackupCode.deleteMany({ where: { userId } });
+      await tx.avisoPersonal.deleteMany({ where: { userId } });
 
       // 3. Fichas, según su estado (el mismo criterio que la retirada de un
       // perfil desde el área de hermanos, `deleteProfileIfOwned`). Antes todas

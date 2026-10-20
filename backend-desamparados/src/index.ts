@@ -121,6 +121,9 @@ void import('./services/comunicados.service.js')
   .then(() => import('./services/correos/cola.js'))
   .then(({ arrancarCola }) => arrancarCola());
 
+// La víspera de cada día de reparto, el recordatorio de la cita a quien la tiene.
+void import('./services/procesion/recordatorio-citas.service.js').then(({ arrancarRecordatorios }) => arrancarRecordatorios());
+
 // Aviso, no barrera. Un despliegue que se salte la conversión a bloques no
 // falla: el CMS abre, `mezclarConDefectos` descarta las claves de la forma
 // antigua y el Recorrido, la Titular y la Historia vuelven a los textos de

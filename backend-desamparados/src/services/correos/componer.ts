@@ -101,10 +101,12 @@ const aTexto = (campos: Relleno['campos'] = {}, identidadInstalacion?: Identidad
 });
 
 /** Compone el correo de un uso con la plantilla dada. */
-export function componer(uso: UsoDeCorreo, plantilla: PlantillaDeCorreo, r: Relleno = {}): { asunto: string; html: string; uso: string } {
+export function componer(uso: UsoDeCorreo, plantilla: PlantillaDeCorreo, r: Relleno = {}): { asunto: string; html: string; uso: string; resumen: string } {
   const campos = aTexto(r.campos, r.identidad);
   const contenido = plantilla.contenido.map((x) => piezaHtml(x, campos, r.bloques ?? {})).join('');
   const despedida = rellenar(plantilla.despedida, campos).trim();
+  // En texto: lo que enseña la bandeja, y el aviso al móvil si va como aviso personal.
+  const resumen = resumenDe(plantilla, campos);
   return {
     // La clave del uso viaja con el correo: si el envío falla, es lo que se
     // apunta en la auditoría en vez del asunto, que puede llevar un nombre.
@@ -114,11 +116,12 @@ export function componer(uso: UsoDeCorreo, plantilla: PlantillaDeCorreo, r: Rell
     html: maquetar({
       titulo: rellenar(plantilla.titulo, campos),
       antetitulo: rellenar(uso.antetitulo, campos),
-      resumen: resumenDe(plantilla, campos),
+      resumen,
       contenido: contenido + firma(despedida || null, uso.firma, r.identidad),
       para: r.para,
       identidad: r.identidad,
     }),
+    resumen,
   };
 }
 

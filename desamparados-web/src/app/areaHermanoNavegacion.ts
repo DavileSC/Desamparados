@@ -26,6 +26,6 @@ export const entradasDelArea: EntradaArea[] = [
   { label: 'Mi familia', href: '/area-hermano/familia', icono: FamilyRestroomIcon, modulo: 'nucleo' },
   { label: 'Procesión', href: '/area-hermano/procesion', icono: DirectionsWalkIcon, modulo: 'procesion' },
   { label: 'Recibos', href: '/area-hermano/recibos', icono: ReceiptIcon, modulo: 'nucleo' },
-  // Los avisos de la Junta enteros: el aviso del móvil solo trae dos líneas.
-  { label: 'Avisos', href: '/area-hermano/avisos', icono: CampaignIcon, modulo: 'comunicados' },
+  // Los avisos enteros, de la Junta y personales: el aviso del móvil solo trae dos líneas.
+  { label: 'Avisos', href: '/area-hermano/avisos', icono: CampaignIcon, modulo: 'nucleo' },
 ]

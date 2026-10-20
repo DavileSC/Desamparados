@@ -1,7 +1,8 @@
 /**
  * Los correos que manda la casa: recuperar la contraseña, la confirmación
- * de un alta, el aviso a Secretaría de una solicitud nueva, su aprobación o rechazo, la baja, la apertura de las papeletas, el
- * recordatorio de una papeleta sin recoger, los avisos de dinero (la cuenta
+ * de un alta, el aviso a Secretaría de una solicitud nueva, su aprobación o
+ * rechazo, la baja, la apertura de las papeletas, el recordatorio de la cita y
+ * el de una papeleta sin recoger, los avisos de dinero (la cuenta
  * bancaria cambiada, el cargo en cuenta, el justificante de un pago y el pago
  * que se devuelve) y el formulario de contacto.
  *
@@ -145,13 +146,15 @@ export class EmailService {
     });
   }
 
-  /** El justificante de lo pagado en línea desde el área de hermanos. */
-  static async enviarJustificantePago(emailDestino: string, nombre: string, sexo: Sexo | undefined, d: { total: string; metodo: string; fecha: string; pedido: string; lineas: LineaDeImporte[] }) {
-    const { asunto, html, uso } = await PlantillasCorreoService.correo('justificante_pago', {
+  /**
+   * El justificante de lo pagado en línea desde el área de hermanos, sin
+   * enviar: va como aviso personal (al móvil, o por correo si no tiene).
+   */
+  static async correoJustificantePago(nombre: string, sexo: Sexo | undefined, d: { total: string; metodo: string; fecha: string; pedido: string; lineas: LineaDeImporte[] }) {
+    return await PlantillasCorreoService.correo('justificante_pago', {
       campos: { saludo: textoDeSaludo(nombre, sexo), nombre, total: d.total, metodo: d.metodo, fecha: d.fecha, pedido: d.pedido },
       bloques: { detalle: tablaDeImportes(d.lineas, d.total) },
     });
-    return await enviarCorreo(emailDestino, asunto, html, { uso });
   }
 
   /**
@@ -372,17 +375,35 @@ export class EmailService {
    * A quien tenía cita para recoger la papeleta y no pasó. `fechaCita` es el
    * día de la cita, ya escrito para leerlo («lunes, 8 de marzo»).
    */
-  static async enviarRecordatorioAusencia(emailDestino: string, nombreHermano: string, fechaCita: string, salida: { nombre: string; articulo: Articulo }, sexo?: Sexo) {
+  static async correoRecordatorioAusencia(nombreHermano: string, fechaCita: string, salida: { nombre: string; articulo: Articulo }, sexo?: Sexo) {
     // Con el nombre de la salida y no «papeleta de sitio» ni «Estación de
     // Penitencia»: hay salidas sin ropa (el Rosario) a las que no les cuadra.
-    const { asunto, html, uso } = await PlantillasCorreoService.correo('papeleta_sin_recoger', {
+    return await PlantillasCorreoService.correo('papeleta_sin_recoger', {
       campos: {
         saludo: textoDeSaludo(nombreHermano, sexo), nombre: nombreHermano, salida: salida.nombre, fecha_cita: fechaCita,
         de_la_salida: deArticulo(salida.articulo, salida.nombre), la_salida: conArticulo(salida.articulo, salida.nombre),
       },
       bloques: { secretaria: bloqueDeSecretaria('Horario de reparto'), boton: boton('Ir al área de hermanos', urlDeLaWeb('/area-hermano/procesion')) },
     });
-    return await enviarCorreo(emailDestino, asunto, html, { uso });
+  }
+
+  /**
+   * La víspera de la cita para recoger la papeleta: uno por cuenta, con las
+   * fichas que tienen cita ese día (una familia recibe uno, no uno por ficha).
+   */
+  static async correoRecordatorioCita(nombreCuenta: string, sexo: Sexo | undefined, d: { fichas: string[]; fechaCita: string; horario: string; salida: { nombre: string; articulo: Articulo } }) {
+    const { salida } = d;
+    return await PlantillasCorreoService.correo('cita_manana', {
+      campos: {
+        saludo: textoDeSaludo(nombreCuenta, sexo), nombre: nombreCuenta, salida: salida.nombre, fecha_cita: d.fechaCita, horario: d.horario,
+        de_la_salida: deArticulo(salida.articulo, salida.nombre), la_salida: conArticulo(salida.articulo, salida.nombre),
+      },
+      bloques: {
+        fichas: parrafo(d.fichas.length > 1 ? 'Tienen cita:' : 'Tiene cita:', 'margin-bottom: 6px;') + lista(d.fichas),
+        secretaria: bloqueDeSecretaria('Horario de reparto'),
+        boton: boton('Ir al área de hermanos', urlDeLaWeb('/area-hermano/procesion')),
+      },
+    });
   }
 
   static async enviarContacto(datosContacto: ContactoDto): Promise<boolean> {

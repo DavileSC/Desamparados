@@ -79,7 +79,7 @@ export type ClaveDeUso =
   | 'cuenta_bancaria_cambiada'
   | 'solicitud_recibida' | 'solicitud_no_tramitada' | 'alta_aprobada' | 'solicitud_rechazada'
   | 'baja' | 'baja_impago' | 'apertura'
-  | 'papeleta_sin_recoger' | 'donativo_gracias' | 'apadrinamiento' | 'pedido_tienda' | 'certificado_donativos'
+  | 'papeleta_sin_recoger' | 'cita_manana' | 'donativo_gracias' | 'apadrinamiento' | 'pedido_tienda' | 'certificado_donativos'
   | 'cargo_domiciliado' | 'justificante_pago' | 'pago_devuelto'
   | 'pesame' | 'sufragio' | 'libre';
 
