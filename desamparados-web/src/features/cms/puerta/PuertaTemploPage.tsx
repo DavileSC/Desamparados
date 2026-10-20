@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import {
-  Alert, Box, Button, Checkbox, CircularProgress, FormControlLabel, LinearProgress, List, ListItem, ListItemText, Paper, Stack, Tab, Tabs, TextField, Typography,
+  Alert, Box, Button, Checkbox, CircularProgress, Dialog, DialogContent, DialogTitle, FormControlLabel, InputAdornment, LinearProgress, Paper, Stack, Tab, Tabs, TextField, Typography,
+  useMediaQuery, useTheme,
 } from '@mui/material'
+import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
+import SearchIcon from '@mui/icons-material/Search'
 import { Helmet } from 'react-helmet-async'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import CabeceraSeccion from '../CabeceraSeccion'
@@ -83,16 +87,19 @@ interface FamiliaEnPuerta {
 }
 
 /**
- * La puerta del templo: los diputados leen con el móvil el QR de la papeleta
- * de cada hermano al entrar, y todos ven en vivo cuántos faltan por tramo.
- * Quien llega sin la papeleta se busca en «Faltan» y se marca a mano.
+ * La puerta del templo: el listado de los que faltan por entrar, para buscar
+ * a cada uno por su nombre y apuntarlo. Manda el listado (20-10-2026): lo
+ * normal será buscar a mano. El QR de la papeleta se lee aparte, con «Leer
+ * QR», con la cámara del móvil o con un lector de mano. Todos ven en vivo
+ * cuántos faltan por tramo.
  */
 export default function PuertaTemploPage() {
   const cliente = useQueryClient()
   const { salidas, salida, elegir, cargando, error: errorSalidas } = useSalidaElegida('puerta.salida')
   // Mientras llegan las salidas, la consulta espera (`enabled`).
   const slug = salida?.slug ?? ''
-  const [camara, setCamara] = useState(false)
+  const [qrAbierto, setQrAbierto] = useState(false)
+  const enMovil = useMediaQuery(useTheme().breakpoints.down('sm'))
   const [lectura, setLectura] = useState<Lectura | null>(null)
   const [familia, setFamilia] = useState<FamiliaEnPuerta | null>(null)
   // Los de la familia que acaban de entrar, para decirlo como una lectura más.
@@ -181,8 +188,11 @@ export default function PuertaTemploPage() {
   }, [mostrar, slug])
 
   const aMano = async (p: PapeletaEnPuerta) => {
-    try { mostrar(await entrarAMano(p.id, slug)) }
-    catch (err: unknown) { setError(mensaje(err, 'No se ha podido apuntar la entrada.')) }
+    try {
+      mostrar(await entrarAMano(p.id, slug))
+      // Apuntado el que se buscaba: el buscador, vacío para el siguiente.
+      setBuscar('')
+    } catch (err: unknown) { setError(mensaje(err, 'No se ha podido apuntar la entrada.')) }
   }
 
   const deshacer = async (p: PapeletaEnPuerta) => {
@@ -198,6 +208,8 @@ export default function PuertaTemploPage() {
   }, [estado, buscar])
 
   const cambiarSalida = (nueva: string) => { elegir(nueva); setLectura(null); setFamilia(null); setEntraron(null); setError(null) }
+  const abrirQr = () => { setLectura(null); setEntraron(null); setError(null); setQrAbierto(true) }
+  const cerrarQr = () => { setQrAbierto(false); setFamilia(null); setPausado(false) }
   const tono = lectura && lectura.veredicto !== 'FAMILIA' ? TEXTO[lectura.veredicto] : null
   const porEntrar = familia ? familia.papeletas.filter(puedeEntrar).length : 0
   const familiaDeBaja = familia ? familia.papeletas.some((p) => p.deBaja && !p.entradaEl) : false
@@ -210,6 +222,39 @@ export default function PuertaTemploPage() {
     </>
   }
 
+  // El resultado, grande: se lee de un vistazo con la papeleta todavía en la
+  // mano. Sale donde se está mirando: en la ventana del QR, o sobre el listado.
+  const resultado = (
+    <Box role="status" aria-live="assertive">
+      {lectura && tono && (
+        <Alert severity={tono.tono} variant="filled" sx={{ mb: 2, '& .MuiAlert-message': { width: '100%' } }}
+          action={lectura.veredicto === 'ENTRA' && lectura.papeleta ? <Button color="inherit" size="small" onClick={() => void deshacer(lectura.papeleta!)}>Deshacer</Button> : undefined}>
+          <Typography sx={{ fontSize: 22, fontWeight: 700, lineHeight: 1.2 }}>{titulo(lectura, tono)}</Typography>
+          {lectura.papeleta && <Typography sx={{ fontSize: 19, fontWeight: 600, mt: 0.5 }}>{nombre(lectura.papeleta)}{lectura.papeleta.numeroHermano ? ` · n.º ${lectura.papeleta.numeroHermano}` : ''}</Typography>}
+          <Typography sx={{ mt: 0.25 }}>{explicacion(lectura, salida, salidas, estado?.year)}</Typography>
+        </Alert>
+      )}
+      {entraron && entraron.length > 0 && (
+        <Alert severity="success" variant="filled" sx={{ mb: 2, '& .MuiAlert-message': { width: '100%' } }}>
+          <Typography sx={{ fontSize: 22, fontWeight: 700, lineHeight: 1.2 }}>{entraron.length === 1 ? 'Adelante' : `Adelante, los ${entraron.length}`}</Typography>
+          {entraron.map((p) => <Typography key={p.id} sx={{ fontSize: 17, fontWeight: 600, mt: 0.25 }}>{nombre(p)} <Box component="span" sx={{ fontWeight: 400, fontSize: 15 }}>· {sitio(p)}</Box></Typography>)}
+        </Alert>
+      )}
+      {error && <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>{error}</Alert>}
+    </Box>
+  )
+
+  /** Una fila del listado: alta de sobra para el dedo, con su botón a la derecha. */
+  const fila = (p: PapeletaEnPuerta, detalle: string, accion: ReactNode) => (
+    <Box component="li" key={p.id} sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.25, minHeight: 64, borderBottom: 1, borderColor: 'divider' }}>
+      <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+        <Typography sx={{ fontSize: 17, fontWeight: 600, overflowWrap: 'anywhere' }}>{nombre(p)}</Typography>
+        <Typography variant="body2" color="text.secondary">{detalle}</Typography>
+      </Box>
+      {accion}
+    </Box>
+  )
+
   return <>
     <Helmet><title>{`Puerta del templo | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion
@@ -219,29 +264,76 @@ export default function PuertaTemploPage() {
       <SelectorSalida salidas={salidas} valor={slug} onChange={cambiarSalida} />
     </CabeceraSeccion>
 
-    <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 5fr) minmax(0, 4fr)' }, alignItems: 'start' }}>
-      <Stack spacing={2}>
-        {/* El resultado, grande: se lee de un vistazo con la papeleta todavía en la mano. */}
-        <Box role="status" aria-live="assertive">
-          {lectura && tono && (
-            <Alert severity={tono.tono} variant="filled" sx={{ '& .MuiAlert-message': { width: '100%' } }}
-              action={lectura.veredicto === 'ENTRA' && lectura.papeleta ? <Button color="inherit" size="small" onClick={() => void deshacer(lectura.papeleta!)}>Deshacer</Button> : undefined}>
-              <Typography sx={{ fontSize: 22, fontWeight: 700, lineHeight: 1.2 }}>{titulo(lectura, tono)}</Typography>
-              {lectura.papeleta && <Typography sx={{ fontSize: 19, fontWeight: 600, mt: 0.5 }}>{nombre(lectura.papeleta)}{lectura.papeleta.numeroHermano ? ` · n.º ${lectura.papeleta.numeroHermano}` : ''}</Typography>}
-              <Typography sx={{ mt: 0.25 }}>{explicacion(lectura, salida, salidas, estado?.year)}</Typography>
-            </Alert>
+    <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) 280px' }, alignItems: 'start' }}>
+      <Paper component="section" aria-label="Listado de la puerta" sx={{ p: { xs: 2, md: 2.5 } }}>
+        <Stack direction="row" spacing={1.5} sx={{ mb: 2, alignItems: 'stretch' }}>
+          <TextField
+            fullWidth
+            label="Buscar por nombre, número o tramo"
+            value={buscar}
+            onChange={(e) => { setBuscar(e.target.value); setPestana('faltan') }}
+            slotProps={{
+              input: { startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment>, sx: { fontSize: 18 } },
+              htmlInput: { autoComplete: 'off', spellCheck: false, enterKeyHint: 'search' },
+            }}
+          />
+          <Button variant="outlined" startIcon={<QrCodeScannerIcon />} onClick={abrirQr} sx={{ flexShrink: 0, whiteSpace: 'nowrap', px: { xs: 1.5, sm: 2.5 } }}>
+            Leer QR
+          </Button>
+        </Stack>
+
+        {!qrAbierto && resultado}
+        {errorCarga && !estado && <Alert severity="error">{mensaje(errorCarga, 'No se ha podido cargar la puerta.')}</Alert>}
+
+        {estado && <>
+          <Tabs value={pestana} onChange={(_e, v: 'faltan' | 'ultimas') => setPestana(v)} sx={{ mb: 0.5 }}>
+            <Tab value="faltan" label={`Faltan (${estado.total - estado.dentro})`} />
+            <Tab value="ultimas" label="Últimas entradas" />
+          </Tabs>
+          {pestana === 'faltan' ? (
+            <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
+              {faltan.slice(0, 200).map((p) => fila(p, sitio(p),
+                <Button variant="contained" onClick={() => void aMano(p)} sx={{ flexShrink: 0, minHeight: 44 }}>Ha entrado</Button>))}
+              {faltan.length === 0 && <Typography color="text.secondary" sx={{ py: 2 }}>{buscar ? 'Nadie con ese nombre por entrar.' : 'Ya han entrado todos.'}</Typography>}
+            </Box>
+          ) : (
+            <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
+              {estado.ultimas.map((p) => fila(p, `${p.entradaEl ? hora(p.entradaEl) : ''} · ${sitio(p)}${p.entradaPor ? ` · ${p.entradaPor}` : ''}`,
+                <Button onClick={() => void deshacer(p)} sx={{ flexShrink: 0, minHeight: 44 }}>Deshacer</Button>))}
+              {estado.ultimas.length === 0 && <Typography color="text.secondary" sx={{ py: 2 }}>Todavía no ha entrado nadie.</Typography>}
+            </Box>
           )}
-          {entraron && entraron.length > 0 && (
-            <Alert severity="success" variant="filled" sx={{ '& .MuiAlert-message': { width: '100%' } }}>
-              <Typography sx={{ fontSize: 22, fontWeight: 700, lineHeight: 1.2 }}>{entraron.length === 1 ? 'Adelante' : `Adelante, los ${entraron.length}`}</Typography>
-              {entraron.map((p) => <Typography key={p.id} sx={{ fontSize: 17, fontWeight: 600, mt: 0.25 }}>{nombre(p)} <Box component="span" sx={{ fontWeight: 400, fontSize: 15 }}>· {sitio(p)}</Box></Typography>)}
-            </Alert>
-          )}
-        </Box>
+        </>}
+      </Paper>
+
+      {estado && (
+        <Paper component="section" aria-label="Por tramos" sx={{ p: 2 }}>
+          <Typography component="h2" sx={{ fontWeight: 600, mb: 1.5 }}>Por tramos</Typography>
+          {estado.tramos.length === 0 && <Typography color="text.secondary">No hay papeletas de esta salida todavía.</Typography>}
+          <Stack spacing={1.25}>
+            {estado.tramos.map((t) => (
+              <Box key={t.tramo ?? 'sin-tramo'}>
+                <Stack direction="row" sx={{ mb: 0.25, justifyContent: 'space-between', gap: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{t.tramo ?? 'Sin tramo'}</Typography>
+                  <Typography variant="body2" color="text.secondary">{t.dentro} de {t.total}{t.total > t.dentro ? ` · faltan ${t.total - t.dentro}` : ' · completo'}</Typography>
+                </Stack>
+                <LinearProgress variant="determinate" value={t.total ? (100 * t.dentro) / t.total : 0} aria-label={`${t.tramo ?? 'Sin tramo'}: ${t.dentro} de ${t.total} dentro`} sx={{ height: 8, borderRadius: 4 }} />
+              </Box>
+            ))}
+          </Stack>
+        </Paper>
+      )}
+    </Box>
+
+    {/* El QR, aparte: la cámara solo se abre al pedirla (el iPhone lo exige, y abierta gasta batería). */}
+    <Dialog open={qrAbierto} onClose={cerrarQr} fullScreen={enMovil} fullWidth maxWidth="sm" aria-labelledby="titulo-leer-qr">
+      <DialogTitle id="titulo-leer-qr">Leer papeletas</DialogTitle>
+      <DialogContent>
+        {resultado}
 
         {/* El QR de una familia: el diputado mira quién está y deja pasar a esos. */}
         {familia && (
-          <Paper role="group" aria-label="QR de familia" sx={{ p: 2, border: 2, borderColor: 'success.main' }}>
+          <Paper role="group" aria-label="QR de familia" sx={{ p: 2, mb: 2, border: 2, borderColor: 'success.main' }}>
             <Typography sx={{ fontSize: 20, fontWeight: 700 }}>QR de familia · {familia.papeletas.length} papeletas</Typography>
             <Typography color="text.secondary" sx={{ mt: 0.25, mb: 1 }}>
               {porEntrar > 0 ? 'Desmarca al que no esté: entrará luego con su propia papeleta.'
@@ -281,71 +373,16 @@ export default function PuertaTemploPage() {
             </Stack>
           </Paper>
         )}
-        {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
 
-        {camara
-          ? <>
-            <LectorQr onCodigo={(t) => void leer(t)} pausado={pausado} />
-            <Button variant="outlined" onClick={() => setCamara(false)}>Cerrar la cámara</Button>
-          </>
-          : <Button size="large" variant="contained" onClick={() => setCamara(true)} sx={{ py: 2, fontSize: 18 }}>Abrir la cámara y leer papeletas</Button>}
+        <LectorQr onCodigo={(t) => void leer(t)} pausado={pausado} />
 
         {/* Un lector de mano escribe el código y pulsa Intro: entra por aquí, como escrito a mano. */}
-        <Box component="form" onSubmit={(e) => { e.preventDefault(); void leer(codigo); setCodigo('') }}>
+        <Box component="form" onSubmit={(e) => { e.preventDefault(); void leer(codigo); setCodigo('') }} sx={{ mt: 2 }}>
           <TextField fullWidth size="small" label="Código de la papeleta" value={codigo} onChange={(e) => setCodigo(e.target.value)}
             helperText="Con un lector de mano, o escrito: DSP1.…" slotProps={{ htmlInput: { autoComplete: 'off', autoCapitalize: 'off', spellCheck: false, maxLength: 64 } }} />
         </Box>
-      </Stack>
-
-      <Stack spacing={2}>
-        {errorCarga && !estado && <Alert severity="error">{mensaje(errorCarga, 'No se ha podido cargar la puerta.')}</Alert>}
-        {estado && (
-          <Paper sx={{ p: 2 }}>
-            <Typography component="h2" sx={{ fontWeight: 600, mb: 1.5 }}>Por tramos</Typography>
-            {estado.tramos.length === 0 && <Typography color="text.secondary">No hay papeletas de esta salida todavía.</Typography>}
-            <Stack spacing={1.25}>
-              {estado.tramos.map((t) => (
-                <Box key={t.tramo ?? 'sin-tramo'}>
-                  <Stack direction="row" sx={{ mb: 0.25, justifyContent: 'space-between', gap: 1 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{t.tramo ?? 'Sin tramo'}</Typography>
-                    <Typography variant="body2" color="text.secondary">{t.dentro} de {t.total}{t.total > t.dentro ? ` · faltan ${t.total - t.dentro}` : ' · completo'}</Typography>
-                  </Stack>
-                  <LinearProgress variant="determinate" value={t.total ? (100 * t.dentro) / t.total : 0} aria-label={`${t.tramo ?? 'Sin tramo'}: ${t.dentro} de ${t.total} dentro`} sx={{ height: 8, borderRadius: 4 }} />
-                </Box>
-              ))}
-            </Stack>
-          </Paper>
-        )}
-
-        {estado && (
-          <Paper sx={{ p: 2 }}>
-            <Tabs value={pestana} onChange={(_e, v: 'faltan' | 'ultimas') => setPestana(v)} sx={{ mb: 1 }}>
-              <Tab value="faltan" label={`Faltan (${estado.total - estado.dentro})`} />
-              <Tab value="ultimas" label="Últimas entradas" />
-            </Tabs>
-            {pestana === 'faltan' ? <>
-              <TextField fullWidth size="small" label="Buscar por nombre, número o tramo" value={buscar} onChange={(e) => setBuscar(e.target.value)} sx={{ my: 1 }} />
-              <List dense sx={{ maxHeight: 360, overflow: 'auto' }}>
-                {faltan.slice(0, 200).map((p) => (
-                  <ListItem key={p.id} divider secondaryAction={<Button size="small" onClick={() => void aMano(p)}>Ha entrado</Button>} sx={{ pr: 14 }}>
-                    <ListItemText primary={nombre(p)} secondary={sitio(p)} />
-                  </ListItem>
-                ))}
-                {faltan.length === 0 && <Typography color="text.secondary" sx={{ py: 1 }}>{buscar ? 'Nadie con ese nombre por entrar.' : 'Ya han entrado todos.'}</Typography>}
-              </List>
-            </> : (
-              <List dense>
-                {estado.ultimas.map((p) => (
-                  <ListItem key={p.id} divider secondaryAction={<Button size="small" onClick={() => void deshacer(p)}>Deshacer</Button>} sx={{ pr: 12 }}>
-                    <ListItemText primary={nombre(p)} secondary={`${p.entradaEl ? hora(p.entradaEl) : ''} · ${sitio(p)}${p.entradaPor ? ` · ${p.entradaPor}` : ''}`} />
-                  </ListItem>
-                ))}
-                {estado.ultimas.length === 0 && <Typography color="text.secondary" sx={{ py: 1 }}>Todavía no ha entrado nadie.</Typography>}
-              </List>
-            )}
-          </Paper>
-        )}
-      </Stack>
-    </Box>
+        <Button fullWidth variant="outlined" size="large" onClick={cerrarQr} sx={{ mt: 2 }}>Volver al listado</Button>
+      </DialogContent>
+    </Dialog>
   </>
 }

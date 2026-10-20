@@ -23,6 +23,12 @@ const ESTADO = {
 
 afterEach(() => { vi.unstubAllGlobals(); localStorage.clear(); useAuthStore.setState({ cms: null }) })
 
+/** El código va dentro de «Leer QR»: se abre la ventana si no lo está, y se escribe como un lector de mano. */
+async function escribirCodigo(user: ReturnType<typeof userEvent.setup>, texto: string) {
+  if (!screen.queryByLabelText('Código de la papeleta')) await user.click(screen.getByRole('button', { name: 'Leer QR' }))
+  await user.type(screen.getByLabelText('Código de la papeleta'), texto)
+}
+
 function montar(escaneo: unknown, salidas: Salida[] | 'error' = salidasDePrueba, estado: unknown = ESTADO) {
   const fetch = vi.fn().mockImplementation((url: string, init: RequestInit = {}) => {
     const ruta = String(url)
@@ -54,7 +60,7 @@ describe('PuertaTemploPage', () => {
     const user = userEvent.setup()
     const fetch = montar({ veredicto: 'ENTRA', papeleta: { ...ANA, entradaEl: '2027-04-10T16:00:00.000Z' } })
     await screen.findByText('Luis Mora Paz')
-    await user.type(screen.getByLabelText('Código de la papeleta'), 'DSP1.7.abcdefghijklmnop{Enter}')
+    await escribirCodigo(user, 'DSP1.7.abcdefghijklmnop{Enter}')
     expect(await screen.findByText('Adelante')).toBeInTheDocument()
     expect(screen.getByText('Ana Ruiz Gil · n.º 120')).toBeInTheDocument()
     const envio = fetch.mock.calls.find(([u]) => String(u).endsWith('/puerta/escanear'))!
@@ -66,7 +72,7 @@ describe('PuertaTemploPage', () => {
     montar({ veredicto: 'OTRA_SALIDA', papeleta: { ...ANA, salida: 'rosario-vespertino', year: 2026 } })
     await screen.findByText('Luis Mora Paz')
     expect(screen.getByRole('group', { name: 'Salida' })).toBeInTheDocument()
-    await user.type(screen.getByLabelText('Código de la papeleta'), 'DSP1.7.abcdefghijklmnop{Enter}')
+    await escribirCodigo(user, 'DSP1.7.abcdefghijklmnop{Enter}')
     expect(await screen.findByText('Es del Rosario vespertino 2026, no del Sábado de Pasión 2027.')).toBeInTheDocument()
   })
 
@@ -103,7 +109,7 @@ describe('PuertaTemploPage', () => {
     const user = userEvent.setup()
     montar({ veredicto: 'FALSO', papeleta: null })
     await screen.findByText('Luis Mora Paz')
-    await user.type(screen.getByLabelText('Código de la papeleta'), 'cualquier cosa{Enter}')
+    await escribirCodigo(user, 'cualquier cosa{Enter}')
     expect(await screen.findByText('No es una papeleta válida')).toBeInTheDocument()
   })
 
@@ -114,10 +120,10 @@ describe('PuertaTemploPage', () => {
       const fetch = montar({ veredicto: 'REPETIDA', papeleta: { ...ANA, entradaEl: '2027-04-10T16:00:00.000Z' } })
       await screen.findByText('Luis Mora Paz')
       const escaneos = () => fetch.mock.calls.filter(([u]) => String(u).endsWith('/puerta/escanear')).length
-      await user.type(screen.getByLabelText('Código de la papeleta'), 'DSP1.7.abcdefghijklmnop{Enter}')
+      await escribirCodigo(user, 'DSP1.7.abcdefghijklmnop{Enter}')
       expect(await screen.findByText('Ya había entrado')).toBeInTheDocument()
       act(() => { vi.advanceTimersByTime(3_000) })
-      await user.type(screen.getByLabelText('Código de la papeleta'), 'DSP1.7.abcdefghijklmnop{Enter}')
+      await escribirCodigo(user, 'DSP1.7.abcdefghijklmnop{Enter}')
       expect(escaneos()).toBe(1)
       act(() => { vi.advanceTimersByTime(1_500) })
       expect(screen.queryByText('Ya había entrado')).not.toBeInTheDocument()
@@ -132,7 +138,7 @@ describe('PuertaTemploPage', () => {
     const yaDentro = { ...ANA, entradaEl: '2027-04-10T16:00:00.000Z', entradaPor: 'Marta' }
     const fetch = montar({ veredicto: 'FAMILIA', papeleta: null, familia: [LUIS, yaDentro, PEPA] })
     await screen.findByText('Nazareno · Tramo 2 · n.º 4')
-    await user.type(screen.getByLabelText('Código de la papeleta'), 'DSF1.40.1.2027.abcdefghijklmnop{Enter}')
+    await escribirCodigo(user, 'DSF1.40.1.2027.abcdefghijklmnop{Enter}')
 
     const panel = await screen.findByRole('group', { name: 'QR de familia' })
     expect(within(panel).getByText('Ya entró a las 18:00, lo apuntó Marta')).toBeInTheDocument()
@@ -148,6 +154,15 @@ describe('PuertaTemploPage', () => {
     expect(screen.queryByRole('group', { name: 'QR de familia' })).not.toBeInTheDocument()
   })
 
+  it('manda el listado: se busca a mano y el QR espera detrás de su botón', async () => {
+    montar({ veredicto: 'FALSO', papeleta: null })
+    expect(await screen.findAllByRole('button', { name: 'Ha entrado' })).toHaveLength(2)
+    expect(screen.getByLabelText('Buscar por nombre, número o tramo')).toBeInTheDocument()
+    // Ni cámara ni campo del código hasta pedirlos.
+    expect(screen.queryByLabelText('Código de la papeleta')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Leer QR' })).toBeInTheDocument()
+  })
+
   it('quien llega sin la papeleta se busca y se marca a mano', async () => {
     const user = userEvent.setup()
     const fetch = montar({ veredicto: 'FALSO', papeleta: null })
@@ -157,13 +172,15 @@ describe('PuertaTemploPage', () => {
     await user.click(screen.getByRole('button', { name: 'Ha entrado' }))
     expect(await screen.findByText('Adelante')).toBeInTheDocument()
     expect(fetch.mock.calls.some(([u, i]) => String(u).endsWith('/puerta/papeletas/7') && (i as RequestInit).method === 'POST')).toBe(true)
+    // El buscador se vacía para el siguiente.
+    expect(screen.getByLabelText('Buscar por nombre, número o tramo')).toHaveValue('')
   })
 
   it('la papeleta de un hermano de baja no pasa, y la cuenta dice cuántas hay', async () => {
     const user = userEvent.setup()
     montar({ veredicto: 'DE_BAJA', papeleta: { ...ANA, deBaja: true } }, salidasDePrueba, { ...ESTADO, deBaja: 1 })
     expect(await screen.findByText('Sábado de Pasión 2027 · 0 de 2 dentro · 1 de baja')).toBeInTheDocument()
-    await user.type(screen.getByLabelText('Código de la papeleta'), 'DSP1.7.abcdefghijklmnop{Enter}')
+    await escribirCodigo(user, 'DSP1.7.abcdefghijklmnop{Enter}')
     expect(await screen.findByText('De baja en el censo')).toBeInTheDocument()
     expect(screen.getByText('Está de baja: no puede salir. Que hable con Secretaría.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Deshacer' })).not.toBeInTheDocument()
@@ -174,7 +191,7 @@ describe('PuertaTemploPage', () => {
     const PEPA = { ...ANA, id: 9, nombre: 'Pepa', apellidos: 'Ruiz Gil', numeroHermano: 140, deBaja: true }
     const fetch = montar({ veredicto: 'FAMILIA', papeleta: null, familia: [LUIS, PEPA] })
     await screen.findByText('Luis Mora Paz')
-    await user.type(screen.getByLabelText('Código de la papeleta'), 'DSF1.40.1.2027.abcdefghijklmnop{Enter}')
+    await escribirCodigo(user, 'DSF1.40.1.2027.abcdefghijklmnop{Enter}')
 
     const panel = await screen.findByRole('group', { name: 'QR de familia' })
     expect(within(panel).getByText(/De baja en el censo/)).toBeInTheDocument()
