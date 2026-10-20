@@ -29,7 +29,7 @@ import { avisarALaMesa } from './avisos-mesa.js';
 import { enmascararEmail } from '../../utils/log-privacidad.js';
 import { conceptoDeSalida, requisitosParaRecoger } from '../../domain/salidas.js';
 import { cuotaDe } from './plazo.service.js';
-import type { SalidaConActo } from './salidas.service.js';
+import { exigirPuestoDeLaLista, type SalidaConActo } from './salidas.service.js';
 import { esCuentaDeCustodia } from '../../domain/cuenta-de-custodia.js';
 
 
@@ -535,7 +535,7 @@ export class MesaService {
     const despues = await db.solicitud.update({
       where: { id: solicitudId },
       data: {
-        ...(dto.puesto?.trim() && { puesto: dto.puesto.trim() }),
+        ...(dto.puesto?.trim() && { puesto: exigirPuestoDeLaLista(antes.salida.puestos, dto.puesto, antes.puesto) }),
         ...(dto.observaciones !== undefined && { observaciones: dto.observaciones?.trim() || null }),
         ...(dto.donativo !== undefined && { donativo: new Prisma.Decimal(Math.round(dto.donativo * 100) / 100) }),
       },
@@ -554,8 +554,9 @@ export class MesaService {
    * nueva queda prestada; pasar a túnica propia devuelve la del ropero.
    */
   static async editarPapeleta(papeletaId: number, dto: EdicionPapeletaDto, meta?: MetaDeAuditoria) {
-    const antes = await db.papeletaSitio.findUnique({ where: { id: papeletaId }, include: { salida: { select: { conRopa: true } } } });
+    const antes = await db.papeletaSitio.findUnique({ where: { id: papeletaId }, include: { salida: { select: { conRopa: true, puestos: true } } } });
     if (!antes) throw new NotFoundError('Papeleta no encontrada.');
+    const puesto = dto.puesto?.trim() ? exigirPuestoDeLaLista(antes.salida.puestos, dto.puesto, antes.puesto) : null;
     const conRopa = antes.salida.conRopa;
     const origen = conRopa ? dto.origenTunica ?? antes.origenTunica : antes.origenTunica;
 
@@ -608,7 +609,7 @@ export class MesaService {
           ...ropa,
           origenTunica: origen,
           cingulo,
-          ...(dto.puesto?.trim() && { puesto: dto.puesto.trim() }),
+          ...(puesto && { puesto }),
           ...(dto.tramo !== undefined && { tramo: dto.tramo?.trim() || null }),
           ...(dto.observaciones !== undefined && { observaciones: dto.observaciones?.trim() || null }),
         },

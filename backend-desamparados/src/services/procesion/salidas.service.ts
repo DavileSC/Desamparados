@@ -14,7 +14,7 @@ import { HttpError } from '../../utils/error.handle.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../auditoria.service.js';
 import { diaMadrid, fechaDeSalida, anioDeLaSalida, proximaFecha, type ReglaFecha } from '../../domain/fecha-salida.js';
 import { enMadrid } from '../../domain/datos-areas.js';
-import type { PuestoDelCatalogo } from '../../domain/salidas.js';
+import { puestoDeLaLista, type PuestoDelCatalogo } from '../../domain/salidas.js';
 import type { ConfiguracionCortejo } from '../../domain/cortejo.js';
 import type { DatosSalida, SalidaCms, SalidaWeb } from '../../dtos/procesion.dto.js';
 import { articuloDe, conArticulo, mayuscula, segunNumero, type Articulo } from '../../domain/articulos.js';
@@ -54,6 +54,13 @@ type Cliente = Prisma.TransactionClient | typeof db;
 export function reglaDe(s: SalidaConActo): ReglaFecha {
   if (s.fecha === FechaSalida.PASCUA) return { fecha: 'PASCUA', diasDesdePascua: s.diasDesdePascua ?? 0 };
   return { fecha: 'MANUAL', acto: s.acto ? diaMadrid(s.acto.startDate) : null };
+}
+
+/** El puesto de la lista de la salida, o un error que lo dice (ver `puestoDeLaLista`). */
+export function exigirPuestoDeLaLista(puestos: unknown, puesto: string, actual?: string | null): string {
+  const delCatalogo = puestoDeLaLista(puestos, puesto, actual);
+  if (!delCatalogo) throw new HttpError(`«${puesto.trim()}» no está entre los puestos de la salida: elige uno de la lista.`);
+  return delCatalogo;
 }
 
 /**

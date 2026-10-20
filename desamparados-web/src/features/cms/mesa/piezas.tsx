@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Alert, Autocomplete, Button, TextField } from '@mui/material'
+import { Alert, Button, MenuItem, TextField } from '@mui/material'
 import { activarPersona, type FichaDeMesa } from '../../../lib/api/mesa'
 import type { PuestoDelCatalogo } from '../../../lib/api/salidas'
 import { mensajeDe } from './formato'
@@ -44,20 +44,20 @@ export function AvisoSituacion({ ficha, role, onRecargar }: { ficha: FichaDeMesa
   )
 }
 
-/** El puesto: los del catálogo de la salida y los que ya se han dado, o uno escrito a mano. */
-export function CampoPuesto({ valor, onCambiar, puestos, usados, autoFocus }: {
-  valor: string; onCambiar: (v: string) => void; puestos: PuestoDelCatalogo[]; usados: string[]; autoFocus?: boolean
+/**
+ * El puesto, solo de la lista de la salida: escrito a mano salían erratas
+ * («Nazareno de ciriod») que luego no casaban con nada (20-10-2026). Si ya
+ * tenía uno que no está en la lista, se ve como está, para cambiarlo.
+ */
+export function CampoPuesto({ valor, onCambiar, puestos, autoFocus }: {
+  valor: string; onCambiar: (v: string) => void; puestos: PuestoDelCatalogo[]; autoFocus?: boolean
 }) {
-  const opciones = [...new Set([...puestos.map((p) => p.nombre), ...usados])]
+  const nombres = puestos.map((p) => p.nombre)
+  const fuera = valor && !nombres.includes(valor) ? valor : null
   return (
-    <Autocomplete
-      freeSolo
-      autoSelect
-      options={opciones}
-      value={valor}
-      onChange={(_e, nuevo) => onCambiar(nuevo ?? '')}
-      onInputChange={(_e, texto, motivo) => { if (motivo === 'input') onCambiar(texto) }}
-      renderInput={(params) => <TextField {...params} size="small" label="Puesto" required autoFocus={autoFocus} />}
-    />
+    <TextField select fullWidth size="small" label="Puesto" required autoFocus={autoFocus} value={valor} onChange={(e) => onCambiar(e.target.value)}>
+      {fuera && <MenuItem value={fuera} disabled>{fuera} (no está en la lista)</MenuItem>}
+      {nombres.map((n) => <MenuItem key={n} value={n}>{n}</MenuItem>)}
+    </TextField>
   )
 }

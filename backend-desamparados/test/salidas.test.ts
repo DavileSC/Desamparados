@@ -7,7 +7,7 @@ import { describe, test } from 'node:test';
 import { EstadoPago } from '@prisma/client';
 import {
   conceptoDeSalida, tipoReciboDe, esPerdonada, notaDePerdon, pagoEnLineaDisponible,
-  pendienteDeLaSalida, requisitosParaRecoger, type CuotaDelHermano,
+  pendienteDeLaSalida, puestoDeLaLista, requisitosParaRecoger, type CuotaDelHermano,
 } from '../src/domain/salidas.js';
 
 const cuota = (year: number, estado: EstadoPago, importe = 20): CuotaDelHermano => ({ id: year, year, concepto: `Cuota ${year}`, importe, estado });
@@ -128,5 +128,20 @@ describe('el pago en línea: si se ofrece', () => {
   test('fuera de producción está encendido salvo que se apague', () => {
     assert.equal(pagoEnLineaDisponible({ NODE_ENV: 'development' }), true);
     assert.equal(pagoEnLineaDisponible({ NODE_ENV: 'test', PAGO_EN_LINEA: 'no' }), false);
+  });
+});
+
+describe('el puesto, de la lista de la salida', () => {
+  const puestos = [{ nombre: 'Nazareno de cirio', tunica: true, tocado: 'CAPIROTE', alturaHombro: false }, { nombre: 'Hombre de trono', tunica: true, tocado: null, alturaHombro: true }];
+
+  test('se guarda como está escrito en la lista, sin mirar mayúsculas ni tildes', () => {
+    assert.equal(puestoDeLaLista(puestos, ' nazareno de cirio '), 'Nazareno de cirio');
+    assert.equal(puestoDeLaLista(puestos, 'HOMBRE DE TRONO'), 'Hombre de trono');
+  });
+
+  test('una errata no entra, pero el puesto que ya tenía se puede dejar como está', () => {
+    assert.equal(puestoDeLaLista(puestos, 'Nazareno de ciriod'), null);
+    assert.equal(puestoDeLaLista(puestos, 'Nazareno de ciriod', 'Nazareno de ciriod'), 'Nazareno de ciriod');
+    assert.equal(puestoDeLaLista(null, 'Nazareno'), null);
   });
 });

@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  Alert, Box, Button, CircularProgress, IconButton, Paper, Stack, Tab, Tabs, Tooltip, Typography,
+  Alert, Box, Button, CircularProgress, Drawer, IconButton, Paper, Stack, Tab, Tabs, Tooltip, Typography,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import PersonAddAltOutlinedIcon from '@mui/icons-material/PersonAddAltOutlined'
 import WifiOffOutlinedIcon from '@mui/icons-material/WifiOffOutlined'
 import { Helmet } from 'react-helmet-async'
+import { visuallyHidden } from '@mui/utils'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../altas/auth/store'
 import { apuntados, colasDeLaMesa, fichaDeMesa, imprimirPapeleta, llevaElCensoEnMesa, sinDevolver, type ZonaDeBusqueda } from '../../../lib/api/mesa'
@@ -28,20 +29,25 @@ import ZonaDevolucion from './ZonaDevolucion'
 import type { Aviso } from './piezas'
 import { CLAVE_MESA, mensajeDeFallo, useMesaEnVivo } from './enVivo'
 import { fechaCorta } from './formato'
+import { useAltoHastaElPie } from './useAltoHastaElPie'
 import { site } from '../../../config/site'
 import { aArticulo } from '../../../domain/articulos'
 
 type Zona = 'inscripcion' | 'tesoreria' | 'tunicas' | 'listado' | 'preparacion' | 'devolucion'
 type Modo = { tipo: 'buscar' } | { tipo: 'ficha'; id: number } | { tipo: 'alta' }
 
-const ZONAS: { valor: Zona; etiqueta: string; soloConRopa?: boolean }[] = [
-  { valor: 'inscripcion', etiqueta: 'Inscripción' },
-  { valor: 'tesoreria', etiqueta: 'Tesorería' },
-  { valor: 'tunicas', etiqueta: 'Túnicas' },
-  { valor: 'listado', etiqueta: 'Listado' },
-  { valor: 'preparacion', etiqueta: 'Preparar ropa', soloConRopa: true },
+/**
+ * Cada zona con su color (20-10-2026): de un vistazo se sabe en cuál está el
+ * ordenador. Todos llevan letra blanca encima con contraste de sobra.
+ */
+const ZONAS: { valor: Zona; etiqueta: string; color: string; soloConRopa?: boolean }[] = [
+  { valor: 'inscripcion', etiqueta: 'Inscripción', color: '#2f6db3' },
+  { valor: 'tesoreria', etiqueta: 'Tesorería', color: '#2e7d4f' },
+  { valor: 'tunicas', etiqueta: 'Túnicas', color: '#8c2433' },
+  { valor: 'listado', etiqueta: 'Listado', color: '#5d5862' },
+  { valor: 'preparacion', etiqueta: 'Preparar ropa', color: '#8a5600', soloConRopa: true },
   // Al final, para no mover los atajos de siempre: Alt+6.
-  { valor: 'devolucion', etiqueta: 'Devolución', soloConRopa: true },
+  { valor: 'devolucion', etiqueta: 'Devolución', color: '#6b4fa8', soloConRopa: true },
 ]
 
 const BUSQUEDA_DE: Record<'inscripcion' | 'tesoreria' | 'tunicas' | 'listado' | 'devolucion', ZonaDeBusqueda> = {
@@ -83,9 +89,14 @@ export default function MesaProcesionPage() {
   const [modo, setModo] = useState<Modo>({ tipo: 'buscar' })
   const [aviso, setAviso] = useState<Aviso | null>(null)
   const [filtro, setFiltro] = useState<{ q: string; puesto: string; faltaCingulo: boolean }>({ q: '', puesto: '', faltaCingulo: false })
+  // Lo que queda de pantalla debajo de las zonas: el panel y la cola caben en
+  // ello y, si una pantalla es tan baja que no, bajan por dentro, no la página.
+  const zonaDeTrabajo = useRef<HTMLDivElement>(null)
+  const altoLibre = useAltoHastaElPie(zonaDeTrabajo, 320)
 
   // En una salida de traje no hay ropa que preparar ni que devolver.
   const zonaVisible: Zona = !conRopa && (zona === 'preparacion' || zona === 'devolucion') ? 'listado' : zona
+  const colorDeZona = ZONAS.find((z) => z.valor === zonaVisible)?.color ?? 'divider'
   const operativa = zonaVisible === 'inscripcion' || zonaVisible === 'tesoreria' || zonaVisible === 'tunicas' || zonaVisible === 'devolucion'
 
   const listado = useQuery({
@@ -145,7 +156,6 @@ export default function MesaProcesionPage() {
     return () => window.removeEventListener('keydown', alTeclear)
   }, [buscar, cambiarZona])
 
-  const puestosUsados = listado.data?.puestos.map((p) => p.puesto) ?? []
   const datos = listado.data
   const total = datos?.puestos.reduce((s, p) => s + p.total, 0) ?? 0
   const recogidas = datos?.apuntados.filter((p) => p.estado === 'recogida').length ?? 0
@@ -162,25 +172,38 @@ export default function MesaProcesionPage() {
     )
   }
 
-  const panel = (
-    <Paper component="section" aria-label="Atender" sx={{ p: 2.5, position: 'sticky', top: 16, maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', displayPrint: 'none' }}>
-      {aviso && (
-        <Alert
-          severity={aviso.tono}
-          onClose={() => setAviso(null)}
-          action={(aviso.deshacer || aviso.papeletaId) && (
-            <Stack direction="row" spacing={0.5}>
-              {aviso.papeletaId && <Button color="inherit" size="small" onClick={() => void imprimir(aviso.papeletaId!)}>Imprimir papeleta</Button>}
-              {aviso.deshacer && <Button color="inherit" size="small" onClick={() => void deshacer(aviso.deshacer!)}>Deshacer</Button>}
-            </Stack>
-          )}
-          sx={{ mb: 2 }}
-        >
-          {aviso.texto}
-        </Alert>
+  const avisoHecho = aviso && (
+    <Alert
+      severity={aviso.tono}
+      onClose={() => setAviso(null)}
+      action={(aviso.deshacer || aviso.papeletaId) && (
+        <Stack direction="row" spacing={0.5}>
+          {aviso.papeletaId && <Button color="inherit" size="small" onClick={() => void imprimir(aviso.papeletaId!)}>Imprimir papeleta</Button>}
+          {aviso.deshacer && <Button color="inherit" size="small" onClick={() => void deshacer(aviso.deshacer!)}>Deshacer</Button>}
+        </Stack>
       )}
+      sx={{ mb: 2 }}
+    >
+      {aviso.texto}
+    </Alert>
+  )
 
-      {modo.tipo === 'buscar' && (
+  // En el listado no hay panel fijo: la tabla va a todo el ancho y la persona
+  // se abre en un cajón a la derecha. Su buscador repetía el de la tabla.
+  const enListado = zonaVisible === 'listado'
+  // La ficha de Túnicas, la más larga, ocupa todo el alto libre y crece con la
+  // pantalla (ver ZonaTunicas); las demás, lo que midan.
+  const llenaElAlto = zonaVisible === 'tunicas' && modo.tipo === 'ficha' && Boolean(ficha.data)
+  const panel = (
+    <Paper component="section" aria-label="Atender" sx={enListado
+      ? { p: 2.5, boxShadow: 'none', borderRadius: 0, minHeight: '100%' }
+      : {
+          p: 2, maxHeight: altoLibre ?? undefined, overflowY: 'auto', displayPrint: 'none',
+          ...(llenaElAlto && { height: altoLibre ?? undefined, display: 'flex', flexDirection: 'column' }),
+        }}>
+      {!enListado && avisoHecho}
+
+      {modo.tipo === 'buscar' && !enListado && (
         <Stack spacing={2}>
           <Typography variant="h5" component="h2">
             {zonaVisible === 'inscripcion' ? 'Apuntar' : zonaVisible === 'tesoreria' ? 'Cobrar' : zonaVisible === 'tunicas' ? (conRopa ? 'Dar la ropa' : 'Confirmar el puesto') : zonaVisible === 'devolucion' ? 'Recibir la ropa' : 'Corregir'}
@@ -205,7 +228,7 @@ export default function MesaProcesionPage() {
       )}
 
       {modo.tipo !== 'buscar' && (
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.75 }}>
           <Tooltip title="Buscar a otra persona (Esc)">
             <IconButton aria-label="Buscar a otra persona" onClick={buscar} size="small"><ArrowBackIcon fontSize="small" /></IconButton>
           </Tooltip>
@@ -213,9 +236,11 @@ export default function MesaProcesionPage() {
             {modo.tipo === 'alta' && <Typography variant="h5" component="h2">Persona nueva</Typography>}
             {modo.tipo === 'ficha' && ficha.data && (
               <>
-                <Typography variant="h5" component="h2" sx={{ overflowWrap: 'anywhere' }}>{ficha.data.nombre} {ficha.data.apellidos}</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {ficha.data.numeroHermano ? `N.º ${ficha.data.numeroHermano} · ` : ''}{fechaCorta(ficha.data.fechaNacimiento)}
+                <Typography variant="h6" component="h2" sx={{ overflowWrap: 'anywhere', lineHeight: 1.25 }}>
+                  {ficha.data.nombre} {ficha.data.apellidos}
+                  <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1, whiteSpace: 'nowrap' }}>
+                    {ficha.data.numeroHermano ? `N.º ${ficha.data.numeroHermano} · ` : ''}{fechaCorta(ficha.data.fechaNacimiento)}
+                  </Typography>
                 </Typography>
               </>
             )}
@@ -234,12 +259,12 @@ export default function MesaProcesionPage() {
                 const f = ficha.data
                 const clave = `${zonaVisible}-${f.id}-${f.salida}-${f.solicitud?.id ?? 'sin'}-${f.papeleta?.id ?? 'sin'}-${f.papeleta?.cingulo ?? 'sin'}-${f.situacion}-${f.prendas.map((p) => p.id).join('.')}-${f.cingulosSinDevolver.length}`
                 const comun = { ficha: f, salida, role, onHecho: hecho, onRecargar: () => void ficha.refetch() }
-                if (zonaVisible === 'inscripcion') return <ZonaInscripcion key={clave} {...comun} puestosUsados={puestosUsados} />
+                if (zonaVisible === 'inscripcion') return <ZonaInscripcion key={clave} {...comun} />
                 if (zonaVisible === 'tesoreria') return <ZonaTesoreria key={clave} {...comun} />
                 if (zonaVisible === 'devolucion') return <ZonaDevolucion key={clave} ficha={f} onHecho={hecho} />
-                if (zonaVisible === 'tunicas') return <ZonaTunicas key={clave} {...comun} puestosUsados={puestosUsados} onATesoreria={() => { setZona('tesoreria'); recordar('mesa.zona', 'tesoreria') }} />
+                if (zonaVisible === 'tunicas') return <ZonaTunicas key={clave} {...comun} onATesoreria={() => { setZona('tesoreria'); recordar('mesa.zona', 'tesoreria') }} />
                 return f.papeleta || f.solicitud
-                  ? <FormularioCorreccion key={clave} {...comun} puestosUsados={puestosUsados} />
+                  ? <FormularioCorreccion key={clave} {...comun} />
                   : <Alert severity="info">{`No está apuntado ${aArticulo(salida.articulo, salida.nombre)}.`}</Alert>
               })()
       )}
@@ -249,41 +274,59 @@ export default function MesaProcesionPage() {
   return (
     <>
       <Helmet><title>{`Mesa de la procesión | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
-      <CabeceraSeccion
-        titulo="Mesa de la procesión"
-        subtitulo={datos ? `${salida.nombre} ${datos.year} · ${total} ${total === 1 ? 'apuntado' : 'apuntados'}, ${recogidas} ${conRopa ? 'con la ropa' : 'confirmados'}` : salida.nombre}
-      >
-        <SelectorSalida salidas={salidas} valor={slug} onChange={cambiarSalida} />
-      </CabeceraSeccion>
-
       {!conectado && (
         <Alert severity="warning" icon={<WifiOffOutlinedIcon />} sx={{ mb: 2, displayPrint: 'none' }}>
           <strong>Sin conexión con el servidor.</strong> Lo que estés apuntando no se pierde, pero no se guardará hasta que vuelva la red. Cuando vuelva, pulsa otra vez: no se cobra dos veces.
         </Alert>
       )}
 
-      <Tabs
-        value={zonaVisible}
-        onChange={(_e, v: Zona) => cambiarZona(v)}
-        variant="scrollable"
-        aria-label="Zona de la mesa"
-        sx={{ mb: 2.5, borderBottom: 1, borderColor: 'divider', displayPrint: 'none' }}
-      >
-        {ZONAS.filter((z) => conRopa || !z.soloConRopa).map((z) => (
-          <Tab key={z.valor} value={z.valor} label={z.etiqueta} title={`Alt+${ZONAS.indexOf(z) + 1}`} />
-        ))}
-      </Tabs>
+      {/* Sin franja de título (20-10-2026): zonas, resumen y salida en una sola
+          línea, para que la persona que se atiende quepa sin bajar. El título
+          sigue ahí para el lector de pantalla. */}
+      <Typography component="h1" sx={visuallyHidden}>Mesa de la procesión</Typography>
+      <Stack direction="row" useFlexGap sx={{ mb: 1.5, gap: 1.5, flexWrap: 'wrap', alignItems: 'center', borderBottom: 2, borderColor: colorDeZona, displayPrint: 'none', containerType: 'inline-size' }}>
+        <Tabs
+          value={zonaVisible}
+          onChange={(_e, v: Zona) => cambiarZona(v)}
+          variant="scrollable"
+          aria-label="Zona de la mesa"
+          slotProps={{ indicator: { sx: { display: 'none' } } }}
+          sx={{ flex: '0 1 auto', minWidth: 0, mr: 'auto', minHeight: 44, '& .MuiTab-root': { minHeight: 44, minWidth: 0, py: 1, px: 1, borderRadius: '8px 8px 0 0' } }}
+        >
+          {ZONAS.filter((z) => conRopa || !z.soloConRopa).map((z) => (
+            <Tab
+              key={z.valor}
+              value={z.valor}
+              title={`Alt+${ZONAS.indexOf(z) + 1}`}
+              label={(
+                <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.875 }}>
+                  <Box component="span" aria-hidden sx={{ width: 9, height: 9, borderRadius: '50%', bgcolor: z.color, boxShadow: '0 0 0 1.5px rgba(255,255,255,0.55)' }} />
+                  {z.etiqueta}
+                </Box>
+              )}
+              sx={{ '&.Mui-selected': { bgcolor: z.color, color: '#fff', fontWeight: 700 } }}
+            />
+          ))}
+        </Tabs>
+        {/* El resumen, solo si cabe en la misma línea: no merece una línea más.
+            Con una sola salida no hay desplegable, y es lo que dice cuál es: siempre. */}
+        <Typography variant="body2" sx={{ color: 'text.secondary', whiteSpace: 'nowrap', ...(salidas.length > 1 && { display: 'none', '@container (min-width: 1180px)': { display: 'block' } }) }}>
+          {salidas.length > 1 ? '' : `${salida.nombre} `}{datos ? `${datos.year} · ${total} ${total === 1 ? 'apuntado' : 'apuntados'}, ${recogidas} ${conRopa ? 'con la ropa' : 'confirmados'}` : ''}
+        </Typography>
+        <Box sx={{ py: 0.5 }}><SelectorSalida compacto salidas={salidas} valor={slug} onChange={cambiarSalida} /></Box>
+      </Stack>
 
       {zonaVisible === 'preparacion' && <PreparacionRopa salida={slug} />}
 
       {zonaVisible !== 'preparacion' && (
-        <Box sx={{ containerType: 'inline-size' }}>
+        <Box ref={zonaDeTrabajo} sx={{ containerType: 'inline-size' }}>
           <Box
             sx={{
-              display: 'grid', gap: 3, alignItems: 'start',
+              display: 'grid', gap: 2, alignItems: 'start',
               gridTemplateColumns: 'minmax(0, 1fr)',
-              '@container (min-width: 1000px)': {
-                gridTemplateColumns: operativa ? 'minmax(0, 1fr) 380px' : 'minmax(0, 1fr) 440px',
+              // La cola al lado desde un portátil pequeño: debajo, obligaba a bajar para verla.
+              '@container (min-width: 760px)': {
+                gridTemplateColumns: operativa ? 'minmax(0, 1fr) 300px' : 'minmax(0, 1fr)',
               },
             }}
           >
@@ -320,6 +363,7 @@ export default function MesaProcesionPage() {
             {zonaVisible === 'listado' && (
               <>
                 <Box component="section" aria-label="Apuntados" sx={{ minWidth: 0 }}>
+                  {avisoHecho}
                   <Stack direction="row" spacing={1.5} useFlexGap sx={{ mb: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
                     <CampoBusqueda etiqueta="Buscar entre los apuntados" valor={filtro.q} onCambiar={(q) => setFiltro({ ...filtro, q })} sx={{ maxWidth: 360 }} />
                   </Stack>
@@ -356,7 +400,9 @@ export default function MesaProcesionPage() {
                   {!datos && !listado.isError && <CircularProgress aria-label="Cargando los apuntados" />}
                   {datos && <TablaApuntados apuntados={datos.apuntados} salida={salida} seleccionado={idFicha} onElegir={abrir} onImprimir={(id) => void imprimir(id)} />}
                 </Box>
-                {panel}
+                <Drawer anchor="right" open={modo.tipo === 'ficha'} onClose={buscar} slotProps={{ paper: { sx: { width: { xs: '100%', sm: 480 } } } }}>
+                  {panel}
+                </Drawer>
               </>
             )}
           </Box>

@@ -12,7 +12,6 @@ interface Props {
   ficha: FichaDeMesa
   salida: Salida
   role: string
-  puestosUsados: string[]
   onHecho: (aviso: Aviso) => void
   onRecargar: () => void
 }
@@ -23,7 +22,7 @@ interface Props {
  * Grupo: se puede cambiar en Túnicas). No se cobra aquí: si debe algo, pasa
  * por Tesorería; si no, directo a Túnicas.
  */
-export default function ZonaInscripcion({ ficha, salida, role, puestosUsados, onHecho, onRecargar }: Props) {
+export default function ZonaInscripcion({ ficha, salida, role, onHecho, onRecargar }: Props) {
   const { datos, setDatos, correccion, contactoCompleto } = useDatosPersona(ficha)
   const [puesto, setPuesto] = useState(ficha.propuesta.puesto)
   const [altura, setAltura] = useState(alturaEnMetros(ficha.alturaHombro))
@@ -34,7 +33,8 @@ export default function ZonaInscripcion({ ficha, salida, role, puestosUsados, on
   const { clave, renovar } = useClaveDeOperacion()
 
   const conDonativo = salida.cobro === 'DONATIVO'
-  const conAltura = puestoDelCatalogo(puesto, salida.puestos)?.alturaHombro || ficha.alturaHombro !== null || altura !== ''
+  // La talla al hombro solo la piden los puestos que la llevan (los de trono).
+  const conAltura = Boolean(puestoDelCatalogo(puesto, salida.puestos)?.alturaHombro)
   const importeDonativo = donativo.trim() ? Number(donativo.replace(',', '.')) : 0
   const donativoValido = Number.isFinite(importeDonativo) && importeDonativo >= 0 && importeDonativo <= 1000
   const deuda = ficha.requisitos.cuotasPendientes.reduce((s, c) => s + c.importe, 0)
@@ -92,7 +92,7 @@ export default function ZonaInscripcion({ ficha, salida, role, puestosUsados, on
       <Box component="fieldset" sx={{ border: 0, p: 0, m: 0, display: 'grid', gap: 1.5 }}>
         <Typography component="legend" sx={leyenda}>{salida.nombre}</Typography>
         <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: conAltura ? 'minmax(0, 2fr) minmax(0, 1fr)' : '1fr' }}>
-          <CampoPuesto valor={puesto} onCambiar={setPuesto} puestos={salida.puestos} usados={puestosUsados} />
+          <CampoPuesto valor={puesto} onCambiar={setPuesto} puestos={salida.puestos} />
           {conAltura && (
             <TextField size="small" label="Talla (hombro)" placeholder="1,45" value={altura} onChange={(e) => setAltura(e.target.value)} slotProps={{ htmlInput: { inputMode: 'decimal' } }} helperText="En metros" />
           )}

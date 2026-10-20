@@ -19,6 +19,20 @@ export interface PuestoDelCatalogo {
   alturaHombro: boolean;
 }
 
+/**
+ * El puesto tal como está en el catálogo de la salida, o null si no está.
+ * Desde el 20-10-2026 la mesa solo da puestos de la lista: escritos a mano
+ * salían erratas («Nazareno de ciriod») que luego no casaban con el cortejo
+ * ni con los filtros. El que ya tenía se admite aunque no esté (una papeleta
+ * de antes se sigue pudiendo corregir en lo demás).
+ */
+export function puestoDeLaLista(puestos: unknown, puesto: string, actual?: string | null): string | null {
+  const limpio = puesto.trim();
+  if (actual && limpio === actual.trim()) return actual;
+  const lista = Array.isArray(puestos) ? (puestos as PuestoDelCatalogo[]) : [];
+  return lista.find((p) => p.nombre.localeCompare(limpio, 'es', { sensitivity: 'base' }) === 0)?.nombre ?? null;
+}
+
 /** El tipo del recibo de la papeleta: la cuota es una papeleta de sitio; la voluntad, un donativo. */
 export function tipoReciboDe(cobro: CobroSalida): TipoRecibo {
   return cobro === 'DONATIVO' ? TipoRecibo.DONATIVO : TipoRecibo.PAPELETA_SITIO;

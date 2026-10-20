@@ -139,7 +139,7 @@ async function escenario() {
   };
 
   /** El camino entero de la mesa: apuntar en Inscripción, cobrar en Tesorería y recoger en Túnicas. */
-  const apuntarYCobrar = async (hermanoId: number, puesto = 'Cirio', metodoPago: 'EFECTIVO' | 'BIZUM' = MetodoPago.EFECTIVO) => {
+  const apuntarYCobrar = async (hermanoId: number, puesto = 'Nazareno', metodoPago: 'EFECTIVO' | 'BIZUM' = MetodoPago.EFECTIVO) => {
     const { solicitudId, requisitos } = await ZonasService.inscribir({ hermanoId, salida: await salida(PASION), puesto }, undefined, meta);
     if (requisitos.salidaPendiente > 0) await ZonasService.cobrar({ hermanoId, reciboIds: [], solicitudes: [{ solicitudId }], metodoPago }, undefined, meta);
     const { papeletaId } = await ZonasService.entregar({ solicitudId, origenTunica: 'PROPIA' }, undefined, meta);
@@ -203,7 +203,7 @@ test('D2: anular una papeleta cobrada devuelve el recibo con su reverso, libera 
     assert.equal(detalles.despues.recibo.estado, EstadoPago.REEMBOLSADO);
 
     // Reinscribir: antes daba 500 porque el recibo devuelto ocupaba el concepto.
-    const segunda = await e.apuntarYCobrar(hermano.id, 'Vara', MetodoPago.BIZUM);
+    const segunda = await e.apuntarYCobrar(hermano.id, 'Bocina', MetodoPago.BIZUM);
     assert.equal(segunda.recibo.concepto, `${await conceptoDe(PASION, YEAR)} (reemisión 2)`);
     assert.equal(segunda.recibo.estado, EstadoPago.PAGADO);
   } finally {

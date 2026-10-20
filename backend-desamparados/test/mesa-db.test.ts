@@ -883,8 +883,13 @@ test('por HTTP: la mesa es de la Junta que reparte; perdonar, de Tesorería y el
     assert.equal((await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/personas/${h.id}/activar`, 'POST')).status, 403);
     assert.equal((await como(albaceria.id, Role.ALBACERIA, '/admin/mesa/prendas?tipo=GORRO&q=1')).status, 400);
     assert.equal((await como(albaceria.id, Role.ALBACERIA, '/admin/mesa/perdonar', 'POST', { reciboIds: [cuota.id] })).status, 403);
-    const ins = await como(albaceria.id, Role.ALBACERIA, '/admin/mesa/inscribir', 'POST', { hermanoId: h.id, salida: PASION, puesto: 'Cirio', clave: e.clave() });
+    // El puesto, solo de la lista de la salida: uno escrito a mano no entra.
+    const errata = await como(albaceria.id, Role.ALBACERIA, '/admin/mesa/inscribir', 'POST', { hermanoId: h.id, salida: PASION, puesto: 'Nazareno de ciriod', clave: e.clave() });
+    assert.equal(errata.status, 400);
+    assert.match((await errata.json() as { error: string }).error, /no está entre los puestos de la salida/);
+    const ins = await como(albaceria.id, Role.ALBACERIA, '/admin/mesa/inscribir', 'POST', { hermanoId: h.id, salida: PASION, puesto: 'nazareno', clave: e.clave() });
     assert.equal(ins.status, 201);
+    assert.equal((await db.solicitud.findFirstOrThrow({ where: { hermanoId: h.id } })).puesto, 'Nazareno', 'se guarda como está en la lista');
     assert.equal((await como(albaceria.id, Role.ALBACERIA, '/admin/mesa/inscribir', 'POST', { hermanoId: h.id, salida: PASION, puesto: 'Cirio', clave: 'x' })).status, 400, 'una clave que no lo es');
 
     // La salida es obligatoria: sin ella, o con una que no existe, la mesa no supone ninguna.

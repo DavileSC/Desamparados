@@ -97,7 +97,7 @@ function servidor(opciones: Opciones = {}) {
     if (url.includes('/mesa/personas?')) {
       return Promise.resolve(json([{ id: 20, nombre: 'Abel', apellidos: 'Reyes Díaz', fechaNacimiento: FICHA.fechaNacimiento, numeroHermano: 57, situacion: 'activo', papeleta: null }]))
     }
-    if (url.includes('/mesa/personas/20')) return Promise.resolve(json(ficha))
+    if (/\/mesa\/personas\/\d+$/.test(ruta)) return Promise.resolve(json(ficha))
     if (url.includes('/mesa/prendas')) {
       const q = new URL(url, 'http://x').searchParams.get('q') ?? ''
       return Promise.resolve(json(opciones.prendas?.[q] ?? [libre(q, q.includes('-') ? '140' : null)]))
@@ -108,6 +108,12 @@ function servidor(opciones: Opciones = {}) {
 }
 
 const post = (llamadas: ReturnType<typeof servidor>, final: string) => llamadas.filter((l) => l.metodo === 'POST' && l.url.split('?')[0].endsWith(final))
+
+/** En el listado no hay buscador del censo: la persona se abre pulsando su fila. */
+async function abrirEnElListado(user: ReturnType<typeof userEvent.setup>) {
+  const tabla = await screen.findByRole('table', { name: 'Apuntados' })
+  await user.click(within(tabla).getByRole('row', { name: /Abel/ }))
+}
 
 async function buscarAbel(user: ReturnType<typeof userEvent.setup>) {
   await user.type(await screen.findByRole('textbox', { name: 'Buscar en el censo' }), 'Abel')
@@ -136,7 +142,7 @@ describe('MesaProcesionPage · Inscripción', () => {
     expect(llamadas.some((l) => l.url.includes('/mesa/personas?') && l.url.includes('zona=inscripcion'))).toBe(true)
 
     expect(screen.getByText('En 2026 salió de Nazareno.')).toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: 'Puesto' })).toHaveValue('Nazareno')
+    expect(screen.getByRole('combobox', { name: 'Puesto' })).toHaveTextContent('Nazareno')
     expect(screen.getByText(/Debe la cuota de 2027 \(20,00 €\)/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Apuntar' }))
 
@@ -311,7 +317,7 @@ describe('MesaProcesionPage · Túnicas', () => {
     const cola = await screen.findByRole('region', { name: 'Listos para la ropa' })
     await user.click(await within(cola).findByRole('button', { name: /Abel Reyes Díaz/ }))
 
-    expect(await screen.findByRole('combobox', { name: 'Puesto' })).toHaveValue('Nazareno')
+    expect(await screen.findByRole('combobox', { name: 'Puesto' })).toHaveTextContent('Nazareno')
     expect(screen.getByText(/En 2026: Nazareno · túnica 140-107 · capirote 150/)).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'N.º de túnica' })).toHaveValue('140-107')
     expect(await screen.findByText('Libre en el ropero · talla 140')).toBeInTheDocument()
@@ -331,6 +337,25 @@ describe('MesaProcesionPage · Túnicas', () => {
     await user.click(screen.getByRole('button', { name: 'Imprimir papeleta' }))
     await waitFor(() => expect(pestana.location.href).toBe('blob:papeleta'))
     expect(llamadas.some((l) => l.metodo === 'GET' && l.url.endsWith('/procesion/admin/papeletas/99/pdf'))).toBe(true)
+  })
+
+  it('el puesto se elige de la lista; la talla al hombro solo en trono, y trono no lleva capirote ni faraona', async () => {
+    const user = userEvent.setup()
+    servidor({ ficha: apuntado })
+    renderWithProviders(<MesaProcesionPage />)
+    const cola = await screen.findByRole('region', { name: 'Listos para la ropa' })
+    await user.click(await within(cola).findByRole('button', { name: /Abel Reyes Díaz/ }))
+
+    // Nazareno: capirote sí, hombro no.
+    const puesto = await screen.findByRole('combobox', { name: 'Puesto' })
+    expect(screen.getByRole('group', { name: 'Capirote o faraona' })).toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'Talla (hombro)' })).not.toBeInTheDocument()
+
+    await user.click(puesto)
+    await user.click(await screen.findByRole('option', { name: 'Trono' }))
+    expect(screen.getByRole('textbox', { name: 'Talla (hombro)' })).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Capirote o faraona' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'N.º de capirote' })).not.toBeInTheDocument()
   })
 
   it('sin túnica en casa ni la de antes libre, propone la de su talla y lo dice', async () => {
@@ -450,7 +475,7 @@ describe('MesaProcesionPage · Listado y teclado', () => {
     expect(within(tabla).queryByRole('columnheader', { name: 'Nacimiento' })).not.toBeInTheDocument()
     expect(within(tabla).queryByRole('columnheader', { name: 'Teléfono' })).not.toBeInTheDocument()
     expect(within(aaron).queryByText('623577927')).not.toBeInTheDocument()
-    expect(within(aaron).getByText('1,45')).toBeInTheDocument()
+    expect(within(aaron).getByText(/1,45 m/)).toBeInTheDocument()
     expect(within(aaron).getByText('Propia')).toBeInTheDocument()
     expect(within(aaron).getByText('Recogida')).toBeInTheDocument()
     expect(within(tabla).getByText('Debe 20,00 €')).toBeInTheDocument()
@@ -478,18 +503,17 @@ describe('MesaProcesionPage · Listado y teclado', () => {
     localStorage.setItem('mesa.zona', 'listado')
     const llamadas = servidor({ ficha: { ...FICHA, solicitud: SOLICITUD, requisitos: AL_DIA } })
     renderWithProviders(<MesaProcesionPage />)
-    await buscarAbel(user)
+    await abrirEnElListado(user)
 
     expect(await screen.findByText(/Apuntado desde su área, sin recoger · al día/)).toBeInTheDocument()
-    const puesto = screen.getByRole('combobox', { name: 'Puesto' })
-    await user.clear(puesto)
-    await user.type(puesto, 'Bocina')
+    // El puesto se elige de la lista: no se escribe.
+    await user.click(screen.getByRole('combobox', { name: 'Puesto' }))
     await user.click(await screen.findByRole('option', { name: 'Bocina' }))
     await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
     await waitFor(() => expect(llamadas.some((l) => l.metodo === 'PATCH' && l.url.includes('/admin/solicitudes/99'))).toBe(true))
     expect(llamadas.find((l) => l.url.includes('/admin/solicitudes/99'))?.cuerpo).toMatchObject({ puesto: 'Bocina' })
 
-    await buscarAbel(user)
+    await abrirEnElListado(user)
     await user.click(await screen.findByRole('button', { name: 'Cancelar solicitud' }))
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancelar solicitud' }))
     await waitFor(() => expect(llamadas.some((l) => l.metodo === 'DELETE' && l.url.includes('/admin/solicitudes/99'))).toBe(true))
@@ -505,7 +529,7 @@ describe('MesaProcesionPage · Listado y teclado', () => {
     }
     servidor({ ficha: { ...FICHA, papeleta, requisitos: AL_DIA } })
     renderWithProviders(<MesaProcesionPage />)
-    await buscarAbel(user)
+    await abrirEnElListado(user)
     await user.click(await screen.findByRole('button', { name: 'Anular papeleta' }))
     const dialogo = await screen.findByRole('dialog')
     expect(within(dialogo).getByText(/La ropa sigue a su nombre hasta que la devuelva\./)).toBeInTheDocument()
@@ -526,7 +550,7 @@ describe('MesaProcesionPage · Listado y teclado', () => {
     await user.click(await screen.findByRole('button', { name: 'Le falta el cíngulo · 1' }))
     await waitFor(() => expect(llamadas.some((l) => l.url.includes('/mesa/apuntados') && l.url.includes('faltaCingulo=1'))).toBe(true))
 
-    await buscarAbel(user)
+    await abrirEnElListado(user)
     expect(await screen.findByText(/Se le debe el cíngulo/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Dárselo ahora' }))
     await waitFor(() => expect(llamadas.some((l) => l.metodo === 'PATCH' && l.url.includes('/admin/papeletas/5'))).toBe(true))
@@ -547,7 +571,7 @@ describe('MesaProcesionPage · Listado y teclado', () => {
       prendas: { '140-107': [otraPersona], '140-200': [{ ...otraPersona, numero: '140-200' }] },
     })
     renderWithProviders(<MesaProcesionPage />)
-    await buscarAbel(user)
+    await abrirEnElListado(user)
 
     // La salida pasó y la túnica ya la tiene otra persona: su papeleta se sigue pudiendo corregir.
     expect(await screen.findByText('Asignada en esta papeleta')).toBeInTheDocument()
@@ -648,7 +672,8 @@ describe('MesaProcesionPage · Salidas', () => {
     renderWithProviders(<MesaProcesionPage />)
     await screen.findByRole('table', { name: 'Apuntados' })
     expect(llamadas.some((l) => l.url.includes('/mesa/apuntados?salida=sabado-de-pasion'))).toBe(true)
-    await user.click(screen.getByRole('button', { name: 'Rosario vespertino' }))
+    await user.click(screen.getByRole('combobox', { name: 'Salida' }))
+    await user.click(await screen.findByRole('option', { name: 'Rosario vespertino' }))
     await waitFor(() => expect(llamadas.some((l) => l.url.includes('/mesa/apuntados?salida=rosario-vespertino'))).toBe(true))
     expect(localStorage.getItem('mesa.salida')).toBe('rosario-vespertino')
   })

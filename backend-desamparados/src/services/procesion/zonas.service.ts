@@ -35,7 +35,7 @@ import { alturaHombroEnCm, CINGULO_SEGUN_TUNICA, normalizarNumeroPrenda, propues
 import {
   notaDePerdon, pendienteDeLaSalida, requisitosParaRecoger, tipoReciboDe, type CuotaDelHermano,
 } from '../../domain/salidas.js';
-import { exigirProximaFecha, type SalidaConActo } from './salidas.service.js';
+import { exigirProximaFecha, exigirPuestoDeLaLista, type SalidaConActo } from './salidas.service.js';
 import { PapeletasService, type SolicitudConRecibo } from './papeletas.service.js';
 import { PlazoPapeletasService } from './plazo.service.js';
 import { comprobarQueNoVaEnOtraPapeleta, estadoAlDevolver, prestarRopaEnTransaccion, ropaPedida, tunicasLibres, type TipoRopa } from './ropa.js';
@@ -182,6 +182,7 @@ export class ZonasService {
     if (!hermano) throw new NotFoundError('No se encontró a esa persona en el censo.');
     if (!hermano.activo) throw new HttpError(`${hermano.nombre} no está en activo: Secretaría tiene que darla de alta o reactivarla antes.`, 409);
     if (!dto.puesto.trim()) throw new HttpError('Falta el puesto.');
+    const puesto = exigirPuestoDeLaLista(dto.salida.puestos, dto.puesto);
     const alturaHombro = alturaDictada(dto.alturaHombro);
     exigirProximaFecha(dto.salida);
     const year = anioDeLaMesa(dto.salida);
@@ -194,7 +195,7 @@ export class ZonasService {
         select: { id: true },
       });
       const solicitud = await PapeletasService.crearSolicitudEnTransaccion(tx, {
-        hermanoId: dto.hermanoId, salida: dto.salida, year, puesto: dto.puesto, observaciones: dto.observaciones,
+        hermanoId: dto.hermanoId, salida: dto.salida, year, puesto, observaciones: dto.observaciones,
         donativo: dto.donativo, citaId: cita?.id, origen: OrigenSolicitud.MESA,
       });
       if (alturaHombro !== undefined) await tx.hermano.update({ where: { id: dto.hermanoId }, data: { alturaHombro } });
@@ -416,7 +417,7 @@ export class ZonasService {
         ...ropa,
         origenTunica: origen,
         cingulo,
-        puesto: dto.puesto?.trim() || s.puesto,
+        puesto: dto.puesto?.trim() ? exigirPuestoDeLaLista(s.salida.puestos, dto.puesto, s.puesto) : s.puesto,
         observaciones: dto.observaciones !== undefined ? dto.observaciones : s.observaciones,
       });
 

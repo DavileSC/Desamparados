@@ -23,7 +23,7 @@ export default function ColaDeZona({ titulo, vacia, filas, seleccionado, onElegi
         {titulo} · {filas.length}
       </Typography>
       {filas.length === 0 && <Typography variant="body2" color="text.secondary" sx={{ px: 1, pb: 1 }}>{vacia}</Typography>}
-      <Box role="list" sx={{ display: 'grid', gap: 0.25, maxHeight: 'calc(100vh - 320px)', overflowY: 'auto' }}>
+      <Box role="list" sx={{ display: 'grid', gap: 0.25, maxHeight: 'calc(100dvh - 200px)', overflowY: 'auto' }}>
         {filas.map((f) => (
           <Box role="listitem" key={f.solicitudId}>
             <ButtonBase
