@@ -78,9 +78,10 @@ export default function RecorridoEnMapa({ bloque, enUso = 'habitual', onSinMapa 
     [bloque.paradas, bloque.recorrido],
   )
   // Por una referencia: el mapa se crea una vez y no debe rehacerse porque
-  // cambie la función.
+  // cambie la función. Se pone al día en un efecto: escribirla mientras se
+  // pinta rompe el pintado concurrente de React.
   const avisarSinMapa = useRef(onSinMapa)
-  avisarSinMapa.current = onSinMapa
+  useEffect(() => { avisarSinMapa.current = onSinMapa }, [onSinMapa])
   const linea = bloque.recorrido.linea
   const reducir = useReducedMotion() ?? false
   const enConstructor = useModoEdicion() !== null
