@@ -1,9 +1,9 @@
 {
   "backend-desamparados/package.json": {
-    "mtime": 1791706684.565563,
-    "seen": 1791734905.9219322,
-    "ast_hash": "50861033e1963dc6aae400f0325db137",
-    "semantic_hash": "50861033e1963dc6aae400f0325db137"
+    "mtime": 1792236895.4052231,
+    "seen": 1792604266.567969,
+    "ast_hash": "6e9a4b7671c99e48238fa0465fa1627f",
+    "semantic_hash": "6e9a4b7671c99e48238fa0465fa1627f"
   },
   "backend-desamparados/prisma.config.ts": {
     "mtime": 1787936264.9373653,
@@ -618,10 +618,10 @@
     "semantic_hash": "69079256d5dfe3fe19183739d9f81d54"
   },
   "backend-desamparados/scripts/fotos-a-webp.ts": {
-    "mtime": 1791476496.2201307,
-    "seen": 1791479994.295499,
-    "ast_hash": "3910015042d120d14c2542c4a7894363",
-    "semantic_hash": "3910015042d120d14c2542c4a7894363"
+    "mtime": 1792508630.5323281,
+    "seen": 1792604266.5886157,
+    "ast_hash": "ce2ff5360bc8960dea33a37fea428685",
+    "semantic_hash": "ce2ff5360bc8960dea33a37fea428685"
   },
   "backend-desamparados/scripts/licencias.mjs": {
     "mtime": 1790851378.1950016,
@@ -690,16 +690,16 @@
     "semantic_hash": "1c363eeb0de76cd0d5f6d346aa327b32"
   },
   "backend-desamparados/src/app.ts": {
-    "mtime": 1791920469.2434196,
-    "seen": 1791926815.5440974,
-    "ast_hash": "399bc0cb4dfb45b4376c11ad1c58c602",
-    "semantic_hash": "399bc0cb4dfb45b4376c11ad1c58c602"
+    "mtime": 1792361469.0889184,
+    "seen": 1792604266.5947504,
+    "ast_hash": "e564a02b26b02682b96618e3788bdfc5",
+    "semantic_hash": "e564a02b26b02682b96618e3788bdfc5"
   },
   "backend-desamparados/src/config/common.ts": {
-    "mtime": 1791791478.9638352,
-    "seen": 1791794403.3390186,
-    "ast_hash": "1f2cc798173b141d3f66e9ac48bd88a1",
-    "semantic_hash": "1f2cc798173b141d3f66e9ac48bd88a1"
+    "mtime": 1792582074.678061,
+    "seen": 1792604266.5947504,
+    "ast_hash": "e4da67635b8fc37963b798d316d605d5",
+    "semantic_hash": "e4da67635b8fc37963b798d316d605d5"
   },
   "backend-desamparados/src/config/db.ts": {
     "mtime": 1787600747.4883685,
@@ -708,10 +708,10 @@
     "semantic_hash": "2e26b0f3ee5c80811fc54ede4ddabf50"
   },
   "backend-desamparados/src/config/entorno.ts": {
-    "mtime": 1791705458.172978,
-    "seen": 1791734905.9219322,
-    "ast_hash": "094cba30b0ed746edbf4af57df70bc9f",
-    "semantic_hash": "094cba30b0ed746edbf4af57df70bc9f"
+    "mtime": 1792148992.657444,
+    "seen": 1792604266.5947504,
+    "ast_hash": "25495bea733d9f94d5de387a8c89d060",
+    "semantic_hash": "25495bea733d9f94d5de387a8c89d060"
   },
   "backend-desamparados/src/config/helmet.ts": {
     "mtime": 1789221154.5739563,
@@ -762,8 +762,8 @@
     "semantic_hash": "c46a2b8ab90f07198bf7bed6ce983715"
   },
   "backend-desamparados/src/controllers/auth.controller.ts": {
-    "mtime": 1791920469.2450244,
-    "seen": 1791926815.5440974,
+    "mtime": 1791992336.4843318,
+    "seen": 1792604266.5975497,
     "ast_hash": "d1872ddd60f1e712008e1d8d632bc559",
     "semantic_hash": "d1872ddd60f1e712008e1d8d632bc559"
   },
@@ -792,10 +792,10 @@
     "semantic_hash": "2f4a1986bc2722cfa0d44bf3b62d0770"
   },
   "backend-desamparados/src/controllers/comunicados.controller.ts": {
-    "mtime": 1790810351.2753255,
-    "seen": 1791479994.295499,
-    "ast_hash": "2f09bbaead3ded39f522f9653b6c85b8",
-    "semantic_hash": "2f09bbaead3ded39f522f9653b6c85b8"
+    "mtime": 1792148968.1833694,
+    "seen": 1792604266.5975497,
+    "ast_hash": "cda0fddaf4c8ee042c89544d6cee8231",
+    "semantic_hash": "cda0fddaf4c8ee042c89544d6cee8231"
   },
   "backend-desamparados/src/controllers/contacto.controller.ts": {
     "mtime": 1790087622.3880563,
@@ -810,10 +810,10 @@
     "semantic_hash": "5d2ac38f075afb0240c7b071f46896db"
   },
   "backend-desamparados/src/controllers/cortejo-directo.controller.ts": {
-    "mtime": 1790810351.2753255,
-    "seen": 1791479994.295499,
-    "ast_hash": "7a4aced2e0fef37f2b6a1502133372d6",
-    "semantic_hash": "7a4aced2e0fef37f2b6a1502133372d6"
+    "mtime": 1792330941.2742298,
+    "seen": 1792604266.5975497,
+    "ast_hash": "2d06b6969301b015ab9af40a7efdb1f8",
+    "semantic_hash": "2d06b6969301b015ab9af40a7efdb1f8"
   },
   "backend-desamparados/src/controllers/cortejo.controller.ts": {
     "mtime": 1790951438.939067,
@@ -828,10 +828,10 @@
     "semantic_hash": "267b49aea8d93e7ad67e9493f8fc411a"
   },
   "backend-desamparados/src/controllers/hermano.controller.ts": {
-    "mtime": 1790951438.939067,
-    "seen": 1791479994.295499,
-    "ast_hash": "004fe2b8860cd14ac17bc75c70447970",
-    "semantic_hash": "004fe2b8860cd14ac17bc75c70447970"
+    "mtime": 1792149050.724356,
+    "seen": 1792604266.5975497,
+    "ast_hash": "8045882fc3a8c37b032b853ff6f78d25",
+    "semantic_hash": "8045882fc3a8c37b032b853ff6f78d25"
   },
   "backend-desamparados/src/controllers/inventario.controller.ts": {
     "mtime": 1791397482.1372218,
@@ -894,10 +894,10 @@
     "semantic_hash": "77829c6080401571a2afdfd0b8421f6e"
   },
   "backend-desamparados/src/controllers/plantillas-correo.controller.ts": {
-    "mtime": 1790867657.7876208,
-    "seen": 1791479994.295499,
-    "ast_hash": "fc86d21817c7e9ff07c5829cab4af6dc",
-    "semantic_hash": "fc86d21817c7e9ff07c5829cab4af6dc"
+    "mtime": 1792430709.6270726,
+    "seen": 1792604266.6004632,
+    "ast_hash": "74e00c9d2e03e94cc7f33694b9dd9694",
+    "semantic_hash": "74e00c9d2e03e94cc7f33694b9dd9694"
   },
   "backend-desamparados/src/controllers/portada.controller.ts": {
     "mtime": 1790000038.9555604,
@@ -906,10 +906,10 @@
     "semantic_hash": "90b1d8d6ee6d82e3e9ca027e16e49b05"
   },
   "backend-desamparados/src/controllers/procesion.controller.ts": {
-    "mtime": 1791646973.4102526,
-    "seen": 1791734905.9219322,
-    "ast_hash": "4871b67c00c90c3737881783d6575025",
-    "semantic_hash": "4871b67c00c90c3737881783d6575025"
+    "mtime": 1791985429.6316905,
+    "seen": 1792604266.6004632,
+    "ast_hash": "e182ad83c78686e861db6c6acf38f0ab",
+    "semantic_hash": "e182ad83c78686e861db6c6acf38f0ab"
   },
   "backend-desamparados/src/controllers/publicacion.controller.ts": {
     "mtime": 1790000038.985224,
@@ -1050,10 +1050,10 @@
     "semantic_hash": "55ee9cbd9da74cba9732dfcce97c9785"
   },
   "backend-desamparados/src/domain/comunicados.ts": {
-    "mtime": 1791920469.2509532,
-    "seen": 1791926815.5440974,
-    "ast_hash": "7808acf3389d24343d20c3642cd3c1a0",
-    "semantic_hash": "7808acf3389d24343d20c3642cd3c1a0"
+    "mtime": 1792148930.6900454,
+    "seen": 1792604266.606303,
+    "ast_hash": "b57e649fffa3443b98c67a362afb7b20",
+    "semantic_hash": "b57e649fffa3443b98c67a362afb7b20"
   },
   "backend-desamparados/src/domain/configuracion.ts": {
     "mtime": 1791705424.5199506,
@@ -1068,10 +1068,10 @@
     "semantic_hash": "32e639ea00be13916880b23501d4cb4f"
   },
   "backend-desamparados/src/domain/contenido.ts": {
-    "mtime": 1791920469.2526414,
-    "seen": 1791926815.5440974,
-    "ast_hash": "4d937aa17e9eb286ef3fac958ddfadac",
-    "semantic_hash": "4d937aa17e9eb286ef3fac958ddfadac"
+    "mtime": 1792105273.674562,
+    "seen": 1792604266.606303,
+    "ast_hash": "40749de83b3da9023d197057d466f2c8",
+    "semantic_hash": "40749de83b3da9023d197057d466f2c8"
   },
   "backend-desamparados/src/domain/cortejo.ts": {
     "mtime": 1791705424.5199506,
@@ -1092,10 +1092,10 @@
     "semantic_hash": "49748e01b70670ccbde60df0eca8c99f"
   },
   "backend-desamparados/src/domain/datos-entidad.ts": {
-    "mtime": 1791789977.5749261,
-    "seen": 1791794403.3390186,
-    "ast_hash": "7ae0f5f393e76617741e802c09a2ace7",
-    "semantic_hash": "7ae0f5f393e76617741e802c09a2ace7"
+    "mtime": 1792584618.6353712,
+    "seen": 1792604266.607337,
+    "ast_hash": "f288dfb81541c3b93f6155ca32d6ab66",
+    "semantic_hash": "f288dfb81541c3b93f6155ca32d6ab66"
   },
   "backend-desamparados/src/domain/datos-procesion.ts": {
     "mtime": 1791705424.5199506,
@@ -1146,10 +1146,10 @@
     "semantic_hash": "49d1169c32565d2126d4d4b1c8a5cb84"
   },
   "backend-desamparados/src/domain/filtros-censo.ts": {
-    "mtime": 1791705424.5265653,
-    "seen": 1791734905.9219322,
-    "ast_hash": "25fa234096eb798d02e4409981f57b53",
-    "semantic_hash": "25fa234096eb798d02e4409981f57b53"
+    "mtime": 1792149050.6317677,
+    "seen": 1792604266.6086311,
+    "ast_hash": "c6de92ce8ccecfa6d58b72d3c6aa9818",
+    "semantic_hash": "c6de92ce8ccecfa6d58b72d3c6aa9818"
   },
   "backend-desamparados/src/domain/iban.ts": {
     "mtime": 1790116230.749976,
@@ -1182,10 +1182,10 @@
     "semantic_hash": "563851be3f09180bdc78ca3634f09c60"
   },
   "backend-desamparados/src/domain/modulos.ts": {
-    "mtime": 1791790722.3778641,
-    "seen": 1791794403.3390186,
-    "ast_hash": "6424ac11af356ec582068841c819c362",
-    "semantic_hash": "6424ac11af356ec582068841c819c362"
+    "mtime": 1792101517.993006,
+    "seen": 1792604266.6086311,
+    "ast_hash": "f1d48aff3a7811aa8ab9798c418bcf9f",
+    "semantic_hash": "f1d48aff3a7811aa8ab9798c418bcf9f"
   },
   "backend-desamparados/src/domain/mp4.ts": {
     "mtime": 1791705424.5305495,
@@ -1266,10 +1266,10 @@
     "semantic_hash": "d35f8b70d343b425c9d94332fffaefec"
   },
   "backend-desamparados/src/domain/plantillas-correo.ts": {
-    "mtime": 1791705424.5347118,
-    "seen": 1791734905.9219322,
-    "ast_hash": "e6e0836de9c7a147331f8e2992bc9f79",
-    "semantic_hash": "e6e0836de9c7a147331f8e2992bc9f79"
+    "mtime": 1792510379.2673948,
+    "seen": 1792604266.6118884,
+    "ast_hash": "1b75927706c500dc59475b2585e37016",
+    "semantic_hash": "1b75927706c500dc59475b2585e37016"
   },
   "backend-desamparados/src/domain/presentacion.ts": {
     "mtime": 1791705424.5347118,
@@ -1308,10 +1308,10 @@
     "semantic_hash": "03f0406724738047cdf931fafeba9296"
   },
   "backend-desamparados/src/domain/salidas.ts": {
-    "mtime": 1791705458.172978,
-    "seen": 1791734905.9219322,
-    "ast_hash": "644425ad8161b28ab942054bcccc2d44",
-    "semantic_hash": "644425ad8161b28ab942054bcccc2d44"
+    "mtime": 1792514073.8676412,
+    "seen": 1792604266.613434,
+    "ast_hash": "01787f02c17472503d0720e4ab2fc4b2",
+    "semantic_hash": "01787f02c17472503d0720e4ab2fc4b2"
   },
   "backend-desamparados/src/domain/senales-de-robot.ts": {
     "mtime": 1790087613.5328217,
@@ -1320,10 +1320,10 @@
     "semantic_hash": "7d25fd8acfb25b4c7043225ca53bb13f"
   },
   "backend-desamparados/src/domain/sepa.ts": {
-    "mtime": 1791705424.5388334,
-    "seen": 1791734905.9219322,
-    "ast_hash": "c2245ade5ab9885e5c949c6fdec5b4cd",
-    "semantic_hash": "c2245ade5ab9885e5c949c6fdec5b4cd"
+    "mtime": 1792446781.1921253,
+    "seen": 1792604266.613434,
+    "ast_hash": "cb9bbf4128a527a87f0d8a78af91a3cd",
+    "semantic_hash": "cb9bbf4128a527a87f0d8a78af91a3cd"
   },
   "backend-desamparados/src/domain/slug-noticia.ts": {
     "mtime": 1789999792.7484517,
@@ -1356,8 +1356,8 @@
     "semantic_hash": "131bf7835fca4541737d7c8cba688832"
   },
   "backend-desamparados/src/dtos/auth.dto.ts": {
-    "mtime": 1791705506.040946,
-    "seen": 1791734905.9219322,
+    "mtime": 1791992336.488101,
+    "seen": 1792604266.613434,
     "ast_hash": "b4f683ac51b42cb5a3ebd11880ae01c7",
     "semantic_hash": "b4f683ac51b42cb5a3ebd11880ae01c7"
   },
@@ -1368,10 +1368,10 @@
     "semantic_hash": "4665d8b4c16211af4169c554dcbbe0ab"
   },
   "backend-desamparados/src/dtos/email.dto.ts": {
-    "mtime": 1790951438.9547215,
-    "seen": 1791479994.295499,
-    "ast_hash": "b835a574c6e2704454463031a038de9d",
-    "semantic_hash": "b835a574c6e2704454463031a038de9d"
+    "mtime": 1792508602.3276322,
+    "seen": 1792604266.613434,
+    "ast_hash": "aec8f469bff17c5b9b8d960416f53f65",
+    "semantic_hash": "aec8f469bff17c5b9b8d960416f53f65"
   },
   "backend-desamparados/src/dtos/hermano.dto.ts": {
     "mtime": 1791705458.188488,
@@ -1416,10 +1416,10 @@
     "semantic_hash": "f120612eed1f59a8b9856147d2588b86"
   },
   "backend-desamparados/src/index.ts": {
-    "mtime": 1791924188.8115778,
-    "seen": 1791926815.5440974,
-    "ast_hash": "5f004345fb05f24f71968777723b6ae9",
-    "semantic_hash": "5f004345fb05f24f71968777723b6ae9"
+    "mtime": 1792599783.1974463,
+    "seen": 1792604266.6159322,
+    "ast_hash": "5038035de039e75af1361da8ace314a2",
+    "semantic_hash": "5038035de039e75af1361da8ace314a2"
   },
   "backend-desamparados/src/middleware/alta-documentos.middleware.ts": {
     "mtime": 1791705424.5437007,
@@ -1458,10 +1458,10 @@
     "semantic_hash": "031ad55b57fc5d0e0e2ca9335d70e2dc"
   },
   "backend-desamparados/src/middleware/upload.middleware.ts": {
-    "mtime": 1791705424.5447083,
-    "seen": 1791734905.9219322,
-    "ast_hash": "82b3dc01f625636ecfefa85a62acdf3d",
-    "semantic_hash": "82b3dc01f625636ecfefa85a62acdf3d"
+    "mtime": 1792582232.027079,
+    "seen": 1792604266.6159322,
+    "ast_hash": "76c5185ee7c83b8c77702085ba11d669",
+    "semantic_hash": "76c5185ee7c83b8c77702085ba11d669"
   },
   "backend-desamparados/src/routes/admin.routes.ts": {
     "mtime": 1789221154.6005108,
@@ -1482,8 +1482,8 @@
     "semantic_hash": "64f1d0d9ed5ad963be0614df6c15da9e"
   },
   "backend-desamparados/src/routes/auth.routes.ts": {
-    "mtime": 1791920469.2574105,
-    "seen": 1791926815.5440974,
+    "mtime": 1791992336.4891624,
+    "seen": 1792604266.6159322,
     "ast_hash": "c7b43c19932b0732c4815c6f5f1406e0",
     "semantic_hash": "c7b43c19932b0732c4815c6f5f1406e0"
   },
@@ -1500,10 +1500,10 @@
     "semantic_hash": "f73fd93ce487d46413710425d792f992"
   },
   "backend-desamparados/src/routes/comunicados.routes.ts": {
-    "mtime": 1791920469.2619183,
-    "seen": 1791926815.5440974,
-    "ast_hash": "2405e9b27c4002990cf5620214299ab3",
-    "semantic_hash": "2405e9b27c4002990cf5620214299ab3"
+    "mtime": 1791985429.633721,
+    "seen": 1792604266.6159322,
+    "ast_hash": "9b6c08e81b66aa404ef1e527d539db7f",
+    "semantic_hash": "9b6c08e81b66aa404ef1e527d539db7f"
   },
   "backend-desamparados/src/routes/contacto.routes.ts": {
     "mtime": 1790000039.0875726,
@@ -1518,10 +1518,10 @@
     "semantic_hash": "dc07d25d092539fbe5b553bb33790f37"
   },
   "backend-desamparados/src/routes/cortejo-directo.routes.ts": {
-    "mtime": 1790810351.2945006,
-    "seen": 1791479994.295499,
-    "ast_hash": "8041dad4a1f29dd881f4aa3c6d748f35",
-    "semantic_hash": "8041dad4a1f29dd881f4aa3c6d748f35"
+    "mtime": 1792330941.2601838,
+    "seen": 1792604266.6159322,
+    "ast_hash": "4ec8d475bac54e7037da550cbd134ba2",
+    "semantic_hash": "4ec8d475bac54e7037da550cbd134ba2"
   },
   "backend-desamparados/src/routes/datos.routes.ts": {
     "mtime": 1790951438.9591527,
@@ -1530,10 +1530,10 @@
     "semantic_hash": "1a3bfbcd5932deed62b057f6d5786f1a"
   },
   "backend-desamparados/src/routes/hermano.routes.ts": {
-    "mtime": 1791920469.2619183,
-    "seen": 1791926815.5440974,
-    "ast_hash": "c83347b3bf33e149c8f7f185490d7634",
-    "semantic_hash": "c83347b3bf33e149c8f7f185490d7634"
+    "mtime": 1792510595.955858,
+    "seen": 1792604266.6159322,
+    "ast_hash": "6369e1001a8dd8a2bcced3430fa749dd",
+    "semantic_hash": "6369e1001a8dd8a2bcced3430fa749dd"
   },
   "backend-desamparados/src/routes/inventario.routes.ts": {
     "mtime": 1790951438.9601593,
@@ -1578,10 +1578,10 @@
     "semantic_hash": "d0212f9c13aa2b4c23133242ae3cd3a9"
   },
   "backend-desamparados/src/routes/plantillas-correo.routes.ts": {
-    "mtime": 1790870725.4751081,
-    "seen": 1791479994.295499,
-    "ast_hash": "e6d2087430cf1576d742400bde57bb5b",
-    "semantic_hash": "e6d2087430cf1576d742400bde57bb5b"
+    "mtime": 1792430709.628088,
+    "seen": 1792604266.6159322,
+    "ast_hash": "c3efffd2c2806aad67f1727ee8b1ca3d",
+    "semantic_hash": "c3efffd2c2806aad67f1727ee8b1ca3d"
   },
   "backend-desamparados/src/routes/portada.routes.ts": {
     "mtime": 1791476496.2341816,
@@ -1590,10 +1590,10 @@
     "semantic_hash": "4c5c04de20ebbf0162e8ec89c163e6c5"
   },
   "backend-desamparados/src/routes/procesion.routes.ts": {
-    "mtime": 1791920469.2630336,
-    "seen": 1791926815.5440974,
-    "ast_hash": "684d36a646f58b525f21a2491e2686a8",
-    "semantic_hash": "684d36a646f58b525f21a2491e2686a8"
+    "mtime": 1791985429.6316905,
+    "seen": 1792604266.6159322,
+    "ast_hash": "3ae1cb0959bafee048184cfe86b5d40d",
+    "semantic_hash": "3ae1cb0959bafee048184cfe86b5d40d"
   },
   "backend-desamparados/src/routes/publicacion.routes.ts": {
     "mtime": 1791476496.237411,
@@ -1674,8 +1674,8 @@
     "semantic_hash": "3e9759ec52006f4245a496954cdfd597"
   },
   "backend-desamparados/src/schemas/auth.schema.ts": {
-    "mtime": 1791789977.578208,
-    "seen": 1791794403.340525,
+    "mtime": 1791992336.490893,
+    "seen": 1792604266.6159322,
     "ast_hash": "cc0e826afc0b28e7b586f9f616c032f4",
     "semantic_hash": "cc0e826afc0b28e7b586f9f616c032f4"
   },
@@ -1686,10 +1686,10 @@
     "semantic_hash": "eb6dd240a11a60470c0cd09b0f43836f"
   },
   "backend-desamparados/src/schemas/bloques.schema.ts": {
-    "mtime": 1791921989.7130668,
-    "seen": 1791926815.5451035,
-    "ast_hash": "da1dafd504f2a20d8f4b245d52e39f58",
-    "semantic_hash": "da1dafd504f2a20d8f4b245d52e39f58"
+    "mtime": 1792421275.451126,
+    "seen": 1792604266.6159322,
+    "ast_hash": "424048a55650279488a29a34884c8d45",
+    "semantic_hash": "424048a55650279488a29a34884c8d45"
   },
   "backend-desamparados/src/schemas/cabildos.schema.ts": {
     "mtime": 1790810351.2999194,
@@ -1710,10 +1710,10 @@
     "semantic_hash": "ee55e029fe80df72999835dc09f8620f"
   },
   "backend-desamparados/src/schemas/comunicados.schema.ts": {
-    "mtime": 1791920469.2661047,
-    "seen": 1791926815.5451035,
-    "ast_hash": "d29a30e3ebe215ecd19e9004e1a6a8a5",
-    "semantic_hash": "d29a30e3ebe215ecd19e9004e1a6a8a5"
+    "mtime": 1792148968.1687474,
+    "seen": 1792604266.6159322,
+    "ast_hash": "6ca32dd39dbabedeff142162e2177d25",
+    "semantic_hash": "6ca32dd39dbabedeff142162e2177d25"
   },
   "backend-desamparados/src/schemas/contacto.schema.ts": {
     "mtime": 1791705424.5467777,
@@ -1722,16 +1722,16 @@
     "semantic_hash": "413e6092b8cceedf8f948befcac6ae7b"
   },
   "backend-desamparados/src/schemas/contenido.schema.ts": {
-    "mtime": 1791922002.8731933,
-    "seen": 1791926815.5451035,
-    "ast_hash": "07e7308f9ca008cb4bc0f7bf5d0b0071",
-    "semantic_hash": "07e7308f9ca008cb4bc0f7bf5d0b0071"
+    "mtime": 1792107096.621218,
+    "seen": 1792604266.6159322,
+    "ast_hash": "b04cc83ddf1bcb62a2e06065d67071dc",
+    "semantic_hash": "b04cc83ddf1bcb62a2e06065d67071dc"
   },
   "backend-desamparados/src/schemas/cortejo-directo.schema.ts": {
-    "mtime": 1790810351.2999194,
-    "seen": 1791479994.295499,
-    "ast_hash": "80fc181f732df5c50bb24e5d0e6876bc",
-    "semantic_hash": "80fc181f732df5c50bb24e5d0e6876bc"
+    "mtime": 1792330941.2344697,
+    "seen": 1792604266.6159322,
+    "ast_hash": "b4dea0f726616abd00816fc95d865853",
+    "semantic_hash": "b4dea0f726616abd00816fc95d865853"
   },
   "backend-desamparados/src/schemas/datos.schema.ts": {
     "mtime": 1790767590.224184,
@@ -1740,10 +1740,10 @@
     "semantic_hash": "9e93acc7db0d16a91c5b0915b215cc3d"
   },
   "backend-desamparados/src/schemas/hermano.schema.ts": {
-    "mtime": 1791789977.579992,
-    "seen": 1791794403.340525,
-    "ast_hash": "9466d368e32185b1278dbc0e70bdd08e",
-    "semantic_hash": "9466d368e32185b1278dbc0e70bdd08e"
+    "mtime": 1792149050.6317677,
+    "seen": 1792604266.6159322,
+    "ast_hash": "0e54ddea0f37d811f948d2fcc1f09ce5",
+    "semantic_hash": "0e54ddea0f37d811f948d2fcc1f09ce5"
   },
   "backend-desamparados/src/schemas/inventario.schema.ts": {
     "mtime": 1791705424.5467777,
@@ -1788,10 +1788,10 @@
     "semantic_hash": "33f38f11bd74c55138ea1cc8938f6bc8"
   },
   "backend-desamparados/src/schemas/plantillas-correo.schema.ts": {
-    "mtime": 1790867676.2048945,
-    "seen": 1791479994.295499,
-    "ast_hash": "837c9405e3f9d1e52af78799bfea83e4",
-    "semantic_hash": "837c9405e3f9d1e52af78799bfea83e4"
+    "mtime": 1792430188.7183595,
+    "seen": 1792604266.6159322,
+    "ast_hash": "e733b164724a5fb621b0388995fc0a8e",
+    "semantic_hash": "e733b164724a5fb621b0388995fc0a8e"
   },
   "backend-desamparados/src/schemas/portada.schema.ts": {
     "mtime": 1791304019.6507635,
@@ -1860,22 +1860,22 @@
     "semantic_hash": "bf194b5cfda819239d07c7f557fe2973"
   },
   "backend-desamparados/src/services/auditoria.service.ts": {
-    "mtime": 1791920469.276115,
-    "seen": 1791926815.5451035,
-    "ast_hash": "215c5a848131c2e73109252b6de6b2fc",
-    "semantic_hash": "215c5a848131c2e73109252b6de6b2fc"
+    "mtime": 1792599783.1926973,
+    "seen": 1792604266.6261196,
+    "ast_hash": "39aa792fc3e3644b4f670197da8ec2df",
+    "semantic_hash": "39aa792fc3e3644b4f670197da8ec2df"
   },
   "backend-desamparados/src/services/auth.service.ts": {
-    "mtime": 1791920469.276115,
-    "seen": 1791926815.5451035,
-    "ast_hash": "f1bd0b4850c24a25f93354aa769dc396",
-    "semantic_hash": "f1bd0b4850c24a25f93354aa769dc396"
+    "mtime": 1792099351.3682983,
+    "seen": 1792604266.6261196,
+    "ast_hash": "05436c55df6932be6e761fe289257700",
+    "semantic_hash": "05436c55df6932be6e761fe289257700"
   },
   "backend-desamparados/src/services/auth/codigos-2fa.ts": {
-    "mtime": 1791705424.5492537,
-    "seen": 1791734905.9219322,
-    "ast_hash": "eebe0f7e1021e070f1d273467db7e6f1",
-    "semantic_hash": "eebe0f7e1021e070f1d273467db7e6f1"
+    "mtime": 1792099351.3750665,
+    "seen": 1792604266.6261196,
+    "ast_hash": "e0b7dee1e5dcfb7e0795b34e4934f95c",
+    "semantic_hash": "e0b7dee1e5dcfb7e0795b34e4934f95c"
   },
   "backend-desamparados/src/services/aviso.service.ts": {
     "mtime": 1791920469.276115,
@@ -1902,10 +1902,10 @@
     "semantic_hash": "82e759f6eaa98e9e5dde822bf4e8f8d6"
   },
   "backend-desamparados/src/services/cartas/cartas.service.ts": {
-    "mtime": 1791705424.5492537,
-    "seen": 1791734905.9219322,
-    "ast_hash": "fac9da6b89ad0700b2f38100bf0eaed4",
-    "semantic_hash": "fac9da6b89ad0700b2f38100bf0eaed4"
+    "mtime": 1792149050.7205038,
+    "seen": 1792604266.628805,
+    "ast_hash": "8588f14c34b136deb07db3cffe04bae7",
+    "semantic_hash": "8588f14c34b136deb07db3cffe04bae7"
   },
   "backend-desamparados/src/services/cartas/etiquetas-pdf.ts": {
     "mtime": 1790845857.6417394,
@@ -1920,16 +1920,16 @@
     "semantic_hash": "ed2cc7e013279a07063b9781525062ae"
   },
   "backend-desamparados/src/services/censo.service.ts": {
-    "mtime": 1791789977.5838318,
-    "seen": 1791794403.340525,
-    "ast_hash": "437a6be6f4447b3d0bd0d0f446c5fa3d",
-    "semantic_hash": "437a6be6f4447b3d0bd0d0f446c5fa3d"
+    "mtime": 1792149050.7205038,
+    "seen": 1792604266.628805,
+    "ast_hash": "7740e823b30c3a4d0839be63d7e6a65a",
+    "semantic_hash": "7740e823b30c3a4d0839be63d7e6a65a"
   },
   "backend-desamparados/src/services/comunicados.service.ts": {
-    "mtime": 1791920469.2799351,
-    "seen": 1791926815.5451035,
-    "ast_hash": "58272fa6cc8543c94924f2e544739806",
-    "semantic_hash": "58272fa6cc8543c94924f2e544739806"
+    "mtime": 1792148953.2324283,
+    "seen": 1792604266.628805,
+    "ast_hash": "940eeded5024098b395795bafb0a7c35",
+    "semantic_hash": "940eeded5024098b395795bafb0a7c35"
   },
   "backend-desamparados/src/services/contenido.service.ts": {
     "mtime": 1791705424.5492537,
@@ -1938,28 +1938,28 @@
     "semantic_hash": "cbb17f47fac59b2d290c06b69195b5ed"
   },
   "backend-desamparados/src/services/correos/componer.ts": {
-    "mtime": 1791476496.2441285,
-    "seen": 1791479994.295499,
-    "ast_hash": "2371c15dc5b9a15ae86f4392626b30b5",
-    "semantic_hash": "2371c15dc5b9a15ae86f4392626b30b5"
+    "mtime": 1792584683.2238853,
+    "seen": 1792604266.628805,
+    "ast_hash": "e21884b2e6ab57c1bc70026c4fc4dbf5",
+    "semantic_hash": "e21884b2e6ab57c1bc70026c4fc4dbf5"
   },
   "backend-desamparados/src/services/correos/envio.ts": {
-    "mtime": 1791789977.5838318,
-    "seen": 1791794403.340525,
-    "ast_hash": "23dc45713dc3e541bb4aa04201f80159",
-    "semantic_hash": "23dc45713dc3e541bb4aa04201f80159"
+    "mtime": 1792508770.3423386,
+    "seen": 1792604266.628805,
+    "ast_hash": "3e61de7180c4d9b91f5ee9ef80d14a79",
+    "semantic_hash": "3e61de7180c4d9b91f5ee9ef80d14a79"
   },
   "backend-desamparados/src/services/correos/plantilla.ts": {
-    "mtime": 1791789977.585842,
-    "seen": 1791794403.340525,
-    "ast_hash": "41c9b0789b9a001130fbb7ab9edc82f7",
-    "semantic_hash": "41c9b0789b9a001130fbb7ab9edc82f7"
+    "mtime": 1792582074.6772916,
+    "seen": 1792604266.628805,
+    "ast_hash": "bd482cf142f5b2a1b2e882e998936ea2",
+    "semantic_hash": "bd482cf142f5b2a1b2e882e998936ea2"
   },
   "backend-desamparados/src/services/cortejo-directo.service.ts": {
-    "mtime": 1791924423.5746565,
-    "seen": 1791926815.5451035,
-    "ast_hash": "f7d8236538aba5baecc3deb647b64c5d",
-    "semantic_hash": "f7d8236538aba5baecc3deb647b64c5d"
+    "mtime": 1792330925.930557,
+    "seen": 1792604266.628805,
+    "ast_hash": "35fb10b45dc56114bf382fd9d2f12bea",
+    "semantic_hash": "35fb10b45dc56114bf382fd9d2f12bea"
   },
   "backend-desamparados/src/services/datos.service.ts": {
     "mtime": 1791705424.5492537,
@@ -1974,16 +1974,16 @@
     "semantic_hash": "f737827815e81126324e4e5628ebaea4"
   },
   "backend-desamparados/src/services/doble-factor.service.ts": {
-    "mtime": 1791476496.2456777,
-    "seen": 1791479994.295499,
-    "ast_hash": "744360519f41556d2719e5e953ef24c1",
-    "semantic_hash": "744360519f41556d2719e5e953ef24c1"
+    "mtime": 1792099351.3682983,
+    "seen": 1792604266.630341,
+    "ast_hash": "c66b8645aa5a898c1431e30c8a33b64e",
+    "semantic_hash": "c66b8645aa5a898c1431e30c8a33b64e"
   },
   "backend-desamparados/src/services/email.service.ts": {
-    "mtime": 1791705424.558406,
-    "seen": 1791734905.9219322,
-    "ast_hash": "5e613510ac53997d60051c753934cb59",
-    "semantic_hash": "5e613510ac53997d60051c753934cb59"
+    "mtime": 1792510379.268952,
+    "seen": 1792604266.630341,
+    "ast_hash": "fb78c4d951c749e87c2b92734ebbe736",
+    "semantic_hash": "fb78c4d951c749e87c2b92734ebbe736"
   },
   "backend-desamparados/src/services/ficha-patrimonio-pdf.ts": {
     "mtime": 1791789977.5881398,
@@ -1992,10 +1992,10 @@
     "semantic_hash": "83e3c0d8f84b24d311a259140bd97e17"
   },
   "backend-desamparados/src/services/hermanos/comunes.ts": {
-    "mtime": 1791705424.5599148,
-    "seen": 1791734905.9219322,
-    "ast_hash": "693d32a4994033385da2c6f35ed5cdea",
-    "semantic_hash": "693d32a4994033385da2c6f35ed5cdea"
+    "mtime": 1792149055.7443783,
+    "seen": 1792604266.630341,
+    "ast_hash": "108a7a8c3f193115d0f10fd8eccd468c",
+    "semantic_hash": "108a7a8c3f193115d0f10fd8eccd468c"
   },
   "backend-desamparados/src/services/informe-anual.service.ts": {
     "mtime": 1791705424.5599148,
@@ -2016,10 +2016,10 @@
     "semantic_hash": "ef97bde77083db7c75cafb48760b1a1f"
   },
   "backend-desamparados/src/services/informes/pdf.ts": {
-    "mtime": 1791790641.7311525,
-    "seen": 1791794403.340525,
-    "ast_hash": "0d892e9ca7a7a0f0adb622f0a39f0090",
-    "semantic_hash": "0d892e9ca7a7a0f0adb622f0a39f0090"
+    "mtime": 1792582074.6763213,
+    "seen": 1792604266.630341,
+    "ast_hash": "1c537f8207a9e09a8ea40055dca3baa7",
+    "semantic_hash": "1c537f8207a9e09a8ea40055dca3baa7"
   },
   "backend-desamparados/src/services/inventario.service.ts": {
     "mtime": 1791476496.2469876,
@@ -2046,16 +2046,16 @@
     "semantic_hash": "1fd686ff9076716146ed8cb5c68891ee"
   },
   "backend-desamparados/src/services/mis-datos.service.ts": {
-    "mtime": 1791789977.591426,
-    "seen": 1791794403.340525,
-    "ast_hash": "d5c2d0aa16f9307e11ede5303db5cebb",
-    "semantic_hash": "d5c2d0aa16f9307e11ede5303db5cebb"
+    "mtime": 1792510477.3416197,
+    "seen": 1792604266.630341,
+    "ast_hash": "adc54eaf7389d36745db4b944577acc4",
+    "semantic_hash": "adc54eaf7389d36745db4b944577acc4"
   },
   "backend-desamparados/src/services/mis-fichas.service.ts": {
-    "mtime": 1791789977.591426,
-    "seen": 1791794403.340525,
-    "ast_hash": "04420dbc14dd87cd734adf9bae5f6b4f",
-    "semantic_hash": "04420dbc14dd87cd734adf9bae5f6b4f"
+    "mtime": 1792448757.8056135,
+    "seen": 1792604266.630341,
+    "ast_hash": "0de41c24a282b47bdf5dff48ae17cdc4",
+    "semantic_hash": "0de41c24a282b47bdf5dff48ae17cdc4"
   },
   "backend-desamparados/src/services/mis-recibos.service.ts": {
     "mtime": 1790250163.8813858,
@@ -2076,10 +2076,10 @@
     "semantic_hash": "f950a0affdb6ba7c2577e2100a5ca48c"
   },
   "backend-desamparados/src/services/modulos.service.ts": {
-    "mtime": 1791790744.0203462,
-    "seen": 1791794403.340525,
-    "ast_hash": "aeaaa6c3a56cc521a0afbffb695522de",
-    "semantic_hash": "aeaaa6c3a56cc521a0afbffb695522de"
+    "mtime": 1792101571.732386,
+    "seen": 1792604266.632375,
+    "ast_hash": "bc418ab90aa205402f22bccb131f7a4e",
+    "semantic_hash": "bc418ab90aa205402f22bccb131f7a4e"
   },
   "backend-desamparados/src/services/norma43.service.ts": {
     "mtime": 1791920469.2817702,
@@ -2106,10 +2106,10 @@
     "semantic_hash": "d134ba72068239bad08420481e5be43a"
   },
   "backend-desamparados/src/services/pagos/pago-en-linea.service.ts": {
-    "mtime": 1791920469.2835164,
-    "seen": 1791926815.5451035,
-    "ast_hash": "07cdeaebea1d017de512da69c10c1a2b",
-    "semantic_hash": "07cdeaebea1d017de512da69c10c1a2b"
+    "mtime": 1792510410.1320798,
+    "seen": 1792604266.632375,
+    "ast_hash": "c93924a2a6749cffd2de30a7349e6c73",
+    "semantic_hash": "c93924a2a6749cffd2de30a7349e6c73"
   },
   "backend-desamparados/src/services/panel.service.ts": {
     "mtime": 1791705424.568048,
@@ -2124,10 +2124,10 @@
     "semantic_hash": "d746dcce8bc9decdad4c7a9f944631a9"
   },
   "backend-desamparados/src/services/plantillas-correo.service.ts": {
-    "mtime": 1791887585.9480548,
-    "seen": 1791888821.830005,
-    "ast_hash": "0d5a681bde8a3424f4ec152adb89aa3b",
-    "semantic_hash": "0d5a681bde8a3424f4ec152adb89aa3b"
+    "mtime": 1792430709.628088,
+    "seen": 1792604266.632375,
+    "ast_hash": "b2b10f47bf32719792d1e56b81d288d1",
+    "semantic_hash": "b2b10f47bf32719792d1e56b81d288d1"
   },
   "backend-desamparados/src/services/portada.service.ts": {
     "mtime": 1791705424.568048,
@@ -2154,16 +2154,16 @@
     "semantic_hash": "3309e7b68187b813d43a87cbea3667d2"
   },
   "backend-desamparados/src/services/procesion/mesa.service.ts": {
-    "mtime": 1791920469.2835164,
-    "seen": 1791926815.5451035,
-    "ast_hash": "aa61e5dc01293060c2ffbe103a8f1063",
-    "semantic_hash": "aa61e5dc01293060c2ffbe103a8f1063"
+    "mtime": 1792514086.3707294,
+    "seen": 1792604266.6343796,
+    "ast_hash": "a04d131d16d53eb59f1161b80ef05b15",
+    "semantic_hash": "a04d131d16d53eb59f1161b80ef05b15"
   },
   "backend-desamparados/src/services/procesion/mi-procesion.service.ts": {
-    "mtime": 1791920469.2835164,
-    "seen": 1791926815.5451035,
-    "ast_hash": "b800750daa0185b47957d84251e9c5da",
-    "semantic_hash": "b800750daa0185b47957d84251e9c5da"
+    "mtime": 1792510444.5711687,
+    "seen": 1792604266.6343796,
+    "ast_hash": "1fa9ff872e5e9d040d904334af2e3f1e",
+    "semantic_hash": "1fa9ff872e5e9d040d904334af2e3f1e"
   },
   "backend-desamparados/src/services/procesion/papeleta-pdf.ts": {
     "mtime": 1791789977.596017,
@@ -2172,16 +2172,16 @@
     "semantic_hash": "f5f838472c45422e54f26017a7be844b"
   },
   "backend-desamparados/src/services/procesion/papeletas.service.ts": {
-    "mtime": 1791920469.289283,
-    "seen": 1791926815.5451035,
-    "ast_hash": "2129b932b48af8e4ac8e5d7d3f637368",
-    "semantic_hash": "2129b932b48af8e4ac8e5d7d3f637368"
+    "mtime": 1792510414.598578,
+    "seen": 1792604266.6343796,
+    "ast_hash": "e8e91eeb0124854f6eca6861a6c3b3c2",
+    "semantic_hash": "e8e91eeb0124854f6eca6861a6c3b3c2"
   },
   "backend-desamparados/src/services/procesion/plazo.service.ts": {
-    "mtime": 1791920469.2898674,
-    "seen": 1791926815.5451035,
-    "ast_hash": "366a5cec33176fc93958eba137612218",
-    "semantic_hash": "366a5cec33176fc93958eba137612218"
+    "mtime": 1791985328.881189,
+    "seen": 1792604266.6343796,
+    "ast_hash": "99d5bad3cdbe6a9c3451252ef8118215",
+    "semantic_hash": "99d5bad3cdbe6a9c3451252ef8118215"
   },
   "backend-desamparados/src/services/procesion/puerta.service.ts": {
     "mtime": 1791705424.5695872,
@@ -2196,10 +2196,10 @@
     "semantic_hash": "243b3ed1d88ed19032d6bea1c1262312"
   },
   "backend-desamparados/src/services/procesion/salidas.service.ts": {
-    "mtime": 1791920469.2908733,
-    "seen": 1791926815.5451035,
-    "ast_hash": "3b494e0d7975d9048ed550aa65c6413f",
-    "semantic_hash": "3b494e0d7975d9048ed550aa65c6413f"
+    "mtime": 1792514086.368153,
+    "seen": 1792604266.6343796,
+    "ast_hash": "7cbdfc48919b6b110cf73491ace48d2d",
+    "semantic_hash": "7cbdfc48919b6b110cf73491ace48d2d"
   },
   "backend-desamparados/src/services/procesion/turnos.service.ts": {
     "mtime": 1791920469.2908733,
@@ -2214,10 +2214,10 @@
     "semantic_hash": "8008da2492ba805ff61b3890cd40c4f6"
   },
   "backend-desamparados/src/services/procesion/zonas.service.ts": {
-    "mtime": 1791920469.2908733,
-    "seen": 1791926815.5451035,
-    "ast_hash": "3ad8b6b5925ebf8f03af5f371be74556",
-    "semantic_hash": "3ad8b6b5925ebf8f03af5f371be74556"
+    "mtime": 1792514086.3691554,
+    "seen": 1792604266.6343796,
+    "ast_hash": "18bb11d34834fa038c92691bdb889f07",
+    "semantic_hash": "18bb11d34834fa038c92691bdb889f07"
   },
   "backend-desamparados/src/services/publicacion.service.ts": {
     "mtime": 1791705424.5695872,
@@ -2226,10 +2226,10 @@
     "semantic_hash": "52c25b51515d43be65455c42ad1d6c6b"
   },
   "backend-desamparados/src/services/recibo.service.ts": {
-    "mtime": 1791920469.2950497,
-    "seen": 1791926815.5451035,
-    "ast_hash": "6bfc08dcb5b3cc609b81f653c114297d",
-    "semantic_hash": "6bfc08dcb5b3cc609b81f653c114297d"
+    "mtime": 1792508711.4786422,
+    "seen": 1792604266.6343796,
+    "ast_hash": "e7bdcf53e0203df12ccbff1ef6fb0bf3",
+    "semantic_hash": "e7bdcf53e0203df12ccbff1ef6fb0bf3"
   },
   "backend-desamparados/src/services/recibos/comunes.ts": {
     "mtime": 1791920469.2950497,
@@ -2244,10 +2244,10 @@
     "semantic_hash": "7188e6c62b336bc30686568181ec8f0c"
   },
   "backend-desamparados/src/services/remesa.service.ts": {
-    "mtime": 1791476496.261248,
-    "seen": 1791479994.295499,
-    "ast_hash": "93842fc666f980b0f61bd688be93b08f",
-    "semantic_hash": "93842fc666f980b0f61bd688be93b08f"
+    "mtime": 1792446781.1885421,
+    "seen": 1792604266.6343796,
+    "ast_hash": "b6f2c89ba6f6adb28a960757101d43c3",
+    "semantic_hash": "b6f2c89ba6f6adb28a960757101d43c3"
   },
   "backend-desamparados/src/services/retablo.service.ts": {
     "mtime": 1791705424.5766127,
@@ -2268,10 +2268,10 @@
     "semantic_hash": "ca7cca320f12ccd26c7b97a13816291d"
   },
   "backend-desamparados/src/services/sitemap.service.ts": {
-    "mtime": 1791920469.297258,
-    "seen": 1791926815.5451035,
-    "ast_hash": "996c5f8d391b276978c081cad061b307",
-    "semantic_hash": "996c5f8d391b276978c081cad061b307"
+    "mtime": 1792361469.0938313,
+    "seen": 1792604266.6363842,
+    "ast_hash": "c8c2d5e22b16373f185c810bd36a4633",
+    "semantic_hash": "c8c2d5e22b16373f185c810bd36a4633"
   },
   "backend-desamparados/src/services/solicitudes.service.ts": {
     "mtime": 1790157147.4476416,
@@ -2298,10 +2298,10 @@
     "semantic_hash": "b3ee85c7d31ea4e3b9fef19dcd8bde12"
   },
   "backend-desamparados/src/utils/buzon-pruebas.ts": {
-    "mtime": 1790803226.057031,
-    "seen": 1791479994.295499,
-    "ast_hash": "d5d0d0018861a439e8e883416945c98a",
-    "semantic_hash": "d5d0d0018861a439e8e883416945c98a"
+    "mtime": 1792508770.3443475,
+    "seen": 1792604266.6363842,
+    "ast_hash": "8320e7019ddb181e379c1738ee6b2c83",
+    "semantic_hash": "8320e7019ddb181e379c1738ee6b2c83"
   },
   "backend-desamparados/src/utils/cifrado-totp.ts": {
     "mtime": 1791705424.5792215,
@@ -2316,10 +2316,10 @@
     "semantic_hash": "3f48087d1d29b75f14855b18a873fbe4"
   },
   "backend-desamparados/src/utils/contador-fallos.ts": {
-    "mtime": 1791705424.5812297,
-    "seen": 1791734905.9219322,
-    "ast_hash": "5c8bc1b2d3b090deda9376dddf461b92",
-    "semantic_hash": "5c8bc1b2d3b090deda9376dddf461b92"
+    "mtime": 1792099327.373569,
+    "seen": 1792604266.6363842,
+    "ast_hash": "463a7e29977a3ecb98eb71eb015afa4d",
+    "semantic_hash": "463a7e29977a3ecb98eb71eb015afa4d"
   },
   "backend-desamparados/src/utils/cookies.ts": {
     "mtime": 1791139995.3979006,
@@ -2340,10 +2340,10 @@
     "semantic_hash": "fa535a6acbf101d0bdadf121e5625790"
   },
   "backend-desamparados/src/utils/ficheros-publicos.ts": {
-    "mtime": 1791705424.5812297,
-    "seen": 1791734905.9219322,
-    "ast_hash": "94e3b522a301e16d655c4211a5494709",
-    "semantic_hash": "94e3b522a301e16d655c4211a5494709"
+    "mtime": 1792508630.5323281,
+    "seen": 1792604266.6363842,
+    "ast_hash": "658104ff13cf6fec6dd5318ec38203bc",
+    "semantic_hash": "658104ff13cf6fec6dd5318ec38203bc"
   },
   "backend-desamparados/src/utils/fila-de-fotos.ts": {
     "mtime": 1791219212.89495,
@@ -2484,10 +2484,10 @@
     "semantic_hash": "bc2ecc2222600455168182db05c32bf8"
   },
   "backend-desamparados/test/bloques-esquemas.test.ts": {
-    "mtime": 1790804646.2270942,
-    "seen": 1791479994.295499,
-    "ast_hash": "e285ecbc3bf12784c22ad2f10fa8c846",
-    "semantic_hash": "e285ecbc3bf12784c22ad2f10fa8c846"
+    "mtime": 1792330985.2470856,
+    "seen": 1792604266.642207,
+    "ast_hash": "26b886674995c1b6a51e0cffaebe3fc3",
+    "semantic_hash": "26b886674995c1b6a51e0cffaebe3fc3"
   },
   "backend-desamparados/test/busqueda-texto.test.ts": {
     "mtime": 1790119471.2458198,
@@ -2562,10 +2562,10 @@
     "semantic_hash": "728e415e12049c91e0ffae59b322b07b"
   },
   "backend-desamparados/test/comunicados-db.test.ts": {
-    "mtime": 1791920469.3077917,
-    "seen": 1791926815.5451035,
-    "ast_hash": "7fe6820454598fd16b345129e2825b79",
-    "semantic_hash": "7fe6820454598fd16b345129e2825b79"
+    "mtime": 1792149306.8131187,
+    "seen": 1792604266.6427155,
+    "ast_hash": "954e5c8b0babf42ed0d2cda592cc258f",
+    "semantic_hash": "954e5c8b0babf42ed0d2cda592cc258f"
   },
   "backend-desamparados/test/comunicados.test.ts": {
     "mtime": 1791920469.308854,
@@ -2598,16 +2598,16 @@
     "semantic_hash": "4b555582350b8cdb61916570a8713bf8"
   },
   "backend-desamparados/test/contacto.test.ts": {
-    "mtime": 1791789977.5990274,
-    "seen": 1791794403.340525,
-    "ast_hash": "4bdbdcf0c9f5b6767b052888242bee5e",
-    "semantic_hash": "4bdbdcf0c9f5b6767b052888242bee5e"
+    "mtime": 1792510553.1728463,
+    "seen": 1792604266.6457539,
+    "ast_hash": "90969df82cfdf1572ce8fb5d10cf0ce2",
+    "semantic_hash": "90969df82cfdf1572ce8fb5d10cf0ce2"
   },
   "backend-desamparados/test/contador-fallos.test.ts": {
-    "mtime": 1791476496.2661953,
-    "seen": 1791479994.295499,
-    "ast_hash": "59187a6604729f3a598e7784756bc27d",
-    "semantic_hash": "59187a6604729f3a598e7784756bc27d"
+    "mtime": 1792099495.2648344,
+    "seen": 1792604266.6457539,
+    "ast_hash": "f0eb0196575592ad82d2c6e1f5b71e53",
+    "semantic_hash": "f0eb0196575592ad82d2c6e1f5b71e53"
   },
   "backend-desamparados/test/contenido-api.test.ts": {
     "mtime": 1791807747.7061498,
@@ -2622,16 +2622,16 @@
     "semantic_hash": "7dda2988220c83867dae53a473e357ef"
   },
   "backend-desamparados/test/contenido-esquemas.test.ts": {
-    "mtime": 1791922078.1985295,
-    "seen": 1791926815.5451035,
-    "ast_hash": "181d0005c413b421ded19a13a2d624a1",
-    "semantic_hash": "181d0005c413b421ded19a13a2d624a1"
+    "mtime": 1792107302.3308582,
+    "seen": 1792604266.6457539,
+    "ast_hash": "6b05f68c5a6337d6ed7feda942567c35",
+    "semantic_hash": "6b05f68c5a6337d6ed7feda942567c35"
   },
   "backend-desamparados/test/contenido-mezcla.test.ts": {
-    "mtime": 1791807764.8681724,
-    "seen": 1791825912.2906446,
-    "ast_hash": "3dea66970d6486c7cd872af2f5198611",
-    "semantic_hash": "3dea66970d6486c7cd872af2f5198611"
+    "mtime": 1792428042.2711773,
+    "seen": 1792604266.6457539,
+    "ast_hash": "4817c4908d3e91423dcdeffcf8a380d8",
+    "semantic_hash": "4817c4908d3e91423dcdeffcf8a380d8"
   },
   "backend-desamparados/test/cookies-sesion.test.ts": {
     "mtime": 1791139995.3996387,
@@ -2652,10 +2652,10 @@
     "semantic_hash": "96f558282c4449b1e6277c78335dcf5e"
   },
   "backend-desamparados/test/cortejo-directo-db.test.ts": {
-    "mtime": 1791924451.2605329,
-    "seen": 1791926815.5451035,
-    "ast_hash": "a7085f5b09a0aa8eefbdb6ecc57f9557",
-    "semantic_hash": "a7085f5b09a0aa8eefbdb6ecc57f9557"
+    "mtime": 1792331041.6849792,
+    "seen": 1792604266.6457539,
+    "ast_hash": "029864aa9b9ee9c539dc82f7920d3860",
+    "semantic_hash": "029864aa9b9ee9c539dc82f7920d3860"
   },
   "backend-desamparados/test/cortejo.test.ts": {
     "mtime": 1790951438.9998326,
@@ -2664,10 +2664,10 @@
     "semantic_hash": "a87831a01a0548f9e79bab87be6218ab"
   },
   "backend-desamparados/test/cuenta-seguridad.test.ts": {
-    "mtime": 1791476496.2789493,
-    "seen": 1791479994.295499,
-    "ast_hash": "781fd9124f397922a1c7ca6127427ee0",
-    "semantic_hash": "781fd9124f397922a1c7ca6127427ee0"
+    "mtime": 1792099412.0789657,
+    "seen": 1792604266.647417,
+    "ast_hash": "3081fa52fa5d7021d67268343b7ff4c5",
+    "semantic_hash": "3081fa52fa5d7021d67268343b7ff4c5"
   },
   "backend-desamparados/test/datos-evento.test.ts": {
     "mtime": 1790951438.9998326,
@@ -2730,10 +2730,10 @@
     "semantic_hash": "91931e394ccaac94fe04a7e03379f4e0"
   },
   "backend-desamparados/test/entorno.test.ts": {
-    "mtime": 1791671137.4040606,
-    "seen": 1791734905.9219322,
-    "ast_hash": "60e6275304676a276cc39ebdecf8a157",
-    "semantic_hash": "60e6275304676a276cc39ebdecf8a157"
+    "mtime": 1791982155.3335252,
+    "seen": 1792604266.647417,
+    "ast_hash": "f587e8ef5deea04567d2d662a3f08734",
+    "semantic_hash": "f587e8ef5deea04567d2d662a3f08734"
   },
   "backend-desamparados/test/errores-http.test.ts": {
     "mtime": 1791476496.2820175,
@@ -2766,10 +2766,10 @@
     "semantic_hash": "eb36cf8f3dcf0bc1f44fbff58d77315b"
   },
   "backend-desamparados/test/ficheros-huerfanos.test.ts": {
-    "mtime": 1791666773.1844258,
-    "seen": 1791734905.9219322,
-    "ast_hash": "5d4ea33e3b1c1930a14e5d4a7be0238b",
-    "semantic_hash": "5d4ea33e3b1c1930a14e5d4a7be0238b"
+    "mtime": 1792508630.5343342,
+    "seen": 1792604266.6502323,
+    "ast_hash": "59feb8991e0521ab9c33b8fa4fc31ac6",
+    "semantic_hash": "59feb8991e0521ab9c33b8fa4fc31ac6"
   },
   "backend-desamparados/test/fila-de-fotos.test.ts": {
     "mtime": 1791219232.5309403,
@@ -2886,10 +2886,10 @@
     "semantic_hash": "b511094dd9fdc101a9cb05a6ad5cc7b2"
   },
   "backend-desamparados/test/mesa-db.test.ts": {
-    "mtime": 1791920469.31528,
-    "seen": 1791926815.5451035,
-    "ast_hash": "9d3ab28cc0be45481f27112e35403923",
-    "semantic_hash": "9d3ab28cc0be45481f27112e35403923"
+    "mtime": 1792514407.163437,
+    "seen": 1792604266.6548042,
+    "ast_hash": "8d9c3506bb2773a7acaffd758fe26929",
+    "semantic_hash": "8d9c3506bb2773a7acaffd758fe26929"
   },
   "backend-desamparados/test/mesa-procesion.test.ts": {
     "mtime": 1790951439.005072,
@@ -2916,10 +2916,10 @@
     "semantic_hash": "6931cd7fe9dede0825e63a80147b16d6"
   },
   "backend-desamparados/test/modulos-apagados-db.test.ts": {
-    "mtime": 1791920469.317583,
-    "seen": 1791926815.5451035,
-    "ast_hash": "cab9ad6f1c1c68755afc090859624d42",
-    "semantic_hash": "cab9ad6f1c1c68755afc090859624d42"
+    "mtime": 1792101544.9006598,
+    "seen": 1792604266.6548042,
+    "ast_hash": "1e3f7c84ef773e92085cfa7f271e16b1",
+    "semantic_hash": "1e3f7c84ef773e92085cfa7f271e16b1"
   },
   "backend-desamparados/test/modulos-api-db.test.ts": {
     "mtime": 1791476496.2820175,
@@ -2982,10 +2982,10 @@
     "semantic_hash": "ec3aca77758ea2c9157114051899ddba"
   },
   "backend-desamparados/test/otra-corporacion.test.ts": {
-    "mtime": 1791485296.5268908,
-    "seen": 1791534313.6374605,
-    "ast_hash": "d8a1fb54d7eab89866e270c11aeb39fc",
-    "semantic_hash": "d8a1fb54d7eab89866e270c11aeb39fc"
+    "mtime": 1792584648.1440747,
+    "seen": 1792604266.6580153,
+    "ast_hash": "6506e889962effb8fd2c8686c84b3a3e",
+    "semantic_hash": "6506e889962effb8fd2c8686c84b3a3e"
   },
   "backend-desamparados/test/pagina-bloques.test.ts": {
     "mtime": 1790463739.331283,
@@ -3018,10 +3018,10 @@
     "semantic_hash": "d0c24fb104f78205edafa5157e13f039"
   },
   "backend-desamparados/test/pago-en-linea.test.ts": {
-    "mtime": 1791920469.3196864,
-    "seen": 1791926815.5451035,
-    "ast_hash": "527a93703842354a4dbba9cbee09d227",
-    "semantic_hash": "527a93703842354a4dbba9cbee09d227"
+    "mtime": 1792446936.6787717,
+    "seen": 1792604266.6580153,
+    "ast_hash": "c4752ecbaa509e3b0022d1e887887354",
+    "semantic_hash": "c4752ecbaa509e3b0022d1e887887354"
   },
   "backend-desamparados/test/panel-acceso.test.ts": {
     "mtime": 1791476496.2976623,
@@ -3060,10 +3060,10 @@
     "semantic_hash": "b9223b2ab57918831749c38bd056c914"
   },
   "backend-desamparados/test/papeleta-pdf.test.ts": {
-    "mtime": 1791669686.2734349,
-    "seen": 1791734905.9219322,
-    "ast_hash": "8a240337a9e8192fc07d90cf7c621923",
-    "semantic_hash": "8a240337a9e8192fc07d90cf7c621923"
+    "mtime": 1792508666.9105928,
+    "seen": 1792604266.6580153,
+    "ast_hash": "42d2c408a3c8f31028d96ab636b03c64",
+    "semantic_hash": "42d2c408a3c8f31028d96ab636b03c64"
   },
   "backend-desamparados/test/papeleta-qr.test.ts": {
     "mtime": 1790957308.4713092,
@@ -3096,22 +3096,22 @@
     "semantic_hash": "b19e66f86f28aba900b89301719fb51e"
   },
   "backend-desamparados/test/plantillas-correo-db.test.ts": {
-    "mtime": 1791887600.3022633,
-    "seen": 1791888821.830005,
-    "ast_hash": "f2d39bccb82838b6a8e7c7b49ac0d0b9",
-    "semantic_hash": "f2d39bccb82838b6a8e7c7b49ac0d0b9"
+    "mtime": 1792430387.8562472,
+    "seen": 1792604266.6617749,
+    "ast_hash": "d289ff270bdb2402ff4caa7394116b61",
+    "semantic_hash": "d289ff270bdb2402ff4caa7394116b61"
   },
   "backend-desamparados/test/plantillas-correo.test.ts": {
-    "mtime": 1791789977.6050441,
-    "seen": 1791794403.340525,
-    "ast_hash": "e6b936959feea7fdfcd1ad9474ab36dd",
-    "semantic_hash": "e6b936959feea7fdfcd1ad9474ab36dd"
+    "mtime": 1792508647.5739963,
+    "seen": 1792604266.6617749,
+    "ast_hash": "1c4cdd107503497da896ac8dc634eae9",
+    "semantic_hash": "1c4cdd107503497da896ac8dc634eae9"
   },
   "backend-desamparados/test/plazo-papeletas.test.ts": {
-    "mtime": 1791920469.3220997,
-    "seen": 1791926815.5451035,
-    "ast_hash": "0d23ad6824fd357d92ea92aafb669f66",
-    "semantic_hash": "0d23ad6824fd357d92ea92aafb669f66"
+    "mtime": 1791986513.7963305,
+    "seen": 1792604266.6617749,
+    "ast_hash": "9978613f60889030588dc08315b5474a",
+    "semantic_hash": "9978613f60889030588dc08315b5474a"
   },
   "backend-desamparados/test/portada.test.ts": {
     "mtime": 1791476496.2976623,
@@ -3162,10 +3162,10 @@
     "semantic_hash": "f20396bd11e6199c3732ef6e03595110"
   },
   "backend-desamparados/test/recibos-procesion-db.test.ts": {
-    "mtime": 1791920469.325754,
-    "seen": 1791926815.5451035,
-    "ast_hash": "067de817559d65c083c64e1c5221da69",
-    "semantic_hash": "067de817559d65c083c64e1c5221da69"
+    "mtime": 1792515519.5621312,
+    "seen": 1792604266.662779,
+    "ast_hash": "09dd49f24bcb0a23611c63e614112bad",
+    "semantic_hash": "09dd49f24bcb0a23611c63e614112bad"
   },
   "backend-desamparados/test/reemisiones.test.ts": {
     "mtime": 1791920469.326278,
@@ -3186,16 +3186,16 @@
     "semantic_hash": "e7f0c28eba194d79dd91982810b69f3c"
   },
   "backend-desamparados/test/remesas-db.test.ts": {
-    "mtime": 1791920469.3273356,
-    "seen": 1791926815.5451035,
-    "ast_hash": "2e2ceb5cc9cb9df19b6d8dd2bf26b753",
-    "semantic_hash": "2e2ceb5cc9cb9df19b6d8dd2bf26b753"
+    "mtime": 1792508666.9147623,
+    "seen": 1792604266.662779,
+    "ast_hash": "77dfdfd8115af5f0a9ff9859b258820f",
+    "semantic_hash": "77dfdfd8115af5f0a9ff9859b258820f"
   },
   "backend-desamparados/test/remesas-sepa.test.ts": {
-    "mtime": 1790810351.3399265,
-    "seen": 1791479994.295499,
-    "ast_hash": "f7478b9dd528ccb9fa48090e9da93232",
-    "semantic_hash": "f7478b9dd528ccb9fa48090e9da93232"
+    "mtime": 1792447019.6048057,
+    "seen": 1792604266.662779,
+    "ast_hash": "7cc9bf2901f7a317b5460174f6821fe1",
+    "semantic_hash": "7cc9bf2901f7a317b5460174f6821fe1"
   },
   "backend-desamparados/test/retablo-dominio.test.ts": {
     "mtime": 1791152743.3052838,
@@ -3222,10 +3222,10 @@
     "semantic_hash": "ba15f18eb2aa23f5b92caa461360b643"
   },
   "backend-desamparados/test/salidas.test.ts": {
-    "mtime": 1790951439.019252,
-    "seen": 1791479994.295499,
-    "ast_hash": "d6fa32b06501b538321dbde84d7143cd",
-    "semantic_hash": "d6fa32b06501b538321dbde84d7143cd"
+    "mtime": 1792514417.387613,
+    "seen": 1792604266.66456,
+    "ast_hash": "aa1e119dbb84eb8f88ae69a6c70e4973",
+    "semantic_hash": "aa1e119dbb84eb8f88ae69a6c70e4973"
   },
   "backend-desamparados/test/seed-contenido.test.ts": {
     "mtime": 1791807762.6204402,
@@ -3348,10 +3348,10 @@
     "semantic_hash": "029f4905006c1fffd96bc863e2d98d3e"
   },
   "desamparados-web/package.json": {
-    "mtime": 1791789977.608795,
-    "seen": 1791794403.340525,
-    "ast_hash": "15c391fad39c9166a34aa723425a9c9c",
-    "semantic_hash": "15c391fad39c9166a34aa723425a9c9c"
+    "mtime": 1792334448.1531556,
+    "seen": 1792604266.6681561,
+    "ast_hash": "b8f21b1a3c4cbd450e38a09ee1112fbd",
+    "semantic_hash": "b8f21b1a3c4cbd450e38a09ee1112fbd"
   },
   "desamparados-web/scripts/__tests__/sitemap.test.ts": {
     "mtime": 1791791517.3470392,
@@ -3378,10 +3378,10 @@
     "semantic_hash": "a29ba48a95f0486fd9e34fed6946e9c0"
   },
   "desamparados-web/src/App.tsx": {
-    "mtime": 1791836174.8116448,
-    "seen": 1791885894.270468,
-    "ast_hash": "a83e9a4bf5c0333c84f1eb3a49d50954",
-    "semantic_hash": "a83e9a4bf5c0333c84f1eb3a49d50954"
+    "mtime": 1792361469.0938313,
+    "seen": 1792604266.6681561,
+    "ast_hash": "1973002d7cf4ccf78e1779da36abcbe4",
+    "semantic_hash": "1973002d7cf4ccf78e1779da36abcbe4"
   },
   "desamparados-web/src/__tests__/iconos.test.ts": {
     "mtime": 1791789977.6144905,
@@ -3390,16 +3390,16 @@
     "semantic_hash": "0e8874c819df42bde544f376f8fe609c"
   },
   "desamparados-web/src/app/MarcoAcceso.tsx": {
-    "mtime": 1790810351.3504486,
-    "seen": 1791479994.295499,
-    "ast_hash": "639993a22f4e8c966cee70f2bb192813",
-    "semantic_hash": "639993a22f4e8c966cee70f2bb192813"
+    "mtime": 1792422600.6912677,
+    "seen": 1792604266.6703076,
+    "ast_hash": "ff8f01e24a62f78c27013a8a5d2b4f7f",
+    "semantic_hash": "ff8f01e24a62f78c27013a8a5d2b4f7f"
   },
   "desamparados-web/src/app/MarcoAreaHermano.tsx": {
-    "mtime": 1791920469.3333988,
-    "seen": 1791926815.5451035,
-    "ast_hash": "ea168e2dc5fe8ea29e4634a81c63a83e",
-    "semantic_hash": "ea168e2dc5fe8ea29e4634a81c63a83e"
+    "mtime": 1792158839.050314,
+    "seen": 1792604266.6703076,
+    "ast_hash": "dd02088884048a97937df3c73a3dc2a3",
+    "semantic_hash": "dd02088884048a97937df3c73a3dc2a3"
   },
   "desamparados-web/src/app/MarcoCms.tsx": {
     "mtime": 1791789977.6166945,
@@ -3408,10 +3408,10 @@
     "semantic_hash": "6ee0615c3a216eeea078f47ff283277f"
   },
   "desamparados-web/src/app/MarcoPublico.tsx": {
-    "mtime": 1791671572.5003011,
-    "seen": 1791734905.9219322,
-    "ast_hash": "46c2552282f5a5550e68af97cd5c6ab1",
-    "semantic_hash": "46c2552282f5a5550e68af97cd5c6ab1"
+    "mtime": 1792361469.096334,
+    "seen": 1792604266.6703076,
+    "ast_hash": "d89736d7286580bc543e118f6cc60a37",
+    "semantic_hash": "d89736d7286580bc543e118f6cc60a37"
   },
   "desamparados-web/src/app/VentanaSesionCaducada.tsx": {
     "mtime": 1791920469.334482,
@@ -3420,10 +3420,10 @@
     "semantic_hash": "5b34632232227dbf7e71a1c0b4e6b097"
   },
   "desamparados-web/src/app/__tests__/MarcoAreaHermano.test.tsx": {
-    "mtime": 1791672041.632895,
-    "seen": 1791734905.9219322,
-    "ast_hash": "6a74e662303ff1e8f4817f5279d514da",
-    "semantic_hash": "6a74e662303ff1e8f4817f5279d514da"
+    "mtime": 1792158916.470446,
+    "seen": 1792604266.6703076,
+    "ast_hash": "9223f3ed0431b50618f0e16696b026b6",
+    "semantic_hash": "9223f3ed0431b50618f0e16696b026b6"
   },
   "desamparados-web/src/app/__tests__/MarcoCms.test.tsx": {
     "mtime": 1791672017.362034,
@@ -3438,22 +3438,22 @@
     "semantic_hash": "771884473428758f798341fd895d978e"
   },
   "desamparados-web/src/app/areaHermanoNavegacion.ts": {
-    "mtime": 1791705559.1307824,
-    "seen": 1791734905.9219322,
-    "ast_hash": "f76b9a9479f3b24f9df0eca608c30ef6",
-    "semantic_hash": "f76b9a9479f3b24f9df0eca608c30ef6"
+    "mtime": 1792510714.103668,
+    "seen": 1792604266.6703076,
+    "ast_hash": "3cf07e48d0947505e27ffa1bb6d4c5b3",
+    "semantic_hash": "3cf07e48d0947505e27ffa1bb6d4c5b3"
   },
   "desamparados-web/src/app/cmsNavegacion.ts": {
-    "mtime": 1791791106.135918,
-    "seen": 1791794403.340525,
-    "ast_hash": "1638b6bf7686abf011509e327f584cf6",
-    "semantic_hash": "1638b6bf7686abf011509e327f584cf6"
+    "mtime": 1792361469.0973797,
+    "seen": 1792604266.6703076,
+    "ast_hash": "6c5e57616401e5af55e01d41e5a8cd05",
+    "semantic_hash": "6c5e57616401e5af55e01d41e5a8cd05"
   },
   "desamparados-web/src/app/rolesCms.ts": {
-    "mtime": 1791732383.938947,
-    "seen": 1791734905.9219322,
-    "ast_hash": "9b37a3d16eb649e258f99583d70b95cf",
-    "semantic_hash": "9b37a3d16eb649e258f99583d70b95cf"
+    "mtime": 1792600080.75529,
+    "seen": 1792604266.6703076,
+    "ast_hash": "9364dcdf003e3bc1863c851dc02be39f",
+    "semantic_hash": "9364dcdf003e3bc1863c851dc02be39f"
   },
   "desamparados-web/src/app/temaCms.tsx": {
     "mtime": 1790188168.9893765,
@@ -3654,10 +3654,10 @@
     "semantic_hash": "9a374b465c961a1ccd98883eaec4ab89"
   },
   "desamparados-web/src/components/__tests__/BarraDeNavegacion.test.tsx": {
-    "mtime": 1791925114.4653742,
-    "seen": 1791926815.5451035,
-    "ast_hash": "114b66b262e2f76f887fc8125059c66d",
-    "semantic_hash": "114b66b262e2f76f887fc8125059c66d"
+    "mtime": 1792107280.4152203,
+    "seen": 1792604266.6766093,
+    "ast_hash": "438be79d6a3ecadfe2ec462946f2f4e3",
+    "semantic_hash": "438be79d6a3ecadfe2ec462946f2f4e3"
   },
   "desamparados-web/src/components/__tests__/Boton.test.tsx": {
     "mtime": 1790000989.8722942,
@@ -3774,10 +3774,10 @@
     "semantic_hash": "fc81f39134f8bc284827b5197848ea5e"
   },
   "desamparados-web/src/components/barra/CajonMovil.tsx": {
-    "mtime": 1791925060.583565,
-    "seen": 1791926815.5456753,
-    "ast_hash": "c28512861cf42330fc5cac230f3d3611",
-    "semantic_hash": "c28512861cf42330fc5cac230f3d3611"
+    "mtime": 1792107139.8745098,
+    "seen": 1792604266.6816463,
+    "ast_hash": "a80d64d24e81601a032dc8ce27ad085d",
+    "semantic_hash": "a80d64d24e81601a032dc8ce27ad085d"
   },
   "desamparados-web/src/components/barra/IconoDelMenu.tsx": {
     "mtime": 1791667038.9981027,
@@ -3810,10 +3810,10 @@
     "semantic_hash": "40a251a127c74e28db2c6ca16671ea78"
   },
   "desamparados-web/src/components/bloques/BloqueAnillos.tsx": {
-    "mtime": 1791920469.3368084,
-    "seen": 1791926815.5456753,
-    "ast_hash": "ad6386f221da76b72b6e742b646f8f60",
-    "semantic_hash": "ad6386f221da76b72b6e742b646f8f60"
+    "mtime": 1792349543.801429,
+    "seen": 1792604266.6816463,
+    "ast_hash": "9c72c3af348c329c00a712cfc3d7664d",
+    "semantic_hash": "9c72c3af348c329c00a712cfc3d7664d"
   },
   "desamparados-web/src/components/bloques/BloqueBotones.tsx": {
     "mtime": 1791920469.3379943,
@@ -3822,40 +3822,40 @@
     "semantic_hash": "36836c890fd12de502b13b0722977b17"
   },
   "desamparados-web/src/components/bloques/BloqueCarrusel.tsx": {
-    "mtime": 1791789977.6237695,
-    "seen": 1791794403.340525,
-    "ast_hash": "dec814346cc1fd985b4283ce72f3ed08",
-    "semantic_hash": "dec814346cc1fd985b4283ce72f3ed08"
+    "mtime": 1792349248.7264369,
+    "seen": 1792604266.6816463,
+    "ast_hash": "7e62bbaef159581b788352d40ca11314",
+    "semantic_hash": "7e62bbaef159581b788352d40ca11314"
   },
   "desamparados-web/src/components/bloques/BloqueCita.tsx": {
-    "mtime": 1790512999.1587062,
-    "seen": 1791479994.295499,
-    "ast_hash": "c29e2fc8baaa931064f6572e33ead91e",
-    "semantic_hash": "c29e2fc8baaa931064f6572e33ead91e"
+    "mtime": 1792349543.801429,
+    "seen": 1792604266.6816463,
+    "ast_hash": "381f1efe513eb046fd32a0c1e05f6437",
+    "semantic_hash": "381f1efe513eb046fd32a0c1e05f6437"
   },
   "desamparados-web/src/components/bloques/BloqueContacto.tsx": {
-    "mtime": 1791476496.3299305,
-    "seen": 1791479994.295499,
-    "ast_hash": "9ecc764246819f528efed278649c8eb7",
-    "semantic_hash": "9ecc764246819f528efed278649c8eb7"
+    "mtime": 1792421343.1090875,
+    "seen": 1792604266.6816463,
+    "ast_hash": "ebd6bcff673c2bcdbb784c4e62eb320f",
+    "semantic_hash": "ebd6bcff673c2bcdbb784c4e62eb320f"
   },
   "desamparados-web/src/components/bloques/BloqueCronologia.tsx": {
-    "mtime": 1791789977.6258926,
-    "seen": 1791794403.340525,
-    "ast_hash": "d09e07fe814ab9fff457629c93380837",
-    "semantic_hash": "d09e07fe814ab9fff457629c93380837"
+    "mtime": 1792349581.1388004,
+    "seen": 1792604266.6816463,
+    "ast_hash": "7b36c2a77e1f1dd121093466e4179e8a",
+    "semantic_hash": "7b36c2a77e1f1dd121093466e4179e8a"
   },
   "desamparados-web/src/components/bloques/BloqueCuentaAtras.tsx": {
-    "mtime": 1791920469.3379943,
-    "seen": 1791926815.5456753,
-    "ast_hash": "5d06ca20db9355df9737aa474a1d6363",
-    "semantic_hash": "5d06ca20db9355df9737aa474a1d6363"
+    "mtime": 1792349543.7895782,
+    "seen": 1792604266.6816463,
+    "ast_hash": "727fb3424792afa54ef84af5ff1f40e5",
+    "semantic_hash": "727fb3424792afa54ef84af5ff1f40e5"
   },
   "desamparados-web/src/components/bloques/BloqueDatos.tsx": {
-    "mtime": 1791485296.5352235,
-    "seen": 1791534313.6374605,
-    "ast_hash": "7ab16f36a28482bee5e5518fd8c8ad53",
-    "semantic_hash": "7ab16f36a28482bee5e5518fd8c8ad53"
+    "mtime": 1792349200.754977,
+    "seen": 1792604266.6816463,
+    "ast_hash": "ff24d8f529576dde071fbfd5e63921b7",
+    "semantic_hash": "ff24d8f529576dde071fbfd5e63921b7"
   },
   "desamparados-web/src/components/bloques/BloqueDescargas.tsx": {
     "mtime": 1791789977.6258926,
@@ -3864,16 +3864,16 @@
     "semantic_hash": "446d9b827769f672053122be61b758c6"
   },
   "desamparados-web/src/components/bloques/BloqueDibujo.tsx": {
-    "mtime": 1791790881.0416107,
-    "seen": 1791794403.340525,
-    "ast_hash": "c9213af07b68ef0c773ac01871be90fb",
-    "semantic_hash": "c9213af07b68ef0c773ac01871be90fb"
+    "mtime": 1792349594.0684824,
+    "seen": 1792604266.6816463,
+    "ast_hash": "9197545e0e0cd71fe4d52ca8b0b3e69c",
+    "semantic_hash": "9197545e0e0cd71fe4d52ca8b0b3e69c"
   },
   "desamparados-web/src/components/bloques/BloqueDonativo.tsx": {
-    "mtime": 1791789977.6270661,
-    "seen": 1791794403.340525,
-    "ast_hash": "8432d20db9ee98713c778ef3e3450397",
-    "semantic_hash": "8432d20db9ee98713c778ef3e3450397"
+    "mtime": 1792349543.80294,
+    "seen": 1792604266.6816463,
+    "ast_hash": "a4ef0648ebe2dd9fbfc1f63d37d341b1",
+    "semantic_hash": "a4ef0648ebe2dd9fbfc1f63d37d341b1"
   },
   "desamparados-web/src/components/bloques/BloqueEspacio.tsx": {
     "mtime": 1790336268.7656546,
@@ -3888,16 +3888,16 @@
     "semantic_hash": "5681976ad511ded9257a1d89ac79ae41"
   },
   "desamparados-web/src/components/bloques/BloqueFotoFija.tsx": {
-    "mtime": 1791476496.3313203,
-    "seen": 1791479994.295499,
-    "ast_hash": "a19bf68ae726d5289007350bc2220b7e",
-    "semantic_hash": "a19bf68ae726d5289007350bc2220b7e"
+    "mtime": 1792349248.7264369,
+    "seen": 1792604266.684167,
+    "ast_hash": "c213cdc2178911ae51216685482da138",
+    "semantic_hash": "c213cdc2178911ae51216685482da138"
   },
   "desamparados-web/src/components/bloques/BloqueFotoTexto.tsx": {
-    "mtime": 1791924605.901045,
-    "seen": 1791926815.5456753,
-    "ast_hash": "ab3d1c5b3c9da9baffb35723e296fc39",
-    "semantic_hash": "ab3d1c5b3c9da9baffb35723e296fc39"
+    "mtime": 1792349200.8010433,
+    "seen": 1792604266.684167,
+    "ast_hash": "cdac80d9d464d0012ef6976a12177fcf",
+    "semantic_hash": "cdac80d9d464d0012ef6976a12177fcf"
   },
   "desamparados-web/src/components/bloques/BloqueGaleria.tsx": {
     "mtime": 1790375117.5386987,
@@ -3906,22 +3906,22 @@
     "semantic_hash": "40293d292284e0a681fa41ea1e8319e4"
   },
   "desamparados-web/src/components/bloques/BloqueHorario.tsx": {
-    "mtime": 1791789977.6270661,
-    "seen": 1791794403.340525,
-    "ast_hash": "d256211109d9e0566659e7b3d2cd9f96",
-    "semantic_hash": "d256211109d9e0566659e7b3d2cd9f96"
+    "mtime": 1792349260.0549817,
+    "seen": 1792604266.684167,
+    "ast_hash": "d06c27d8782878a82c580f060443e14c",
+    "semantic_hash": "d06c27d8782878a82c580f060443e14c"
   },
   "desamparados-web/src/components/bloques/BloqueItinerario.tsx": {
-    "mtime": 1791810114.2943056,
-    "seen": 1791825912.2906446,
-    "ast_hash": "f301d628887ad0f6136f5515f19327a7",
-    "semantic_hash": "f301d628887ad0f6136f5515f19327a7"
+    "mtime": 1792349543.7895782,
+    "seen": 1792604266.684167,
+    "ast_hash": "481f8051dae30493e7554b280c6a8664",
+    "semantic_hash": "481f8051dae30493e7554b280c6a8664"
   },
   "desamparados-web/src/components/bloques/BloqueListado.tsx": {
-    "mtime": 1791704493.2456536,
-    "seen": 1791734905.9219322,
-    "ast_hash": "cc55f0177f282d45862f740902f5a88e",
-    "semantic_hash": "cc55f0177f282d45862f740902f5a88e"
+    "mtime": 1792349632.195333,
+    "seen": 1792604266.684167,
+    "ast_hash": "1e4438c5208a0210b96bf0a6cc2f4a52",
+    "semantic_hash": "1e4438c5208a0210b96bf0a6cc2f4a52"
   },
   "desamparados-web/src/components/bloques/BloqueLlamada.tsx": {
     "mtime": 1791920469.3415625,
@@ -3990,10 +3990,10 @@
     "semantic_hash": "7d0e576ff798fc677d0e475a883deaa4"
   },
   "desamparados-web/src/components/bloques/CabeceraASangre.tsx": {
-    "mtime": 1791924619.3640363,
-    "seen": 1791926815.5456753,
-    "ast_hash": "c2e043438d07f01c5a28fbd62d65882d",
-    "semantic_hash": "c2e043438d07f01c5a28fbd62d65882d"
+    "mtime": 1792107139.886534,
+    "seen": 1792604266.684167,
+    "ast_hash": "956a9052f260af725ecc2f7ec442f669",
+    "semantic_hash": "956a9052f260af725ecc2f7ec442f669"
   },
   "desamparados-web/src/components/bloques/ConBloquesCargados.tsx": {
     "mtime": 1791476496.3313203,
@@ -4002,16 +4002,16 @@
     "semantic_hash": "d912e6ae32f61c3e9944e31c90860dab"
   },
   "desamparados-web/src/components/bloques/EsqueletoDelRecorrido.tsx": {
-    "mtime": 1791040415.1266358,
-    "seen": 1791479994.295499,
-    "ast_hash": "631d95acdcb48313545d49588257b7f0",
-    "semantic_hash": "631d95acdcb48313545d49588257b7f0"
+    "mtime": 1792166733.6468787,
+    "seen": 1792604266.684167,
+    "ast_hash": "72ceac7508e51e9b423d9d6663e47626",
+    "semantic_hash": "72ceac7508e51e9b423d9d6663e47626"
   },
   "desamparados-web/src/components/bloques/FinesEnFoco.tsx": {
-    "mtime": 1791920469.3463178,
-    "seen": 1791926815.5456753,
-    "ast_hash": "71ca37e12e906138dbd86682d7683b4b",
-    "semantic_hash": "71ca37e12e906138dbd86682d7683b4b"
+    "mtime": 1792349543.80294,
+    "seen": 1792604266.684167,
+    "ast_hash": "9891261a0c60ae01da3b2d061dc716c2",
+    "semantic_hash": "9891261a0c60ae01da3b2d061dc716c2"
   },
   "desamparados-web/src/components/bloques/FotoAmpliable.tsx": {
     "mtime": 1791789977.6331291,
@@ -4020,10 +4020,10 @@
     "semantic_hash": "baf6249ec624acd1e1071f7e4b018393"
   },
   "desamparados-web/src/components/bloques/MarcoEditable.tsx": {
-    "mtime": 1791789977.6360047,
-    "seen": 1791794403.340525,
-    "ast_hash": "27e4bd2eaf57e6a30161adb2d8e3c953",
-    "semantic_hash": "27e4bd2eaf57e6a30161adb2d8e3c953"
+    "mtime": 1792349520.7323592,
+    "seen": 1792604266.684167,
+    "ast_hash": "a999b2a7dd43f3436d916060634acbc0",
+    "semantic_hash": "a999b2a7dd43f3436d916060634acbc0"
   },
   "desamparados-web/src/components/bloques/PaginaDeBloquesPublica.tsx": {
     "mtime": 1791920469.3489552,
@@ -4032,10 +4032,10 @@
     "semantic_hash": "1b0eadff46052e7cf8c45901c93c5dee"
   },
   "desamparados-web/src/components/bloques/RecorridoEnMapa.tsx": {
-    "mtime": 1791924504.2688115,
-    "seen": 1791926815.5456753,
-    "ast_hash": "a1294ad0361b1160d50d585d8943e49c",
-    "semantic_hash": "a1294ad0361b1160d50d585d8943e49c"
+    "mtime": 1792331094.501912,
+    "seen": 1792604266.684167,
+    "ast_hash": "373a9e52d3576c815d4f9fae6980ad8c",
+    "semantic_hash": "373a9e52d3576c815d4f9fae6980ad8c"
   },
   "desamparados-web/src/components/bloques/__tests__/BloqueCarrusel.test.tsx": {
     "mtime": 1791285934.638628,
@@ -4050,10 +4050,10 @@
     "semantic_hash": "c4b326b577f783c439865eec8cd5a1b1"
   },
   "desamparados-web/src/components/bloques/__tests__/BloqueItinerario.test.tsx": {
-    "mtime": 1790499430.4444985,
-    "seen": 1791479994.295499,
-    "ast_hash": "a1b911939ea43bee0674b3fb9f874000",
-    "semantic_hash": "a1b911939ea43bee0674b3fb9f874000"
+    "mtime": 1792331688.5356064,
+    "seen": 1792604266.684167,
+    "ast_hash": "c617eaea3bff4db2da810262a98a169d",
+    "semantic_hash": "c617eaea3bff4db2da810262a98a169d"
   },
   "desamparados-web/src/components/bloques/__tests__/BloquePuertas.test.tsx": {
     "mtime": 1790448675.635564,
@@ -4110,10 +4110,10 @@
     "semantic_hash": "f31f6cf6061f56852f672bf01ae24d11"
   },
   "desamparados-web/src/components/bloques/__tests__/recorrido.test.ts": {
-    "mtime": 1790810351.363788,
-    "seen": 1791479994.295499,
-    "ast_hash": "79a9dfe21d72f86ba63f59ee5ac3a559",
-    "semantic_hash": "79a9dfe21d72f86ba63f59ee5ac3a559"
+    "mtime": 1792166069.6803567,
+    "seen": 1792604266.689113,
+    "ast_hash": "4a857837dd7ccb762157f2214638725c",
+    "semantic_hash": "4a857837dd7ccb762157f2214638725c"
   },
   "desamparados-web/src/components/bloques/borrador.ts": {
     "mtime": 1789763970.7185993,
@@ -4158,10 +4158,10 @@
     "semantic_hash": "f335fe2017ae8c536148ffde07313563"
   },
   "desamparados-web/src/components/bloques/presentacion.ts": {
-    "mtime": 1791705643.4747255,
-    "seen": 1791734905.923936,
-    "ast_hash": "ec7c19395c17511a7368e7ef4bfbe5db",
-    "semantic_hash": "ec7c19395c17511a7368e7ef4bfbe5db"
+    "mtime": 1792349180.7602663,
+    "seen": 1792604266.690786,
+    "ast_hash": "270f6cbecc2584c6a317f25ad040bbb7",
+    "semantic_hash": "270f6cbecc2584c6a317f25ad040bbb7"
   },
   "desamparados-web/src/components/bloques/programa.ts": {
     "mtime": 1791705559.1370063,
@@ -4170,10 +4170,10 @@
     "semantic_hash": "9d5becaaeaa7376ddcccb695bf70d0d0"
   },
   "desamparados-web/src/components/bloques/recorrido.ts": {
-    "mtime": 1790810351.3657959,
-    "seen": 1791479994.295499,
-    "ast_hash": "3c20973a633efcd0294278e0ca99e173",
-    "semantic_hash": "3c20973a633efcd0294278e0ca99e173"
+    "mtime": 1792331094.410905,
+    "seen": 1792604266.690786,
+    "ast_hash": "6704cee630870dba39d8812bedee5173",
+    "semantic_hash": "6704cee630870dba39d8812bedee5173"
   },
   "desamparados-web/src/components/bloques/registro.tsx": {
     "mtime": 1791476496.3313203,
@@ -4374,10 +4374,10 @@
     "semantic_hash": "b4d998fcd33265987bb3c8d2106537e9"
   },
   "desamparados-web/src/components/mapa/__tests__/grafo.test.ts": {
-    "mtime": 1790379597.7652154,
-    "seen": 1791479994.295499,
-    "ast_hash": "3bed94f5127d5e5b9bc5768417165f82",
-    "semantic_hash": "3bed94f5127d5e5b9bc5768417165f82"
+    "mtime": 1792331401.172277,
+    "seen": 1792604266.697104,
+    "ast_hash": "01a5e7bbc361a711c956d650f700f8ee",
+    "semantic_hash": "01a5e7bbc361a711c956d650f700f8ee"
   },
   "desamparados-web/src/components/mapa/barrio.ts": {
     "mtime": 1791810114.2932851,
@@ -4392,16 +4392,16 @@
     "semantic_hash": "f51c35974749c93e1e28903f59325ed4"
   },
   "desamparados-web/src/components/mapa/estilo.ts": {
-    "mtime": 1791789977.6387277,
-    "seen": 1791794403.340525,
-    "ast_hash": "9ebce470357ae9a11899d1114cbd03e5",
-    "semantic_hash": "9ebce470357ae9a11899d1114cbd03e5"
+    "mtime": 1792166642.363899,
+    "seen": 1792604266.697104,
+    "ast_hash": "c6da83ef4d2faed3112f3440170d166c",
+    "semantic_hash": "c6da83ef4d2faed3112f3440170d166c"
   },
   "desamparados-web/src/components/mapa/grafo.ts": {
-    "mtime": 1791705559.1748486,
-    "seen": 1791734905.923936,
-    "ast_hash": "c3a398d0bc7a8f55f2ecc475c35bfbf6",
-    "semantic_hash": "c3a398d0bc7a8f55f2ecc475c35bfbf6"
+    "mtime": 1792331401.1328132,
+    "seen": 1792604266.697104,
+    "ast_hash": "f33822aaf191e2a8aa60ac70a8a135a6",
+    "semantic_hash": "f33822aaf191e2a8aa60ac70a8a135a6"
   },
   "desamparados-web/src/components/mapa/trabajador.ts": {
     "mtime": 1790719789.3394954,
@@ -4422,10 +4422,10 @@
     "semantic_hash": "ef1c144e9c4aa114a85e5e73d8337c56"
   },
   "desamparados-web/src/config/site.ts": {
-    "mtime": 1791920469.353876,
-    "seen": 1791926815.5456753,
-    "ast_hash": "617fe8d5d9204ee5a0b75fb714f4d796",
-    "semantic_hash": "617fe8d5d9204ee5a0b75fb714f4d796"
+    "mtime": 1792584727.8178864,
+    "seen": 1792604266.697104,
+    "ast_hash": "c860e561493089e87852677fe3fac289",
+    "semantic_hash": "c860e561493089e87852677fe3fac289"
   },
   "desamparados-web/src/domain/__tests__/articulos.test.ts": {
     "mtime": 1791485296.5377772,
@@ -4452,10 +4452,10 @@
     "semantic_hash": "afc2025f13a71445875ce2333ffb4eff"
   },
   "desamparados-web/src/domain/modulos.ts": {
-    "mtime": 1791791085.6027274,
-    "seen": 1791794403.340525,
-    "ast_hash": "5657f26044d9462f82c274193de54bf9",
-    "semantic_hash": "5657f26044d9462f82c274193de54bf9"
+    "mtime": 1792101517.998499,
+    "seen": 1792604266.6986427,
+    "ast_hash": "56d7803846dc584222b976ad8e1769ec",
+    "semantic_hash": "56d7803846dc584222b976ad8e1769ec"
   },
   "desamparados-web/src/domain/tiemposDelRetablo.ts": {
     "mtime": 1791790560.0989616,
@@ -4506,10 +4506,10 @@
     "semantic_hash": "70ffb20e395d54d14b2919fa6af9637c"
   },
   "desamparados-web/src/features/actualidad/agenda/cultos.ts": {
-    "mtime": 1791920469.360001,
-    "seen": 1791926815.5456753,
-    "ast_hash": "ac950e7c05bc9768c721715ef86ee228",
-    "semantic_hash": "ac950e7c05bc9768c721715ef86ee228"
+    "mtime": 1792584727.847279,
+    "seen": 1792604266.7006888,
+    "ast_hash": "bcd6c2a0b955e442110dd6e553ba3676",
+    "semantic_hash": "bcd6c2a0b955e442110dd6e553ba3676"
   },
   "desamparados-web/src/features/actualidad/agenda/letraAlmanaque.ts": {
     "mtime": 1790607064.2419517,
@@ -4542,16 +4542,16 @@
     "semantic_hash": "dd5e0dbf20450b112a145e9c8587f314"
   },
   "desamparados-web/src/features/altas/auth/AccesoCmsPage.tsx": {
-    "mtime": 1791476496.3313203,
-    "seen": 1791479994.295499,
+    "mtime": 1791992336.5962265,
+    "seen": 1792604266.7006888,
     "ast_hash": "32097f9c7cf836994723c3f4bc36126b",
     "semantic_hash": "32097f9c7cf836994723c3f4bc36126b"
   },
   "desamparados-web/src/features/altas/auth/AccesoPage.tsx": {
-    "mtime": 1791920469.360001,
-    "seen": 1791926815.5456753,
-    "ast_hash": "c7006a87e48e1ae1dff8e1140b162168",
-    "semantic_hash": "c7006a87e48e1ae1dff8e1140b162168"
+    "mtime": 1792422763.7242596,
+    "seen": 1792604266.7006888,
+    "ast_hash": "718b07ed17d1ae5c90fe065629456169",
+    "semantic_hash": "718b07ed17d1ae5c90fe065629456169"
   },
   "desamparados-web/src/features/altas/auth/CambiarContrasena.tsx": {
     "mtime": 1791789977.6427412,
@@ -4560,8 +4560,8 @@
     "semantic_hash": "cd1bc4d4e1ae0c590b2aee3457ae60ee"
   },
   "desamparados-web/src/features/altas/auth/FormularioAccesoCms.tsx": {
-    "mtime": 1791476496.3313203,
-    "seen": 1791479994.295499,
+    "mtime": 1791992336.5962265,
+    "seen": 1792604266.7006888,
     "ast_hash": "20ace6ed338616789674beade918be09",
     "semantic_hash": "20ace6ed338616789674beade918be09"
   },
@@ -4578,10 +4578,10 @@
     "semantic_hash": "d88a6734e2be8c407dc2b45d6969abc3"
   },
   "desamparados-web/src/features/altas/auth/__tests__/AccesoPage.test.tsx": {
-    "mtime": 1790951439.0365477,
-    "seen": 1791479994.295499,
-    "ast_hash": "17ab2c7cd48995868d4c4f8fd2bd07fe",
-    "semantic_hash": "17ab2c7cd48995868d4c4f8fd2bd07fe"
+    "mtime": 1792422302.976687,
+    "seen": 1792604266.7026937,
+    "ast_hash": "2b2a1d6a313ff05b5f0c8146c62b451d",
+    "semantic_hash": "2b2a1d6a313ff05b5f0c8146c62b451d"
   },
   "desamparados-web/src/features/altas/auth/__tests__/NuevaContrasenaPage.test.tsx": {
     "mtime": 1791547305.9498353,
@@ -4716,10 +4716,10 @@
     "semantic_hash": "56131730c850603de48540063518cbca"
   },
   "desamparados-web/src/features/areaHermano/familia/FamiliaPage.tsx": {
-    "mtime": 1790951439.0365477,
-    "seen": 1791479994.295499,
-    "ast_hash": "65d16d3d636fe2688f078fa78ba79224",
-    "semantic_hash": "65d16d3d636fe2688f078fa78ba79224"
+    "mtime": 1792158883.0451324,
+    "seen": 1792604266.7075102,
+    "ast_hash": "46028c416af4dbb426d812da4e5526e9",
+    "semantic_hash": "46028c416af4dbb426d812da4e5526e9"
   },
   "desamparados-web/src/features/areaHermano/familia/__tests__/FamiliaPage.test.tsx": {
     "mtime": 1791476496.3465917,
@@ -4728,10 +4728,10 @@
     "semantic_hash": "adfa34c96dd8f1218a76578048491466"
   },
   "desamparados-web/src/features/areaHermano/perfil/Apartado.tsx": {
-    "mtime": 1791789977.6442466,
-    "seen": 1791794403.340525,
-    "ast_hash": "3ae826651b53b43fbbed63afe0d48696",
-    "semantic_hash": "3ae826651b53b43fbbed63afe0d48696"
+    "mtime": 1792160082.0414536,
+    "seen": 1792604266.7075102,
+    "ast_hash": "47e15def2100af576b2b60e0e332a4f2",
+    "semantic_hash": "47e15def2100af576b2b60e0e332a4f2"
   },
   "desamparados-web/src/features/areaHermano/perfil/ApartadoContrasena.tsx": {
     "mtime": 1791789977.645791,
@@ -4740,22 +4740,22 @@
     "semantic_hash": "ff8a64ea593d72d9297d82d3fd801d5c"
   },
   "desamparados-web/src/features/areaHermano/perfil/PerfilPage.tsx": {
-    "mtime": 1791920469.3676488,
-    "seen": 1791926815.5456753,
-    "ast_hash": "21715638dc378ddca526c212f377ca85",
-    "semantic_hash": "21715638dc378ddca526c212f377ca85"
+    "mtime": 1792160082.0871973,
+    "seen": 1792604266.7075102,
+    "ast_hash": "8375172968b9e3d6e1bf6d421319b760",
+    "semantic_hash": "8375172968b9e3d6e1bf6d421319b760"
   },
   "desamparados-web/src/features/areaHermano/perfil/__tests__/PerfilPage.test.tsx": {
-    "mtime": 1791920469.3696556,
-    "seen": 1791926815.5456753,
-    "ast_hash": "6c8b4c6d8c0c902f5821fef000dff735",
-    "semantic_hash": "6c8b4c6d8c0c902f5821fef000dff735"
+    "mtime": 1792448851.671578,
+    "seen": 1792604266.7075102,
+    "ast_hash": "b9a191336df9607f715f23fc6dc6deba",
+    "semantic_hash": "b9a191336df9607f715f23fc6dc6deba"
   },
   "desamparados-web/src/features/areaHermano/perfil/apartados.tsx": {
-    "mtime": 1791789977.647849,
-    "seen": 1791794403.340525,
-    "ast_hash": "15e2a361f02c90d54ea53a83ca040b7c",
-    "semantic_hash": "15e2a361f02c90d54ea53a83ca040b7c"
+    "mtime": 1792448799.8643222,
+    "seen": 1792604266.7075102,
+    "ast_hash": "a0ab253005ec4da9768f4ef29289a487",
+    "semantic_hash": "a0ab253005ec4da9768f4ef29289a487"
   },
   "desamparados-web/src/features/areaHermano/perfil/etiquetas.ts": {
     "mtime": 1790120124.6979046,
@@ -4896,14 +4896,14 @@
     "semantic_hash": "5a69d5cbf96fb9aaee5e21d50a0c2158"
   },
   "desamparados-web/src/features/cms/AuditoriaAdminPage.tsx": {
-    "mtime": 1791920469.3765147,
-    "seen": 1791926815.5456753,
-    "ast_hash": "dfcf4e0e0d75e18094fe4a4c64ae1b6d",
-    "semantic_hash": "dfcf4e0e0d75e18094fe4a4c64ae1b6d"
+    "mtime": 1792600486.7790737,
+    "seen": 1792604266.7139242,
+    "ast_hash": "8c79fdc2cea57a09051c9c7680e85558",
+    "semantic_hash": "8c79fdc2cea57a09051c9c7680e85558"
   },
   "desamparados-web/src/features/cms/CabeceraSeccion.tsx": {
-    "mtime": 1790634825.7679503,
-    "seen": 1791479994.295499,
+    "mtime": 1792516513.260758,
+    "seen": 1792604266.7139242,
     "ast_hash": "71b60d9b47f49761e75e5f5e3481e7f9",
     "semantic_hash": "71b60d9b47f49761e75e5f5e3481e7f9"
   },
@@ -4944,16 +4944,16 @@
     "semantic_hash": "965d5ff420b1119d428b83942b8b8104"
   },
   "desamparados-web/src/features/cms/ComunicadoEditPage.tsx": {
-    "mtime": 1791920469.3795292,
-    "seen": 1791926815.5456753,
-    "ast_hash": "bbc33d7ce4755e7eb31a7ee8e5b89809",
-    "semantic_hash": "bbc33d7ce4755e7eb31a7ee8e5b89809"
+    "mtime": 1792152992.87702,
+    "seen": 1792604266.7154586,
+    "ast_hash": "3ae2d1c784c73840aec1305bdfd1db3d",
+    "semantic_hash": "3ae2d1c784c73840aec1305bdfd1db3d"
   },
   "desamparados-web/src/features/cms/ComunicadosAdminPage.tsx": {
-    "mtime": 1790951439.049669,
-    "seen": 1791479994.295499,
-    "ast_hash": "c32e51dca0983076895e2d87b5609b1d",
-    "semantic_hash": "c32e51dca0983076895e2d87b5609b1d"
+    "mtime": 1792152992.87702,
+    "seen": 1792604266.7154586,
+    "ast_hash": "52ef9cae6b05ac89af50b6ccbd432e46",
+    "semantic_hash": "52ef9cae6b05ac89af50b6ccbd432e46"
   },
   "desamparados-web/src/features/cms/ContabilidadAdminPage.tsx": {
     "mtime": 1790810351.409273,
@@ -4962,10 +4962,10 @@
     "semantic_hash": "8f017906d17786965984b612c19d09c6"
   },
   "desamparados-web/src/features/cms/CortejoDirectoPage.tsx": {
-    "mtime": 1791924491.2778192,
-    "seen": 1791926815.5456753,
-    "ast_hash": "7595f7c1b2fe584937605550f5fdb3e7",
-    "semantic_hash": "7595f7c1b2fe584937605550f5fdb3e7"
+    "mtime": 1792331161.2782347,
+    "seen": 1792604266.7154586,
+    "ast_hash": "d792b115e148580416baa3a168364d18",
+    "semantic_hash": "d792b115e148580416baa3a168364d18"
   },
   "desamparados-web/src/features/cms/DialogosRopero.tsx": {
     "mtime": 1791476496.3465917,
@@ -4986,10 +4986,10 @@
     "semantic_hash": "eb9dcf3ce5e396b89fe184f6ab2910be"
   },
   "desamparados-web/src/features/cms/HermanosAdminPage.tsx": {
-    "mtime": 1791555722.8281927,
-    "seen": 1791734905.923936,
-    "ast_hash": "433e97cec63ab825995bf000df008346",
-    "semantic_hash": "433e97cec63ab825995bf000df008346"
+    "mtime": 1792149107.2565985,
+    "seen": 1792604266.7166207,
+    "ast_hash": "d8340fd41d1d0e728528a577d5b85ef2",
+    "semantic_hash": "d8340fd41d1d0e728528a577d5b85ef2"
   },
   "desamparados-web/src/features/cms/InventarioAdminPage.tsx": {
     "mtime": 1791542926.2138367,
@@ -5004,8 +5004,8 @@
     "semantic_hash": "dfe823facf3a292473da9b9bf1091409"
   },
   "desamparados-web/src/features/cms/MiSeguridadPage.tsx": {
-    "mtime": 1791535960.9403622,
-    "seen": 1791550759.8953605,
+    "mtime": 1791992336.5975766,
+    "seen": 1792604266.7166207,
     "ast_hash": "21ddbb010e752c77b5865a339bfb17a9",
     "semantic_hash": "21ddbb010e752c77b5865a339bfb17a9"
   },
@@ -5016,10 +5016,10 @@
     "semantic_hash": "9ee65eb34528e92351803bda44a68deb"
   },
   "desamparados-web/src/features/cms/ModulosAdminPage.tsx": {
-    "mtime": 1791289605.414723,
-    "seen": 1791479994.295499,
-    "ast_hash": "2ded562eb8c33f45e12cf3f17c1d9531",
-    "semantic_hash": "2ded562eb8c33f45e12cf3f17c1d9531"
+    "mtime": 1792599915.6478584,
+    "seen": 1792604266.7166207,
+    "ast_hash": "18f07e3f7600bbfaf836e7bcb2ef5793",
+    "semantic_hash": "18f07e3f7600bbfaf836e7bcb2ef5793"
   },
   "desamparados-web/src/features/cms/NoticiaEditPage.tsx": {
     "mtime": 1791476496.3578913,
@@ -5034,10 +5034,10 @@
     "semantic_hash": "428aa264265d4ec4b17cca3db4cdf21b"
   },
   "desamparados-web/src/features/cms/PaginaAdminPage.tsx": {
-    "mtime": 1791920469.3817651,
-    "seen": 1791926815.5456753,
-    "ast_hash": "7a0faec0803f775f936074a29a43d728",
-    "semantic_hash": "7a0faec0803f775f936074a29a43d728"
+    "mtime": 1792355071.0971425,
+    "seen": 1792604266.7176595,
+    "ast_hash": "7177f90af06bee733e06b68f6fbb6871",
+    "semantic_hash": "7177f90af06bee733e06b68f6fbb6871"
   },
   "desamparados-web/src/features/cms/PaginasAdminPage.tsx": {
     "mtime": 1791924888.5803962,
@@ -5046,10 +5046,10 @@
     "semantic_hash": "a6420b417bba11f433756e10542d310d"
   },
   "desamparados-web/src/features/cms/PanelPage.tsx": {
-    "mtime": 1791289488.89604,
-    "seen": 1791479994.295499,
-    "ast_hash": "6612c7f5c8cba85ef843f19bba7d058b",
-    "semantic_hash": "6612c7f5c8cba85ef843f19bba7d058b"
+    "mtime": 1792600227.5311635,
+    "seen": 1792604266.7176595,
+    "ast_hash": "a3119daac8cff6ef6c6932a5b364e6c3",
+    "semantic_hash": "a3119daac8cff6ef6c6932a5b364e6c3"
   },
   "desamparados-web/src/features/cms/PantallaEdicion.tsx": {
     "mtime": 1791476496.3578913,
@@ -5064,16 +5064,16 @@
     "semantic_hash": "2a1f96c1b000eef9ed23897a952b1f14"
   },
   "desamparados-web/src/features/cms/PortadaAdminPage.tsx": {
-    "mtime": 1791922002.8771887,
-    "seen": 1791926815.5456753,
-    "ast_hash": "e5ca5b45eaa1034725fd9f592f81f261",
-    "semantic_hash": "e5ca5b45eaa1034725fd9f592f81f261"
+    "mtime": 1792107174.8361032,
+    "seen": 1792604266.7176595,
+    "ast_hash": "5ac7dcae0fd67f13250f1ac31492e0af",
+    "semantic_hash": "5ac7dcae0fd67f13250f1ac31492e0af"
   },
   "desamparados-web/src/features/cms/ProcesionAdminPage.tsx": {
-    "mtime": 1791920469.3837729,
-    "seen": 1791926815.5456753,
-    "ast_hash": "3b17c96a9b4a4d5a68d8a6e6265ce783",
-    "semantic_hash": "3b17c96a9b4a4d5a68d8a6e6265ce783"
+    "mtime": 1791986643.0834267,
+    "seen": 1792604266.7176595,
+    "ast_hash": "533e906a6e4067290068d301322120ee",
+    "semantic_hash": "533e906a6e4067290068d301322120ee"
   },
   "desamparados-web/src/features/cms/PublicacionEditPage.tsx": {
     "mtime": 1791476496.3578913,
@@ -5154,10 +5154,10 @@
     "semantic_hash": "0784c0d09dff7476d74dc6e59866db46"
   },
   "desamparados-web/src/features/cms/__tests__/ComunicadoEditPage.test.tsx": {
-    "mtime": 1791920469.3915102,
-    "seen": 1791926815.5456753,
-    "ast_hash": "439d233b888eaa09cb4c31c9934f8dae",
-    "semantic_hash": "439d233b888eaa09cb4c31c9934f8dae"
+    "mtime": 1792152992.87702,
+    "seen": 1792604266.720826,
+    "ast_hash": "161b7c7ea1e0b5acc192f9e21621928a",
+    "semantic_hash": "161b7c7ea1e0b5acc192f9e21621928a"
   },
   "desamparados-web/src/features/cms/__tests__/ContabilidadAdminPage.test.tsx": {
     "mtime": 1791547331.3608487,
@@ -5166,10 +5166,10 @@
     "semantic_hash": "0cfbd428c64b3bf3ba1cd014343ae3b4"
   },
   "desamparados-web/src/features/cms/__tests__/CortejoDirectoPage.test.tsx": {
-    "mtime": 1791924524.372228,
-    "seen": 1791926815.5456753,
-    "ast_hash": "e6e4252c28b119615a04f6ee4b2c7e7a",
-    "semantic_hash": "e6e4252c28b119615a04f6ee4b2c7e7a"
+    "mtime": 1792331688.4897954,
+    "seen": 1792604266.720826,
+    "ast_hash": "ea10681ac83c64a96510aaafbd0d79a3",
+    "semantic_hash": "ea10681ac83c64a96510aaafbd0d79a3"
   },
   "desamparados-web/src/features/cms/__tests__/EditorTexto.test.tsx": {
     "mtime": 1790029720.8134098,
@@ -5184,10 +5184,10 @@
     "semantic_hash": "60e49a89ef418f15b581cc269fb0b6b3"
   },
   "desamparados-web/src/features/cms/__tests__/HermanosAdminPage.test.tsx": {
-    "mtime": 1790951439.0617695,
-    "seen": 1791479994.295499,
-    "ast_hash": "72ef1677fd352472d31e12689ef9a651",
-    "semantic_hash": "72ef1677fd352472d31e12689ef9a651"
+    "mtime": 1792149373.9862206,
+    "seen": 1792604266.720826,
+    "ast_hash": "8cdced67047d8b2e638d7bc9b2102b61",
+    "semantic_hash": "8cdced67047d8b2e638d7bc9b2102b61"
   },
   "desamparados-web/src/features/cms/__tests__/InventarioAdminPage.test.tsx": {
     "mtime": 1791542926.2138367,
@@ -5226,10 +5226,10 @@
     "semantic_hash": "c22720a9f9c7c08ce1a9a0dcc230a8fb"
   },
   "desamparados-web/src/features/cms/__tests__/PaginaAdminPage.test.tsx": {
-    "mtime": 1791925800.081172,
-    "seen": 1791926815.5456753,
-    "ast_hash": "7bd74c87641277aa1d508f3a4c74bea4",
-    "semantic_hash": "7bd74c87641277aa1d508f3a4c74bea4"
+    "mtime": 1792355429.9749672,
+    "seen": 1792604266.7228317,
+    "ast_hash": "b293f4361436b5fcddd47f0906287b72",
+    "semantic_hash": "b293f4361436b5fcddd47f0906287b72"
   },
   "desamparados-web/src/features/cms/__tests__/PaginasAdminPage.test.tsx": {
     "mtime": 1791925007.928806,
@@ -5262,10 +5262,10 @@
     "semantic_hash": "6bc364527e5ec5f1aea7d65b194b3f8c"
   },
   "desamparados-web/src/features/cms/__tests__/ProcesionAdminPage.test.tsx": {
-    "mtime": 1791920469.394024,
-    "seen": 1791926815.5456753,
-    "ast_hash": "ae6cd0233ea0aece0b8200d64bc5f441",
-    "semantic_hash": "ae6cd0233ea0aece0b8200d64bc5f441"
+    "mtime": 1791987253.479606,
+    "seen": 1792604266.7228317,
+    "ast_hash": "5636e926da43ffeb99094ae0a628ea50",
+    "semantic_hash": "5636e926da43ffeb99094ae0a628ea50"
   },
   "desamparados-web/src/features/cms/__tests__/PublicacionEditPage.test.tsx": {
     "mtime": 1791476496.3635702,
@@ -5382,34 +5382,34 @@
     "semantic_hash": "1f6c985b0375360dc78894a3c35d4fe6"
   },
   "desamparados-web/src/features/cms/bloques/formularios.ts": {
-    "mtime": 1791705559.184877,
-    "seen": 1791734905.923936,
-    "ast_hash": "f1e84822c5bc16475a90b0c6507e8a14",
-    "semantic_hash": "f1e84822c5bc16475a90b0c6507e8a14"
+    "mtime": 1792349427.0661912,
+    "seen": 1792604266.725644,
+    "ast_hash": "4f3633c51ef1d6678598f1843cbe4360",
+    "semantic_hash": "4f3633c51ef1d6678598f1843cbe4360"
   },
   "desamparados-web/src/features/cms/bloques/formularios/EditorDeLineas.tsx": {
-    "mtime": 1791289077.382585,
-    "seen": 1791479994.295499,
-    "ast_hash": "c4141aecb21aaeffdb06b044f0fcd78c",
-    "semantic_hash": "c4141aecb21aaeffdb06b044f0fcd78c"
+    "mtime": 1792349376.7812588,
+    "seen": 1792604266.725644,
+    "ast_hash": "55bfb45611ad71c39a1fce558e0f3f5b",
+    "semantic_hash": "55bfb45611ad71c39a1fce558e0f3f5b"
   },
   "desamparados-web/src/features/cms/bloques/formularios/EditorDeRecorrido.tsx": {
-    "mtime": 1791810153.9058125,
-    "seen": 1791825912.2906446,
-    "ast_hash": "1267cb76cdba2aee370e8790df73aa92",
-    "semantic_hash": "1267cb76cdba2aee370e8790df73aa92"
+    "mtime": 1792332092.089584,
+    "seen": 1792604266.725644,
+    "ast_hash": "5e21a2344100a17760567b2222fd82da",
+    "semantic_hash": "5e21a2344100a17760567b2222fd82da"
   },
   "desamparados-web/src/features/cms/bloques/formularios/ListaEditable.tsx": {
-    "mtime": 1791289077.4307988,
-    "seen": 1791479994.295499,
-    "ast_hash": "740e395f4e69f902e2fb565830c6199b",
-    "semantic_hash": "740e395f4e69f902e2fb565830c6199b"
+    "mtime": 1792349283.1182873,
+    "seen": 1792604266.725644,
+    "ast_hash": "ec7a776531f293375c64e86e0494ff7c",
+    "semantic_hash": "ec7a776531f293375c64e86e0494ff7c"
   },
   "desamparados-web/src/features/cms/bloques/formularios/breves.tsx": {
-    "mtime": 1791289077.46366,
-    "seen": 1791479994.295499,
-    "ast_hash": "f45ef65a8efd10002bd2d152e8a29192",
-    "semantic_hash": "f45ef65a8efd10002bd2d152e8a29192"
+    "mtime": 1792421275.4530342,
+    "seen": 1792604266.725644,
+    "ast_hash": "9b58e4a9f1473010c90b9b85a9272122",
+    "semantic_hash": "9b58e4a9f1473010c90b9b85a9272122"
   },
   "desamparados-web/src/features/cms/bloques/formularios/carrusel.tsx": {
     "mtime": 1791289077.7952898,
@@ -5418,22 +5418,22 @@
     "semantic_hash": "e970d7cb642867a1107e49d872a15b82"
   },
   "desamparados-web/src/features/cms/bloques/formularios/comunes.ts": {
-    "mtime": 1790032717.5249145,
-    "seen": 1791479994.295499,
-    "ast_hash": "8f5ddb92d86a8a8974231e01e3e4b315",
-    "semantic_hash": "8f5ddb92d86a8a8974231e01e3e4b315"
+    "mtime": 1792349401.6994917,
+    "seen": 1792604266.725644,
+    "ast_hash": "719983c4dc78c24fb6f46395a5817e36",
+    "semantic_hash": "719983c4dc78c24fb6f46395a5817e36"
   },
   "desamparados-web/src/features/cms/bloques/formularios/cronologia.tsx": {
-    "mtime": 1791790861.528807,
-    "seen": 1791794403.340525,
-    "ast_hash": "fea4325cbae194bfd5eafc3396c204a9",
-    "semantic_hash": "fea4325cbae194bfd5eafc3396c204a9"
+    "mtime": 1792349393.773829,
+    "seen": 1792604266.725644,
+    "ast_hash": "f98fd565e912e3cec36fc7212640fa59",
+    "semantic_hash": "f98fd565e912e3cec36fc7212640fa59"
   },
   "desamparados-web/src/features/cms/bloques/formularios/donativo.tsx": {
-    "mtime": 1791289077.528685,
-    "seen": 1791479994.295499,
-    "ast_hash": "a234e49cb6ca6f427d8612615c8dd1a6",
-    "semantic_hash": "a234e49cb6ca6f427d8612615c8dd1a6"
+    "mtime": 1792349594.0684824,
+    "seen": 1792604266.725644,
+    "ast_hash": "6c8ee5f8c5c2202d09ed56bc2e3549ab",
+    "semantic_hash": "6c8ee5f8c5c2202d09ed56bc2e3549ab"
   },
   "desamparados-web/src/features/cms/bloques/formularios/fotoFija.tsx": {
     "mtime": 1791289077.545278,
@@ -5442,28 +5442,28 @@
     "semantic_hash": "0ff6a693aaf5c93262d4ef911c63782e"
   },
   "desamparados-web/src/features/cms/bloques/formularios/horario.tsx": {
-    "mtime": 1791289077.578154,
-    "seen": 1791479994.295499,
-    "ast_hash": "28867dac8a95536c59ccf62ccb7f5b2c",
-    "semantic_hash": "28867dac8a95536c59ccf62ccb7f5b2c"
+    "mtime": 1792349259.9842484,
+    "seen": 1792604266.725644,
+    "ast_hash": "6475e555d3bb49f115923e27acc30981",
+    "semantic_hash": "6475e555d3bb49f115923e27acc30981"
   },
   "desamparados-web/src/features/cms/bloques/formularios/listas.tsx": {
-    "mtime": 1791289077.5983665,
-    "seen": 1791479994.295499,
-    "ast_hash": "9658ea203e721a9d733812058b50fd6b",
-    "semantic_hash": "9658ea203e721a9d733812058b50fd6b"
+    "mtime": 1792349351.3246953,
+    "seen": 1792604266.725644,
+    "ast_hash": "b2afb3e2ff9d1bc8b5848b133afbb759",
+    "semantic_hash": "b2afb3e2ff9d1bc8b5848b133afbb759"
   },
   "desamparados-web/src/features/cms/bloques/formularios/medios.tsx": {
-    "mtime": 1791289077.6364896,
-    "seen": 1791479994.295499,
-    "ast_hash": "6f17a054459e0144de3476b1b34fb282",
-    "semantic_hash": "6f17a054459e0144de3476b1b34fb282"
+    "mtime": 1792349393.773829,
+    "seen": 1792604266.725644,
+    "ast_hash": "d4d1e9fcec70620d15a42cc61ab0741c",
+    "semantic_hash": "d4d1e9fcec70620d15a42cc61ab0741c"
   },
   "desamparados-web/src/features/cms/bloques/formularios/nuevos.tsx": {
-    "mtime": 1791924270.3536322,
-    "seen": 1791926815.5456753,
-    "ast_hash": "fbb3c84f120fb57c20c020b09508462a",
-    "semantic_hash": "fbb3c84f120fb57c20c020b09508462a"
+    "mtime": 1792349632.2547107,
+    "seen": 1792604266.725644,
+    "ast_hash": "60081c0e024d61d4d74b151c81bda0fa",
+    "semantic_hash": "60081c0e024d61d4d74b151c81bda0fa"
   },
   "desamparados-web/src/features/cms/cabildos/formato.ts": {
     "mtime": 1790810351.4409027,
@@ -5490,10 +5490,10 @@
     "semantic_hash": "71ba31154c77864d101000cd07576ed3"
   },
   "desamparados-web/src/features/cms/censo/FichaCenso.tsx": {
-    "mtime": 1791300790.8265355,
-    "seen": 1791479994.297047,
-    "ast_hash": "b87a4da6fe51b3c2e4cd5b1142d88448",
-    "semantic_hash": "b87a4da6fe51b3c2e4cd5b1142d88448"
+    "mtime": 1792149116.080301,
+    "seen": 1792604266.7278724,
+    "ast_hash": "fa80b19902be8edc9d8bcb5076343032",
+    "semantic_hash": "fa80b19902be8edc9d8bcb5076343032"
   },
   "desamparados-web/src/features/cms/censo/HojaCenso.tsx": {
     "mtime": 1791789977.6578808,
@@ -5532,10 +5532,10 @@
     "semantic_hash": "a6ac0bc9a29f558cff29c278a58892ed"
   },
   "desamparados-web/src/features/cms/constructor/GaleriaDeBloques.tsx": {
-    "mtime": 1790951439.0653174,
-    "seen": 1791479994.297047,
-    "ast_hash": "e6b787269077894cbaefbd4366ce79e4",
-    "semantic_hash": "e6b787269077894cbaefbd4366ce79e4"
+    "mtime": 1792355475.9218514,
+    "seen": 1792604266.7299244,
+    "ast_hash": "5d68151a13db615b0e33f3e69870d09d",
+    "semantic_hash": "5d68151a13db615b0e33f3e69870d09d"
   },
   "desamparados-web/src/features/cms/constructor/ListaDeBloques.tsx": {
     "mtime": 1791789977.6608925,
@@ -5556,10 +5556,10 @@
     "semantic_hash": "d7a866aeba74cb904c0ab35cb2a2f1c8"
   },
   "desamparados-web/src/features/cms/constructor/PanelDePresentacion.tsx": {
-    "mtime": 1790511332.9446561,
-    "seen": 1791479994.297047,
-    "ast_hash": "262254c2752d3f1c47db1f6bce57e38d",
-    "semantic_hash": "262254c2752d3f1c47db1f6bce57e38d"
+    "mtime": 1792349482.0336585,
+    "seen": 1792604266.7299244,
+    "ast_hash": "a1560a8600386ffb01ba79690ded7ace",
+    "semantic_hash": "a1560a8600386ffb01ba79690ded7ace"
   },
   "desamparados-web/src/features/cms/constructor/VistaEnVivo.tsx": {
     "mtime": 1791289509.7142255,
@@ -5568,16 +5568,16 @@
     "semantic_hash": "5ff006f691057545dc194dc7c287b8ba"
   },
   "desamparados-web/src/features/cms/constructor/__tests__/PanelDePresentacion.test.tsx": {
-    "mtime": 1790511380.9318972,
-    "seen": 1791479994.297047,
-    "ast_hash": "4de838498f48626c5d1bd558653d63e7",
-    "semantic_hash": "4de838498f48626c5d1bd558653d63e7"
+    "mtime": 1792350248.8712108,
+    "seen": 1792604266.7299244,
+    "ast_hash": "f5fba19a78b7adad47e7bca3c01ec59a",
+    "semantic_hash": "f5fba19a78b7adad47e7bca3c01ec59a"
   },
   "desamparados-web/src/features/cms/constructor/__tests__/constructor.test.tsx": {
-    "mtime": 1791547307.1699677,
-    "seen": 1791550759.8953605,
-    "ast_hash": "7a545706bde0428c4e97a634f3c10290",
-    "semantic_hash": "7a545706bde0428c4e97a634f3c10290"
+    "mtime": 1792355429.975793,
+    "seen": 1792604266.7299244,
+    "ast_hash": "6eb053cca7c8f79da98c72689a2aef33",
+    "semantic_hash": "6eb053cca7c8f79da98c72689a2aef33"
   },
   "desamparados-web/src/features/cms/constructor/__tests__/piezas.test.tsx": {
     "mtime": 1790951439.0653174,
@@ -5586,10 +5586,10 @@
     "semantic_hash": "85a963deee8efbdd7be7be1c2816d66b"
   },
   "desamparados-web/src/features/cms/constructor/etiquetas.ts": {
-    "mtime": 1791924315.3452294,
-    "seen": 1791926815.5461972,
-    "ast_hash": "bd7e45eaf2e592991faf92945fce4415",
-    "semantic_hash": "bd7e45eaf2e592991faf92945fce4415"
+    "mtime": 1792421270.2367337,
+    "seen": 1792604266.7309294,
+    "ast_hash": "eee035414b886503dc2130645949f1e3",
+    "semantic_hash": "eee035414b886503dc2130645949f1e3"
   },
   "desamparados-web/src/features/cms/constructor/mensajes.ts": {
     "mtime": 1790338584.369477,
@@ -5826,22 +5826,22 @@
     "semantic_hash": "dfeaa17a5272ca88fa43262c6b8b4ecd"
   },
   "desamparados-web/src/features/cms/emails/EmailEditPage.tsx": {
-    "mtime": 1790868259.8094952,
-    "seen": 1791479994.297047,
-    "ast_hash": "a800c5bbfda19f275bf84f28a9e83921",
-    "semantic_hash": "a800c5bbfda19f275bf84f28a9e83921"
+    "mtime": 1792443408.5959141,
+    "seen": 1792604266.738636,
+    "ast_hash": "0ab06811ee85508d3fd42f2266dedce5",
+    "semantic_hash": "0ab06811ee85508d3fd42f2266dedce5"
   },
   "desamparados-web/src/features/cms/emails/EmailsPage.tsx": {
-    "mtime": 1790868013.0392861,
-    "seen": 1791479994.297047,
-    "ast_hash": "54315f49dd4d0898372f68264fc11482",
-    "semantic_hash": "54315f49dd4d0898372f68264fc11482"
+    "mtime": 1792443493.792474,
+    "seen": 1792604266.738636,
+    "ast_hash": "7c2f78aa13145d0684a23c312bb1800f",
+    "semantic_hash": "7c2f78aa13145d0684a23c312bb1800f"
   },
   "desamparados-web/src/features/cms/emails/__tests__/Emails.test.tsx": {
-    "mtime": 1791547331.3665552,
-    "seen": 1791550759.8953605,
-    "ast_hash": "770d53ef3322461bd9a47ca2889db639",
-    "semantic_hash": "770d53ef3322461bd9a47ca2889db639"
+    "mtime": 1792443426.5875852,
+    "seen": 1792604266.738636,
+    "ast_hash": "4a5de4cbc5efe556f6bc7d4bfc7eb5e4",
+    "semantic_hash": "4a5de4cbc5efe556f6bc7d4bfc7eb5e4"
   },
   "desamparados-web/src/features/cms/ficha/AvisoCambiosSinGuardar.tsx": {
     "mtime": 1791476496.3635702,
@@ -6150,16 +6150,16 @@
     "semantic_hash": "f1359a86502b4bc911747d96e4832c0e"
   },
   "desamparados-web/src/features/cms/mesa/CancelarInscripcion.tsx": {
-    "mtime": 1790268882.761307,
-    "seen": 1791479994.297047,
+    "mtime": 1792516362.312394,
+    "seen": 1792604266.7479906,
     "ast_hash": "1ace33aa9a3d9d481cfafa5640c319be",
     "semantic_hash": "1ace33aa9a3d9d481cfafa5640c319be"
   },
   "desamparados-web/src/features/cms/mesa/ColaDeZona.tsx": {
-    "mtime": 1790250587.2792022,
-    "seen": 1791479994.297047,
-    "ast_hash": "c639e304f7c197d90b41bf18021e95c6",
-    "semantic_hash": "c639e304f7c197d90b41bf18021e95c6"
+    "mtime": 1792516277.9014287,
+    "seen": 1792604266.7479906,
+    "ast_hash": "c35f295568cad93b182a06f525723595",
+    "semantic_hash": "c35f295568cad93b182a06f525723595"
   },
   "desamparados-web/src/features/cms/mesa/DatosPersona.tsx": {
     "mtime": 1791476496.3704033,
@@ -6168,10 +6168,10 @@
     "semantic_hash": "89366ddce0650515fd8f634b3e405564"
   },
   "desamparados-web/src/features/cms/mesa/FormularioCorreccion.tsx": {
-    "mtime": 1791476496.3704033,
-    "seen": 1791479994.297047,
-    "ast_hash": "e0ea7447a73a3a436a40be5ca358f6cb",
-    "semantic_hash": "e0ea7447a73a3a436a40be5ca358f6cb"
+    "mtime": 1792514155.381497,
+    "seen": 1792604266.7479906,
+    "ast_hash": "ce6ffdf0ad4b0bdddcc4c9bf81d028ed",
+    "semantic_hash": "ce6ffdf0ad4b0bdddcc4c9bf81d028ed"
   },
   "desamparados-web/src/features/cms/mesa/ListaSinDevolver.tsx": {
     "mtime": 1790264157.0306883,
@@ -6180,10 +6180,10 @@
     "semantic_hash": "2838ce429df311a5386a3b50f6f79645"
   },
   "desamparados-web/src/features/cms/mesa/MesaProcesionPage.tsx": {
-    "mtime": 1791476496.3704033,
-    "seen": 1791479994.297047,
-    "ast_hash": "c1fc0279ed090aad09cca58c056da48a",
-    "semantic_hash": "c1fc0279ed090aad09cca58c056da48a"
+    "mtime": 1792518174.9119782,
+    "seen": 1792604266.7479906,
+    "ast_hash": "abbd7e1bff79d19dc46eb067f2793a59",
+    "semantic_hash": "abbd7e1bff79d19dc46eb067f2793a59"
   },
   "desamparados-web/src/features/cms/mesa/PreparacionRopa.tsx": {
     "mtime": 1791289656.9853785,
@@ -6192,10 +6192,10 @@
     "semantic_hash": "2d140cf138aaf812438a19caa081728e"
   },
   "desamparados-web/src/features/cms/mesa/TablaApuntados.tsx": {
-    "mtime": 1791289656.9863956,
-    "seen": 1791479994.297047,
-    "ast_hash": "b020bb4925698f092852e64cca5c4f7c",
-    "semantic_hash": "b020bb4925698f092852e64cca5c4f7c"
+    "mtime": 1792518489.6671896,
+    "seen": 1792604266.7479906,
+    "ast_hash": "7335eb485bfeaaea4047aabf0c470197",
+    "semantic_hash": "7335eb485bfeaaea4047aabf0c470197"
   },
   "desamparados-web/src/features/cms/mesa/ZonaDevolucion.tsx": {
     "mtime": 1790264143.9851708,
@@ -6204,10 +6204,10 @@
     "semantic_hash": "462dd030a693f66c8eea433550b0c8ed"
   },
   "desamparados-web/src/features/cms/mesa/ZonaInscripcion.tsx": {
-    "mtime": 1791476496.3704033,
-    "seen": 1791479994.297047,
-    "ast_hash": "b6ffce778c0ac4e3b9692aafd62e53e6",
-    "semantic_hash": "b6ffce778c0ac4e3b9692aafd62e53e6"
+    "mtime": 1792514155.381497,
+    "seen": 1792604266.7479906,
+    "ast_hash": "e692a1ed6ad2b3ef795d5cc65a84cf4c",
+    "semantic_hash": "e692a1ed6ad2b3ef795d5cc65a84cf4c"
   },
   "desamparados-web/src/features/cms/mesa/ZonaTesoreria.tsx": {
     "mtime": 1790951439.0821407,
@@ -6216,16 +6216,16 @@
     "semantic_hash": "5333c28788d038db6e8264c3612815a1"
   },
   "desamparados-web/src/features/cms/mesa/ZonaTunicas.tsx": {
-    "mtime": 1790951439.0821407,
-    "seen": 1791479994.297047,
-    "ast_hash": "4219ae93d95f06a80ca19e225d598c9e",
-    "semantic_hash": "4219ae93d95f06a80ca19e225d598c9e"
+    "mtime": 1792518260.5583262,
+    "seen": 1792604266.7479906,
+    "ast_hash": "b1bdf3bb7ec3b41367d18f1c011943bb",
+    "semantic_hash": "b1bdf3bb7ec3b41367d18f1c011943bb"
   },
   "desamparados-web/src/features/cms/mesa/__tests__/MesaProcesionPage.test.tsx": {
-    "mtime": 1791669100.7681296,
-    "seen": 1791734905.923936,
-    "ast_hash": "54783b74021aed9a3aa707277a9b6592",
-    "semantic_hash": "54783b74021aed9a3aa707277a9b6592"
+    "mtime": 1792517374.6081996,
+    "seen": 1792604266.7495227,
+    "ast_hash": "399adf4d689e3a01722f92fc75813303",
+    "semantic_hash": "399adf4d689e3a01722f92fc75813303"
   },
   "desamparados-web/src/features/cms/mesa/datosDeLaFicha.ts": {
     "mtime": 1791476496.3704033,
@@ -6246,10 +6246,10 @@
     "semantic_hash": "7bf966d1fd083cb9a0ffee261c44c4dc"
   },
   "desamparados-web/src/features/cms/mesa/piezas.tsx": {
-    "mtime": 1790951439.0942807,
-    "seen": 1791479994.297047,
-    "ast_hash": "e13f97ad1e402e589c4a33469049e75a",
-    "semantic_hash": "e13f97ad1e402e589c4a33469049e75a"
+    "mtime": 1792517099.288954,
+    "seen": 1792604266.7495227,
+    "ast_hash": "d6622fc82a7d4a10558bc24f76a3fe9e",
+    "semantic_hash": "d6622fc82a7d4a10558bc24f76a3fe9e"
   },
   "desamparados-web/src/features/cms/portadaPublicacion.ts": {
     "mtime": 1791705643.47938,
@@ -6288,10 +6288,10 @@
     "semantic_hash": "af6a845fcb0634372d2e56f4944164d7"
   },
   "desamparados-web/src/features/cms/portada/useEdicionDePortada.ts": {
-    "mtime": 1791705559.157078,
-    "seen": 1791734905.923936,
-    "ast_hash": "ca3123b7583c7a31a260a5ade382aa5d",
-    "semantic_hash": "ca3123b7583c7a31a260a5ade382aa5d"
+    "mtime": 1792107139.8745098,
+    "seen": 1792604266.7508538,
+    "ast_hash": "c7a2726d12bf1258083af08fe43032e8",
+    "semantic_hash": "c7a2726d12bf1258083af08fe43032e8"
   },
   "desamparados-web/src/features/cms/puerta/LectorQr.tsx": {
     "mtime": 1790854528.2755058,
@@ -6300,16 +6300,16 @@
     "semantic_hash": "ec4c3b7229199f386a470e93d71e72c0"
   },
   "desamparados-web/src/features/cms/puerta/PuertaTemploPage.tsx": {
-    "mtime": 1791920469.4040942,
-    "seen": 1791926815.5461972,
-    "ast_hash": "e8aff5380513c22f47b77c8184b804f5",
-    "semantic_hash": "e8aff5380513c22f47b77c8184b804f5"
+    "mtime": 1792512783.4015813,
+    "seen": 1792604266.7508538,
+    "ast_hash": "13cea8d138739dac308e557085c2229c",
+    "semantic_hash": "13cea8d138739dac308e557085c2229c"
   },
   "desamparados-web/src/features/cms/puerta/__tests__/PuertaTemploPage.test.tsx": {
-    "mtime": 1791476496.3766215,
-    "seen": 1791479994.297047,
-    "ast_hash": "e451102b949d13c063179c6a2c8f1d70",
-    "semantic_hash": "e451102b949d13c063179c6a2c8f1d70"
+    "mtime": 1792512895.5072854,
+    "seen": 1792604266.7508538,
+    "ast_hash": "3ff980f4ec0c0d1f7c462862875c2ed6",
+    "semantic_hash": "3ff980f4ec0c0d1f7c462862875c2ed6"
   },
   "desamparados-web/src/features/cms/redaccion/FilaRedaccion.tsx": {
     "mtime": 1790071954.0444686,
@@ -6426,10 +6426,10 @@
     "semantic_hash": "39e6f892f61497c3745ac5732bc607bf"
   },
   "desamparados-web/src/features/cms/tesoreria/Remesas.tsx": {
-    "mtime": 1790951439.0972428,
-    "seen": 1791479994.297047,
-    "ast_hash": "37b1c4332cf19a28394d88d3305fd52a",
-    "semantic_hash": "37b1c4332cf19a28394d88d3305fd52a"
+    "mtime": 1792446839.0317955,
+    "seen": 1792604266.7519073,
+    "ast_hash": "e1541228a3401da3d710883c2961ea0e",
+    "semantic_hash": "e1541228a3401da3d710883c2961ea0e"
   },
   "desamparados-web/src/features/cms/tesoreria/SelloEstado.tsx": {
     "mtime": 1791476965.1119146,
@@ -6636,16 +6636,16 @@
     "semantic_hash": "7ee37f2091e53b6fe02c21a30a020e19"
   },
   "desamparados-web/src/features/inicio/AccesosRapidos.tsx": {
-    "mtime": 1791810169.159076,
-    "seen": 1791825912.2906446,
-    "ast_hash": "1a85c4109e7c3f8c460d6a19f15aad4c",
-    "semantic_hash": "1a85c4109e7c3f8c460d6a19f15aad4c"
+    "mtime": 1792106335.8470342,
+    "seen": 1792604266.7611034,
+    "ast_hash": "3e808356be49709cd5b497e84369e918",
+    "semantic_hash": "3e808356be49709cd5b497e84369e918"
   },
   "desamparados-web/src/features/inicio/AgendaYDirecto.tsx": {
-    "mtime": 1791920469.4131503,
-    "seen": 1791926815.5461972,
-    "ast_hash": "625d7b2d91f132e9503033777b5858a4",
-    "semantic_hash": "625d7b2d91f132e9503033777b5858a4"
+    "mtime": 1792105399.826031,
+    "seen": 1792604266.7611034,
+    "ast_hash": "d6386987218023f4c9d85efd1c390180",
+    "semantic_hash": "d6386987218023f4c9d85efd1c390180"
   },
   "desamparados-web/src/features/inicio/AvisosDeInicio.tsx": {
     "mtime": 1790550094.7930121,
@@ -6660,10 +6660,10 @@
     "semantic_hash": "3074245468129f3727fb4e5db2303b76"
   },
   "desamparados-web/src/features/inicio/CuentaAtrasDeSalida.tsx": {
-    "mtime": 1791154920.2973287,
-    "seen": 1791479994.297047,
-    "ast_hash": "0a876a0ee1fec8cbf017cc6b47f8c570",
-    "semantic_hash": "0a876a0ee1fec8cbf017cc6b47f8c570"
+    "mtime": 1792107139.8852594,
+    "seen": 1792604266.7616076,
+    "ast_hash": "51960db8d447b4798d50688fba29f504",
+    "semantic_hash": "51960db8d447b4798d50688fba29f504"
   },
   "desamparados-web/src/features/inicio/EscenaProcesion.tsx": {
     "mtime": 1791922154.4565797,
@@ -6672,10 +6672,10 @@
     "semantic_hash": "29a2465fed6b39b8d29cdb680e7b17b8"
   },
   "desamparados-web/src/features/inicio/Hero.tsx": {
-    "mtime": 1791924619.3640363,
-    "seen": 1791926815.5461972,
-    "ast_hash": "e59f677c9d95783cdf9535ec3f457311",
-    "semantic_hash": "e59f677c9d95783cdf9535ec3f457311"
+    "mtime": 1792107139.8852594,
+    "seen": 1792604266.7616076,
+    "ast_hash": "50bf5504efe63cbb180c2cbc1fead39d",
+    "semantic_hash": "50bf5504efe63cbb180c2cbc1fead39d"
   },
   "desamparados-web/src/features/inicio/InicioPage.tsx": {
     "mtime": 1791710311.2064478,
@@ -6690,16 +6690,16 @@
     "semantic_hash": "d5c54ee4fcbf67b605b826d2512535b1"
   },
   "desamparados-web/src/features/inicio/MiniCalendario.tsx": {
-    "mtime": 1791920469.4131503,
-    "seen": 1791926815.5461972,
-    "ast_hash": "5a214a83093c70345c7fcb3e24a0909b",
-    "semantic_hash": "5a214a83093c70345c7fcb3e24a0909b"
+    "mtime": 1792105399.8255105,
+    "seen": 1792604266.7616076,
+    "ast_hash": "50326021c31106b04952b42655f9dac3",
+    "semantic_hash": "50326021c31106b04952b42655f9dac3"
   },
   "desamparados-web/src/features/inicio/NoticiasDestacadas.tsx": {
-    "mtime": 1791808040.8312721,
-    "seen": 1791825912.2906446,
-    "ast_hash": "4f05073a13dd360bf613e8ae7de452e5",
-    "semantic_hash": "4f05073a13dd360bf613e8ae7de452e5"
+    "mtime": 1792105335.3198385,
+    "seen": 1792604266.7616076,
+    "ast_hash": "2fa232945694627c567e44d31f27a2f7",
+    "semantic_hash": "2fa232945694627c567e44d31f27a2f7"
   },
   "desamparados-web/src/features/inicio/PublicacionesDestacadas.tsx": {
     "mtime": 1791808049.9163404,
@@ -6708,22 +6708,22 @@
     "semantic_hash": "21da50872952b64d8214b529bb7449bd"
   },
   "desamparados-web/src/features/inicio/__tests__/AccesosRapidos.test.tsx": {
-    "mtime": 1791810176.191671,
-    "seen": 1791825912.2906446,
-    "ast_hash": "e3dae826598a81e161c5e05248255769",
-    "semantic_hash": "e3dae826598a81e161c5e05248255769"
+    "mtime": 1792106045.116547,
+    "seen": 1792604266.7616076,
+    "ast_hash": "e4c6e460191179e63f2d10c29ed5dff2",
+    "semantic_hash": "e4c6e460191179e63f2d10c29ed5dff2"
   },
   "desamparados-web/src/features/inicio/__tests__/AgendaYDirecto.test.tsx": {
-    "mtime": 1791920469.416142,
-    "seen": 1791926815.5461972,
-    "ast_hash": "ecf4ca931c2a165fee6c0f1788e35d2d",
-    "semantic_hash": "ecf4ca931c2a165fee6c0f1788e35d2d"
+    "mtime": 1792105335.3238583,
+    "seen": 1792604266.7616076,
+    "ast_hash": "ccd2d63435866b4d2cbf36a53da3c6d4",
+    "semantic_hash": "ccd2d63435866b4d2cbf36a53da3c6d4"
   },
   "desamparados-web/src/features/inicio/__tests__/CuentaAtrasDeSalida.test.tsx": {
-    "mtime": 1791154773.5850003,
-    "seen": 1791479994.297047,
-    "ast_hash": "84baf86450241e8959a8548d0d1aa71a",
-    "semantic_hash": "84baf86450241e8959a8548d0d1aa71a"
+    "mtime": 1792363301.07865,
+    "seen": 1792604266.7616076,
+    "ast_hash": "173052fad0a74b7d5d24040736dfe324",
+    "semantic_hash": "173052fad0a74b7d5d24040736dfe324"
   },
   "desamparados-web/src/features/inicio/__tests__/EscenaProcesion.test.tsx": {
     "mtime": 1791922078.1985295,
@@ -6744,10 +6744,10 @@
     "semantic_hash": "8ca1c1c398911bbd5cefd5e8014d5f04"
   },
   "desamparados-web/src/features/inicio/__tests__/NoticiasDestacadas.test.tsx": {
-    "mtime": 1791808306.8329346,
-    "seen": 1791825912.2906446,
-    "ast_hash": "8c9c4f3bab3cf96fc0d27a9b7675e280",
-    "semantic_hash": "8c9c4f3bab3cf96fc0d27a9b7675e280"
+    "mtime": 1792105335.3218472,
+    "seen": 1792604266.7631493,
+    "ast_hash": "62f3cf5a795b3204eb1b826245a91b9c",
+    "semantic_hash": "62f3cf5a795b3204eb1b826245a91b9c"
   },
   "desamparados-web/src/features/inicio/__tests__/PublicacionesDestacadas.test.tsx": {
     "mtime": 1791485296.5425694,
@@ -6786,10 +6786,10 @@
     "semantic_hash": "88fd30e7c23aba7b5ab2373558c937ae"
   },
   "desamparados-web/src/features/inicio/estilos.ts": {
-    "mtime": 1791789977.669926,
-    "seen": 1791794403.340525,
-    "ast_hash": "5d875bf61c9103df857e37221a9e2867",
-    "semantic_hash": "5d875bf61c9103df857e37221a9e2867"
+    "mtime": 1792105399.8128972,
+    "seen": 1792604266.7631493,
+    "ast_hash": "65f09667a7b513437dc95a08ddbc7536",
+    "semantic_hash": "65f09667a7b513437dc95a08ddbc7536"
   },
   "desamparados-web/src/features/inicio/heroImagenes.ts": {
     "mtime": 1791795169.9112601,
@@ -6834,22 +6834,22 @@
     "semantic_hash": "37357b13a074a3aa0276cb221f980dfe"
   },
   "desamparados-web/src/features/legal/PoliticaDeCookiesPage.tsx": {
-    "mtime": 1791193587.6662676,
-    "seen": 1791479994.297047,
-    "ast_hash": "e759cb0c2fc75729fc861418021347a7",
-    "semantic_hash": "e759cb0c2fc75729fc861418021347a7"
+    "mtime": 1792101185.1448,
+    "seen": 1792604266.7657578,
+    "ast_hash": "963f0c3c4e4aa8f0076294c2e55f4589",
+    "semantic_hash": "963f0c3c4e4aa8f0076294c2e55f4589"
   },
   "desamparados-web/src/features/legal/PoliticaDePrivacidadPage.tsx": {
-    "mtime": 1791710213.5225098,
-    "seen": 1791734905.923936,
-    "ast_hash": "f630e295e129da2be9a1c48aba41ce65",
-    "semantic_hash": "f630e295e129da2be9a1c48aba41ce65"
+    "mtime": 1792102017.895975,
+    "seen": 1792604266.7657578,
+    "ast_hash": "a68884309ca588dafef208dafdc9e18b",
+    "semantic_hash": "a68884309ca588dafef208dafdc9e18b"
   },
   "desamparados-web/src/features/legal/__tests__/AvisoLegalPage.test.tsx": {
-    "mtime": 1791789977.671189,
-    "seen": 1791794403.340525,
-    "ast_hash": "fc7167606e88a5277061750034b3e006",
-    "semantic_hash": "fc7167606e88a5277061750034b3e006"
+    "mtime": 1792585479.1015131,
+    "seen": 1792604266.7657578,
+    "ast_hash": "fcfd437e599e8bb33780b4c743fe6c92",
+    "semantic_hash": "fcfd437e599e8bb33780b4c743fe6c92"
   },
   "desamparados-web/src/features/legal/__tests__/DatosDeIdentificacion.test.tsx": {
     "mtime": 1791789977.671189,
@@ -6858,16 +6858,16 @@
     "semantic_hash": "3b37586481cdc775c24e1155662acb6f"
   },
   "desamparados-web/src/features/legal/__tests__/OtraInstalacionEnPlural.test.tsx": {
-    "mtime": 1791789977.6725183,
-    "seen": 1791794403.340525,
-    "ast_hash": "67c4bd3712271282e5b86b5a46c5a51e",
-    "semantic_hash": "67c4bd3712271282e5b86b5a46c5a51e"
+    "mtime": 1792585479.1527557,
+    "seen": 1792604266.7657578,
+    "ast_hash": "61800634c0bf6eda0d9acafcc2743e60",
+    "semantic_hash": "61800634c0bf6eda0d9acafcc2743e60"
   },
   "desamparados-web/src/features/legal/__tests__/PaginasLegales.test.tsx": {
-    "mtime": 1791485296.5425694,
-    "seen": 1791534313.6394584,
-    "ast_hash": "ba9beeb1b9954e8450c6dbec4098f16b",
-    "semantic_hash": "ba9beeb1b9954e8450c6dbec4098f16b"
+    "mtime": 1792101189.6848967,
+    "seen": 1792604266.7657578,
+    "ast_hash": "d898057536e7f06263f99211effb1a28",
+    "semantic_hash": "d898057536e7f06263f99211effb1a28"
   },
   "desamparados-web/src/features/legal/piezas.tsx": {
     "mtime": 1791137879.053462,
@@ -6876,16 +6876,16 @@
     "semantic_hash": "4a8b9de80e63cb189e0155f585b3456a"
   },
   "desamparados-web/src/features/noEncontrado/MapaFueraDelRecorrido.tsx": {
-    "mtime": 1791810452.9723246,
-    "seen": 1791825912.2906446,
+    "mtime": 1791996580.3301866,
+    "seen": 1792604266.7657578,
     "ast_hash": "84b2fc4eadb208f339bf0ca6a8c8d0a0",
     "semantic_hash": "84b2fc4eadb208f339bf0ca6a8c8d0a0"
   },
   "desamparados-web/src/features/noEncontrado/NoEncontradaPage.tsx": {
-    "mtime": 1791924540.0287638,
-    "seen": 1791926815.5461972,
-    "ast_hash": "e0d84a9e01ad841ec5ad98957b1c958c",
-    "semantic_hash": "e0d84a9e01ad841ec5ad98957b1c958c"
+    "mtime": 1792331094.5487669,
+    "seen": 1792604266.7657578,
+    "ast_hash": "855c0f676cb478f1135bb0e99294d476",
+    "semantic_hash": "855c0f676cb478f1135bb0e99294d476"
   },
   "desamparados-web/src/features/noEncontrado/__tests__/NoEncontradaPage.test.tsx": {
     "mtime": 1791924556.2596004,
@@ -6900,10 +6900,10 @@
     "semantic_hash": "2a2fe0171ca0b6db35fed96c221812dd"
   },
   "desamparados-web/src/features/procesion/SelectorSalida.tsx": {
-    "mtime": 1790951439.1115086,
-    "seen": 1791479994.297047,
-    "ast_hash": "acfe6346fdf11435c79c4dedeaa67fb6",
-    "semantic_hash": "acfe6346fdf11435c79c4dedeaa67fb6"
+    "mtime": 1792516753.2610595,
+    "seen": 1792604266.7657578,
+    "ast_hash": "90b24cd77c99186f59e1253d70c3fb76",
+    "semantic_hash": "90b24cd77c99186f59e1253d70c3fb76"
   },
   "desamparados-web/src/features/procesion/__tests__/SelectorSalida.test.tsx": {
     "mtime": 1790951439.1115086,
@@ -7056,10 +7056,10 @@
     "semantic_hash": "a3b0044d230de30972766a94d3a0af9b"
   },
   "desamparados-web/src/hooks/__tests__/useConsentimientoDeCookies.test.tsx": {
-    "mtime": 1790029706.6661062,
-    "seen": 1791479994.297047,
-    "ast_hash": "fb570c6bd1afa5d307132203d8e01759",
-    "semantic_hash": "fb570c6bd1afa5d307132203d8e01759"
+    "mtime": 1792101185.1458058,
+    "seen": 1792604266.768959,
+    "ast_hash": "040610ffeed2dc8a9ef5ed30545d8102",
+    "semantic_hash": "040610ffeed2dc8a9ef5ed30545d8102"
   },
   "desamparados-web/src/hooks/__tests__/useFocoAlCambiarDePagina.test.tsx": {
     "mtime": 1791476496.3856897,
@@ -7092,10 +7092,10 @@
     "semantic_hash": "231e1bd7bd8b8c7aa0dd8efadd0c1e37"
   },
   "desamparados-web/src/hooks/useConsentimientoDeCookies.ts": {
-    "mtime": 1791705559.1370063,
-    "seen": 1791734905.923936,
-    "ast_hash": "913878fde7fa7683fd92f7faba6bb0a7",
-    "semantic_hash": "913878fde7fa7683fd92f7faba6bb0a7"
+    "mtime": 1792101185.1427946,
+    "seen": 1792604266.768959,
+    "ast_hash": "4dfcc252e8c3b90932b5caa31889112b",
+    "semantic_hash": "4dfcc252e8c3b90932b5caa31889112b"
   },
   "desamparados-web/src/hooks/useFocoAlCambiarDePagina.ts": {
     "mtime": 1791476496.3856897,
@@ -7224,8 +7224,8 @@
     "semantic_hash": "3d014b8e961c44ff2e5fef09f18de970"
   },
   "desamparados-web/src/lib/api/auth.ts": {
-    "mtime": 1791920469.4259887,
-    "seen": 1791926815.5461972,
+    "mtime": 1791992336.5430596,
+    "seen": 1792604266.768959,
     "ast_hash": "0d9973a30eeebd59c6e6efe494da4a58",
     "semantic_hash": "0d9973a30eeebd59c6e6efe494da4a58"
   },
@@ -7254,10 +7254,10 @@
     "semantic_hash": "ca008af7ab5f21aebea4c14d76292f38"
   },
   "desamparados-web/src/lib/api/comunicados.ts": {
-    "mtime": 1791920469.4281416,
-    "seen": 1791926815.5461972,
-    "ast_hash": "c45c644445ce7db658c6b691549c1141",
-    "semantic_hash": "c45c644445ce7db658c6b691549c1141"
+    "mtime": 1792149107.2186692,
+    "seen": 1792604266.768959,
+    "ast_hash": "e4af9117c497ef94dca69652431cfff1",
+    "semantic_hash": "e4af9117c497ef94dca69652431cfff1"
   },
   "desamparados-web/src/lib/api/contabilidad.ts": {
     "mtime": 1791705559.1748486,
@@ -7272,16 +7272,16 @@
     "semantic_hash": "c77922ec7c304740913dd0b70acd4fa5"
   },
   "desamparados-web/src/lib/api/contenido.ts": {
-    "mtime": 1791705643.4813848,
-    "seen": 1791734905.923936,
-    "ast_hash": "ead4df386dcc43c25c1289476e44c8c9",
-    "semantic_hash": "ead4df386dcc43c25c1289476e44c8c9"
+    "mtime": 1792421270.2367337,
+    "seen": 1792604266.768959,
+    "ast_hash": "85411a182d97283af1177dccee5bb13a",
+    "semantic_hash": "85411a182d97283af1177dccee5bb13a"
   },
   "desamparados-web/src/lib/api/cortejoDirecto.ts": {
-    "mtime": 1791924485.0970492,
-    "seen": 1791926815.5461972,
-    "ast_hash": "f7ead4c1ece08f971b5252321d9b9d6c",
-    "semantic_hash": "f7ead4c1ece08f971b5252321d9b9d6c"
+    "mtime": 1792331094.5884764,
+    "seen": 1792604266.768959,
+    "ast_hash": "e81e039930d82240273f52e49bb8d10f",
+    "semantic_hash": "e81e039930d82240273f52e49bb8d10f"
   },
   "desamparados-web/src/lib/api/datos.ts": {
     "mtime": 1790767783.6326048,
@@ -7296,16 +7296,16 @@
     "semantic_hash": "1b3705359f60bcb0f76abad514679ab2"
   },
   "desamparados-web/src/lib/api/emails.ts": {
-    "mtime": 1791705559.157078,
-    "seen": 1791734905.923936,
-    "ast_hash": "b17af32d9c15ef2f1e2d628d59cea04f",
-    "semantic_hash": "b17af32d9c15ef2f1e2d628d59cea04f"
+    "mtime": 1792430758.9161503,
+    "seen": 1792604266.768959,
+    "ast_hash": "65341735ccfea10abd70b9320edb5a48",
+    "semantic_hash": "65341735ccfea10abd70b9320edb5a48"
   },
   "desamparados-web/src/lib/api/hermanos.ts": {
-    "mtime": 1791789977.6775155,
-    "seen": 1791794403.340525,
-    "ast_hash": "fc45c03c35df42027799d917e830529c",
-    "semantic_hash": "fc45c03c35df42027799d917e830529c"
+    "mtime": 1792149116.080301,
+    "seen": 1792604266.768959,
+    "ast_hash": "ddcdd6c6319a2da23ecfc5f5bfa9315c",
+    "semantic_hash": "ddcdd6c6319a2da23ecfc5f5bfa9315c"
   },
   "desamparados-web/src/lib/api/inventario.ts": {
     "mtime": 1791705559.157078,
@@ -7356,22 +7356,22 @@
     "semantic_hash": "d52022460ec7311f31a03dfced62f0e3"
   },
   "desamparados-web/src/lib/api/perfil.ts": {
-    "mtime": 1791705559.1491358,
-    "seen": 1791734905.923936,
-    "ast_hash": "0db1dbc5ab81db256ef8a607e4f2c256",
-    "semantic_hash": "0db1dbc5ab81db256ef8a607e4f2c256"
+    "mtime": 1792448799.8643222,
+    "seen": 1792604266.78101,
+    "ast_hash": "0b0963f755654c44eb0b7dd6e5ab8962",
+    "semantic_hash": "0b0963f755654c44eb0b7dd6e5ab8962"
   },
   "desamparados-web/src/lib/api/portada.ts": {
-    "mtime": 1791922002.8771887,
-    "seen": 1791926815.5461972,
-    "ast_hash": "4f35a298752f70423fd1261baa39d7fb",
-    "semantic_hash": "4f35a298752f70423fd1261baa39d7fb"
+    "mtime": 1792107139.8745098,
+    "seen": 1792604266.78101,
+    "ast_hash": "e189a37437fb7c8f91afe34d3d63f056",
+    "semantic_hash": "e189a37437fb7c8f91afe34d3d63f056"
   },
   "desamparados-web/src/lib/api/procesion.ts": {
-    "mtime": 1791647093.2319605,
-    "seen": 1791734905.923936,
-    "ast_hash": "5a46a7a24acfd9f7e707cb8b2b536234",
-    "semantic_hash": "5a46a7a24acfd9f7e707cb8b2b536234"
+    "mtime": 1791986166.9370034,
+    "seen": 1792604266.78101,
+    "ast_hash": "94add39672ae7f0b677b78bf4902a7a7",
+    "semantic_hash": "94add39672ae7f0b677b78bf4902a7a7"
   },
   "desamparados-web/src/lib/api/publicaciones.ts": {
     "mtime": 1791705559.184877,
@@ -7404,10 +7404,10 @@
     "semantic_hash": "f8f077b1249ef0c8cf06c7ffde27e4e7"
   },
   "desamparados-web/src/lib/api/tesoreria.ts": {
-    "mtime": 1791920469.430406,
-    "seen": 1791926815.5461972,
-    "ast_hash": "6fc3c0413492f498d57875271e2d463c",
-    "semantic_hash": "6fc3c0413492f498d57875271e2d463c"
+    "mtime": 1792446839.0317955,
+    "seen": 1792604266.78101,
+    "ast_hash": "6175906c62ffb4bc853f08371cc67297",
+    "semantic_hash": "6175906c62ffb4bc853f08371cc67297"
   },
   "desamparados-web/src/lib/api/tienda.ts": {
     "mtime": 1791920469.430406,
@@ -7542,16 +7542,16 @@
     "semantic_hash": "35d6e22408f769f994f15d95fe014f52"
   },
   "desamparados-web/src/routes/__tests__/guardas.test.tsx": {
-    "mtime": 1791555777.674831,
-    "seen": 1791734905.923936,
+    "mtime": 1791992336.6565,
+    "seen": 1792604266.7836597,
     "ast_hash": "040235ffa914ba5a7bb7b2b38bd58a43",
     "semantic_hash": "040235ffa914ba5a7bb7b2b38bd58a43"
   },
   "desamparados-web/src/routes/index.tsx": {
-    "mtime": 1791920469.434766,
-    "seen": 1791926815.5461972,
-    "ast_hash": "23ecfbb2d1108c220f360b5b9e2e06b1",
-    "semantic_hash": "23ecfbb2d1108c220f360b5b9e2e06b1"
+    "mtime": 1792600080.75529,
+    "seen": 1792604266.7836597,
+    "ast_hash": "f186c1a6c3be9f1ceaec36da6a3971fa",
+    "semantic_hash": "f186c1a6c3be9f1ceaec36da6a3971fa"
   },
   "desamparados-web/src/test/AllTheProviders.tsx": {
     "mtime": 1791836231.52368,
@@ -7578,10 +7578,10 @@
     "semantic_hash": "cd21d5c342b6a8ae3b005185cfb46b3c"
   },
   "desamparados-web/src/test/queryClient.ts": {
-    "mtime": 1791836231.495739,
-    "seen": 1791885894.270468,
-    "ast_hash": "dc5e79289c9bc323442a4b561b8d8726",
-    "semantic_hash": "dc5e79289c9bc323442a4b561b8d8726"
+    "mtime": 1792361469.0993874,
+    "seen": 1792604266.7836597,
+    "ast_hash": "f2e58aadabf5ed516a03246d13f2ca56",
+    "semantic_hash": "f2e58aadabf5ed516a03246d13f2ca56"
   },
   "desamparados-web/src/test/salidas.ts": {
     "mtime": 1790951439.115398,
@@ -7644,10 +7644,10 @@
     "semantic_hash": "a3d39fa780ebff65444de257f291ce6c"
   },
   "desamparados-web/tsconfig.node.json": {
-    "mtime": 1787935362.4555483,
-    "seen": 1791479994.297047,
-    "ast_hash": "8b6b00131aadd049f83fcfd0aee73555",
-    "semantic_hash": "8b6b00131aadd049f83fcfd0aee73555"
+    "mtime": 1792334448.162651,
+    "seen": 1792604266.7836597,
+    "ast_hash": "48756d42ec570541dfc5b5062b8a20c8",
+    "semantic_hash": "48756d42ec570541dfc5b5062b8a20c8"
   },
   "desamparados-web/vite.config.ts": {
     "mtime": 1791789977.6856835,
@@ -7668,16 +7668,16 @@
     "semantic_hash": "ffd5db962c450ff73193d55e293a8fce"
   },
   "docker/actualizar.sh": {
-    "mtime": 1791910836.8988616,
-    "seen": 1791926815.5461972,
-    "ast_hash": "83d2395ee71e0c80d8371914fe0177e8",
-    "semantic_hash": "83d2395ee71e0c80d8371914fe0177e8"
+    "mtime": 1792583125.169375,
+    "seen": 1792604266.7836597,
+    "ast_hash": "104718f5dd38ad22eb46291ed64c4655",
+    "semantic_hash": "104718f5dd38ad22eb46291ed64c4655"
   },
   "docker/instalar.sh": {
-    "mtime": 1791924152.0347,
-    "seen": 1791926815.5461972,
-    "ast_hash": "b04e88171d0f61c5776ba5fa41baeb28",
-    "semantic_hash": "b04e88171d0f61c5776ba5fa41baeb28"
+    "mtime": 1792583125.1703877,
+    "seen": 1792604266.7836597,
+    "ast_hash": "b71b1fe7acf05ea7659b527a510e61d3",
+    "semantic_hash": "b71b1fe7acf05ea7659b527a510e61d3"
   },
   "docker/nginx/generar-sitio.mjs": {
     "mtime": 1791789977.6856835,
@@ -7692,10 +7692,10 @@
     "semantic_hash": "b7800c0755783978da5263d41953639c"
   },
   "docker/servidor/desplegar.sh": {
-    "mtime": 1791789977.6883051,
-    "seen": 1791794403.340525,
-    "ast_hash": "1db5f72214853d8e0d387048522761e3",
-    "semantic_hash": "1db5f72214853d8e0d387048522761e3"
+    "mtime": 1792583133.5871267,
+    "seen": 1792604266.7836597,
+    "ast_hash": "21dca25a57685fa3019ce68b1026f1eb",
+    "semantic_hash": "21dca25a57685fa3019ce68b1026f1eb"
   },
   "docker/servidor/medir.sh": {
     "mtime": 1791196658.452187,
@@ -7728,10 +7728,10 @@
     "semantic_hash": "f11867fabb979ed3dc2a820ce2fdee2d"
   },
   "shared/contenido-por-defecto.json": {
-    "mtime": 1791922002.8761816,
-    "seen": 1791926815.5461972,
-    "ast_hash": "006f57be3cdc69f613eb699e46112e44",
-    "semantic_hash": "006f57be3cdc69f613eb699e46112e44"
+    "mtime": 1792428032.9919086,
+    "seen": 1792604266.7836597,
+    "ast_hash": "5f0ab640bbb199184c898bbafe6d663a",
+    "semantic_hash": "5f0ab640bbb199184c898bbafe6d663a"
   },
   "shared/destinos-de-enlace.json": {
     "mtime": 1791920469.4488578,
@@ -7746,10 +7746,10 @@
     "semantic_hash": "8691be5e1b73642cb62c815f0c526504"
   },
   "shared/modulos.json": {
-    "mtime": 1791790693.1498244,
-    "seen": 1791794403.340525,
-    "ast_hash": "fe348d149af4d92fbb35255b6ffdf8d3",
-    "semantic_hash": "fe348d149af4d92fbb35255b6ffdf8d3"
+    "mtime": 1792101517.9906993,
+    "seen": 1792604266.7836597,
+    "ast_hash": "45beca702a609909843343881262c440",
+    "semantic_hash": "45beca702a609909843343881262c440"
   },
   "shared/paginas-publicas.json": {
     "mtime": 1791925027.1980116,
@@ -7758,10 +7758,10 @@
     "semantic_hash": "cef6f053b2c32985f77f8d96707205ae"
   },
   "shared/presentacion-de-bloques.json": {
-    "mtime": 1791664819.8486414,
-    "seen": 1791734905.923936,
-    "ast_hash": "e870b43ffdbf0e621cbed1ea80c5f874",
-    "semantic_hash": "e870b43ffdbf0e621cbed1ea80c5f874"
+    "mtime": 1792421270.2367337,
+    "seen": 1792604266.7836597,
+    "ast_hash": "d1d4a7faf126114a792117aa6ac8da57",
+    "semantic_hash": "d1d4a7faf126114a792117aa6ac8da57"
   },
   "shared/rutas-publicas.json": {
     "mtime": 1791810676.001604,
@@ -7776,10 +7776,10 @@
     "semantic_hash": "12d0b476cb31d57d3fd05bb12586b1ca"
   },
   "shared/topes-contenido.json": {
-    "mtime": 1790804335.744139,
-    "seen": 1791479994.297047,
-    "ast_hash": "a92b137e45d30a2f955a6be5e17e1826",
-    "semantic_hash": "a92b137e45d30a2f955a6be5e17e1826"
+    "mtime": 1792164060.1828601,
+    "seen": 1792604266.7836597,
+    "ast_hash": "761ed0a152c401f1279d9338cc8b2f95",
+    "semantic_hash": "761ed0a152c401f1279d9338cc8b2f95"
   },
   "shared/topes-video.json": {
     "mtime": 1790508291.8276951,
@@ -7788,10 +7788,10 @@
     "semantic_hash": "25d7b519c61d6acabe2dbe22bd0cf372"
   },
   "shared/usos-de-correo.json": {
-    "mtime": 1791887578.8018138,
-    "seen": 1791888821.831962,
-    "ast_hash": "c30ab94e9e9ece38a8a1c080b3b7121a",
-    "semantic_hash": "c30ab94e9e9ece38a8a1c080b3b7121a"
+    "mtime": 1792584683.2258916,
+    "seen": 1792604266.7836597,
+    "ast_hash": "ab338bac9b5b8a49b0c94eccb663dd5b",
+    "semantic_hash": "ab338bac9b5b8a49b0c94eccb663dd5b"
   },
   ".claude/skills/backend/SKILL.md": {
     "mtime": 1791789977.5637922,
@@ -7839,19 +7839,19 @@
     "mtime": 1791810248.8971171,
     "seen": 1791825912.2906446,
     "ast_hash": "012d80bd276c89cf878fcc7e2a4c1623",
-    "semantic_hash": "012d80bd276c89cf878fcc7e2a4c1623"
+    "semantic_hash": ""
   },
   ".github/workflows/verificacion.yml": {
     "mtime": 1791808246.6560166,
     "seen": 1791825912.2906446,
     "ast_hash": "846812e25e6cf0ea7fa7d679f4191da6",
-    "semantic_hash": "846812e25e6cf0ea7fa7d679f4191da6"
+    "semantic_hash": ""
   },
   "CLAUDE.md": {
     "mtime": 1791920469.234654,
     "seen": 1791926815.5461972,
     "ast_hash": "54dad7a834d070af753ef57fb6251ca8",
-    "semantic_hash": "54dad7a834d070af753ef57fb6251ca8"
+    "semantic_hash": ""
   },
   "README.md": {
     "mtime": 1789509608.215317,
@@ -7899,13 +7899,13 @@
     "mtime": 1791789977.608795,
     "seen": 1791794403.340525,
     "ast_hash": "fa5cbf9b4270b55499a26577b5f5fe59",
-    "semantic_hash": "fa5cbf9b4270b55499a26577b5f5fe59"
+    "semantic_hash": ""
   },
   "compose.yaml": {
     "mtime": 1791789977.608795,
     "seen": 1791794403.340525,
     "ast_hash": "af7006873d64bc086ed84f7b297a1b2f",
-    "semantic_hash": "af7006873d64bc086ed84f7b297a1b2f"
+    "semantic_hash": ""
   },
   "desamparados-web/README.md": {
     "mtime": 1787566858.0751092,
@@ -7917,25 +7917,25 @@
     "mtime": 1791924152.428424,
     "seen": 1791926815.5461972,
     "ast_hash": "82e2974dab2a16a7682bcbdf3b2bffc1",
-    "semantic_hash": "82e2974dab2a16a7682bcbdf3b2bffc1"
+    "semantic_hash": ""
   },
   "docs/hoja-de-ruta.md": {
     "mtime": 1791925195.412671,
     "seen": 1791926815.5461972,
     "ast_hash": "1ab547d49cfd78f84cfd3009f1a5a75e",
-    "semantic_hash": "1ab547d49cfd78f84cfd3009f1a5a75e"
+    "semantic_hash": ""
   },
   "docs/notas-del-proyecto.md": {
     "mtime": 1791925156.2429497,
     "seen": 1791926815.5461972,
     "ast_hash": "bd3abaab932115b3824c4a8dec16a170",
-    "semantic_hash": "bd3abaab932115b3824c4a8dec16a170"
+    "semantic_hash": ""
   },
   "docs/servidor.md": {
     "mtime": 1791921919.5600216,
     "seen": 1791926815.5461972,
     "ast_hash": "90ff2ad6a3bb20820dce1d545729c3ec",
-    "semantic_hash": "90ff2ad6a3bb20820dce1d545729c3ec"
+    "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-08-28-panel-cms.md": {
     "mtime": 1788364403.6110897,
@@ -8157,37 +8157,37 @@
     "mtime": 1790855287.7980466,
     "seen": 1791479994.297047,
     "ast_hash": "192bb0be7aa2b24e06ec5b93acfb4bfe",
-    "semantic_hash": "192bb0be7aa2b24e06ec5b93acfb4bfe"
+    "semantic_hash": ""
   },
   "docs/venta/licencias.md": {
     "mtime": 1791810273.3997064,
     "seen": 1791825912.2906446,
     "ast_hash": "f6eb39744900387c1599f65c16892122",
-    "semantic_hash": "f6eb39744900387c1599f65c16892122"
+    "semantic_hash": ""
   },
   "desamparados-web/src/test/identidadGenerada.ts": {
-    "mtime": 1791789977.6790605,
-    "seen": 1791794403.340525,
-    "ast_hash": "94d71ea5e075220860b11262aac81734",
-    "semantic_hash": "94d71ea5e075220860b11262aac81734"
+    "mtime": 1792583613.201323,
+    "seen": 1792604266.7836597,
+    "ast_hash": "62372dc1d008b6f8c58c2afb714a4345",
+    "semantic_hash": "62372dc1d008b6f8c58c2afb714a4345"
   },
   "shared/datos-entidad.d.mts": {
-    "mtime": 1791708929.511584,
-    "seen": 1791734905.923936,
-    "ast_hash": "3031ddff06eaa4d8597e08b3d718fcc2",
-    "semantic_hash": "3031ddff06eaa4d8597e08b3d718fcc2"
+    "mtime": 1792584605.7643585,
+    "seen": 1792604266.7836597,
+    "ast_hash": "4bb1a9e3eed408b88252febc3abb2066",
+    "semantic_hash": "4bb1a9e3eed408b88252febc3abb2066"
   },
   "shared/datos-entidad.ejemplo.json": {
-    "mtime": 1791791258.0345733,
-    "seen": 1791794403.340525,
-    "ast_hash": "e859fc98179c63e28db2dcfd8b8aa6d5",
-    "semantic_hash": "e859fc98179c63e28db2dcfd8b8aa6d5"
+    "mtime": 1792584605.7741256,
+    "seen": 1792604266.7836597,
+    "ast_hash": "e6dd5e60dc98371ec80d0ef2a695ebde",
+    "semantic_hash": "e6dd5e60dc98371ec80d0ef2a695ebde"
   },
   "shared/datos-entidad.mjs": {
-    "mtime": 1791790703.2782536,
-    "seen": 1791794403.340525,
-    "ast_hash": "667124cf3a39bd11070ab889347d9242",
-    "semantic_hash": "667124cf3a39bd11070ab889347d9242"
+    "mtime": 1792584594.7715166,
+    "seen": 1792604266.7836597,
+    "ast_hash": "d3e30095d920fbf5e33c9bbbf124c0a0",
+    "semantic_hash": "d3e30095d920fbf5e33c9bbbf124c0a0"
   },
   "docs/traspaso-2026-10-08.md": {
     "mtime": 1791480649.505355,
@@ -8208,10 +8208,10 @@
     "semantic_hash": "2842acc337cbfc68f14d373f47ba5a5f"
   },
   "desamparados-web/src/features/altas/auth/ActivarDobleFactor.tsx": {
-    "mtime": 1791534745.8982773,
-    "seen": 1791550759.8953605,
-    "ast_hash": "dfae33727d979171a50ce7849dabf7f1",
-    "semantic_hash": "dfae33727d979171a50ce7849dabf7f1"
+    "mtime": 1791992336.6554291,
+    "seen": 1792604266.7006888,
+    "ast_hash": "3d5e9cd0d06c96e7333c80105f0f4143",
+    "semantic_hash": "3d5e9cd0d06c96e7333c80105f0f4143"
   },
   "desamparados-web/src/features/altas/auth/__tests__/ActivarDobleFactor.test.tsx": {
     "mtime": 1791535625.880413,
@@ -8280,16 +8280,16 @@
     "semantic_hash": "ec2605c442108871b9fab9e8b4ed8a83"
   },
   "backend-desamparados/src/routes/corporacion.routes.ts": {
-    "mtime": 1791709958.5295691,
-    "seen": 1791734905.9219322,
-    "ast_hash": "08a90f05b8b970033cae9e8ab9bc2ea5",
-    "semantic_hash": "08a90f05b8b970033cae9e8ab9bc2ea5"
+    "mtime": 1792599783.1964233,
+    "seen": 1792604266.6159322,
+    "ast_hash": "a361ca1e3cdbb3829a9df1ce351c5b91",
+    "semantic_hash": "a361ca1e3cdbb3829a9df1ce351c5b91"
   },
   "backend-desamparados/src/schemas/corporacion.schema.ts": {
-    "mtime": 1791920469.267548,
-    "seen": 1791926815.5451035,
-    "ast_hash": "b21309e560b6291a29699176d7fafcb9",
-    "semantic_hash": "b21309e560b6291a29699176d7fafcb9"
+    "mtime": 1792599783.1936996,
+    "seen": 1792604266.6159322,
+    "ast_hash": "99e164d02c0a100bfddc9b267a959c50",
+    "semantic_hash": "99e164d02c0a100bfddc9b267a959c50"
   },
   "backend-desamparados/src/schemas/primer-acceso.schema.ts": {
     "mtime": 1791705424.5467777,
@@ -8322,10 +8322,10 @@
     "semantic_hash": "3b2a2f8fc86ef690544d83eb71529cc4"
   },
   "backend-desamparados/test/datos-entidad-validacion.test.ts": {
-    "mtime": 1791789977.5990274,
-    "seen": 1791794403.340525,
-    "ast_hash": "218f73bf423de4afb756b2791dd86b27",
-    "semantic_hash": "218f73bf423de4afb756b2791dd86b27"
+    "mtime": 1792584804.0597105,
+    "seen": 1792604266.647417,
+    "ast_hash": "64d4e5fffcc6054c8628334ad17656e2",
+    "semantic_hash": "64d4e5fffcc6054c8628334ad17656e2"
   },
   "backend-desamparados/test/ficha-obligatoria.test.ts": {
     "mtime": 1791563346.585413,
@@ -8340,16 +8340,16 @@
     "semantic_hash": "503fe4a4d511716af15a17383779e0a2"
   },
   "desamparados-web/scripts/instalacion-vite.d.mts": {
-    "mtime": 1791810183.09858,
-    "seen": 1791825912.2906446,
-    "ast_hash": "49488382bd18786c08a6739808dade21",
-    "semantic_hash": "49488382bd18786c08a6739808dade21"
+    "mtime": 1792582733.728176,
+    "seen": 1792604266.6681561,
+    "ast_hash": "48b8e891957f4884becb3bc612b04d76",
+    "semantic_hash": "48b8e891957f4884becb3bc612b04d76"
   },
   "desamparados-web/scripts/instalacion-vite.mjs": {
-    "mtime": 1791810183.09858,
-    "seen": 1791825912.2906446,
-    "ast_hash": "aab4fd85b796c8644e53cf0f5935582c",
-    "semantic_hash": "aab4fd85b796c8644e53cf0f5935582c"
+    "mtime": 1792582563.2222433,
+    "seen": 1792604266.6681561,
+    "ast_hash": "75bb191c8b340b8435aa0c9284a37e1a",
+    "semantic_hash": "75bb191c8b340b8435aa0c9284a37e1a"
   },
   "desamparados-web/src/__tests__/datos-estructurados.test.tsx": {
     "mtime": 1791789977.6144905,
@@ -8424,10 +8424,10 @@
     "semantic_hash": "4b66808b15defac6ba3749f48895218f"
   },
   "desamparados-web/src/features/cms/DatosCorporacionPage.tsx": {
-    "mtime": 1791920469.3795292,
-    "seen": 1791926815.5456753,
-    "ast_hash": "7b35e50269cfbfacf512f38fe1e258a8",
-    "semantic_hash": "7b35e50269cfbfacf512f38fe1e258a8"
+    "mtime": 1792599976.2993932,
+    "seen": 1792604266.7154586,
+    "ast_hash": "6b1c81208d44eb3c6041453009aef7ce",
+    "semantic_hash": "6b1c81208d44eb3c6041453009aef7ce"
   },
   "desamparados-web/src/features/cms/__tests__/DatosCorporacionPage.test.tsx": {
     "mtime": 1791920469.3927062,
@@ -8472,10 +8472,10 @@
     "semantic_hash": "27356e6831f796c98607ca4ad28196bc"
   },
   "desamparados-web/src/lib/api/corporacion.ts": {
-    "mtime": 1791710079.6237464,
-    "seen": 1791734905.923936,
-    "ast_hash": "05270107c5edd89a240171d10a9675a6",
-    "semantic_hash": "05270107c5edd89a240171d10a9675a6"
+    "mtime": 1792600074.3073032,
+    "seen": 1792604266.768959,
+    "ast_hash": "b5e92cd2d5aa8410a341a039fb940d1c",
+    "semantic_hash": "b5e92cd2d5aa8410a341a039fb940d1c"
   },
   "desamparados-web/src/lib/api/primerAcceso.ts": {
     "mtime": 1791789977.6790605,
@@ -8532,10 +8532,10 @@
     "semantic_hash": "22dd6554760494901a1744a36475cee9"
   },
   "backend-desamparados/src/domain/marca.ts": {
-    "mtime": 1791789977.5749261,
-    "seen": 1791794403.3390186,
-    "ast_hash": "4b177fdc967c0cd8d9454f77186e14ae",
-    "semantic_hash": "4b177fdc967c0cd8d9454f77186e14ae"
+    "mtime": 1792582043.8944802,
+    "seen": 1792604266.6086311,
+    "ast_hash": "93c318ad7c73727e7295904e75d9220a",
+    "semantic_hash": "93c318ad7c73727e7295904e75d9220a"
   },
   "backend-desamparados/test/colores-de-marca.test.ts": {
     "mtime": 1791789977.5990274,
@@ -8598,34 +8598,34 @@
     "semantic_hash": "8d1934e27df8557f6a7d96969ac25378"
   },
   "desamparados-web/scripts/__tests__/instalacion-guardias.test.ts": {
-    "mtime": 1791810193.0709035,
-    "seen": 1791825912.2906446,
-    "ast_hash": "08004cc1acb0eafb4941722c601c7730",
-    "semantic_hash": "08004cc1acb0eafb4941722c601c7730"
+    "mtime": 1792583951.2118711,
+    "seen": 1792604266.6681561,
+    "ast_hash": "20d13c741a8af6c751c0ad1228146c26",
+    "semantic_hash": "20d13c741a8af6c751c0ad1228146c26"
   },
   "desamparados-web/scripts/__tests__/instalacion-web.test.ts": {
-    "mtime": 1791789977.6114023,
-    "seen": 1791794403.340525,
-    "ast_hash": "2784fb3f1bd0a8425249bc66d918fc32",
-    "semantic_hash": "2784fb3f1bd0a8425249bc66d918fc32"
+    "mtime": 1792584824.5253308,
+    "seen": 1792604266.6681561,
+    "ast_hash": "9a77ca79ba764c789c649cc315842738",
+    "semantic_hash": "9a77ca79ba764c789c649cc315842738"
   },
   "desamparados-web/scripts/instalacion-web.d.mts": {
-    "mtime": 1791789977.6129408,
-    "seen": 1791794403.340525,
-    "ast_hash": "d2fe5df6b151453ff3211f80860aaf4b",
-    "semantic_hash": "d2fe5df6b151453ff3211f80860aaf4b"
+    "mtime": 1792581962.3591826,
+    "seen": 1792604266.6681561,
+    "ast_hash": "dda052a0645dae5269a9225905993771",
+    "semantic_hash": "dda052a0645dae5269a9225905993771"
   },
   "desamparados-web/scripts/instalacion-web.mjs": {
-    "mtime": 1791789977.6129408,
-    "seen": 1791794403.340525,
-    "ast_hash": "5e751ffe1e895f6c10bc6a681ce3a1b3",
-    "semantic_hash": "5e751ffe1e895f6c10bc6a681ce3a1b3"
+    "mtime": 1792582447.6577635,
+    "seen": 1792604266.6681561,
+    "ast_hash": "df3a61e7ed40ec79974f227bde3bfa55",
+    "semantic_hash": "df3a61e7ed40ec79974f227bde3bfa55"
   },
   "desamparados-web/scripts/preparar-marca.mjs": {
-    "mtime": 1791789977.6129408,
-    "seen": 1791794403.340525,
-    "ast_hash": "0316eea42eead9cc4bdfd7b8e14b3f32",
-    "semantic_hash": "0316eea42eead9cc4bdfd7b8e14b3f32"
+    "mtime": 1792581812.5699744,
+    "seen": 1792604266.6681561,
+    "ast_hash": "43bc9a81179e91ab0929fb4ca47a7f81",
+    "semantic_hash": "43bc9a81179e91ab0929fb4ca47a7f81"
   },
   "desamparados-web/src/__tests__/sin-colores-de-marca.test.ts": {
     "mtime": 1791789977.6144905,
@@ -8640,10 +8640,10 @@
     "semantic_hash": "a0dc839d01c9b74a6e4f369d56b1d8ad"
   },
   "desamparados-web/src/config/instalacion.ts": {
-    "mtime": 1791789977.6387277,
-    "seen": 1791794403.340525,
-    "ast_hash": "36e1cb5c3f5b04bf2a3a8989c06105cd",
-    "semantic_hash": "36e1cb5c3f5b04bf2a3a8989c06105cd"
+    "mtime": 1792584760.069199,
+    "seen": 1792604266.697104,
+    "ast_hash": "8bbd6ce94dfddfbb968b56609739fb0a",
+    "semantic_hash": "8bbd6ce94dfddfbb968b56609739fb0a"
   },
   "desamparados-web/src/domain/__tests__/pascua.test.ts": {
     "mtime": 1791790559.9616132,
@@ -8706,10 +8706,10 @@
     "semantic_hash": "c29753c36d1aad69a0205940e9312aa6"
   },
   "docker/nginx/40-instalacion.sh": {
-    "mtime": 1791789977.6856835,
-    "seen": 1791794403.340525,
-    "ast_hash": "fdb9cfc18e1ae712498ed4fc2b3ac814",
-    "semantic_hash": "fdb9cfc18e1ae712498ed4fc2b3ac814"
+    "mtime": 1792582467.9437172,
+    "seen": 1792604266.7836597,
+    "ast_hash": "46d166a888c53d2e14b00eda7aaa1c67",
+    "semantic_hash": "46d166a888c53d2e14b00eda7aaa1c67"
   },
   "docker/nginx/90-recargar-certificado.sh": {
     "mtime": 1791789977.6856835,
@@ -8736,22 +8736,22 @@
     "semantic_hash": "b7a8cf9b3c1e8bc8153b96525893b37e"
   },
   "shared/marca.d.mts": {
-    "mtime": 1791789977.7085204,
-    "seen": 1791794403.340525,
-    "ast_hash": "7de48b69404621f6553336342f903672",
-    "semantic_hash": "7de48b69404621f6553336342f903672"
+    "mtime": 1792581765.3864257,
+    "seen": 1792604266.7836597,
+    "ast_hash": "c1c6859bd97c46fba303234e554e22c6",
+    "semantic_hash": "c1c6859bd97c46fba303234e554e22c6"
   },
   "shared/marca.mjs": {
-    "mtime": 1791789977.7085204,
-    "seen": 1791794403.340525,
-    "ast_hash": "eb30e1fa580bca13281dc575ae264a5d",
-    "semantic_hash": "eb30e1fa580bca13281dc575ae264a5d"
+    "mtime": 1792581764.525374,
+    "seen": 1792604266.7836597,
+    "ast_hash": "29e5deeda7727af48e526da98f6c6f33",
+    "semantic_hash": "29e5deeda7727af48e526da98f6c6f33"
   },
   "desamparados-web/index.html": {
     "mtime": 1791789977.608795,
     "seen": 1791794403.340525,
     "ast_hash": "20ac257fd836186377c60533355bb08a",
-    "semantic_hash": "20ac257fd836186377c60533355bb08a"
+    "semantic_hash": ""
   },
   "backend-desamparados/prisma/migrations/20261117200000_salidas_neutras_en_base_nueva/migration.sql": {
     "mtime": 1791810057.82725,
@@ -8784,16 +8784,16 @@
     "semantic_hash": "3df45d86fe22b29fddac09ce52cbeee2"
   },
   "desamparados-web/src/components/mapa/__tests__/sinBarrio.test.tsx": {
-    "mtime": 1791925800.0867693,
-    "seen": 1791926815.5456753,
-    "ast_hash": "df5c69d818091181531b8b21460db99e",
-    "semantic_hash": "df5c69d818091181531b8b21460db99e"
+    "mtime": 1791996580.4852047,
+    "seen": 1792604266.697104,
+    "ast_hash": "55badda52d3c2b2a979370c615f620cb",
+    "semantic_hash": "55badda52d3c2b2a979370c615f620cb"
   },
   "desamparados-web/src/config/fotosDeLaInstalacion.ts": {
-    "mtime": 1791795097.6726336,
-    "seen": 1791825912.2906446,
-    "ast_hash": "d2e0af8948101b8d6f81e7d1726473d1",
-    "semantic_hash": "d2e0af8948101b8d6f81e7d1726473d1"
+    "mtime": 1792418181.9851334,
+    "seen": 1792604266.697104,
+    "ast_hash": "643fba4c2ae1d1a54781421ff890bb92",
+    "semantic_hash": "643fba4c2ae1d1a54781421ff890bb92"
   },
   "desamparados-web/src/features/inicio/TextoDePortada.tsx": {
     "mtime": 1791808024.3588467,
@@ -8904,10 +8904,10 @@
     "semantic_hash": "3ef3b8afe02b5906302a904036bda5e4"
   },
   "backend-desamparados/src/routes/boletin.routes.ts": {
-    "mtime": 1791920469.2574105,
-    "seen": 1791926815.5440974,
-    "ast_hash": "97d79b3b5e86886257e184eae2f82222",
-    "semantic_hash": "97d79b3b5e86886257e184eae2f82222"
+    "mtime": 1792148968.1687474,
+    "seen": 1792604266.6159322,
+    "ast_hash": "bf5962f2f8ce0dcc6b07e6fe87a386cf",
+    "semantic_hash": "bf5962f2f8ce0dcc6b07e6fe87a386cf"
   },
   "backend-desamparados/test/migracion-reemision-de-db.test.ts": {
     "mtime": 1791920469.3158145,
@@ -8940,10 +8940,10 @@
     "semantic_hash": "89d14777cbb762c134491cba434f064e"
   },
   "desamparados-web/src/features/altas/auth/FormularioAccesoHermano.tsx": {
-    "mtime": 1791920469.3622365,
-    "seen": 1791926815.5456753,
-    "ast_hash": "32dfe3305ccc9f1df3b9664dcf474d82",
-    "semantic_hash": "32dfe3305ccc9f1df3b9664dcf474d82"
+    "mtime": 1792422782.9704537,
+    "seen": 1792604266.7006888,
+    "ast_hash": "e23f11b8d5c20501e69b5bdebbd97e72",
+    "semantic_hash": "e23f11b8d5c20501e69b5bdebbd97e72"
   },
   "desamparados-web/src/features/areaHermano/__tests__/sesion-caducada.test.tsx": {
     "mtime": 1791920469.3656416,
@@ -8998,5 +8998,785 @@
     "seen": 1791926815.5461972,
     "ast_hash": "c25c680f2ccab1a71794ae920c257e84",
     "semantic_hash": "c25c680f2ccab1a71794ae920c257e84"
+  },
+  ".claude/skills/antislop-human/contrast-check.py": {
+    "mtime": 1792104490.695404,
+    "seen": 1792604266.567969,
+    "ast_hash": "eced9bf566c7fd1d30fd2f1871446c84",
+    "semantic_hash": "eced9bf566c7fd1d30fd2f1871446c84"
+  },
+  ".claude/skills/antislop-human/contrast-mcp.py": {
+    "mtime": 1792104490.6984193,
+    "seen": 1792604266.567969,
+    "ast_hash": "675dbdc523df1bb26bed0c7bc693c682",
+    "semantic_hash": "675dbdc523df1bb26bed0c7bc693c682"
+  },
+  "backend-desamparados/prisma/migrations/20261121200000_avisos_en_el_movil/migration.sql": {
+    "mtime": 1791962711.4723668,
+    "seen": 1792604266.5886157,
+    "ast_hash": "bb3065b832524ccffbdf9d95b1957808",
+    "semantic_hash": "bb3065b832524ccffbdf9d95b1957808"
+  },
+  "backend-desamparados/prisma/migrations/20261122200000_avisos_a_los_hermanos/migration.sql": {
+    "mtime": 1791985098.1005213,
+    "seen": 1792604266.5886157,
+    "ast_hash": "c3d4941692fbc3d866a1f8d3d08a93d1",
+    "semantic_hash": "c3d4941692fbc3d866a1f8d3d08a93d1"
+  },
+  "backend-desamparados/prisma/migrations/20261123200000_sin_aprobar_entrada_desde_el_movil/migration.sql": {
+    "mtime": 1791992439.5138547,
+    "seen": 1792604266.5886157,
+    "ast_hash": "d5f2fcefd35c8f47eed73c5694af3d19",
+    "semantic_hash": "d5f2fcefd35c8f47eed73c5694af3d19"
+  },
+  "backend-desamparados/prisma/migrations/20261124200000_fallos_de_acceso_en_la_base/migration.sql": {
+    "mtime": 1792099254.0278828,
+    "seen": 1792604266.5886157,
+    "ast_hash": "667d5ccb6ad11823af6b80c520cfb709",
+    "semantic_hash": "667d5ccb6ad11823af6b80c520cfb709"
+  },
+  "backend-desamparados/prisma/migrations/20261125100000_portada_sin_repeticiones/migration.sql": {
+    "mtime": 1792105290.9711702,
+    "seen": 1792604266.5886157,
+    "ast_hash": "b33f406ec82556383905172fd1425a2c",
+    "semantic_hash": "b33f406ec82556383905172fd1425a2c"
+  },
+  "backend-desamparados/prisma/migrations/20261126100000_correos_que_rebotan/migration.sql": {
+    "mtime": 1792148797.7441187,
+    "seen": 1792604266.5886157,
+    "ast_hash": "bdefdea94d1e46a64a2149941f14d5cc",
+    "semantic_hash": "bdefdea94d1e46a64a2149941f14d5cc"
+  },
+  "backend-desamparados/prisma/migrations/20261127100000_itinerario_del_rosario/migration.sql": {
+    "mtime": 1792161444.2812054,
+    "seen": 1792604266.5886157,
+    "ast_hash": "e36be092d60a59f96af3579cc3e26e38",
+    "semantic_hash": "e36be092d60a59f96af3579cc3e26e38"
+  },
+  "backend-desamparados/prisma/migrations/20261127200000_recorrido_por_calles/migration.sql": {
+    "mtime": 1792167130.593393,
+    "seen": 1792604266.5886157,
+    "ast_hash": "a44be632e86b9691c78fa9bfd03410a3",
+    "semantic_hash": "a44be632e86b9691c78fa9bfd03410a3"
+  },
+  "backend-desamparados/prisma/migrations/20261128100000_contacto_en_carta/migration.sql": {
+    "mtime": 1792421381.7877543,
+    "seen": 1792604266.5886157,
+    "ast_hash": "b86fff6005754aa2926a332d628517fb",
+    "semantic_hash": "b86fff6005754aa2926a332d628517fb"
+  },
+  "backend-desamparados/prisma/migrations/20261129100000_editor_de_correos/migration.sql": {
+    "mtime": 1792430149.4891198,
+    "seen": 1792604266.5886157,
+    "ast_hash": "e0229b228f2553ff368c95437b05e13e",
+    "semantic_hash": "e0229b228f2553ff368c95437b05e13e"
+  },
+  "backend-desamparados/prisma/migrations/20261130100000_sin_correo_de_papeleta/migration.sql": {
+    "mtime": 1792508717.6863542,
+    "seen": 1792604266.5886157,
+    "ast_hash": "d4f739f5f6b27a731deb17eac4174c11",
+    "semantic_hash": "d4f739f5f6b27a731deb17eac4174c11"
+  },
+  "backend-desamparados/prisma/migrations/20261201100000_avisos_personales/migration.sql": {
+    "mtime": 1792510232.2016203,
+    "seen": 1792604266.5886157,
+    "ast_hash": "53ef90c39cc79ebd59fccb50a108fcd1",
+    "semantic_hash": "53ef90c39cc79ebd59fccb50a108fcd1"
+  },
+  "backend-desamparados/scripts/crear-cuenta-de-cargo.ts": {
+    "mtime": 1792236894.2513988,
+    "seen": 1792604266.5886157,
+    "ast_hash": "06035d10b01c6b82b6321206bcb83ac6",
+    "semantic_hash": "06035d10b01c6b82b6321206bcb83ac6"
+  },
+  "backend-desamparados/scripts/gen-vapid.mjs": {
+    "mtime": 1791992485.3622139,
+    "seen": 1792604266.5886157,
+    "ast_hash": "3f45fba9ac7aa060cf0e279d0baf4ad1",
+    "semantic_hash": "3f45fba9ac7aa060cf0e279d0baf4ad1"
+  },
+  "backend-desamparados/src/controllers/avisos-hermanos.controller.ts": {
+    "mtime": 1792510595.9473784,
+    "seen": 1792604266.5975497,
+    "ast_hash": "e0958cfa7fd24c541e9ef7b83d5bbf7c",
+    "semantic_hash": "e0958cfa7fd24c541e9ef7b83d5bbf7c"
+  },
+  "backend-desamparados/src/controllers/correo.controller.ts": {
+    "mtime": 1792148985.6857965,
+    "seen": 1792604266.5975497,
+    "ast_hash": "aaf7b44994f65c11888202ac9c9ed0e1",
+    "semantic_hash": "aaf7b44994f65c11888202ac9c9ed0e1"
+  },
+  "backend-desamparados/src/controllers/estadisticas-de-visitas.controller.ts": {
+    "mtime": 1792101864.4665926,
+    "seen": 1792604266.5975497,
+    "ast_hash": "103f437ef67d2ef1446fa0a18ab1d07a",
+    "semantic_hash": "103f437ef67d2ef1446fa0a18ab1d07a"
+  },
+  "backend-desamparados/src/controllers/marca.controller.ts": {
+    "mtime": 1792599783.1951568,
+    "seen": 1792604266.5975497,
+    "ast_hash": "1995f7adaed5a0a4d902de3e510f325a",
+    "semantic_hash": "1995f7adaed5a0a4d902de3e510f325a"
+  },
+  "backend-desamparados/src/controllers/web-abierta.controller.ts": {
+    "mtime": 1792361469.1725166,
+    "seen": 1792604266.6004632,
+    "ast_hash": "e7969e71823dae272426caf3adfbd3ce",
+    "semantic_hash": "e7969e71823dae272426caf3adfbd3ce"
+  },
+  "backend-desamparados/src/domain/avisos-de-envio.ts": {
+    "mtime": 1792148851.4332988,
+    "seen": 1792604266.6004632,
+    "ast_hash": "eac3f9caca225b2560023825a24f9102",
+    "semantic_hash": "eac3f9caca225b2560023825a24f9102"
+  },
+  "backend-desamparados/src/domain/fecha-y-hora.ts": {
+    "mtime": 1791962846.7202823,
+    "seen": 1792604266.6086311,
+    "ast_hash": "d453a9cc19f2b24008c09f01eb5b71b6",
+    "semantic_hash": "d453a9cc19f2b24008c09f01eb5b71b6"
+  },
+  "backend-desamparados/src/domain/push.ts": {
+    "mtime": 1791992349.7374208,
+    "seen": 1792604266.6118884,
+    "ast_hash": "267488fa2b2a582e350284139ecda2a0",
+    "semantic_hash": "267488fa2b2a582e350284139ecda2a0"
+  },
+  "backend-desamparados/src/domain/web-abierta.ts": {
+    "mtime": 1792361469.1741233,
+    "seen": 1792604266.613434,
+    "ast_hash": "a29e5e2821dc858a8688438326bfac82",
+    "semantic_hash": "a29e5e2821dc858a8688438326bfac82"
+  },
+  "backend-desamparados/src/routes/correo.routes.ts": {
+    "mtime": 1792148980.1322587,
+    "seen": 1792604266.6159322,
+    "ast_hash": "399a3299142a095d6ea4045c269c6b77",
+    "semantic_hash": "399a3299142a095d6ea4045c269c6b77"
+  },
+  "backend-desamparados/src/routes/estadisticas-de-visitas.routes.ts": {
+    "mtime": 1792101536.535609,
+    "seen": 1792604266.6159322,
+    "ast_hash": "1cdf3a13edb1068cad09ca11d5d3e762",
+    "semantic_hash": "1cdf3a13edb1068cad09ca11d5d3e762"
+  },
+  "backend-desamparados/src/routes/web-abierta.routes.ts": {
+    "mtime": 1792361469.1741233,
+    "seen": 1792604266.6159322,
+    "ast_hash": "9a93632887cafe3b4dcfc7368cbe19b4",
+    "semantic_hash": "9a93632887cafe3b4dcfc7368cbe19b4"
+  },
+  "backend-desamparados/src/schemas/avisos-hermanos.schema.ts": {
+    "mtime": 1791992349.983012,
+    "seen": 1792604266.6159322,
+    "ast_hash": "de8260a4d625d5b22154244ff61dac60",
+    "semantic_hash": "de8260a4d625d5b22154244ff61dac60"
+  },
+  "backend-desamparados/src/schemas/web-abierta.schema.ts": {
+    "mtime": 1792361469.1767187,
+    "seen": 1792604266.6261196,
+    "ast_hash": "b32f6779aae0aa95fbcef569c420e8c2",
+    "semantic_hash": "b32f6779aae0aa95fbcef569c420e8c2"
+  },
+  "backend-desamparados/src/services/asistente.service.ts": {
+    "mtime": 1792599793.114559,
+    "seen": 1792604266.6261196,
+    "ast_hash": "1be9f806c0390620dbd1d6cd82df212d",
+    "semantic_hash": "1be9f806c0390620dbd1d6cd82df212d"
+  },
+  "backend-desamparados/src/services/auth/sesion-2fa.ts": {
+    "mtime": 1792099351.3750665,
+    "seen": 1792604266.6261196,
+    "ast_hash": "546ec0470e47ebbd8972fe0a24008b6c",
+    "semantic_hash": "546ec0470e47ebbd8972fe0a24008b6c"
+  },
+  "backend-desamparados/src/services/avisos-hermanos.service.ts": {
+    "mtime": 1791992573.5436306,
+    "seen": 1792604266.6261196,
+    "ast_hash": "1d7514d197ffd1557c9640b22961f036",
+    "semantic_hash": "1d7514d197ffd1557c9640b22961f036"
+  },
+  "backend-desamparados/src/services/avisos-personales.service.ts": {
+    "mtime": 1792510283.0393014,
+    "seen": 1792604266.6261196,
+    "ast_hash": "bff2d1dbc6770458ba1e24efd7b5a3b1",
+    "semantic_hash": "bff2d1dbc6770458ba1e24efd7b5a3b1"
+  },
+  "backend-desamparados/src/services/correos/cola.ts": {
+    "mtime": 1792148953.1817045,
+    "seen": 1792604266.628805,
+    "ast_hash": "d3b3f9af105cb958a10d03827f09cfc7",
+    "semantic_hash": "d3b3f9af105cb958a10d03827f09cfc7"
+  },
+  "backend-desamparados/src/services/correos/fotos.ts": {
+    "mtime": 1792430110.430513,
+    "seen": 1792604266.628805,
+    "ast_hash": "e294bbb7a9db901433a82b4e71654d68",
+    "semantic_hash": "e294bbb7a9db901433a82b4e71654d68"
+  },
+  "backend-desamparados/src/services/correos/rebotes.service.ts": {
+    "mtime": 1792148896.3554747,
+    "seen": 1792604266.628805,
+    "ast_hash": "737a8e9aabb87ce7c6e7edef3f8163a5",
+    "semantic_hash": "737a8e9aabb87ce7c6e7edef3f8163a5"
+  },
+  "backend-desamparados/src/services/estadisticas-de-visitas.service.ts": {
+    "mtime": 1792101536.3950994,
+    "seen": 1792604266.630341,
+    "ast_hash": "edca1ff29e05a1fae739397b1bdb38b0",
+    "semantic_hash": "edca1ff29e05a1fae739397b1bdb38b0"
+  },
+  "backend-desamparados/src/services/marca.service.ts": {
+    "mtime": 1792584618.6353712,
+    "seen": 1792604266.630341,
+    "ast_hash": "f4ee19eb3e3a042daaa583fd2f9bfe13",
+    "semantic_hash": "f4ee19eb3e3a042daaa583fd2f9bfe13"
+  },
+  "backend-desamparados/src/services/procesion/recordatorio-citas.service.ts": {
+    "mtime": 1792510477.3391056,
+    "seen": 1792604266.6343796,
+    "ast_hash": "d90c19f1cbc1ed0fbf8c2d260968a4bf",
+    "semantic_hash": "d90c19f1cbc1ed0fbf8c2d260968a4bf"
+  },
+  "backend-desamparados/src/services/push.ts": {
+    "mtime": 1791992489.5311441,
+    "seen": 1792604266.6343796,
+    "ast_hash": "9d6e96bc1f314bfeffcec4d5b00747b7",
+    "semantic_hash": "9d6e96bc1f314bfeffcec4d5b00747b7"
+  },
+  "backend-desamparados/src/services/web-abierta.service.ts": {
+    "mtime": 1792361469.1767187,
+    "seen": 1792604266.6363842,
+    "ast_hash": "71aa85bd96d0fe771eabd7b234929ce2",
+    "semantic_hash": "71aa85bd96d0fe771eabd7b234929ce2"
+  },
+  "backend-desamparados/test/asistente-db.test.ts": {
+    "mtime": 1792599840.3650115,
+    "seen": 1792604266.638389,
+    "ast_hash": "3c1a76c9d06b687d1696ad14bd90cc5d",
+    "semantic_hash": "3c1a76c9d06b687d1696ad14bd90cc5d"
+  },
+  "backend-desamparados/test/avisos-de-envio.test.ts": {
+    "mtime": 1792149204.335583,
+    "seen": 1792604266.638389,
+    "ast_hash": "2d3bd8302cd0d0efcbba2e2c09cf6f84",
+    "semantic_hash": "2d3bd8302cd0d0efcbba2e2c09cf6f84"
+  },
+  "backend-desamparados/test/avisos-hermanos-db.test.ts": {
+    "mtime": 1791992350.1647823,
+    "seen": 1792604266.638389,
+    "ast_hash": "883b8704e319533763b8ace64473a477",
+    "semantic_hash": "883b8704e319533763b8ace64473a477"
+  },
+  "backend-desamparados/test/avisos-personales-db.test.ts": {
+    "mtime": 1792510663.084097,
+    "seen": 1792604266.638389,
+    "ast_hash": "a07e68a498b3582c4f73b72d93f5f9a7",
+    "semantic_hash": "a07e68a498b3582c4f73b72d93f5f9a7"
+  },
+  "backend-desamparados/test/cuenta-bancaria-cambiada-db.test.ts": {
+    "mtime": 1792447018.6079152,
+    "seen": 1792604266.6457539,
+    "ast_hash": "bff76887077fcfea8eeaa014d5c85445",
+    "semantic_hash": "bff76887077fcfea8eeaa014d5c85445"
+  },
+  "backend-desamparados/test/estadisticas-de-visitas-db.test.ts": {
+    "mtime": 1792101612.8235857,
+    "seen": 1792604266.647417,
+    "ast_hash": "ef359dbe73d7ee1ef1af511a991446cd",
+    "semantic_hash": "ef359dbe73d7ee1ef1af511a991446cd"
+  },
+  "backend-desamparados/test/marca-db.test.ts": {
+    "mtime": 1792584804.095121,
+    "seen": 1792604266.652237,
+    "ast_hash": "095b6c23f41e1233e68c56066809c221",
+    "semantic_hash": "095b6c23f41e1233e68c56066809c221"
+  },
+  "backend-desamparados/test/push.test.ts": {
+    "mtime": 1791992349.9519591,
+    "seen": 1792604266.662779,
+    "ast_hash": "01a3f9f5c2b7b7d3a2c76a0711daf9c3",
+    "semantic_hash": "01a3f9f5c2b7b7d3a2c76a0711daf9c3"
+  },
+  "backend-desamparados/test/rebotes-db.test.ts": {
+    "mtime": 1792149258.0285149,
+    "seen": 1792604266.662779,
+    "ast_hash": "b8c887d92186e766208339894af803b5",
+    "semantic_hash": "b8c887d92186e766208339894af803b5"
+  },
+  "backend-desamparados/test/web-abierta-db.test.ts": {
+    "mtime": 1792361469.1796052,
+    "seen": 1792604266.66456,
+    "ast_hash": "2b147f2c7b87b81417f16006cd245e5f",
+    "semantic_hash": "2b147f2c7b87b81417f16006cd245e5f"
+  },
+  "desamparados-web/public/sw.js": {
+    "mtime": 1791992526.0962725,
+    "seen": 1792604266.6681561,
+    "ast_hash": "992bf1bf03dee1c784b1ac75f27a57de",
+    "semantic_hash": "992bf1bf03dee1c784b1ac75f27a57de"
+  },
+  "desamparados-web/src/app/__tests__/MarcoPublico.test.tsx": {
+    "mtime": 1792361469.1808834,
+    "seen": 1792604266.6703076,
+    "ast_hash": "8f400fdcba12d0e06d43fab8487fb937",
+    "semantic_hash": "8f400fdcba12d0e06d43fab8487fb937"
+  },
+  "desamparados-web/src/components/bloques/__tests__/BloqueContacto.test.tsx": {
+    "mtime": 1792421343.508517,
+    "seen": 1792604266.684167,
+    "ast_hash": "a8cab37fae39b51f2d4f4b0d2c3c1c6a",
+    "semantic_hash": "a8cab37fae39b51f2d4f4b0d2c3c1c6a"
+  },
+  "desamparados-web/src/components/mapa/__tests__/callesDeLaLinea.test.ts": {
+    "mtime": 1792166087.6614037,
+    "seen": 1792604266.697104,
+    "ast_hash": "1ecbf58eca561ea1145df538e1d6ef9b",
+    "semantic_hash": "1ecbf58eca561ea1145df538e1d6ef9b"
+  },
+  "desamparados-web/src/components/mapa/callesDeLaLinea.ts": {
+    "mtime": 1792164436.7662203,
+    "seen": 1792604266.697104,
+    "ast_hash": "8480f7e9b7d7f12562115848e77a6e13",
+    "semantic_hash": "8480f7e9b7d7f12562115848e77a6e13"
+  },
+  "desamparados-web/src/features/altas/auth/pantallaDeAcceso.ts": {
+    "mtime": 1792422835.7479222,
+    "seen": 1792604266.7026937,
+    "ast_hash": "8a6172ed0ef65b220d5e06d510ac4792",
+    "semantic_hash": "8a6172ed0ef65b220d5e06d510ac4792"
+  },
+  "desamparados-web/src/features/areaHermano/avisos/AvisoPage.tsx": {
+    "mtime": 1791986343.1074064,
+    "seen": 1792604266.7075102,
+    "ast_hash": "f96c42e2a2ffc3842ab87e13ce8fa174",
+    "semantic_hash": "f96c42e2a2ffc3842ab87e13ce8fa174"
+  },
+  "desamparados-web/src/features/areaHermano/avisos/AvisoPersonalPage.tsx": {
+    "mtime": 1792510742.2820854,
+    "seen": 1792604266.7075102,
+    "ast_hash": "764f0477d2a7491629d8422bb45a6e91",
+    "semantic_hash": "764f0477d2a7491629d8422bb45a6e91"
+  },
+  "desamparados-web/src/features/areaHermano/avisos/AvisosPage.tsx": {
+    "mtime": 1792510714.101662,
+    "seen": 1792604266.7075102,
+    "ast_hash": "9d9d99923c235af7f002304e77805449",
+    "semantic_hash": "9d9d99923c235af7f002304e77805449"
+  },
+  "desamparados-web/src/features/areaHermano/avisos/__tests__/AvisoPersonalPage.test.tsx": {
+    "mtime": 1792510804.8626478,
+    "seen": 1792604266.7075102,
+    "ast_hash": "b2be55b7d51e2774195855bba9a66ff1",
+    "semantic_hash": "b2be55b7d51e2774195855bba9a66ff1"
+  },
+  "desamparados-web/src/features/areaHermano/avisos/__tests__/AvisosPage.test.tsx": {
+    "mtime": 1792510780.9525623,
+    "seen": 1792604266.7075102,
+    "ast_hash": "79b9a87c3759562021d4189fb84dd51b",
+    "semantic_hash": "79b9a87c3759562021d4189fb84dd51b"
+  },
+  "desamparados-web/src/features/areaHermano/avisos/fechaDelAviso.ts": {
+    "mtime": 1791986342.4482527,
+    "seen": 1792604266.7075102,
+    "ast_hash": "51331d0b94ad5c884b1919bbe971fd37",
+    "semantic_hash": "51331d0b94ad5c884b1919bbe971fd37"
+  },
+  "desamparados-web/src/features/areaHermano/perfil/AvisosEnElMovil.tsx": {
+    "mtime": 1792157139.7744887,
+    "seen": 1792604266.7075102,
+    "ast_hash": "a17eeaabc3a10f2f3e0783d5f9587c9f",
+    "semantic_hash": "a17eeaabc3a10f2f3e0783d5f9587c9f"
+  },
+  "desamparados-web/src/features/areaHermano/perfil/Credencial.tsx": {
+    "mtime": 1792158193.4463034,
+    "seen": 1792604266.7075102,
+    "ast_hash": "ec068f5073b37d4aefe1e7cfa242a09f",
+    "semantic_hash": "ec068f5073b37d4aefe1e7cfa242a09f"
+  },
+  "desamparados-web/src/features/areaHermano/perfil/CuentaPage.tsx": {
+    "mtime": 1792157120.0055614,
+    "seen": 1792604266.7075102,
+    "ast_hash": "6ab9bb2da0c0d34fb008148fc2f0d8b0",
+    "semantic_hash": "6ab9bb2da0c0d34fb008148fc2f0d8b0"
+  },
+  "desamparados-web/src/features/areaHermano/perfil/SelectorDeFicha.tsx": {
+    "mtime": 1792158817.9071367,
+    "seen": 1792604266.7075102,
+    "ast_hash": "ba471b33cba21331249e7aa08f6401be",
+    "semantic_hash": "ba471b33cba21331249e7aa08f6401be"
+  },
+  "desamparados-web/src/features/areaHermano/perfil/__tests__/AvisosEnElMovil.test.tsx": {
+    "mtime": 1792098870.7029207,
+    "seen": 1792604266.7075102,
+    "ast_hash": "d2c537aa800f64afe7f1d2a2325ccb11",
+    "semantic_hash": "d2c537aa800f64afe7f1d2a2325ccb11"
+  },
+  "desamparados-web/src/features/areaHermano/perfil/__tests__/CuentaPage.test.tsx": {
+    "mtime": 1792157297.595016,
+    "seen": 1792604266.7075102,
+    "ast_hash": "0a92aa3f694e13cf8e00a4d8eabd9f34",
+    "semantic_hash": "0a92aa3f694e13cf8e00a4d8eabd9f34"
+  },
+  "desamparados-web/src/features/areaHermano/perfil/avisosDelArea.ts": {
+    "mtime": 1792098840.5751579,
+    "seen": 1792604266.7075102,
+    "ast_hash": "2367c66f4a28f67559b09a1c1c524d36",
+    "semantic_hash": "2367c66f4a28f67559b09a1c1c524d36"
+  },
+  "desamparados-web/src/features/areaHermano/perfil/fichasDeLaCuenta.ts": {
+    "mtime": 1792158797.1274247,
+    "seen": 1792604266.7075102,
+    "ast_hash": "5b9168589eac2dc1fbe9180590a8cd51",
+    "semantic_hash": "5b9168589eac2dc1fbe9180590a8cd51"
+  },
+  "desamparados-web/src/features/cms/EnviosEnMarcha.tsx": {
+    "mtime": 1792152992.87702,
+    "seen": 1792604266.7166207,
+    "ast_hash": "dbee793589c40f37732087e0076d7228",
+    "semantic_hash": "dbee793589c40f37732087e0076d7228"
+  },
+  "desamparados-web/src/features/cms/EstadisticasDeVisitasPage.tsx": {
+    "mtime": 1792101932.5220304,
+    "seen": 1792604266.7166207,
+    "ast_hash": "e53198fed33341ffdc41856d6c9008b5",
+    "semantic_hash": "e53198fed33341ffdc41856d6c9008b5"
+  },
+  "desamparados-web/src/features/cms/WebAbiertaPage.tsx": {
+    "mtime": 1792361469.1828964,
+    "seen": 1792604266.7176595,
+    "ast_hash": "cca8636817c0ac31d9d5173ca684ac05",
+    "semantic_hash": "cca8636817c0ac31d9d5173ca684ac05"
+  },
+  "desamparados-web/src/features/cms/__tests__/AsistentePage.test.tsx": {
+    "mtime": 1792600424.5216596,
+    "seen": 1792604266.719821,
+    "ast_hash": "6738d0244fb5b55756535a3f7a677be1",
+    "semantic_hash": "6738d0244fb5b55756535a3f7a677be1"
+  },
+  "desamparados-web/src/features/cms/__tests__/EnviosEnMarcha.test.tsx": {
+    "mtime": 1792152992.87702,
+    "seen": 1792604266.720826,
+    "ast_hash": "269fd2d5cdb11e3071e30a53cfa9bb3d",
+    "semantic_hash": "269fd2d5cdb11e3071e30a53cfa9bb3d"
+  },
+  "desamparados-web/src/features/cms/__tests__/EstadisticasDeVisitasPage.test.tsx": {
+    "mtime": 1792101996.3577175,
+    "seen": 1792604266.720826,
+    "ast_hash": "6d0c439be2f6081c227288bd274bb801",
+    "semantic_hash": "6d0c439be2f6081c227288bd274bb801"
+  },
+  "desamparados-web/src/features/cms/__tests__/IdentidadYMarca.test.tsx": {
+    "mtime": 1792584824.5253308,
+    "seen": 1792604266.720826,
+    "ast_hash": "7b3b57c2ca4b7428173f95eb96b122b2",
+    "semantic_hash": "7b3b57c2ca4b7428173f95eb96b122b2"
+  },
+  "desamparados-web/src/features/cms/asistente/AsistentePage.tsx": {
+    "mtime": 1792600227.5321207,
+    "seen": 1792604266.725644,
+    "ast_hash": "82a0811ef6168a32374552b47446fc7f",
+    "semantic_hash": "82a0811ef6168a32374552b47446fc7f"
+  },
+  "desamparados-web/src/features/cms/asistente/FranjaDelAsistente.tsx": {
+    "mtime": 1792600226.4683025,
+    "seen": 1792604266.725644,
+    "ast_hash": "35524ba5e1ac67256572400efc296a46",
+    "semantic_hash": "35524ba5e1ac67256572400efc296a46"
+  },
+  "desamparados-web/src/features/cms/asistente/VistaPrevia.tsx": {
+    "mtime": 1792600096.5969667,
+    "seen": 1792604266.725644,
+    "ast_hash": "cf02e02c75f6c9f211bceebae5017301",
+    "semantic_hash": "cf02e02c75f6c9f211bceebae5017301"
+  },
+  "desamparados-web/src/features/cms/bloques/__tests__/problemaDeBloque.test.ts": {
+    "mtime": 1792350296.739978,
+    "seen": 1792604266.725644,
+    "ast_hash": "20c0fbaeb6afffe7426579f7feb0a74c",
+    "semantic_hash": "20c0fbaeb6afffe7426579f7feb0a74c"
+  },
+  "desamparados-web/src/features/cms/bloques/formularios/CallesDelRecorrido.tsx": {
+    "mtime": 1792165890.821338,
+    "seen": 1792604266.725644,
+    "ast_hash": "f6b9f9019dc78eed227354a01dccbb98",
+    "semantic_hash": "f6b9f9019dc78eed227354a01dccbb98"
+  },
+  "desamparados-web/src/features/cms/bloques/formularios/__tests__/FormularioHorario.test.tsx": {
+    "mtime": 1792350914.255306,
+    "seen": 1792604266.725644,
+    "ast_hash": "20e989f76af28e7878357f63bcd855d4",
+    "semantic_hash": "20e989f76af28e7878357f63bcd855d4"
+  },
+  "desamparados-web/src/features/cms/bloques/formularios/__tests__/FormularioItinerario.test.tsx": {
+    "mtime": 1792331729.5105126,
+    "seen": 1792604266.725644,
+    "ast_hash": "0e582638892499e0485bf687d158bf24",
+    "semantic_hash": "0e582638892499e0485bf687d158bf24"
+  },
+  "desamparados-web/src/features/cms/constructor/VistaPreviaDeBloque.tsx": {
+    "mtime": 1792355332.2174673,
+    "seen": 1792604266.7299244,
+    "ast_hash": "bd8c9f5278624478513dace5a6b1b576",
+    "semantic_hash": "bd8c9f5278624478513dace5a6b1b576"
+  },
+  "desamparados-web/src/features/cms/constructor/__tests__/GaleriaDeBloques.test.tsx": {
+    "mtime": 1792355586.5141997,
+    "seen": 1792604266.7299244,
+    "ast_hash": "743fcf577444e84f2e86a7eb41db35be",
+    "semantic_hash": "743fcf577444e84f2e86a7eb41db35be"
+  },
+  "desamparados-web/src/features/cms/constructor/ejemplos.ts": {
+    "mtime": 1792354957.7597675,
+    "seen": 1792604266.7309294,
+    "ast_hash": "21bcf9f09c99e55f6a9c8f225a24c520",
+    "semantic_hash": "21bcf9f09c99e55f6a9c8f225a24c520"
+  },
+  "desamparados-web/src/features/cms/constructor/opcionesSinEfecto.ts": {
+    "mtime": 1792353112.6446595,
+    "seen": 1792604266.7309294,
+    "ast_hash": "0177c1597c32018d4fc8ff8cd9bd36b6",
+    "semantic_hash": "0177c1597c32018d4fc8ff8cd9bd36b6"
+  },
+  "desamparados-web/src/features/cms/corporacion/Contacto.tsx": {
+    "mtime": 1792599976.2993932,
+    "seen": 1792604266.73663,
+    "ast_hash": "a80b0101a89dfbb9fb98abea563a1708",
+    "semantic_hash": "a80b0101a89dfbb9fb98abea563a1708"
+  },
+  "desamparados-web/src/features/cms/corporacion/IdentidadYMarca.tsx": {
+    "mtime": 1792600021.2809832,
+    "seen": 1792604266.73663,
+    "ast_hash": "13a02876ebe09a24c78a3adf4f24547b",
+    "semantic_hash": "13a02876ebe09a24c78a3adf4f24547b"
+  },
+  "desamparados-web/src/features/cms/corporacion/acciones.ts": {
+    "mtime": 1792599976.2979536,
+    "seen": 1792604266.73663,
+    "ast_hash": "0a38f56dc8c729b1a82474c1109fa669",
+    "semantic_hash": "0a38f56dc8c729b1a82474c1109fa669"
+  },
+  "desamparados-web/src/features/cms/emails/__tests__/piezas.test.ts": {
+    "mtime": 1792431388.3882344,
+    "seen": 1792604266.738636,
+    "ast_hash": "163ee40d6e98bc7b669f0cf2fffe3891",
+    "semantic_hash": "163ee40d6e98bc7b669f0cf2fffe3891"
+  },
+  "desamparados-web/src/features/cms/emails/editor/BarraDeFormato.tsx": {
+    "mtime": 1792431027.1492503,
+    "seen": 1792604266.738636,
+    "ast_hash": "ace31449ef5ebe805a4744595558807b",
+    "semantic_hash": "ace31449ef5ebe805a4744595558807b"
+  },
+  "desamparados-web/src/features/cms/emails/editor/CampoEnlace.tsx": {
+    "mtime": 1792431026.6245756,
+    "seen": 1792604266.738636,
+    "ast_hash": "3f3fd609d69e557abfc5c986f9b2f668",
+    "semantic_hash": "3f3fd609d69e557abfc5c986f9b2f668"
+  },
+  "desamparados-web/src/features/cms/emails/editor/HojaDelCorreo.tsx": {
+    "mtime": 1792431148.8825357,
+    "seen": 1792604266.738636,
+    "ast_hash": "db9bab1e8557f789b6c03e311a93c7bd",
+    "semantic_hash": "db9bab1e8557f789b6c03e311a93c7bd"
+  },
+  "desamparados-web/src/features/cms/emails/editor/LineaConCampos.tsx": {
+    "mtime": 1792430935.1880174,
+    "seen": 1792604266.738636,
+    "ast_hash": "343ed3f85fbf768dde562a605e566e2c",
+    "semantic_hash": "343ed3f85fbf768dde562a605e566e2c"
+  },
+  "desamparados-web/src/features/cms/emails/editor/PanelDeLaPieza.tsx": {
+    "mtime": 1792431143.2406375,
+    "seen": 1792604266.738636,
+    "ast_hash": "e56beda496ab246e74341f284abd95ab",
+    "semantic_hash": "e56beda496ab246e74341f284abd95ab"
+  },
+  "desamparados-web/src/features/cms/emails/editor/PanelPiezas.tsx": {
+    "mtime": 1792440852.877466,
+    "seen": 1792604266.738636,
+    "ast_hash": "16c4067a4a7799bb583d7ecb785b5f39",
+    "semantic_hash": "16c4067a4a7799bb583d7ecb785b5f39"
+  },
+  "desamparados-web/src/features/cms/emails/editor/Repaso.tsx": {
+    "mtime": 1792431143.2039044,
+    "seen": 1792604266.738636,
+    "ast_hash": "67b82d782ac235d72cff0fb55551d79a",
+    "semantic_hash": "67b82d782ac235d72cff0fb55551d79a"
+  },
+  "desamparados-web/src/features/cms/emails/editor/Revision.tsx": {
+    "mtime": 1792431301.414147,
+    "seen": 1792604266.738636,
+    "ast_hash": "91d5f5b5ca8d909041c00a3d94134986",
+    "semantic_hash": "91d5f5b5ca8d909041c00a3d94134986"
+  },
+  "desamparados-web/src/features/cms/emails/editor/Versiones.tsx": {
+    "mtime": 1792431176.5010192,
+    "seen": 1792604266.738636,
+    "ast_hash": "faccee0a9ccd6551400a739f2cd1f43a",
+    "semantic_hash": "faccee0a9ccd6551400a739f2cd1f43a"
+  },
+  "desamparados-web/src/features/cms/emails/editor/acciones.ts": {
+    "mtime": 1792430971.5697513,
+    "seen": 1792604266.738636,
+    "ast_hash": "d4be46c604ad6efcbe149b05f21bff4d",
+    "semantic_hash": "d4be46c604ad6efcbe149b05f21bff4d"
+  },
+  "desamparados-web/src/features/cms/emails/editor/enlaces.ts": {
+    "mtime": 1792431003.4906547,
+    "seen": 1792604266.738636,
+    "ast_hash": "20dcc3cc1d52fae5f02327bed3f7161e",
+    "semantic_hash": "20dcc3cc1d52fae5f02327bed3f7161e"
+  },
+  "desamparados-web/src/features/cms/emails/editor/extensiones.ts": {
+    "mtime": 1792508770.3423386,
+    "seen": 1792604266.738636,
+    "ast_hash": "fdd34bc0c7b5980e71cb960737cadd40",
+    "semantic_hash": "fdd34bc0c7b5980e71cb960737cadd40"
+  },
+  "desamparados-web/src/features/cms/emails/editor/hoja.ts": {
+    "mtime": 1792430912.8201256,
+    "seen": 1792604266.738636,
+    "ast_hash": "74426c10f01dac950248e9ea84db300d",
+    "semantic_hash": "74426c10f01dac950248e9ea84db300d"
+  },
+  "desamparados-web/src/features/cms/emails/editor/piezas.ts": {
+    "mtime": 1792430791.2269092,
+    "seen": 1792604266.738636,
+    "ast_hash": "861e66eecdf92e9e1e0cf2409eb02886",
+    "semantic_hash": "861e66eecdf92e9e1e0cf2409eb02886"
+  },
+  "desamparados-web/src/features/cms/emails/editor/vistas.tsx": {
+    "mtime": 1792431302.8044496,
+    "seen": 1792604266.738636,
+    "ast_hash": "950f9b1188e9f20a424d341c01f91052",
+    "semantic_hash": "950f9b1188e9f20a424d341c01f91052"
+  },
+  "desamparados-web/src/features/cms/mesa/useAltoHastaElPie.ts": {
+    "mtime": 1792517262.3968232,
+    "seen": 1792604266.7495227,
+    "ast_hash": "992bbfdc75c406dc6924c0c1d96ddb5b",
+    "semantic_hash": "992bbfdc75c406dc6924c0c1d96ddb5b"
+  },
+  "desamparados-web/src/features/cms/modulos/ListaDeModulos.tsx": {
+    "mtime": 1792599976.293517,
+    "seen": 1792604266.7495227,
+    "ast_hash": "29f3e9de9462347a5a4df6bae442a192",
+    "semantic_hash": "29f3e9de9462347a5a4df6bae442a192"
+  },
+  "desamparados-web/src/features/cms/portada/FondoDelMenuMovil.tsx": {
+    "mtime": 1792107207.8549898,
+    "seen": 1792604266.7508538,
+    "ast_hash": "f3bb06bfdf292136c677e7105e0e0680",
+    "semantic_hash": "f3bb06bfdf292136c677e7105e0e0680"
+  },
+  "desamparados-web/src/features/inicio/IconosDeAcceso.tsx": {
+    "mtime": 1792106325.5559874,
+    "seen": 1792604266.7616076,
+    "ast_hash": "0f4e98532a253e79c87adfd11c83aa1f",
+    "semantic_hash": "0f4e98532a253e79c87adfd11c83aa1f"
+  },
+  "desamparados-web/src/features/proximamente/ProximamentePage.tsx": {
+    "mtime": 1792362312.3230479,
+    "seen": 1792604266.7667894,
+    "ast_hash": "3e841b1c59b844b25a331f56b5989cd8",
+    "semantic_hash": "3e841b1c59b844b25a331f56b5989cd8"
+  },
+  "desamparados-web/src/hooks/__tests__/useContarVisitas.test.tsx": {
+    "mtime": 1792101996.3275914,
+    "seen": 1792604266.768959,
+    "ast_hash": "28a657a827b6b92dab7cb3d143ca524b",
+    "semantic_hash": "28a657a827b6b92dab7cb3d143ca524b"
+  },
+  "desamparados-web/src/hooks/useContarVisitas.ts": {
+    "mtime": 1792101919.6009462,
+    "seen": 1792604266.768959,
+    "ast_hash": "37d691d12300838543b60c37eca7edee",
+    "semantic_hash": "37d691d12300838543b60c37eca7edee"
+  },
+  "desamparados-web/src/hooks/useEstadoDeLaWeb.ts": {
+    "mtime": 1792361469.1849084,
+    "seen": 1792604266.768959,
+    "ast_hash": "8c2b58f86e131b41f70f64139c40849c",
+    "semantic_hash": "8c2b58f86e131b41f70f64139c40849c"
+  },
+  "desamparados-web/src/lib/api/avisos.ts": {
+    "mtime": 1792510714.101662,
+    "seen": 1792604266.768959,
+    "ast_hash": "131c827fe933a87263e37e67b0b6368a",
+    "semantic_hash": "131c827fe933a87263e37e67b0b6368a"
+  },
+  "desamparados-web/src/lib/api/estadisticas.ts": {
+    "mtime": 1792101919.6235316,
+    "seen": 1792604266.768959,
+    "ast_hash": "de5f63525b891bf1aa97d234a69b3a85",
+    "semantic_hash": "de5f63525b891bf1aa97d234a69b3a85"
+  },
+  "desamparados-web/src/lib/api/web.ts": {
+    "mtime": 1792361469.1870077,
+    "seen": 1792604266.7825868,
+    "ast_hash": "cabe049bcb778e00781a5a8cfed1b28a",
+    "semantic_hash": "cabe049bcb778e00781a5a8cfed1b28a"
+  },
+  "desamparados-web/src/lib/avisosDelNavegador.ts": {
+    "mtime": 1791992508.945666,
+    "seen": 1792604266.7825868,
+    "ast_hash": "68e2c5d8fc11277f8ced7472b1935e75",
+    "semantic_hash": "68e2c5d8fc11277f8ced7472b1935e75"
+  },
+  "docker/servidor/estadisticas.sh": {
+    "mtime": 1792101782.9937775,
+    "seen": 1792604266.7836597,
+    "ast_hash": "0fd71d5ad74c357ad6cd4a59d9699054",
+    "semantic_hash": "0fd71d5ad74c357ad6cd4a59d9699054"
+  },
+  "shared/instalacion-publica.d.mts": {
+    "mtime": 1792581961.8140597,
+    "seen": 1792604266.7836597,
+    "ast_hash": "2e309301ecbea0eb9bd1817230978e33",
+    "semantic_hash": "2e309301ecbea0eb9bd1817230978e33"
+  },
+  "shared/instalacion-publica.mjs": {
+    "mtime": 1792584618.6353712,
+    "seen": 1792604266.7836597,
+    "ast_hash": "ee67a27c6f2536cfdf8605fdb563d29b",
+    "semantic_hash": "ee67a27c6f2536cfdf8605fdb563d29b"
+  },
+  "shared/preparar-marca.d.mts": {
+    "mtime": 1792581801.9423273,
+    "seen": 1792604266.7836597,
+    "ast_hash": "7bf81c06c8545ff3c84d40ff0b128e88",
+    "semantic_hash": "7bf81c06c8545ff3c84d40ff0b128e88"
+  },
+  "shared/preparar-marca.mjs": {
+    "mtime": 1792582371.8176901,
+    "seen": 1792604266.7836597,
+    "ast_hash": "efd1e780330f1228e89497bdff9ac477",
+    "semantic_hash": "efd1e780330f1228e89497bdff9ac477"
+  },
+  "shared/titulares.d.mts": {
+    "mtime": 1792584582.78033,
+    "seen": 1792604266.7836597,
+    "ast_hash": "aa88073160a33e5ca9bc9d2dbe95f117",
+    "semantic_hash": "aa88073160a33e5ca9bc9d2dbe95f117"
+  },
+  "shared/titulares.mjs": {
+    "mtime": 1792584582.2267406,
+    "seen": 1792604266.7836597,
+    "ast_hash": "d38e3244b8029d20bd11c4372f99e367",
+    "semantic_hash": "d38e3244b8029d20bd11c4372f99e367"
+  },
+  "docs/superpowers/specs/2026-10-21-asistente-de-primer-arranque-design.md": {
+    "mtime": 1792600494.6129403,
+    "seen": 1792604266.7836597,
+    "ast_hash": "943494f43e5241e5c59e8b4eb951a1c2",
+    "semantic_hash": "943494f43e5241e5c59e8b4eb951a1c2"
+  },
+  "docs/superpowers/specs/2026-10-21-marca-y-nombre-editables-design.md": {
+    "mtime": 1792584865.1510768,
+    "seen": 1792604266.7836597,
+    "ast_hash": "835e70d91a4ecfee0c90929392b66018",
+    "semantic_hash": "835e70d91a4ecfee0c90929392b66018"
   }
 }
