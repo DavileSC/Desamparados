@@ -28,6 +28,10 @@ test('una solicitud de alta llega a Secretaría', async ({ page }) => {
   test.skip(correoDeVerdad, 'la API envía correos de verdad: arráncala con EMAIL_BUZON_PRUEBAS=true para probar el alta')
 
   const dni = dniValido()
+  // Otro correo en cada intento: con el mismo, el reintento del CI sería un
+  // alta repetida, que la API no tramita. Sigue acabando en el sufijo de la
+  // ejecución, y la recogida lo encuentra.
+  const email = alta.replace(/^e2e-alta-/, `e2e-alta${test.info().retry}-`)
   // Una foto de verdad, que la API pueda pasar a WebP: un trozo de la propia página.
   await page.goto('/hazte-hermano')
   await sinAvisoDeCookies(page)
@@ -51,7 +55,7 @@ test('una solicitud de alta llega a Secretaría', async ({ page }) => {
   await page.getByRole('button', { name: 'Continuar' }).click()
 
   const contacto = pasoActivo(page)
-  await contacto.getByLabel('Email').fill(alta)
+  await contacto.getByLabel('Email').fill(email)
   await contacto.getByLabel('Teléfono').fill('600123456')
   await contacto.getByLabel('Dirección').fill('Calle Real 14')
   await contacto.getByLabel('Código postal').fill('29013')
@@ -65,10 +69,10 @@ test('una solicitud de alta llega a Secretaría', async ({ page }) => {
   await pasoActivo(page).getByLabel('Contraseña', { exact: true }).fill(password)
   await page.getByLabel('Acepto la política de privacidad').check()
   await page.getByRole('button', { name: 'Enviar solicitud' }).click()
-  await expect(page.getByText(/Solicitud enviada|solicitud.*recibid/i).first()).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByRole('status').getByRole('heading', { name: /^Gracias, Alta\./ })).toBeVisible({ timeout: 20_000 })
 
   // Secretaría la ve entre las solicitudes del censo.
   await entrarEnElCms(page, secretaria)
   await page.goto('/cms/hermanos?vista=solicitudes')
-  await expect(page.getByText(alta)).toBeVisible()
+  await expect(page.getByText(email)).toBeVisible()
 })

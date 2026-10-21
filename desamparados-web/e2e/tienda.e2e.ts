@@ -35,6 +35,10 @@ test('se compra un producto y el pedido queda pagado', async ({ page }) => {
 
   await expect.poll(() => alBanco !== null || /\/tienda\/pedido\//.test(page.url()), { timeout: 15_000 }).toBe(true)
 
+  // En el CI la API va con Redsys: si no se pasara por el banco, la prueba
+  // estaría en verde sin haber mirado lo que más importa.
+  if (process.env.PAGO_EN_LINEA === 'redsys') expect(alBanco, 'la compra tenía que pasar por Redsys').not.toBeNull()
+
   if (alBanco) {
     const enviado = new URLSearchParams((alBanco as Request).postData() ?? '')
     const parametros = enviado.get('Ds_MerchantParameters')!
