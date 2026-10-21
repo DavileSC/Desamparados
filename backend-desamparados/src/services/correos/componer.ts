@@ -9,6 +9,7 @@
  */
 import { identidad, type Identidad } from '../../domain/datos-entidad.js';
 import { aLaCorporacion, deLaCorporacion, laCorporacion, nuestraCorporacion } from '../../domain/articulos.js';
+import { segunLosTitulares } from '../../../../shared/titulares.mjs';
 import {
   RUTA_DE_FOTO, enlaceValido, rellenar, resumenDe, usoDe,
   type ClaveDeUso, type Linea, type Pieza, type PlantillaDeCorreo, type UsoDeCorreo,
@@ -34,6 +35,9 @@ export interface Relleno {
 export const comunes = (identidadInstalacion: Identidad = identidad) => ({
   grupo: identidadInstalacion.nombre,
   titular: identidadInstalacion.titular,
+  // La despedida entera y no solo el verbo: con dos titulares es «le guarden
+  // y bendigan», y un campo {{guarde}} suelto sería un lío de escribir.
+  bendicion: `Que ${identidadInstalacion.titular} ${segunLosTitulares(identidadInstalacion.titulares, 'le guarde y bendiga', 'le guarden y bendigan')}.`,
   la_corporacion: laCorporacion({ identidad: identidadInstalacion }),
   de_la_corporacion: deLaCorporacion({ identidad: identidadInstalacion }),
   a_la_corporacion: aLaCorporacion({ identidad: identidadInstalacion }),

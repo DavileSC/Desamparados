@@ -66,6 +66,18 @@ try {
   process.exit(1);
 }
 
+// La identidad, los colores y las imágenes: a la memoria y a storage/public,
+// de donde nginx sirve /instalacion.js, /manifest.json, la cabecera de
+// index.html y /marca/. Antes de escuchar: la web espera a la API sana para
+// arrancar, y así esos ficheros ya existen cuando pide el primero.
+const { MarcaService } = await import('./services/marca.service');
+try {
+  await MarcaService.cargar();
+} catch (error) {
+  console.error(`[Marca] No se pudieron cargar o publicar la identidad y la marca: ${describirErrorParaLog(error)}`);
+  process.exit(1);
+}
+
 // Los nombres del menú, igual: la web los pide en cada visita. Si la base no
 // responde aquí, tampoco respondería a lo anterior.
 const { MenuService } = await import('./services/menu.service');

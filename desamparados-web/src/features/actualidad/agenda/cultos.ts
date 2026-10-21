@@ -63,8 +63,8 @@ function claseDelCartel(evento: ApiEvent) {
 export function fotoDelCartel(evento: ApiEvent): { src: string; alt: string } {
   if (evento.fotoCartel) return { src: evento.fotoCartel, alt: `Cartel: ${evento.title}` }
   return evento.type === 'PROCESION'
-    ? { src: FOTO_DE_SALIDA, alt: `${site.titular} en su trono, por las calles` }
-    : { src: FOTO_DE_CULTO, alt: site.titular }
+    ? { src: FOTO_DE_SALIDA, alt: `${site.titularPrincipal} en su trono, por las calles` }
+    : { src: FOTO_DE_CULTO, alt: site.titularPrincipal }
 }
 
 /**

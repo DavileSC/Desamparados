@@ -11,18 +11,14 @@
 # sirviendo una web sin datos o con los de otro.
 set -eu
 
-# 1. La web: index.html relleno (y su .gz, que es el que sirve gzip_static),
-#    manifest.json, robots.txt e instalacion.js. La plantilla es el index.html
-#    de `vite build`, guardado fuera de la carpeta servida: este paso se repite
-#    en cada arranque y tiene que partir siempre de las marcas sin rellenar.
-#    Y la marca: el escudo y los iconos de /app/instalacion/marca (los que
-#    falten, los genéricos de shared/marca-de-partida) copiados a marca/. Un
-#    fichero de la marca que no sirve (otro formato, roto, ilegible) también
-#    para aquí; uno que falta solo se avisa en el registro.
+# 1. La web: comprueba el fichero y el index.html de `vite build`, y escribe
+#    robots.txt con el dominio. El nombre, los colores y las imágenes ya no
+#    salen de aquí: los escribe la API en storage/public (montado aquí en
+#    /srv/storage/public) con lo guardado en el CMS, y nginx los sirve de allí
+#    y mete la cabecera en index.html con SSI (ubicaciones.conf).
 node /app/desamparados-web/scripts/instalacion-web.mjs \
-  --plantilla /app/desamparados-web/index.plantilla.html \
-  --destino /var/www/desamparados/dist \
-  --comprimir
+  --index /var/www/desamparados/dist/index.html \
+  --destino /var/www/desamparados/dist
 
 # 2. El sitio de producción, con el dominio de la corporación. Si el compose
 #    monta otro encima (el de detrás del nginx del sistema, o el local), manda

@@ -16,7 +16,7 @@
  * que quien no lo entiende ignora sin romper nada.
  */
 import { readFileSync } from 'node:fs';
-import { emailDeSecretaria, identidad, lineasDeSecretaria, type Identidad } from '../../domain/datos-entidad.js';
+import { alCambiarLaMarca, emailDeSecretaria, identidad, lineasDeSecretaria, type Identidad } from '../../domain/datos-entidad.js';
 import { deLaCorporacion, laCorporacion, segunLaCorporacion } from '../../domain/articulos.js';
 import { FICHEROS_MARCA, IMPRENTA } from '../../domain/marca.js';
 
@@ -30,12 +30,13 @@ import { FICHEROS_MARCA, IMPRENTA } from '../../domain/marca.js';
  * cabecera no tiene marca de partida: sin `correo-cabecera.jpg`, no está.
  */
 interface ImagenDeCorreo { cid: string; archivo: string; tipo: string }
-const IMAGENES: { escudo: ImagenDeCorreo; cabecera: ImagenDeCorreo | null } = {
+const imagenesDelCorreo = (): { escudo: ImagenDeCorreo; cabecera: ImagenDeCorreo | null } => ({
   escudo: { cid: 'escudo@marca', archivo: FICHEROS_MARCA.escudoSobreClaro.ruta, tipo: FICHEROS_MARCA.escudoSobreClaro.tipo },
   cabecera: FICHEROS_MARCA.correoCabecera
     ? { cid: 'cabecera@marca', archivo: FICHEROS_MARCA.correoCabecera.ruta, tipo: FICHEROS_MARCA.correoCabecera.tipo }
     : null,
-};
+});
+const IMAGENES = imagenesDelCorreo();
 /**
  * El escudo del membrete va siempre a 56 de alto, la altura de las dos líneas
  * del nombre a su lado; el ancho sale de su proporción para que un escudo
@@ -48,7 +49,8 @@ export function medidaDelEscudo({ ancho, alto }: { ancho: number; alto: number }
   return { ancho: Math.round((ALTO * ancho) / alto), alto: ALTO };
 }
 const ESCUDO = medidaDelEscudo(FICHEROS_MARCA.escudoSobreClaro);
-const conImagen = Object.entries(IMAGENES).flatMap(([nombre, imagen]) => (imagen ? [[nombre, imagen] as const] : []));
+const conImagenDe = (imagenes: typeof IMAGENES) => Object.entries(imagenes).flatMap(([nombre, imagen]) => (imagen ? [[nombre, imagen] as const] : []));
+let conImagen = conImagenDe(IMAGENES);
 
 // Los colores de la casa. Los grises están elegidos para leerse bien sobre su
 // fondo (contraste 4,5:1 como poco), también en el móvil y a pleno sol.
@@ -405,6 +407,16 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
  * dentro del HTML. Se leen una vez y se guardan.
  */
 let enLinea: [string, string][] | null = null;
+
+// Un escudo o una cabecera nuevos desde el CMS: se rehace lo que se calculó al
+// cargar, y la vista previa vuelve a leer las imágenes.
+alCambiarLaMarca(() => {
+  Object.assign(IMAGENES, imagenesDelCorreo());
+  Object.assign(ESCUDO, medidaDelEscudo(FICHEROS_MARCA.escudoSobreClaro));
+  conImagen = conImagenDe(IMAGENES);
+  enLinea = null;
+  COLORES.burdeos = IMPRENTA.acentoCorreo;
+});
 export function conImagenesEnLinea(html: string): string {
   enLinea ??= conImagen.map(([, i]) => [`cid:${i.cid}`, `data:${i.tipo};base64,${readFileSync(i.archivo).toString('base64')}`]);
   // Las fotos subidas, por su ruta pública: la vista previa se mira desde el

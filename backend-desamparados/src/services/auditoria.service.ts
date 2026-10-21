@@ -195,6 +195,8 @@ export const ACCIONES_AUDITORIA = {
   MODULO_APAGAR: 'MODULO_APAGAR',
   // Sistema → Datos de la corporación: Secretaría, sede, redes y privacidad
   CORPORACION_ACTUALIZAR: 'CORPORACION_ACTUALIZAR',
+  // … y la identidad y la marca: nombre, colores e imágenes
+  MARCA_ACTUALIZAR: 'MARCA_ACTUALIZAR',
   // CMS → Páginas: el nombre de una página en el menú público
   MENU_NOMBRES_ACTUALIZAR: 'MENU_NOMBRES_ACTUALIZAR',
   // Sistema → Abrir la web: abrirla al público o dejarla en «Próximamente»

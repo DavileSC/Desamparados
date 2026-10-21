@@ -322,6 +322,20 @@ function comprobar(entrada, bytes, errores, avisos) {
 }
 
 /**
+ * Una imagen suelta contra su entrada del catálogo, con las mismas reglas que
+ * al arrancar: la que sube Administración desde el CMS. `cabecera` es null si
+ * no sirve, y entonces `errores` dice por qué.
+ */
+export function comprobarImagenDeMarca(clave, bytes) {
+  const entrada = CATALOGO_MARCA.find((e) => e.clave === clave)
+  if (!entrada) throw new Error(`${clave} no es una imagen de la marca.`)
+  const errores = []
+  const avisos = []
+  const cabecera = comprobar(entrada, Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes), errores, avisos)
+  return { cabecera, errores, avisos }
+}
+
+/**
  * Qué fichero se usa para cada clave del catálogo: el de `carpeta` (la de la
  * instalación; null = solo partida, sin avisos) si está y sirve, y si no, el de
  * `partida`. Las claves sin partida (escudoDestacado, compartir,

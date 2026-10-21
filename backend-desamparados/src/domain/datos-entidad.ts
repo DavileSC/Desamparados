@@ -1,4 +1,5 @@
 import { leerDatosEntidad, type Articulo, type DatosEntidad, type Marca } from '../../../shared/datos-entidad.mjs';
+import { unirTitulares } from '../../../shared/titulares.mjs';
 
 // Se lee del disco al cargar el módulo, no se importa: el fichero es de cada
 // instalación (instalacion/datos-entidad.json, montado en el contenedor) y no
@@ -49,20 +50,69 @@ export interface Identidad {
   tipoCorto: string;
   /** El artículo que acompaña a `tipo` y `tipoCorto`. */
   articulo: Articulo;
+  /** Uno o varios, en orden; el primero es el principal. */
+  titulares: string[];
+  /** Los titulares unidos («A y B»): sale de `titulares` y no se guarda aparte. */
   titular: string;
   localidad: string;
   dominio: string;
   descripcion: string;
+  /** La jurídica exacta inscrita, para los textos legales; null mientras no esté confirmada. */
+  denominacion: string | null;
+  domicilio: string | null;
+  normas: { titulo: string; url: string } | null;
 }
 
+/**
+ * La identidad sin el dominio: lo que se cambia desde el CMS (Sistema → Datos
+ * de la corporación). El dominio se queda en el fichero: va atado a nginx y a
+ * los certificados. Y sin `titular`, que sale de `titulares`.
+ */
+export type IdentidadEditable = Omit<Identidad, 'dominio' | 'titular'>;
+
+/**
+ * Quién es la corporación. Como `secretaria`, es un objeto que se cambia en su
+ * sitio (`aplicarIdentidad`) y no se sustituye: el fichero solo lo pone hasta
+ * que la API lee lo guardado en el CMS (services/marca.service.ts). Nadie debe
+ * copiar sus valores al cargar un módulo; quien no pueda evitarlo, que se
+ * apunte a `alCambiarLaMarca`.
+ */
 export const identidad: Identidad = datos.identidad;
 
 /**
- * Los dos colores de la corporación (`marca` del JSON; null = los de partida).
- * De ellos salen los colores de los PDF y los correos: `IMPRENTA` en
- * domain/marca.ts.
+ * Los dos colores de la corporación (null = los de partida), con la misma
+ * regla que `identidad`. De ellos salen los colores de los PDF y los correos:
+ * `IMPRENTA` en domain/marca.ts.
  */
 export const coloresDeMarca: Marca = datos.marca;
+
+/** Los del fichero: con ellos se siembra la base la primera vez. */
+export function identidadDelFichero(): IdentidadEditable {
+  const { dominio: _dominio, titular: _titular, ...editable } = structuredClone(datos.identidad);
+  return editable;
+}
+export const coloresDelFichero = (): Marca => ({ ...datos.marca });
+
+const oyentes = new Set<() => void>();
+
+/**
+ * Para lo que hace una copia al cargar el módulo (los colores exportados de los
+ * PDF, el escudo de los correos, las palabras prohibidas en las contraseñas):
+ * se rehace cada vez que cambian el nombre, los colores o una imagen.
+ */
+export function alCambiarLaMarca(oyente: () => void): void {
+  oyentes.add(oyente);
+}
+
+/** La identidad y los colores guardados, a la memoria. Lo llama `aplicarMarca` (domain/marca.ts), que avisa después. */
+export function aplicarIdentidad(nueva: IdentidadEditable, colores: Marca): void {
+  Object.assign(identidad, structuredClone(nueva), { dominio: identidad.dominio, titular: unirTitulares(nueva.titulares) });
+  Object.assign(coloresDeMarca, colores);
+}
+
+export function avisarCambioDeMarca(): void {
+  for (const oyente of oyentes) oyente();
+}
 
 const informado = (valor: string | null | undefined): valor is string =>
   typeof valor === 'string' && valor.trim() !== '';

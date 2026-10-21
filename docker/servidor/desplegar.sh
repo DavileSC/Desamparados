@@ -111,9 +111,9 @@ if [[ "$SANA" -ne 1 ]]; then
   fallo "La API no ha quedado sana en cinco minutos."
 fi
 
-# La web escribe al arrancar los datos de la corporación (/instalacion.js,
-# index.html…) y, con un dato mal puesto en instalacion/datos-entidad.json, no
-# arranca: el compose la reintenta en bucle sin que nada lo diga.
+# La web sirve /instalacion.js de lo que publica la API en storage/public y,
+# con un dato mal puesto en instalacion/datos-entidad.json, no arranca: el
+# compose la reintenta en bucle sin que nada lo diga.
 log "Comprobando la web…"
 WEB=0
 for _ in $(seq 1 15); do

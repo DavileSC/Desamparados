@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Alert, Box, Button, CircularProgress, Paper, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, Paper, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
-import { useBlocker } from 'react-router-dom'
+import { useBlocker, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import CabeceraSeccion from './CabeceraSeccion'
 import AvisoCambiosSinGuardar from './ficha/AvisoCambiosSinGuardar'
@@ -12,6 +12,8 @@ import {
 import { ErrorDeApi } from '../../lib/api/cliente'
 import type { Red } from '../../../../shared/datos-entidad.mjs'
 import { site } from '../../config/site'
+import { useAuthStore } from '../altas/auth/store'
+import IdentidadYMarca from './corporacion/IdentidadYMarca'
 
 const CLAVE_CMS = ['cms', 'corporacion'] as const
 
@@ -99,14 +101,14 @@ function errorDe(tipo: Tipo, valor: string): string | null {
 }
 
 /**
- * Sistema › Datos de la corporación: cómo se la contacta. Secretaría, la sede,
- * las redes y el correo de los derechos viven en la base y no en el fichero
- * de la instalación, que solo los siembra la primera vez, porque cambian (un
- * horario nuevo, otra red) y Secretaría no debe depender de un despliegue
- * para ello. Al guardar, el pie y los textos legales los enseñan ya, sin
- * recargar.
+ * Sistema › Datos de la corporación › Contacto: cómo se la contacta.
+ * Secretaría, la sede, las redes y el correo de los derechos viven en la base y
+ * no en el fichero de la instalación, que solo los siembra la primera vez,
+ * porque cambian (un horario nuevo, otra red) y Secretaría no debe depender de
+ * un despliegue para ello. Al guardar, el pie y los textos legales los enseñan
+ * ya, sin recargar.
  */
-export default function DatosCorporacionPage() {
+function Contacto() {
   const cliente = useQueryClient()
   const { data, isPending, isError } = useQuery({ queryKey: CLAVE_CMS, queryFn: datosDeContactoDelCms })
   const [formulario, setFormulario] = useState<Formulario>({})
@@ -125,7 +127,9 @@ export default function DatosCorporacionPage() {
   const sinGuardar = Boolean(data && data === copiado) && CAMPOS.some(({ ruta }) => formulario[ruta].trim() !== aFormulario(data!)[ruta])
   // Son veinte campos: al ir a otra pantalla del CMS o cerrar la pestaña se
   // perdían sin preguntar, como no pasa en las demás fichas.
-  const bloqueo = useBlocker(({ currentLocation, nextLocation }) => sinGuardar && currentLocation.pathname !== nextLocation.pathname)
+  // También al pasar a la otra pestaña, que cambia `?ver=`.
+  const bloqueo = useBlocker(({ currentLocation, nextLocation }) =>
+    sinGuardar && (currentLocation.pathname !== nextLocation.pathname || currentLocation.search !== nextLocation.search))
   useAvisoAlCerrarLaPestana(sinGuardar)
 
   // Lo del servidor pasa al formulario al pintar, no en un efecto: así no se
@@ -151,8 +155,6 @@ export default function DatosCorporacionPage() {
 
   return (
     <>
-      <Helmet><title>{`Datos de la corporación | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
-      <CabeceraSeccion titulo="Datos de la corporación" subtitulo="Cómo se os contacta: lo que enseñan el pie de la web, los textos legales, el alta y los correos." />
       <Box component="form" noValidate onSubmit={(e) => { e.preventDefault(); guardar.mutate() }}>
         <Stack spacing={3}>
           {BLOQUES.map((bloque) => (
@@ -195,6 +197,37 @@ export default function DatosCorporacionPage() {
         </Stack>
       </Box>
       <AvisoCambiosSinGuardar bloqueo={bloqueo} deQue="los datos de la corporación" />
+    </>
+  )
+}
+
+type Pestana = 'contacto' | 'marca'
+
+/**
+ * Sistema › Datos de la corporación. Contacto lo lleva Secretaría; la
+ * identidad y la marca (el nombre, los colores, el escudo), solo
+ * Administración, y por eso Secretaría no ve las pestañas. La pestaña va en la
+ * dirección (`?ver=marca`) para que «Recargar» tras guardar vuelva a ella.
+ */
+export default function DatosCorporacionPage() {
+  const esAdministracion = useAuthStore((state) => state.cms?.role === 'ADMIN')
+  const [parametros, setParametros] = useSearchParams()
+  const pestana: Pestana = esAdministracion && parametros.get('ver') === 'marca' ? 'marca' : 'contacto'
+  return (
+    <>
+      <Helmet><title>{`Datos de la corporación | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
+      <CabeceraSeccion titulo="Datos de la corporación"
+        subtitulo={esAdministracion
+          ? 'Quién sois y cómo se os contacta: lo que enseñan la web, los correos y los PDF.'
+          : 'Cómo se os contacta: lo que enseñan el pie de la web, los textos legales, el alta y los correos.'} />
+      {esAdministracion && (
+        <Tabs value={pestana} onChange={(_, v: Pestana) => setParametros(v === 'marca' ? { ver: 'marca' } : {})}
+          sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
+          <Tab value="contacto" label="Contacto" />
+          <Tab value="marca" label="Identidad y marca" />
+        </Tabs>
+      )}
+      {pestana === 'marca' ? <IdentidadYMarca /> : <Contacto />}
     </>
   )
 }

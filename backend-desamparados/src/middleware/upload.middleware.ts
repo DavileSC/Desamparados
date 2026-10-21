@@ -124,3 +124,15 @@ export function textoDeFichero(buffer: Buffer): string {
     return buffer.toString('latin1');
   }
 }
+
+/**
+ * Una imagen de la marca (Sistema → Datos de la corporación), a memoria: se
+ * convierte y se reduce antes de guardarla (shared/preparar-marca.mjs), así que
+ * no hace falta pasar por disco. 2,5 MB, por debajo de los 3 MB que nginx deja
+ * pasar a `/api/`: un escudo o una foto para compartir no necesitan más.
+ */
+export const MAX_BYTES_MARCA = 2.5 * 1024 * 1024;
+export const imagenDeMarcaMiddleware = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_BYTES_MARCA, files: 1 }
+});

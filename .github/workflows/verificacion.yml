@@ -192,22 +192,23 @@ jobs:
         run: npm run build
 
       # La web compilada no lleva los datos de ninguna corporación: index.html
-      # sale con sus marcas, y las rellena el contenedor al arrancar con
-      # scripts/instalacion-web.mjs. Aquí se hace lo mismo con el ejemplo:
-      # tiene que quedar sin ninguna marca. Si Vite dejara de conservarlas, o
-      # la plantilla usara una que la orden no conoce, el fallo saldría aquí y
-      # no en el servidor. Aquí no hay instalacion/marca: se usa la marca de
-      # partida, que tiene que acabar copiada en marca/.
-      - name: Comprobar que index.html se rellena al arrancar
+      # sale con el sitio de la cabecera, que nginx rellena (SSI) con la que
+      # escribe la API. Si Vite quitara ese comentario, la web saldría sin
+      # título ni iconos: la orden del arranque lo comprueba, y aquí se ve
+      # antes. Y la cabecera, compuesta con el ejemplo como la compone la API,
+      # tiene que quedar sin ninguna marca. Aquí no hay instalacion/marca: se
+      # usa la marca de partida, que tiene que acabar copiada en marca/.
+      - name: Comprobar index.html y lo que escribe la API
         run: |
-          grep -q '{{nombre}}' dist/index.html || { echo "::error::dist/index.html ya no lleva las marcas: ¿se han compilado los datos dentro?"; exit 1; }
+          if grep -n '{{' dist/index.html; then echo "::error::dist/index.html lleva marcas: ¿ha vuelto la cabecera a index.html?"; exit 1; fi
           # Ni las fotos de la corporación: van en instalacion/imagenes y nginx
           # las lee del montaje. Si vuelve public/images, irían en la imagen de todas.
           [ ! -e dist/images ] || { echo "::error::dist/ lleva images/: las fotos de la corporación van en instalacion/imagenes."; exit 1; }
-          node scripts/instalacion-web.mjs --plantilla dist/index.html --destino "$RUNNER_TEMP/web" --datos ../shared/datos-entidad.ejemplo.json --comprimir
-          if grep -n '{{' "$RUNNER_TEMP/web/index.html"; then echo "::error::Quedan marcas sin rellenar en index.html."; exit 1; fi
-          [ -f "$RUNNER_TEMP/web/marca/escudo-sobre-oscuro.png" ] || { echo "::error::La orden no ha copiado la marca a marca/."; exit 1; }
-          ls -l "$RUNNER_TEMP/web" "$RUNNER_TEMP/web/marca"
+          node scripts/instalacion-web.mjs --index dist/index.html --destino "$RUNNER_TEMP/web" --datos ../shared/datos-entidad.ejemplo.json
+          node scripts/instalacion-web.mjs --publicar "$RUNNER_TEMP/publico" --datos ../shared/datos-entidad.ejemplo.json --marca ../shared/marca-de-partida
+          if grep -n '{{' "$RUNNER_TEMP/publico/instalacion/cabecera.html"; then echo "::error::Quedan marcas sin rellenar en la cabecera."; exit 1; fi
+          [ -f "$RUNNER_TEMP/publico/marca/escudo-sobre-oscuro.png" ] || { echo "::error::No se ha copiado la marca a marca/."; exit 1; }
+          ls -l "$RUNNER_TEMP/web" "$RUNNER_TEMP/publico/instalacion" "$RUNNER_TEMP/publico/marca"
 
       # `npm run build` regenera la lista de páginas del sitemap desde el router
       # (shared/rutas-publicas.json, que sirve la API): si quedó desincronizada

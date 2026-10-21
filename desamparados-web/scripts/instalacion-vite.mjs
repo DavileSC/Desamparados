@@ -1,15 +1,18 @@
-// Los datos de la corporación en `npm run dev`, como los deja el contenedor de
-// la web al arrancar (scripts/instalacion-web.mjs, con las mismas funciones):
-// index.html con sus marcas rellenas y /instalacion.js, /manifest.json,
-// /robots.txt y las imágenes de /marca/ servidos al vuelo. Y las fotos de
-// /images/ (instalacion/imagenes/) y el mapa del barrio, /mapas/barrio.json
-// (instalacion/mapas/), como los `alias` de nginx. No se escribe nada en la
-// carpeta de la web, que así no lleva datos de nadie.
+// Los datos de la corporación en `npm run dev`, como los sirve nginx: la
+// cabecera de index.html (la que mete con SSI), /instalacion.js,
+// /manifest.json y las imágenes de /marca/, de lo que la API local ha escrito
+// en backend-desamparados/storage/public con lo guardado en el CMS
+// (services/marca.service.ts). Si la API aún no lo ha escrito (no se ha
+// arrancado nunca en esta máquina), se compone del fichero de la instalación
+// con las mismas funciones (shared/instalacion-publica.mjs). Y /robots.txt, las
+// fotos de /images/ (instalacion/imagenes/) y el mapa del barrio,
+// /mapas/barrio.json (instalacion/mapas/), como los `alias` de nginx. No se
+// escribe nada en la carpeta de la web, que así no lleva datos de nadie.
 //
 // Solo al servir (apply: 'serve', que incluye `vite preview`): `vite build`
-// deja las marcas sin rellenar, para que una misma web compilada sirva a
-// cualquier corporación. En el preview, el index.html de dist/ se rellena al
-// servirlo, como hace el contenedor al arrancar.
+// deja el sitio de la cabecera sin rellenar, para que una misma web compilada
+// sirva a cualquier corporación. En el preview, el index.html de dist/ se
+// rellena al servirlo, como hace nginx.
 //
 // Lo usa vite.config.ts; las pruebas no (src/test/setup.ts pone los datos).
 
@@ -18,12 +21,36 @@ import { dirname, extname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { leerDatosEntidad, rutaDeDatosEntidad } from '../../shared/datos-entidad.mjs'
 import { rutaDeMarca } from '../../shared/marca.mjs'
-import { instalacionJs, leerMarcaDe, manifest, rellenarIndex, robots } from './instalacion-web.mjs'
+import { INCLUSION_CABECERA, cabeceraHtml, instalacionJs, leerMarcaDe, manifest } from '../../shared/instalacion-publica.mjs'
+import { robots } from './instalacion-web.mjs'
 
+/**
+ * Lo que la API local publica (storage/public del backend): lo mismo que
+ * nginx monta en /srv/storage/public. Las pruebas del backend escriben en una
+ * carpeta temporal, nunca aquí.
+ */
+export const PUBLICADO_POR_LA_API = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'backend-desamparados', 'storage', 'public')
+
+/** Un fichero que ha escrito la API, o null si no lo ha escrito (o no se puede leer). */
+export function publicadoPorLaApi(relativa, carpeta = PUBLICADO_POR_LA_API) {
+  try {
+    return readFileSync(join(carpeta, relativa))
+  } catch {
+    return null
+  }
+}
+
+/** [tipo, lo que escribió la API, cómo se compone del fichero si no]. */
 const FICHEROS = {
-  '/instalacion.js': ['text/javascript; charset=utf-8', instalacionJs],
-  '/manifest.json': ['application/manifest+json; charset=utf-8', manifest],
-  '/robots.txt': ['text/plain; charset=utf-8', robots],
+  '/instalacion.js': ['text/javascript; charset=utf-8', 'instalacion/instalacion.js', instalacionJs],
+  '/manifest.json': ['application/manifest+json; charset=utf-8', 'instalacion/manifest.json', manifest],
+  '/robots.txt': ['text/plain; charset=utf-8', null, robots],
+}
+
+/** La cabecera de index.html: la que escribió la API, o compuesta del fichero. */
+const conCabecera = (html, datos, marca) => {
+  const cabecera = publicadoPorLaApi('instalacion/cabecera.html')?.toString('utf8') ?? cabeceraHtml(datos, marca)
+  return html.replace(INCLUSION_CABECERA, () => cabecera)
 }
 
 /**
@@ -127,7 +154,10 @@ export function datosDeLaInstalacion() {
   const servir = (logger) => (req, res, next) => {
     const ruta = req.url?.split('?')[0] ?? ''
     const fichero = FICHEROS[ruta]
-    if (fichero) return responder(logger, res, ...fichero)
+    if (fichero) {
+      const [tipo, publicado, componer] = fichero
+      return responder(logger, res, tipo, (d, m) => (publicado && publicadoPorLaApi(publicado)) || componer(d, m))
+    }
     if (ruta === '/mapas/barrio.json') {
       const mapa = mapaDelBarrio()
       res.statusCode = mapa ? 200 : 404
@@ -159,7 +189,9 @@ export function datosDeLaInstalacion() {
     const tipo = nombre.endsWith('.png') ? 'image/png' : 'image/jpeg'
     responder(logger, res, tipo, (_, ficheros) => {
       const imagen = Object.values(ficheros).find((f) => f?.fichero === nombre)
-      return imagen ? readFileSync(imagen.ruta) : null
+      if (!imagen) return null
+      // La que publicó la API, si la hay: es la que piden las URL de su cabecera.
+      return publicadoPorLaApi(`marca/${imagen.fichero}`) ?? readFileSync(imagen.ruta)
     })
   }
 
@@ -170,7 +202,7 @@ export function datosDeLaInstalacion() {
     return (req, res, next) => {
       const ruta = req.url?.split('?')[0]
       if (!['GET', 'HEAD'].includes(req.method ?? '') || (ruta !== '/' && ruta !== '/index.html')) return next()
-      responder(server.config.logger, res, 'text/html; charset=utf-8', (d, m) => rellenarIndex(readFileSync(index, 'utf8'), d, m))
+      responder(server.config.logger, res, 'text/html; charset=utf-8', (d, m) => conCabecera(readFileSync(index, 'utf8'), d, m))
     }
   }
 
@@ -188,6 +220,10 @@ export function datosDeLaInstalacion() {
       // La carpeta de la marca, aunque aún no exista: al crearla, se ve.
       server.watcher.add(ruta)
       if (carpetaMarca) server.watcher.add(carpetaMarca)
+      // Y lo que escribe la API al guardar en el CMS: el nombre o el escudo
+      // nuevos se ven sin recargar a mano.
+      const publicado = join(PUBLICADO_POR_LA_API, 'instalacion')
+      server.watcher.add(publicado)
       const enMarca = (cambiado) => carpetaMarca !== null && (resolve(cambiado) === carpetaMarca || resolve(cambiado).startsWith(carpetaMarca + sep))
       // También al borrarlo o al volver a crearlo: un editor que guarda
       // escribiendo uno nuevo y renombrándolo no siempre da «change». Con la
@@ -196,7 +232,7 @@ export function datosDeLaInstalacion() {
         if (!['add', 'change', 'unlink', 'addDir', 'unlinkDir'].includes(evento)) return
         if (resolve(cambiado) === ruta) datos = null
         else if (enMarca(cambiado)) marca = null
-        else return
+        else if (!resolve(cambiado).startsWith(publicado + sep)) return
         server.ws.send({ type: 'full-reload' })
       })
       // Sin devolver función: va antes que los de Vite, que si no darían la
@@ -216,7 +252,7 @@ export function datosDeLaInstalacion() {
     transformIndexHtml: {
       // Antes que Vite: si no, intentaría resolver el og:image con la marca.
       order: 'pre',
-      handler: (html) => rellenarIndex(html, ...alDia()),
+      handler: (html) => conCabecera(html, ...alDia()),
     },
   }
 }

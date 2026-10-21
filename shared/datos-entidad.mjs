@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url'
 // Lo importa también el arranque del contenedor de nginx: docker/web.Dockerfile
 // tiene que copiar este módulo junto a datos-entidad.mjs.
 import { avisosDeMarca } from './colores-de-marca.mjs'
+import { unirTitulares } from './titulares.mjs'
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -147,9 +148,23 @@ export function validarDatosEntidad(crudo) {
   }
 
   const i = grupo('identidad', crudo.identidad, [
-    'nombre', 'nombreCorto', 'tipo', 'tipoCorto', 'articulo', 'titular', 'localidad', 'dominio', 'descripcion',
+    'nombre', 'nombreCorto', 'tipo', 'tipoCorto', 'articulo', 'titular', 'titulares', 'localidad', 'dominio', 'descripcion',
     'denominacion', 'domicilio', 'normas',
   ])
+  // Uno («titular», como el fichero de siempre) o varios («titulares», una
+  // lista en orden, el principal primero); no los dos, que no se sabría cuál vale.
+  let titulares = []
+  if (i.titular !== undefined && i.titulares !== undefined) {
+    errores.push('identidad: lleva «titular» y «titulares»; deja solo uno (con varios, «titulares»: ["…", "…"]).')
+  } else if (i.titulares !== undefined) {
+    if (!Array.isArray(i.titulares) || i.titulares.length === 0) {
+      errores.push('identidad.titulares: tiene que ser una lista con al menos uno, como ["Nuestro Padre Jesús…", "María Santísima…"].')
+    } else {
+      titulares = i.titulares.map((t, n) => texto(`identidad.titulares[${n}]`, t))
+    }
+  } else {
+    titulares = [texto('identidad.titular', i.titular)]
+  }
   const articulo = texto('identidad.articulo', i.articulo)
   if (articulo && !ARTICULOS.includes(articulo)) {
     errores.push(`identidad.articulo: tiene que ser el, la, los o las, en minúscula (está puesto «${articulo}»).`)
@@ -168,7 +183,8 @@ export function validarDatosEntidad(crudo) {
     tipo: texto('identidad.tipo', i.tipo),
     tipoCorto: texto('identidad.tipoCorto', i.tipoCorto),
     articulo,
-    titular: texto('identidad.titular', i.titular),
+    titulares,
+    titular: unirTitulares(titulares),
     localidad: texto('identidad.localidad', i.localidad),
     dominio: texto('identidad.dominio', i.dominio, DOMINIO, 'tiene que ser del tipo www.ejemplo.com, sin https:// ni barra al final'),
     descripcion: texto('identidad.descripcion', i.descripcion),

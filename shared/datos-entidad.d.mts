@@ -12,6 +12,9 @@ export interface Identidad {
   tipo: string
   tipoCorto: string
   articulo: Articulo
+  /** Uno o varios, en orden; el primero es el principal. */
+  titulares: string[]
+  /** Los titulares unidos («A y B»), para membretes y frases. Sale de `titulares`. */
   titular: string
   localidad: string
   dominio: string

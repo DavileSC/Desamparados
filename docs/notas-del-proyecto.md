@@ -164,16 +164,25 @@ reproducibles. Por razones distintas:
 **Tras el pull de la etapa 4 de la Fase 8**, el escudo y los iconos ya no
 están en git: hay que ponerlos en `instalacion/marca/` (§13 dice cómo).
 
-**La plantilla no se edita pensando en que la rellene `vite build`.** El
-`index.html` de `dist/` sale con las marcas y lo rellena
-`scripts/instalacion-web.mjs` al arrancar el contenedor. Dos trampas que
-costaron verlas:
+**La cabecera de `index.html` no está en `index.html`.** Título, iconos, Open
+Graph y JSON-LD viven en `shared/cabecera.plantilla.html`; la API la rellena
+con lo guardado en el CMS y la escribe en `storage/public/instalacion/`, y
+nginx la mete con SSI donde `index.html` dice `<!--# include virtual="/_cabecera" -->`
+(en desarrollo, el plugin de Vite). Trampas:
 
-- **`gzip_static` sirve el `.gz` que encuentra al lado.** El build comprimía
-  todo `dist/`, también `index.html`: el navegador habría recibido la
-  plantilla con `{{nombre}}` aunque el `index.html` de al lado estuviera
-  relleno. Por eso el `find … gzip` de `web.Dockerfile` excluye `index.html`
-  y la orden escribe su `.gz` (`--comprimir`).
+- **`gzip_static` sirve el `.gz` que encuentra al lado, sin pasar por el
+  SSI.** Un `index.html.gz` en `dist/` saldría sin cabecera (el comentario
+  tal cual). Por eso el `find … gzip` de `web.Dockerfile` excluye
+  `index.html`, que se comprime al vuelo.
+- **El SSI solo se hace en `location = /index.html`.** El reenvío de la SPA
+  (`try_files … /index.html`) y el `index` de `/` llegan ahí por redirección
+  interna; una `location` nueva que sirva `index.html` de otra forma tiene que
+  llevar `ssi on`, o saldrá sin título. Y lo mismo en `sitio-local.conf`, que
+  no incluye `ubicaciones.conf`.
+- **La web arranca después de la API** (`depends_on: service_healthy`): la API
+  publica antes de escuchar, así que cuando nginx sirve la primera página la
+  cabecera ya existe. Sin ella, el SSI deja un «[an error occurred…]» en el
+  `<head>`.
 - **El entrypoint de nginx solo lanza `/docker-entrypoint.d/` si el CMD
   empieza por `nginx`.** Con el `sh -c "while …; exec nginx"` de antes, el
   guion de los datos no se habría ejecutado nunca y la web habría salido sin
@@ -738,8 +747,28 @@ código:
 correo. Un `.webp` renombrado a `.png` es un error al arrancar (se leen los
 bytes, no la extensión): hay que convertirlo.
 
-**Lo que copia el arranque va en 0644, y lo de la instalación también tiene
-que poder leerse.** `instalacion-web.mjs` copia la marca a `dist/marca/` con
+**Desde el 21-10-2026 la marca se cambia en el CMS** (Sistema → Datos de la
+corporación → «Identidad y marca»): `instalacion/marca/` y el grupo `marca` del
+fichero solo siembran el primer arranque de la API, que los copia a
+`storage/marca/` (las subidas) y a la base (`corporacion_marca`, con la
+identidad). Lo de abajo sigue valiendo para esa semilla. Lo que no se ve:
+
+- **Lo que se copió al cargar un módulo no cambia solo.** `identidad`,
+  `coloresDeMarca`, `FICHEROS_MARCA`, `IMAGENES_MARCA` e `IMPRENTA` se cambian
+  en su sitio; quien haga una copia (los colores exportados de
+  `informes/pdf.ts`, el escudo de los correos, las palabras prohibidas en las
+  contraseñas) se apunta a `alCambiarLaMarca` y la rehace. Los colores de
+  `pdf.ts` son `export let` a propósito: quien los importa ve el nuevo.
+- **La web lee la identidad y la marca una vez, al cargar la página**
+  (`window.__INSTALACION__`, el tema): tras guardar, la pestaña abierta sigue
+  con lo de antes hasta recargar, y la pantalla lo dice.
+- **Las pruebas del backend publican en una carpeta temporal**
+  (`fixtures/almacen-temporal.ts`): una que llame a `MarcaService` sin ella
+  escribiría la cabecera del ejemplo en el `storage/public` de desarrollo, y
+  Vite la serviría.
+
+**Lo que se publica va en 0644, y lo de la instalación también tiene
+que poder leerse.** La API publica la marca en `storage/public/marca/` con
 `chmod 0644` explícito (el `mode` de `writeFileSync` pasa por la umask): si
 conservara el modo de un original en 640, como `datos-entidad.json` en el VPS,
 nginx (que corre con su propio usuario) daría 403. La API, en cambio, lee

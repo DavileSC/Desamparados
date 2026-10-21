@@ -215,18 +215,18 @@ for _ in $(seq 1 60); do
 done
 compose ps
 
-# La web escribe sus datos al arrancar (/instalacion.js, index.html…) y, con un
-# dato o una imagen de la marca que no sirven, sale y el compose la reintenta
-# en bucle sin que nada lo diga. Sin certificado, nginx no arranca: no se mira.
+# La web escribe robots.txt al arrancar y, con un dato del fichero que no
+# sirve, sale y el compose la reintenta en bucle sin que nada lo diga. Y tiene
+# que ver lo que publica la API en storage/public (/instalacion.js…). Sin certificado, nginx no arranca: no se mira.
 if [[ "$CERTIFICADO" -eq 1 ]]; then
   WEB=0
   for _ in $(seq 1 15); do
-    if compose exec -T web test -s /var/www/desamparados/dist/instalacion.js 2>/dev/null; then WEB=1; break; fi
+    if compose exec -T web test -s /var/www/desamparados/dist/robots.txt -a -s /srv/storage/public/instalacion/instalacion.js 2>/dev/null; then WEB=1; break; fi
     sleep 2
   done
   if [[ "$WEB" -ne 1 ]]; then
     compose logs --no-color --tail 40 web >&2 || true
-    fallo "La web no ha arrancado (mira el registro de arriba: ¿un dato de $DATOS o una imagen de instalacion/marca/ mal puestos?). Corrígelo y vuelve a lanzar el guion."
+    fallo "La web no ha arrancado (mira el registro de arriba: ¿un dato de $DATOS mal puesto, o storage/public sin montar?). Corrígelo y vuelve a lanzar el guion."
   fi
 fi
 

@@ -100,6 +100,7 @@ const ACCIONES: Record<string, string> = {
   INFORME_ANUAL_ACTUALIZAR: 'Escribir en el Informe anual',
   RETABLO_ACTUALIZAR: 'Cambiar la foto del retablo del Inicio',
   CORPORACION_ACTUALIZAR: 'Cambiar los datos de contacto de la corporación',
+  MARCA_ACTUALIZAR: 'Cambiar el nombre, los colores o una imagen de la corporación',
   MENU_NOMBRES_ACTUALIZAR: 'Cambiar el nombre de una página en el menú',
   WEB_ABRIR: 'Abrir la web al público',
   WEB_CERRAR: 'Cerrar la web («Próximamente»)',

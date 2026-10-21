@@ -805,23 +805,32 @@ Quién los lee:
 - **La API**, al arrancar: `shared/datos-entidad.mjs` los busca, y el compose
   los monta en el contenedor (`./instalacion`, de solo lectura). La imagen de
   la API no los lleva.
-- **La web**, al arrancar su contenedor, del mismo montaje
-  (`./instalacion:/app/instalacion:ro`). La web compilada no los lleva: hay
-  **una sola imagen para todas las corporaciones**. Al arrancar,
-  `docker/nginx/40-instalacion.sh` escribe con
-  `desamparados-web/scripts/instalacion-web.mjs` el `index.html` relleno (con
-  su `.gz`), el manifest, `robots.txt` y `/instalacion.js`, que deja la
-  identidad y la marca en `window.__INSTALACION__` para la web
-  (`src/config/instalacion.ts`). Si `/instalacion.js` no llega, la web no se
-  monta y enseña un aviso. En `npm run dev`, lo mismo lo sirve el plugin de
-  Vite (`scripts/instalacion-vite.mjs`), sin escribir nada en la carpeta; el
-  build no los necesita.
-- **nginx**, al arrancar el contenedor de la web: el dominio, en el sitio de
-  producción. Si el compose monta otro sitio encima (`sitio-tras-proxy.conf`
-  en el VPS, `sitio-local.conf` en local), no se toca.
+- **La web**, de lo que escribe la API. La web compilada no los lleva: hay
+  **una sola imagen para todas las corporaciones**. La API, al arrancar y cada
+  vez que se cambian en el CMS, escribe en `storage/public/instalacion/`
+  `/instalacion.js` (que deja la identidad y la marca en
+  `window.__INSTALACION__` para la web, `src/config/instalacion.ts`), el
+  manifest y la cabecera de `index.html` (título, iconos, vista previa al
+  compartir), y nginx los sirve de ahí y mete la cabecera con SSI. Si
+  `/instalacion.js` no llega, la web no se monta y enseña un aviso. En `npm run
+  dev`, el plugin de Vite (`scripts/instalacion-vite.mjs`) sirve lo que haya
+  escrito la API local o, si no, lo compone del fichero; el build no los
+  necesita.
+- **El contenedor de la web**, al arrancar, del mismo montaje
+  (`./instalacion:/app/instalacion:ro`): `docker/nginx/40-instalacion.sh`
+  comprueba el fichero y escribe `robots.txt` y el sitio de producción con el
+  dominio. Si el compose monta otro sitio encima (`sitio-tras-proxy.conf` en
+  el VPS, `sitio-local.conf` en local), no se toca.
 
-**Cambiar los datos ya no pide construir nada**: se cambia el fichero y se
-reinicia lo que los lee:
+**La identidad (el nombre, el tipo, la descripción, los datos legales) y la
+marca, el fichero solo las siembra**: la primera vez que arranca la API pasan a
+la base y a `storage/marca/`, y desde entonces se cambian en Sistema → «Datos de
+la corporación» → «Identidad y marca», como el contacto. Cambiarlas en el
+fichero ya no hace nada (la API lo dice en el registro). El dominio y los
+módulos de instalación sí se siguen leyendo del fichero.
+
+**Cambiar el fichero no pide construir nada**: se cambia y se reinicia lo que
+lo lee:
 
 ```bash
 docker compose -f compose.yaml -f compose.servidor.yaml restart api web
@@ -856,17 +865,27 @@ mantiene, encargado. Plantilla y cómo rellenarla en
 
 ### La marca
 
-Lo que hace reconocible a cada corporación sin tocar el código: **dos colores**,
-en el fichero de datos, y **unas imágenes** (el escudo, los iconos, la imagen de
-compartir y la de los correos), en `instalacion/marca/`. Las dos cosas viven
-fuera de git y fuera de las imágenes de Docker, como `datos-entidad.json`: una
-sola imagen sirve a cualquier corporación y un `git pull` no choca con la marca
-de nadie.
+Lo que hace reconocible a cada corporación sin tocar el código: **dos colores**
+y **unas imágenes** (el escudo, los iconos, la imagen de compartir y la de los
+correos). Viven fuera de git y fuera de las imágenes de Docker: una sola imagen
+sirve a cualquier corporación y un `git pull` no choca con la marca de nadie.
 
-Sin marca no se rompe nada: la web, los PDF y los correos salen con la **marca
-de partida** (`shared/marca-de-partida/`): el burdeos y el oro de siempre y un
-escudo genérico (un contorno de escudo con filete, sin símbolos). El arranque
-avisa de lo que falta.
+**Se cambian desde el CMS**: Sistema → «Datos de la corporación» → «Identidad y
+marca», solo Administración. Ahí se suben las imágenes (cualquier PNG, JPEG o
+WebP: la API las pasa al formato y la medida de su sitio y saca del escudo
+sobre oscuro los cuatro iconos) y se eligen los colores, con una muestra y el
+aviso de contraste antes de guardar. Se aplica al momento a los correos y los
+PDF, y la web lo enseña en la siguiente página que se abra: no se reinicia
+nada. Las imágenes subidas viven en `storage/marca/` (entran en la copia de
+seguridad con el resto de `storage/`) y lo que sirve nginx, en
+`storage/public/marca/`.
+
+**Lo de abajo (el grupo `marca` del fichero y `instalacion/marca/`) solo
+siembra la primera vez**: es la forma de llegar con la marca ya puesta a una
+instalación nueva. Si la primera vez no hay nada, se usa la **marca de
+partida** (`shared/marca-de-partida/`): el burdeos y el oro de siempre y un
+escudo genérico (un contorno de escudo con filete, sin símbolos), y luego se
+sube la buena desde el CMS.
 
 #### Los colores
 
@@ -919,12 +938,12 @@ pinta WebP.
 Las subcarpetas (`originales/`, para guardar los ficheros de partida del
 cliente) y los ficheros que empiezan por `.` se ignoran.
 
-**Errores y avisos.** Lo comprueban al arrancar la web (`instalacion-web.mjs`,
-desde `40-instalacion.sh`) y la API (`src/domain/marca.ts`), con la misma
-lectura (`shared/marca.mjs`).
+**Errores y avisos.** Lo comprueba la API al arrancar (`src/domain/marca.ts`,
+con `shared/marca.mjs`); al subir desde el CMS, las mismas reglas dicen por qué
+no sirve una imagen.
 
-- **Error: no arranca ni la web ni la API**, con el fichero y el motivo en
-  `docker compose logs web api`. Un fichero que **está pero no sirve**: no es
+- **Error: no arranca la API**, con el fichero y el motivo en
+  `docker compose logs api`. Un fichero que **está pero no sirve**: no es
   PNG ni JPEG, o es de un formato con la extensión de otro (un WebP renombrado
   a `.png`: cambiar la extensión no basta, hay que convertirlo); está cortado o
   roto; no se puede leer (permisos: ver abajo); un icono sin su medida exacta;
@@ -942,6 +961,8 @@ Un PNG entrelazado no es error: PDFKit lo lee bien (hay prueba que lo compara).
 
 #### Preparar los ficheros: `npm run marca`
 
+Para sembrar una instalación nueva sin pasar por el CMS; desde el CMS no hace
+falta, la API hace lo mismo al subir (`shared/preparar-marca.mjs`).
 `desamparados-web/scripts/preparar-marca.mjs`. Usa `sharp` del backend (no es
 dependencia de la web), así que pide `npm install` en `backend-desamparados/`.
 Desde la raíz, las rutas son relativas a donde se lanza:
@@ -967,10 +988,10 @@ exportar en JPEG); el escudo sobre claro y el destacado, también.
 
 #### Permisos
 
-El arranque copia la marca a `dist/marca/` del contenedor de la web, siempre
-en `0644`, y nginx la sirve desde ahí; la API la lee del montaje, como el
-usuario `node`. Aun así, **los ficheros de `instalacion/marca/` tienen que poder
-leerlos otros usuarios**: en `0644`, y la carpeta en `755`. No copiarlos como
+La API publica la marca en `storage/public/marca/`, siempre en `0644`, y nginx
+la sirve desde ahí; la semilla la lee del montaje, como el usuario `node`. Aun
+así, **los ficheros de `instalacion/marca/` tienen que poder leerlos otros
+usuarios**: en `0644`, y la carpeta en `755`. No copiarlos como
 `datos-entidad.json` (`-m 640`): la API no podría leerlos y no arrancaría
 («no se puede leer (EACCES)… chmod 644»).
 
@@ -984,23 +1005,16 @@ binarios. `cp` o `copy`, o Git Bash.
 
 #### Aplicar un cambio
 
-Nada se construye: se cambian los ficheros (o los colores) y se reinicia lo
-que los lee. Las dos los leen al arrancar.
+Desde el CMS, al guardar o al subir. `instalacion/marca/` y el grupo `marca`
+del fichero ya no cambian nada tras la primera vez: para volver a sembrar
+desde ellos habría que borrar la fila `corporacion_marca` de `Configuracion` y
+la carpeta `storage/marca/`, y reiniciar la API.
+
+En el CMS se ve qué imagen es propia y cuál de partida. En el registro:
 
 ```bash
-sudo docker compose -f compose.yaml -f compose.servidor.yaml restart web api
-# o, si cambió también el compose: … up -d --force-recreate web api
+sudo docker compose -f compose.yaml -f compose.servidor.yaml logs api | grep -i marca
 ```
-
-Para ver de dónde sale cada imagen:
-
-```bash
-sudo docker compose -f compose.yaml -f compose.servidor.yaml logs web api | grep -i marca
-```
-
-La web dice `[marca] <fichero>: de la instalación` o `de la marca de partida`
-por fichero; la API, una línea `[Marca] escudo sobre claro: … · escudo
-destacado: … · cabecera de los correos: …`.
 
 **Caché.** nginx sirve `/marca/` con una semana de caché, pero cada URL lleva
 `?v=` con los 8 primeros caracteres del sha256 del fichero, e `index.html` no
@@ -1038,8 +1052,13 @@ ls -l /srv/desamparados/instalacion/marca
 ```
 
 `*.*` deja fuera `originales/`, que no hace falta en el servidor. Tras el
-despliegue, el `grep -i marca` de arriba tiene que decir «de la instalación»
-en los nueve ficheros y ningún «Falta …».
+despliegue, el `grep -i marca` de arriba no tiene que decir ningún «Falta …».
+
+**Con la identidad y la marca en el CMS (octubre de 2026), basta con que esto
+esté hecho antes del primer arranque de esa versión**: la API copia entonces
+`instalacion/marca/` a `storage/marca/` y la identidad y los colores del
+fichero a la base. En el VPS de pruebas ya lo está; en una instalación nueva,
+se hace antes de `instalar.sh`.
 
 ### Las fotos de la corporación
 

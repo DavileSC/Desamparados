@@ -152,19 +152,19 @@ if [[ -z "$estado" ]]; then
 fi
 
 if [[ "$estado" == "healthy" ]]; then
-  # La web escribe sus datos al arrancar (/instalacion.js, index.html…) y, con
-  # un dato o una imagen de la marca que no sirven, sale y el compose la
-  # reintenta en bucle sin que nada lo diga.
+  # La web escribe robots.txt al arrancar y, con un dato del fichero que no
+  # sirve, sale y el compose la reintenta en bucle sin que nada lo diga. Y
+  # tiene que ver lo que publica la API en storage/public (/instalacion.js…).
   log "Comprobando la web…"
   for _ in $(seq 1 15); do
-    if compose exec -T web test -s /var/www/desamparados/dist/instalacion.js 2>/dev/null; then
+    if compose exec -T web test -s /var/www/desamparados/dist/robots.txt -a -s /srv/storage/public/instalacion/instalacion.js 2>/dev/null; then
       log "Hecho: $DESPUES en marcha."
       exit 0
     fi
     sleep 2
   done
   compose logs --no-color --tail 40 web >&2 || true
-  fallo "La API está sana, pero la web no arranca (mira el registro de arriba: ¿un dato de instalacion/datos-entidad.json o una imagen de instalacion/marca/ mal puestos?). Corrígelo y «docker compose restart web»: la base no tiene nada que ver."
+  fallo "La API está sana, pero la web no arranca (mira el registro de arriba: ¿un dato de instalacion/datos-entidad.json mal puesto, o storage/public sin montar?). Corrígelo y «docker compose restart web»: la base no tiene nada que ver."
 fi
 
 compose ps >&2

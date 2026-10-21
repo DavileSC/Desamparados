@@ -35,8 +35,9 @@ import type { DatosCrudos } from '../src/domain/datos-areas.js';
 const HERMANDAD: Identidad = {
   nombre: 'Hermandad de la Vera Cruz', nombreCorto: 'Vera Cruz',
   tipo: 'Hermandad', tipoCorto: 'Hermandad', articulo: 'la',
-  titular: 'Nuestro Padre Jesús de la Vera Cruz', localidad: 'Sevilla',
+  titulares: ['Nuestro Padre Jesús de la Vera Cruz'], titular: 'Nuestro Padre Jesús de la Vera Cruz', localidad: 'Sevilla',
   dominio: 'www.veracruz.ejemplo', descripcion: 'Hermandad de ejemplo, para las pruebas.',
+  denominacion: null, domicilio: null, normas: null,
 };
 
 /** Ninguno de los textos que nombran la corporación puede decir «Grupo». */
@@ -144,8 +145,9 @@ describe('el doble factor', () => {
 const COFRADIAS: Identidad = {
   nombre: 'Cofradías Fusionadas de Málaga', nombreCorto: 'Fusionadas',
   tipo: 'Cofradías Fusionadas', tipoCorto: 'Cofradías', articulo: 'las',
-  titular: 'Santísimo Cristo de la Columna', localidad: 'Málaga',
+  titulares: ['Santísimo Cristo de la Columna'], titular: 'Santísimo Cristo de la Columna', localidad: 'Málaga',
   dominio: 'www.fusionadas.ejemplo', descripcion: 'Cofradías de ejemplo, para las pruebas.',
+  denominacion: null, domicilio: null, normas: null,
 };
 
 describe('una corporación en plural', () => {

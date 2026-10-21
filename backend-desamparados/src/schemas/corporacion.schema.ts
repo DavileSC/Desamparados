@@ -33,3 +33,39 @@ export const corporacionSchema = type({
     privacidad: { emailDerechos: correo },
   },
 });
+
+// La identidad, con las reglas del fichero de la instalación
+// (shared/datos-entidad.mjs): lo obligatorio no puede ir vacío, y lo pendiente
+// (denominación, domicilio, normas) vacío es null y su apartado no sale.
+const obligatorio = (max: number) => type('string').pipe((v) => v.trim()).to(`0 < string <= ${max}`);
+const enlaceObligatorio = type('string').pipe((v) => v.trim())
+  .narrow((v, ctx) => /^https:\/\/\S+$/.test(v) || ctx.mustBe('una dirección que empiece por https://'))
+  .to('string <= 300');
+const color = type('string').pipe((v) => v.trim().toLowerCase())
+  .narrow((v, ctx) => v === '' || /^#[0-9a-f]{6}$/.test(v) || ctx.mustBe('un color #rrggbb, como #6e1822'))
+  .pipe((v) => v || null).or('null');
+
+/** Sistema → Datos de la corporación → Identidad y marca: el nombre y los colores. Las imágenes van una a una. */
+export const identidadSchema = type({
+  body: {
+    identidad: {
+      nombre: obligatorio(160),
+      nombreCorto: obligatorio(40),
+      tipo: obligatorio(60),
+      tipoCorto: obligatorio(40),
+      articulo: "'el' | 'la' | 'los' | 'las'",
+      titulares: obligatorio(160).array().atLeastLength(1).atMostLength(6),
+      localidad: obligatorio(80),
+      descripcion: obligatorio(300),
+      denominacion: texto(240),
+      domicilio: texto(200),
+      normas: type({ titulo: obligatorio(160), url: enlaceObligatorio }).or('null'),
+    },
+    colores: { colorPrincipal: color, colorAcento: color },
+  },
+});
+
+/** Qué imagen se sube o se quita: los iconos no, salen del escudo sobre oscuro. */
+export const imagenDeMarcaSchema = type({
+  params: { clave: "'escudoSobreOscuro' | 'escudoSobreClaro' | 'escudoDestacado' | 'compartir' | 'correoCabecera'" },
+});

@@ -104,6 +104,12 @@ export declare function leerCabeceraImagen(buffer: Uint8Array): CabeceraImagen |
  * fija la propia prueba.
  */
 export declare function rutaDeMarca(entorno?: Readonly<Record<string, string | undefined>>): string | null
+/** Una imagen suelta contra su entrada del catálogo (la que se sube desde el CMS). `cabecera` null: no sirve. */
+export declare function comprobarImagenDeMarca(clave: ClaveMarca, bytes: Uint8Array): {
+  cabecera: CabeceraImagen | null
+  errores: string[]
+  avisos: string[]
+}
 /** `carpeta` null: solo la partida, sin avisos. `partida`: por defecto CARPETA_PARTIDA. */
 export declare function resolverMarca(opciones?: { carpeta?: string | null; partida?: string }): ResolucionMarca
 /** `resolverMarca({ carpeta: rutaDeMarca(entorno) })`; lanza con todos los errores y avisa por consola. */

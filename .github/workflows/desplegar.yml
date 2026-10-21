@@ -112,7 +112,7 @@ jobs:
       # producción, que necesita un certificado cualquiera para arrancar.
       #
       # Con `nginx` como orden, el entrypoint de la imagen pasa antes por
-      # 40-instalacion.sh, como en el servidor: escribe la web y el sitio de
+      # 40-instalacion.sh, como en el servidor: comprueba la web y escribe el sitio de
       # producción con los datos montados. Aquí, los de la corporación de ejemplo.
       - name: nginx -t
         run: |
@@ -131,14 +131,21 @@ jobs:
           docker run --rm -v "$datos" -v "$PWD/certs:/etc/letsencrypt:ro" "$imagen" nginx -t
 
       # La web arrancada como en el servidor: lo que sirve tiene que llevar los
-      # datos montados y ninguna marca de la plantilla (también comprimido, que
-      # es lo que manda gzip_static), y /instalacion.js no se puede quedar en
-      # la caché del navegador. Con unas fotos de la instalación montadas
-      # (instalacion/imagenes), en 644/755 como en el servidor.
+      # datos y ninguna marca de la plantilla (también comprimido), y
+      # /instalacion.js no se puede quedar en la caché del navegador. Aquí no
+      # hay API: lo que ella escribe en storage/public (instalacion/ y marca/)
+      # lo escribe antes la misma orden con el ejemplo y la marca de partida, y
+      # se monta donde en el servidor; index.html lleva su cabecera por SSI.
+      # Con unas fotos de la instalación montadas (instalacion/imagenes), en
+      # 644/755 como en el servidor.
       - name: Prueba de humo
         run: |
           imagen="$REGISTRO-web:$GITHUB_SHA"
           nombre=$(node -p "require('./shared/datos-entidad.ejemplo.json').identidad.nombre")
+          publico=$(mktemp -d)
+          node desamparados-web/scripts/instalacion-web.mjs --publicar "$publico" \
+            --datos shared/datos-entidad.ejemplo.json --marca shared/marca-de-partida
+          chmod -R a+rX "$publico"
           fotos=$(mktemp -d)
           mkdir "$fotos/cabeceras"
           cp shared/marca-de-partida/icono-192.png "$fotos/cabeceras/prueba.png"
@@ -151,6 +158,7 @@ jobs:
             -v "$PWD/shared/datos-entidad.ejemplo.json:/app/instalacion/datos-entidad.json:ro" \
             -v "$fotos:/app/instalacion/imagenes:ro" \
             -v "$mapas:/app/instalacion/mapas:ro" \
+            -v "$publico:/srv/storage/public:ro" \
             -v "$PWD/docker/nginx/sitio-tras-proxy.conf:/etc/nginx/conf.d/desamparados.conf:ro" \
             "$imagen" >/dev/null
           trap 'docker logs web-humo; docker rm -f web-humo >/dev/null' EXIT
@@ -160,7 +168,7 @@ jobs:
             if ! cuerpo=$(curl -fsS --compressed "http://127.0.0.1:8099$ruta"); then
               echo "::error::$ruta no responde."; mal=1; continue
             fi
-            if printf '%s' "$cuerpo" | grep -q '{{'; then echo "::error::$ruta lleva marcas sin rellenar."; mal=1; fi
+            if printf '%s' "$cuerpo" | grep -q '{{\|<!--#'; then echo "::error::$ruta lleva marcas sin rellenar o el SSI sin hacer."; mal=1; fi
             case "$ruta" in
               /robots.txt) esperado="Sitemap: https://$(node -p "require('./shared/datos-entidad.ejemplo.json').identidad.dominio")/sitemap.xml" ;;
               *) esperado="$nombre" ;;
@@ -169,10 +177,14 @@ jobs:
           done
           curl -fsSI http://127.0.0.1:8099/instalacion.js | grep -qi '^cache-control: no-cache' \
             || { echo "::error::/instalacion.js sin Cache-Control: no-cache."; mal=1; }
-          # La marca: aquí no hay carpeta montada, así que es la de partida. El
-          # escudo, los iconos del manifest y el og:image tienen que servirse
-          # como imágenes (sin /marca/ en la imagen, el reenvío de la SPA daría
-          # la portada con un 200 y nadie lo notaría).
+          # Una ruta de la web también lleva la cabecera: va por el reenvío de
+          # la SPA a index.html, que es donde se hace el SSI.
+          curl -fsS --compressed http://127.0.0.1:8099/actualidad/noticias | grep -qF "<title>$nombre" \
+            || { echo "::error::Una ruta de la SPA sale sin la cabecera."; mal=1; }
+          # La marca: la de partida, que es la publicada. El escudo, los iconos
+          # del manifest y el og:image tienen que servirse como imágenes (si
+          # /marca/ cayera en el reenvío de la SPA, daría la portada con un 200
+          # y nadie lo notaría).
           es_imagen() {
             tipo=$(curl -fsS -o /dev/null -w '%{content_type}' "http://127.0.0.1:8099$1") \
               && case "$tipo" in image/png|image/jpeg) true ;; *) false ;; esac \
@@ -217,30 +229,6 @@ jobs:
             codigo=$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:8098$ruta")
             [ "$codigo" = 404 ] || { echo "::error::Sin montaje, $ruta da $codigo y no 404."; mal=1; }
           done
-          exit "$mal"
-
-      # La marca montada, como en el servidor (instalacion/marca): se usan sus
-      # ficheros y no los de partida. Aquí se monta la propia marca de partida,
-      # que basta para ver que el montaje se lee. Y una marca con un fichero
-      # que no es lo que dice su nombre impide arrancar y lo dice.
-      - name: Prueba de humo de la marca
-        run: |
-          imagen="$REGISTRO-web:$GITHUB_SHA"
-          datos="$PWD/shared/datos-entidad.ejemplo.json:/app/instalacion/datos-entidad.json:ro"
-          sitio="$PWD/docker/nginx/sitio-tras-proxy.conf:/etc/nginx/conf.d/desamparados.conf:ro"
-          mal=0
-          salida=$(docker run --rm -v "$datos" -v "$sitio" -v "$PWD/shared/marca-de-partida:/app/instalacion/marca:ro" "$imagen" nginx -t 2>&1) \
-            || { echo "$salida"; echo "::error::Con la marca montada, la web no arranca."; mal=1; }
-          printf '%s\n' "$salida" | grep -q '\[marca\] escudo-sobre-oscuro.png: de la instalación' \
-            || { echo "$salida"; echo "::error::Con la marca montada, no se usa su escudo."; mal=1; }
-          rota=$(mktemp -d)
-          echo 'esto no es un PNG' > "$rota/escudo-sobre-oscuro.png"
-          chmod 755 "$rota" && chmod 644 "$rota/escudo-sobre-oscuro.png"
-          if salida=$(docker run --rm -v "$datos" -v "$sitio" -v "$rota:/app/instalacion/marca:ro" "$imagen" nginx -t 2>&1); then
-            echo "$salida"; echo "::error::Con un escudo que es un texto, la web arranca igual."; mal=1
-          fi
-          printf '%s\n' "$salida" | grep -q 'escudo-sobre-oscuro.png: no es una imagen PNG' \
-            || { echo "$salida"; echo "::error::Con un escudo que es un texto, no dice qué fichero falla."; mal=1; }
           exit "$mal"
 
   desplegar:

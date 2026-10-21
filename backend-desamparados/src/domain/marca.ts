@@ -1,6 +1,7 @@
 import { leerMarca, type FicheroMarca, type FicherosMarca } from '../../../shared/marca.mjs';
 import { paletaDeImprenta, type PaletaDeImprenta } from '../../../shared/colores-de-marca.mjs';
-import { coloresDeMarca } from './datos-entidad.js';
+import type { Marca } from '../../../shared/datos-entidad.mjs';
+import { aplicarIdentidad, avisarCambioDeMarca, coloresDeMarca, type IdentidadEditable } from './datos-entidad.js';
 
 /**
  * La marca de esta instalación en los PDF y en los correos: qué escudo sale en
@@ -12,8 +13,22 @@ import { coloresDeMarca } from './datos-entidad.js';
  * que está pero no sirve (otro formato, roto, ilegible) lanza aquí y la API no
  * arranca: index.ts lo importa antes que nada para decirlo pronto, y no al
  * imprimir la primera papeleta. Lo que solo es flojo se avisa por consola.
+ *
+ * Eso es hasta que la API lee lo guardado en el CMS: desde entonces manda la
+ * carpeta storage/marca/ (services/marca.service.ts), y `aplicarMarca` cambia
+ * estos objetos en su sitio, como `identidad`.
  */
-export const FICHEROS_MARCA: FicherosMarca = leerMarca();
+export const FICHEROS_MARCA: FicherosMarca = { ...leerMarca() };
+
+/** Las rutas de cada escudo por su fondo (ver `IMAGENES_MARCA`). */
+function imagenesPorFondo(f: FicherosMarca) {
+  return {
+    escudoSobreClaro: f.escudoSobreClaro.ruta,
+    escudoDestacadoEnPapel: (f.escudoDestacado ?? f.escudoSobreClaro).ruta,
+    escudoDestacadoEnNegro: (f.escudoDestacado ?? f.escudoSobreOscuro).ruta,
+    correoCabecera: f.correoCabecera?.ruta ?? null,
+  };
+}
 
 /**
  * La ruta de cada imagen, por el fondo sobre el que se pinta. El escudo
@@ -29,15 +44,23 @@ export const IMAGENES_MARCA: {
   escudoDestacadoEnNegro: string;
   /** Bajo el membrete de los correos a hermanos; sin ella, el correo va sin imagen. */
   correoCabecera: string | null;
-} = {
-  escudoSobreClaro: FICHEROS_MARCA.escudoSobreClaro.ruta,
-  escudoDestacadoEnPapel: (FICHEROS_MARCA.escudoDestacado ?? FICHEROS_MARCA.escudoSobreClaro).ruta,
-  escudoDestacadoEnNegro: (FICHEROS_MARCA.escudoDestacado ?? FICHEROS_MARCA.escudoSobreOscuro).ruta,
-  correoCabecera: FICHEROS_MARCA.correoCabecera?.ruta ?? null,
-};
+} = imagenesPorFondo(FICHEROS_MARCA);
 
+const imprenta: PaletaDeImprenta = { ...paletaDeImprenta(coloresDeMarca) };
 /** Los colores de los PDF y los correos, derivados de los de la marca. Con la marca a null, los de siempre. */
-export const IMPRENTA: Readonly<PaletaDeImprenta> = paletaDeImprenta(coloresDeMarca);
+export const IMPRENTA: Readonly<PaletaDeImprenta> = imprenta;
+
+/**
+ * Lo guardado en el CMS, a la memoria: la identidad, los colores y las
+ * imágenes. Después avisa a quien hizo una copia al cargar (`alCambiarLaMarca`).
+ */
+export function aplicarMarca({ identidad, colores, ficheros }: { identidad: IdentidadEditable; colores: Marca; ficheros: FicherosMarca }): void {
+  aplicarIdentidad(identidad, colores);
+  Object.assign(FICHEROS_MARCA, ficheros);
+  Object.assign(IMAGENES_MARCA, imagenesPorFondo(ficheros));
+  Object.assign(imprenta, paletaDeImprenta(colores));
+  avisarCambioDeMarca();
+}
 
 /** Una línea para el registro de arranque: de dónde sale cada imagen que usa la API. */
 export function resumenDeLaMarca(): string {

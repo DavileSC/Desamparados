@@ -19,6 +19,7 @@ const INSTALACION_VACIA: Instalacion = {
     tipo: '',
     tipoCorto: '',
     articulo: 'el',
+    titulares: [],
     titular: '',
     localidad: '',
     dominio: '',

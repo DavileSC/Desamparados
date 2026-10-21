@@ -4,7 +4,7 @@
     "El texto original es el que sale si no hay ninguna plantilla en uso para ese correo. Se edita aquí para otra instalación. Las plantillas del CMS se guardan en piezas (domain/plantillas-correo.ts); este texto se pasa a piezas al leerlo.",
     "Cada campo lleva su «etiqueta»: el nombre con que lo ve en el editor quien escribe la plantilla («Nombre», «Día de la salida»).",
     "Formato del cuerpo: párrafos separados por una línea en blanco; **negrita**; líneas con «- » son una lista; líneas con «> » son un recuadro (si la primera va entera en negrita, es su título); un bloque fijo va solo en su línea, [[asi]]; los campos van entre llaves, {{asi}}.",
-    "Campos de todos los correos: {{grupo}} (el nombre de la corporación) y {{titular}}, más los que la nombran con su artículo: {{la_corporacion}}, {{de_la_corporacion}}, {{a_la_corporacion}}, {{nuestra_corporacion}}, {{la_corporacion_corto}} y {{de_la_corporacion_corto}} (domain/articulos.ts, para no escribir «Grupo Parroquial» a mano). Cada uso añade los suyos; la apertura, la papeleta y el recordatorio de papeleta sin recoger añaden además {{de_la_salida}} y {{la_salida}}, con el artículo de esa salida."
+    "Campos de todos los correos: {{grupo}} (el nombre de la corporación), {{titular}} y {{bendicion}} (la despedida, concordada con cuántos titulares hay), más los que la nombran con su artículo: {{la_corporacion}}, {{de_la_corporacion}}, {{a_la_corporacion}}, {{nuestra_corporacion}}, {{la_corporacion_corto}} y {{de_la_corporacion_corto}} (domain/articulos.ts, para no escribir «Grupo Parroquial» a mano). Cada uso añade los suyos; la apertura, la papeleta y el recordatorio de papeleta sin recoger añaden además {{de_la_salida}} y {{la_salida}}, con el artículo de esa salida."
   ],
   "comunes": [
     {
@@ -15,7 +15,12 @@
     {
       "clave": "titular",
       "etiqueta": "Titular",
-      "ayuda": "La advocación titular"
+      "ayuda": "La advocación titular (o los titulares, unidos con «y»)"
+    },
+    {
+      "clave": "bendicion",
+      "etiqueta": "Bendición",
+      "ayuda": "«Que … le guarde y bendiga.», en plural si hay varios titulares"
     },
     {
       "clave": "la_corporacion",
@@ -324,7 +329,7 @@
         "asunto": "Hemos recibido su solicitud de ingreso",
         "titulo": "Hemos recibido su solicitud",
         "cuerpo": "{{saludo}}\n\nLa Secretaría acusa recibo de su **solicitud de ingreso** en {{nuestra_corporacion}}. Le agradecemos de corazón que haya dado este paso.\n\n[[documentos]]\n\n[[secretaria]]\n\nMientras tanto, su solicitud queda pendiente. Le escribiremos de nuevo en cuanto la Secretaría la haya revisado.",
-        "despedida": "Que {{titular}} le guarde y bendiga."
+        "despedida": "{{bendicion}}"
       }
     },
     {
@@ -409,7 +414,7 @@
         "asunto": "Su solicitud de ingreso ha sido aprobada",
         "titulo": "{{bienvenido}} {{a_la_corporacion}}",
         "cuerpo": "{{saludo}}\n\nLa Secretaría ha **aprobado su solicitud de ingreso**. Desde hoy {{forma_parte}} del censo de hermanos {{de_la_corporacion}}:\n\n[[censo]]\n\nConserve el número de hermano: es el que identifica a cada uno en el censo y se pide en Secretaría.\n\nYa puede entrar en el área de hermanos para consultar sus datos, sus recibos y, llegado el momento, pedir su papeleta de sitio.\n\n[[boton]]",
-        "despedida": "Que {{titular}} le guarde y bendiga."
+        "despedida": "{{bendicion}}"
       }
     },
     {
@@ -477,7 +482,7 @@
         "asunto": "Baja en el censo de hermanos",
         "titulo": "Baja en el censo de hermanos",
         "cuerpo": "{{saludo}}\n\nLe comunicamos que se ha tramitado su **baja en el censo de hermanos** {{de_la_corporacion}}.\n\nSi esta baja no responde a su voluntad, o desea volver más adelante, responda a este correo y la Secretaría le atenderá.\n\n[[secretaria]]",
-        "despedida": "Le agradecemos el tiempo que ha formado parte de esta casa, que sigue abierta para cuando quiera volver. Que {{titular}} le guarde y bendiga."
+        "despedida": "Le agradecemos el tiempo que ha formado parte de esta casa, que sigue abierta para cuando quiera volver. {{bendicion}}"
       }
     },
     {
@@ -760,7 +765,7 @@
         "asunto": "Gracias por su donativo",
         "titulo": "Gracias por su donativo",
         "cuerpo": "{{saludo}}\n\nHemos recibido su donativo de **{{importe}}**{{para_destino}}. Muchas gracias por su generosidad con {{la_corporacion}}.\n\nEste correo es solo un acuse. Si necesita un justificante para su declaración, escriba a Secretaría y se lo preparamos.",
-        "despedida": "Que {{titular}} le guarde y bendiga."
+        "despedida": "{{bendicion}}"
       }
     },
     {
@@ -994,7 +999,7 @@
         "asunto": "Justificante de su pago de {{total}}",
         "titulo": "Hemos recibido su pago",
         "cuerpo": "{{saludo}}\n\nHemos recibido su pago de **{{total}}** con {{metodo}} el {{fecha}} (operación {{pedido}}). Muchas gracias.\n\n[[detalle]]\n\nGuarde este correo como justificante. También puede ver y descargar sus recibos cuando quiera en el área de hermanos, en «Recibos».",
-        "despedida": "Que {{titular}} le guarde y bendiga."
+        "despedida": "{{bendicion}}"
       }
     },
     {
@@ -1110,7 +1115,7 @@
         "asunto": "{{que}} por {{difunto}}",
         "titulo": "{{que}} por {{difunto}}",
         "cuerpo": "Estimada familia:\n\nLes comunicamos que desde {{la_corporacion}} ofreceremos una **{{que_minusculas}}** por el eterno descanso de **{{difunto}}**.\n\n[[cuando]]\n\nSerá un honor contar con su presencia.",
-        "despedida": "Que {{titular}} le guarde y bendiga."
+        "despedida": "{{bendicion}}"
       }
     },
     {

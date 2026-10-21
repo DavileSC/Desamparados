@@ -85,3 +85,23 @@ test('con los colores de partida o null, la marca no avisa de nada', () => {
     assert.deepEqual(avisos.filter((a) => a.startsWith('marca')), []);
   }
 });
+
+test('uno o varios titulares: «titular» suelto o la lista «titulares», unidos con «y»', () => {
+  const uno = copia();
+  delete uno.identidad.titulares;
+  uno.identidad.titular = 'Nuestra Señora de la Paz';
+  assert.deepEqual(validarDatosEntidad(uno).datos?.identidad.titulares, ['Nuestra Señora de la Paz']);
+
+  const dos = copia();
+  dos.identidad.titulares = ['Nuestro Padre Jesús Cautivo', 'María Santísima de la Trinidad'];
+  const { datos, errores } = validarDatosEntidad(dos);
+  assert.deepEqual(errores, []);
+  assert.equal(datos?.identidad.titular, 'Nuestro Padre Jesús Cautivo y María Santísima de la Trinidad');
+
+  const ambos = copia();
+  ambos.identidad.titular = 'Otro';
+  assert.ok(validarDatosEntidad(ambos).errores.some((e) => e.includes('«titular» y «titulares»')));
+  const vacia = copia();
+  vacia.identidad.titulares = [];
+  assert.ok(validarDatosEntidad(vacia).errores.some((e) => e.startsWith('identidad.titulares:')));
+});

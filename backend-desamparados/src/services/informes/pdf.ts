@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import type { Color, Cuerpo, Formato, Grafica } from '../../domain/datos-areas.js';
 import { numero } from '../../domain/datos-areas.js';
 import type { Trozo } from '../../domain/entradillas.js';
-import { identidad } from '../../domain/datos-entidad.js';
+import { alCambiarLaMarca, identidad } from '../../domain/datos-entidad.js';
 import { IMAGENES_MARCA, IMPRENTA } from '../../domain/marca.js';
 
 /**
@@ -28,33 +28,41 @@ const ruta = (relativa: string) => fileURLToPath(new URL(relativa, import.meta.u
  * en que se pintan: `escudo` en el pie, sobre blanco; el destacado (el de oro
  * de Desamparados) en las cabeceras, en papel o sobre la banda negra.
  */
-export const IMAGENES = {
+const imagenesDelPdf = () => ({
   escudo: IMAGENES_MARCA.escudoSobreClaro,
   escudoDestacadoEnPapel: IMAGENES_MARCA.escudoDestacadoEnPapel,
   escudoDestacadoEnNegro: IMAGENES_MARCA.escudoDestacadoEnNegro,
-};
+});
+export const IMAGENES = imagenesDelPdf();
 
 export const NEGRO = '#161214';
 // Burdeos y oro salen de la marca (shared/colores-de-marca.mjs, `paletaDeImprenta`);
 // con la marca a null son los de la maqueta: #5c1622, #a3303f, #b08d52, #cdae72,
 // #ddd0b3, #cbb48a y #8a6a30. Negro, cremas y grises son neutros y no cambian.
-export const BURDEOS = IMPRENTA.burdeos;
+// `let` y no `const`: se rehacen al cambiar los colores en el CMS
+// (`alCambiarLaMarca`, abajo), y quien los importa ve el nuevo, porque lo que se
+// importa de un módulo es la variable y no una copia de su valor.
+export let BURDEOS = IMPRENTA.burdeos;
 /**
  * El burdeos de las gráficas. El de las bandas, junto al negro, se confundía:
  * los dos son casi igual de oscuros. Este se distingue a simple vista y en una
  * fotocopia en blanco y negro sale gris medio, no negro.
  */
-export const BURDEOS_VIVO = IMPRENTA.burdeosVivo;
-export const ORO = IMPRENTA.oro;
-export const ORO_CLARO = IMPRENTA.oroClaro;
-export const ORO_PALIDO = IMPRENTA.oroPalido;
+export let BURDEOS_VIVO = IMPRENTA.burdeosVivo;
+export let ORO = IMPRENTA.oro;
+export let ORO_CLARO = IMPRENTA.oroClaro;
+export let ORO_PALIDO = IMPRENTA.oroPalido;
 /** El oro de los filetes no llega a 4,5:1 sobre blanco: para escribir en oro, este. */
-export const ORO_TEXTO = IMPRENTA.oroTexto;
+export let ORO_TEXTO = IMPRENTA.oroTexto;
 export const MARFIL = '#f4efe5';
 export const CREMA = '#f3ebdc';
 export const GRIS = '#5f5759';
 export const FILETE = '#e2dcdd';
-export const ORO_MEDIO = IMPRENTA.oroMedio;
+export let ORO_MEDIO = IMPRENTA.oroMedio;
+alCambiarLaMarca(() => {
+  ({ burdeos: BURDEOS, burdeosVivo: BURDEOS_VIVO, oro: ORO, oroClaro: ORO_CLARO, oroPalido: ORO_PALIDO, oroTexto: ORO_TEXTO, oroMedio: ORO_MEDIO } = IMPRENTA);
+  Object.assign(IMAGENES, imagenesDelPdf());
+});
 const GRIS_CLARO = '#b9b1a8';
 
 /**

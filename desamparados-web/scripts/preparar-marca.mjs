@@ -17,10 +17,8 @@
 // dentro de desamparados-web/ (`npm --prefix desamparados-web run marca …`
 // desde la raíz).
 //
-// Por qué los iconos se componen sobre la tinta: un escudo blanco sobre
-// transparente sería invisible en una pestaña clara o en la pantalla de inicio
-// blanca de un móvil. La tinta es el `#100e11` del velo de la barra, el fondo
-// que el escudo ya lleva detrás en la web.
+// Cómo se componen los iconos y por qué: shared/preparar-marca.mjs, que usa
+// también la API al subir el escudo desde el CMS.
 //
 // `sharp` no es dependencia de la web —es una herramienta de una vez, y pesa—:
 // se toma prestada del backend, que ya la usa para las fotos.
@@ -28,39 +26,17 @@
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve } from 'node:path'
-import { mkdirSync, readFileSync, statSync } from 'node:fs'
+import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
+import { ALTO_WEB, escudoQueCabe, iconosDeMarca } from '../../shared/preparar-marca.mjs'
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '../..')
 const require = createRequire(join(raiz, 'backend-desamparados/package.json'))
 const sharp = require('sharp')
 
 const PARTIDA = join(raiz, 'shared/marca-de-partida')
-/** La tinta del sitio: el mismo `#100e11` del velo de la barra. */
-const TINTA = { r: 0x10, g: 0x0e, b: 0x11, alpha: 1 }
 /** El casi negro del escudo de los correos y los PDF (`COLORES.negro` de la plantilla de correo). */
 const NEGRO_ESCUDO = '#141111'
-
-/**
- * Cuánto del alto ocupa el escudo dentro del cuadrado. El resto es margen: los
- * iconos se ven pequeños y pegados al borde quedan apretados, y iOS además
- * recorta las esquinas para redondearlas.
- */
-const PROPORCION = 0.66
-
-/**
- * `apple-touch-icon.png` sin sufijo de tamaño a propósito: iOS lo busca por ese
- * nombre exacto en la raíz cuando la página no lo declara.
- */
-const ICONOS = [
-  { fichero: 'favicon-32.png', lado: 32 },
-  { fichero: 'apple-touch-icon.png', lado: 180 },
-  { fichero: 'icono-192.png', lado: 192 },
-  { fichero: 'icono-512.png', lado: 512 },
-]
-
-/** El alto del escudo optimizado de la web: de sobra para la barra en pantallas 2x, y poco peso. */
-const ALTO_WEB = { minimo: 176, maximo: 300 }
 
 const { values: op } = parseArgs({
   options: {
@@ -99,15 +75,9 @@ async function escudoDePartida(color, alto) {
 /** Los cuatro iconos en `carpeta`, con el escudo que da `escudo(alto)` centrado sobre la tinta. */
 async function iconos(carpeta, escudo) {
   mkdirSync(carpeta, { recursive: true })
-  for (const { fichero, lado } of ICONOS) {
+  for (const { fichero, lado, bytes } of await iconosDeMarca(sharp, escudo)) {
     const destino = join(carpeta, fichero)
-    // Sin canal alfa: apple-touch-icon tiene que ser opaco (iOS pinta de negro
-    // lo transparente) y a los demás no les hace falta.
-    await sharp({ create: { width: lado, height: lado, channels: 4, background: TINTA } })
-      .composite([{ input: await escudo(Math.round(lado * PROPORCION)), gravity: 'center' }])
-      .removeAlpha()
-      .png({ compressionLevel: 9 })
-      .toFile(destino)
+    writeFileSync(destino, bytes)
     console.log(`· ${destino}: ${lado}×${lado}, ${kb(destino)}`)
   }
 }
@@ -127,9 +97,7 @@ if (op.partida) {
 } else if (op.escudo) {
   if (!op.destino) throw new Error('Falta --destino <carpeta> (normalmente instalacion/marca).')
   const origen = desde(op.escudo)
-  // Cabe en un cuadrado de `lado`, no solo de alto: un escudo apaisado
-  // reducido por el alto saldría más ancho que el icono y sharp no lo compone.
-  await iconos(desde(op.destino), (lado) => sharp(origen).resize({ width: lado, height: lado, fit: 'inside' }).png().toBuffer())
+  await iconos(desde(op.destino), escudoQueCabe(sharp, origen))
 } else if (op.optimizar) {
   if (!op.destino) throw new Error('Falta --destino <fichero.png> (normalmente instalacion/marca/escudo-sobre-oscuro.png).')
   const origen = desde(op.optimizar)

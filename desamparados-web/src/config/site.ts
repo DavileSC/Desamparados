@@ -35,8 +35,12 @@ export const site = {
   tipo: identidad.tipo,
   /** La misma clase, corta y sin el segundo sustantivo, para un rótulo ya situado («Datos del Grupo»). */
   tipoCorto: identidad.tipoCorto,
-  /** La advocación: pies de foto y textos alternativos. */
+  /** La advocación o, con varios titulares, todos unidos con «y»: membretes y frases que los nombran a todos. */
   titular: identidad.titular,
+  /** Uno o varios, en orden. */
+  titulares: identidad.titulares,
+  /** El primero: lo que es de una sola imagen (su foto en el trono, su texto alternativo). */
+  titularPrincipal: identidad.titulares[0] ?? identidad.titular,
   /** La dirección de la web pública, sin barra al final. */
   url: `https://${identidad.dominio}`,
   descripcion: identidad.descripcion,

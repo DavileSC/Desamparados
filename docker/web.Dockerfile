@@ -3,14 +3,14 @@
 # Imagen de la web: construye la SPA con Vite y la sirve con nginx, que además
 # hace de proxy de la API y sirve los archivos subidos desde el CMS.
 #
-# No lleva los datos de ninguna corporación: los lee al arrancar de
+# No lleva los datos de ninguna corporación: lee al arrancar el dominio de
 # /app/instalacion/datos-entidad.json (el mismo montaje que la API) y escribe
-# con ellos index.html, el manifest, robots.txt, /instalacion.js y el sitio de
-# nginx (docker/nginx/40-instalacion.sh). Tampoco su marca: el escudo y los
-# iconos se copian al arrancar de /app/instalacion/marca a /marca/ (o, si
-# faltan, los genéricos de shared/marca-de-partida). Ni sus fotos: nginx sirve
-# /images/ directamente de /app/instalacion/imagenes (ubicaciones.conf). Una
-# sola imagen para todas.
+# con él robots.txt y el sitio de nginx (docker/nginx/40-instalacion.sh). El
+# nombre, los colores y la marca los escribe la API en storage/public, con lo
+# guardado en el CMS: /instalacion.js, /manifest.json, /marca/ y la cabecera de
+# index.html, que nginx mete con SSI. Ni sus fotos: nginx sirve /images/
+# directamente de /app/instalacion/imagenes (ubicaciones.conf). Una sola imagen
+# para todas.
 #
 # El contexto de construcción es la raíz del repositorio (igual que la API),
 # porque aquí se copian tanto `desamparados-web/` como `docker/nginx/`.
@@ -42,8 +42,7 @@ COPY backend-desamparados/src /app/backend-desamparados/src
 # `npm run build` regenera antes la lista de rutas públicas (script
 # `prebuild`; va a shared/ y aquí no sale de la etapa: el sitemap lo sirve la
 # API con la versionada), y después hace `tsc -b && vite build`. El index.html
-# que sale conserva las marcas de los datos de la corporación: los pone el
-# arranque.
+# que sale no lleva los datos de la corporación: su cabecera la mete nginx.
 #
 # VITE_API_URL se queda sin definir a propósito: el cliente cae entonces en
 # `/api` (src/lib/api/client.ts), que es una ruta del mismo dominio. Apuntar a
@@ -54,8 +53,8 @@ RUN npm run build
 # (gzip_static, en comun.conf) y el VPS no gasta CPU en cada visita. Sin esto
 # el móvil se bajaba ~1,1 MB de JS en vez de ~300 KB.
 #
-# index.html no: aquí es la plantilla con las marcas, y gzip_static serviría
-# ese .gz en vez del relleno. Su .gz lo escribe el arranque, con los datos.
+# index.html no: gzip_static serviría ese .gz sin pasar por el SSI que le mete
+# la cabecera. Se comprime al vuelo, que es poco (gzip, en comun.conf).
 RUN find dist -type f \( -name '*.js' -o -name '*.css' -o -name '*.html' -o -name '*.svg' \
       -o -name '*.json' -o -name '*.xml' -o -name '*.txt' -o -name '*.webmanifest' \) \
       ! -name index.html -size +1k -exec gzip -k -9 {} +
@@ -92,7 +91,7 @@ COPY docker/nginx/ubicaciones.conf /etc/nginx/snippets/desamparados-ubicaciones.
 # falte aquí hace que la imagen no arranque, y eso lo caza la prueba de humo
 # del CI; con la carpeta entera, viajarían también los fixtures y los JSON de
 # la web, que aquí no pinta nada.
-COPY shared/datos-entidad.mjs shared/colores-de-marca.mjs shared/marca.mjs shared/modulos.json /app/shared/
+COPY shared/datos-entidad.mjs shared/colores-de-marca.mjs shared/marca.mjs shared/instalacion-publica.mjs shared/titulares.mjs shared/modulos.json /app/shared/
 COPY shared/marca-de-partida /app/shared/marca-de-partida
 COPY desamparados-web/scripts/instalacion-web.mjs /app/desamparados-web/scripts/
 # El sitio de producción no va en la imagen: lo escribe el arranque con el
@@ -103,10 +102,9 @@ COPY docker/nginx/generar-sitio.mjs docker/nginx/sitio.conf /app/docker/nginx/
 # 90: la recarga del certificado, en segundo plano.
 COPY --chmod=755 docker/nginx/40-instalacion.sh docker/nginx/90-recargar-certificado.sh /docker-entrypoint.d/
 
+# index.html se sirve tal cual: su cabecera la mete nginx (SSI) de la que
+# escribe la API en storage/public, con lo guardado en el CMS.
 COPY --from=construccion /app/desamparados-web/dist /var/www/desamparados/dist
-# La plantilla, fuera de la carpeta servida: el arranque la rellena en cada
-# reinicio y tiene que partir siempre de las marcas.
-RUN mv /var/www/desamparados/dist/index.html /app/desamparados-web/index.plantilla.html
 
 # Punto de montaje de los archivos subidos (llega en solo lectura desde el
 # disco del servidor) y carpeta del desafío de Let's Encrypt.

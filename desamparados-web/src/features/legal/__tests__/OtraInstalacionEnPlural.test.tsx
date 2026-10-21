@@ -16,6 +16,7 @@ vi.mock('../../../config/instalacion', () => ({
       tipoCorto: 'Cofradías',
       articulo: 'las',
       nombreCorto: 'Fusionadas',
+      titulares: ['Nuestra Señora de la Paz'],
       titular: 'Nuestra Señora de la Paz',
       localidad: 'Antequera',
       dominio: 'www.fusionadas.ejemplo',

@@ -14,6 +14,7 @@ vi.mock('../../../config/instalacion', () => ({
       tipoCorto: 'Hermandad',
       articulo: 'la',
       nombreCorto: 'Desamparados',
+      titulares: ['Nuestra Señora de los Desamparados'],
       titular: 'Nuestra Señora de los Desamparados',
       localidad: 'Málaga',
       dominio: 'www.desamparadosmalaga.com',
