@@ -71,3 +71,20 @@ export function subirImagenDeMarca(clave: ClaveDeImagen, fichero: File) {
 
 export const quitarImagenDeMarca = (clave: ClaveDeImagen) =>
   llamarApi<EstadoDeLaMarca>(`/cms/corporacion/marca/${clave}`, { method: 'DELETE' })
+
+/** Los pasos del asistente de primer arranque que se pueden saltar (el nombre no). */
+export type PasoSaltable = 'escudo' | 'colores' | 'contacto' | 'legales' | 'secciones'
+
+/** Por dónde va el asistente: lo apunta la API para retomarlo donde se dejó. */
+export interface EstadoDelAsistente {
+  /** De 0 (el nombre) a 6 (Listo). */
+  paso: number
+  saltados: PasoSaltable[]
+  /** Cuándo se terminó; null mientras quede algo. */
+  terminado: string | null
+}
+
+export const CLAVE_ASISTENTE = ['cms', 'corporacion', 'asistente'] as const
+export const asistenteDelCms = () => llamarApi<EstadoDelAsistente>('/cms/corporacion/asistente')
+export const guardarAsistente = (datos: { paso: number; saltados: PasoSaltable[]; terminar: boolean }) =>
+  llamarApi<EstadoDelAsistente>('/cms/corporacion/asistente', { method: 'PUT', json: datos })

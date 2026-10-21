@@ -1,5 +1,5 @@
 import { useId, useState, type ChangeEvent, type ReactNode } from 'react'
-import { Alert, Box, Button, CircularProgress, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, Collapse, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material'
 import { useBlocker } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import AvisoCambiosSinGuardar from '../ficha/AvisoCambiosSinGuardar'
@@ -12,8 +12,10 @@ import {
 import { ErrorDeApi } from '../../../lib/api/cliente'
 import { FONDOS, avisosDeMarca, paletaDeMarca } from '../../../../../shared/colores-de-marca.mjs'
 import type { Articulo } from '../../../../../shared/datos-entidad.mjs'
+import type { AccionesDelFormulario } from './acciones'
 
-const CLAVE = ['cms', 'corporacion', 'marca'] as const
+export const CLAVE_MARCA = ['cms', 'corporacion', 'marca'] as const
+const CLAVE = CLAVE_MARCA
 
 // Los de shared/datos-entidad.mjs, escritos aquí: ese módulo lee el disco
 // (node:fs) y en el navegador no se puede importar más que su tipo.
@@ -94,8 +96,12 @@ function campoDelServidor(ruta: string): Campo | null {
   return (clave as Campo) ?? null
 }
 
-/** Una ficha como las de Contacto: título y resumen a la izquierda, lo suyo a la derecha. */
-function Ficha({ titulo, resumen, children }: { titulo: string; resumen: string; children: ReactNode }) {
+/**
+ * Una ficha como las de Contacto: título y resumen a la izquierda, lo suyo a la
+ * derecha. Suelta, solo lo suyo: en el asistente cada paso ya lleva su título.
+ */
+function Ficha({ titulo, resumen, suelta, children }: { titulo: string; resumen: string; suelta: boolean; children: ReactNode }) {
+  if (suelta) return <Box component="section" aria-label={titulo}>{children}</Box>
   return (
     <Paper variant="outlined" component="section" aria-label={titulo}
       sx={{ p: { xs: 2, md: 3 }, display: 'grid', gap: { xs: 2, md: 4 }, gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 260px) minmax(0, 1fr)' } }}>
@@ -193,6 +199,35 @@ function MuestraDeColores({ principal, acento }: { principal: string | null; ace
   )
 }
 
+export type FichaDeLaMarca = 'identidad' | 'legales' | 'colores' | 'imagenes'
+const TODAS: FichaDeLaMarca[] = ['identidad', 'legales', 'colores', 'imagenes']
+
+/** Lo que la vista previa del asistente necesita para pintar la web como quedará. */
+export interface VistaDeLaMarca {
+  nombre: string
+  nombreCorto: string
+  localidad: string
+  colorPrincipal: string | null
+  colorAcento: string | null
+  escudo: string | null
+  escudoSobreClaro: string | null
+  icono: string | null
+}
+
+/** La vista de lo guardado o, si se está escribiendo, de lo escrito. */
+export function vistaDeLaMarca(estado: EstadoDeLaMarca, escrito?: Pick<VistaDeLaMarca, 'nombre' | 'nombreCorto' | 'localidad' | 'colorPrincipal' | 'colorAcento'>): VistaDeLaMarca {
+  return {
+    nombre: escrito?.nombre ?? estado.identidad.nombre,
+    nombreCorto: escrito?.nombreCorto ?? estado.identidad.nombreCorto,
+    localidad: escrito?.localidad ?? estado.identidad.localidad,
+    colorPrincipal: escrito ? escrito.colorPrincipal : estado.colores.colorPrincipal,
+    colorAcento: escrito ? escrito.colorAcento : estado.colores.colorAcento,
+    escudo: estado.imagenes.escudoSobreOscuro?.url ?? null,
+    escudoSobreClaro: estado.imagenes.escudoSobreClaro?.propia ? estado.imagenes.escudoSobreClaro.url : null,
+    icono: estado.iconos.appleTouchIcon,
+  }
+}
+
 /**
  * Sistema › Datos de la corporación › Identidad y marca: el nombre, los colores
  * y las imágenes, solo Administración. La primera vez salen del fichero de la
@@ -200,7 +235,15 @@ function MuestraDeColores({ principal, acento }: { principal: string | null; ace
  * a los correos y los PDF y vuelve a escribir lo que lee la web, así que quien
  * abra una página la ve ya nueva; la que está abierta, al recargar.
  */
-export default function IdentidadYMarca() {
+export default function IdentidadYMarca({ fichas = TODAS, enAsistente = false, marco, alGuardar }: {
+  /** Las fichas que se enseñan; sin él, todas. El asistente enseña una o dos por paso. */
+  fichas?: FichaDeLaMarca[]
+  /** Sin el marco de ficha, con las imágenes opcionales plegadas y sin el aviso de recargar. */
+  enAsistente?: boolean
+  /** Quien pone los botones (el asistente): recibe las fichas, lo que hace falta para guardar y la vista previa. */
+  marco?: (contenido: ReactNode, acciones: AccionesDelFormulario, vista: VistaDeLaMarca) => ReactNode
+  alGuardar?: () => void
+} = {}) {
   const cliente = useQueryClient()
   const { data, isPending, isError } = useQuery({ queryKey: CLAVE, queryFn: marcaDelCms })
   const [formulario, setFormulario] = useState<Formulario | null>(null)
@@ -209,6 +252,7 @@ export default function IdentidadYMarca() {
   const [subiendo, setSubiendo] = useState<ClaveDeImagen | null>(null)
   const [errorDeImagen, setErrorDeImagen] = useState<{ clave: ClaveDeImagen; mensaje: string } | null>(null)
   const [quitando, setQuitando] = useState<(typeof IMAGENES)[number] | null>(null)
+  const [masImagenes, setMasImagenes] = useState(false)
 
   const guardar = useMutation({
     mutationFn: () => guardarIdentidad(aDatos(formulario!)),
@@ -218,6 +262,7 @@ export default function IdentidadYMarca() {
       setCopiado(estado)
       setFormulario(aFormulario(estado))
       setCambiado(true)
+      alGuardar?.()
     },
   })
   const imagen = useMutation({
@@ -307,16 +352,36 @@ export default function IdentidadYMarca() {
   )
   const partida = paletaDeMarca(null)
 
-  return (
-    <Box component="form" noValidate onSubmit={(e) => { e.preventDefault(); guardar.mutate() }}>
-      <Stack spacing={3}>
-        {cambiado && (
-          <Alert severity="success" action={<Button color="inherit" size="small" onClick={() => window.location.reload()}>Recargar</Button>}>
-            Guardado. Quien abra la web ya lo ve nuevo; esta pestaña, al recargar.
-          </Alert>
-        )}
+  const tarjeta = (pieza: (typeof IMAGENES)[number]) => (
+    <Stack key={pieza.clave} spacing={1}>
+      <TarjetaDeImagen
+        pieza={pieza}
+        imagen={data.imagenes[pieza.clave]}
+        iconos={pieza.clave === 'escudoSobreOscuro' ? data.iconos : null}
+        ocupada={subiendo === pieza.clave}
+        onSubir={(fichero) => imagen.mutate({ clave: pieza.clave, fichero })}
+        onQuitar={() => setQuitando(pieza)}
+      />
+      {errorDeImagen?.clave === pieza.clave && <Alert severity="error">{errorDeImagen.mensaje}</Alert>}
+    </Stack>
+  )
+  const rejilla = { display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: enAsistente ? undefined : 'repeat(3, minmax(0, 1fr))' } }
+  // En el asistente, los dos escudos a la vista y las opcionales plegadas: se pueden poner luego.
+  const imagenes = enAsistente ? (
+    <Stack spacing={2}>
+      <Box sx={rejilla}>{IMAGENES.filter((p) => !p.opcional).map(tarjeta)}</Box>
+      <Button variant="text" color="inherit" aria-expanded={masImagenes} onClick={() => setMasImagenes((v) => !v)}
+        sx={{ alignSelf: 'flex-start', minHeight: 40 }}>
+        {masImagenes ? 'Menos imágenes' : 'Más imágenes (se pueden poner luego)'}
+      </Button>
+      <Collapse in={masImagenes} unmountOnExit><Box sx={rejilla}>{IMAGENES.filter((p) => p.opcional).map(tarjeta)}</Box></Collapse>
+    </Stack>
+  ) : <Box sx={rejilla}>{IMAGENES.map(tarjeta)}</Box>
 
-        <Ficha titulo="Identidad" resumen="El nombre sale en los títulos de la web, los correos, los PDF y los textos legales.">
+  const contenido = (
+    <Stack spacing={3}>
+      {fichas.includes('identidad') && (
+        <Ficha suelta={enAsistente} titulo="Identidad" resumen="El nombre sale en los títulos de la web, los correos, los PDF y los textos legales.">
           <Box sx={DOS_COLUMNAS}>
             {campo('nombre', 'Nombre completo', { max: 160, ancho: true })}
             {campo('nombreCorto', 'Nombre corto', { max: 40, ayuda: 'En las pestañas y la barra de la web.' })}
@@ -358,8 +423,10 @@ export default function IdentidadYMarca() {
             {campo('descripcion', 'Descripción', { max: 300, multilinea: true, ancho: true, ayuda: 'La que enseñan Google y WhatsApp al compartir la web.' })}
           </Box>
         </Ficha>
+      )}
 
-        <Ficha titulo="Datos legales" resumen="Los del aviso legal y la privacidad. Vacíos, esos apartados no salen.">
+      {fichas.includes('legales') && (
+        <Ficha suelta={enAsistente} titulo="Datos legales" resumen="Los del aviso legal y la privacidad. Vacíos, esos apartados no salen.">
           <Box sx={DOS_COLUMNAS}>
             {campo('denominacion', 'Denominación jurídica', { max: 240, ancho: true })}
             {campo('domicilio', 'Domicilio social', { max: 200, ancho: true })}
@@ -367,49 +434,64 @@ export default function IdentidadYMarca() {
             {campo('normasUrl', 'Enlace a las normas', { max: 300, ejemplo: 'https://…' })}
           </Box>
         </Ficha>
+      )}
 
-        <Ficha titulo="Colores" resumen="De estos dos salen todos los tonos de la web, los PDF y los correos. Vacío: los de partida.">
+      {fichas.includes('colores') && (
+        <Ficha suelta={enAsistente} titulo="Colores" resumen="De estos dos salen todos los tonos de la web, los PDF y los correos. Vacío: los de partida.">
           <Stack spacing={2.5}>
             <Box sx={DOS_COLUMNAS}>
               {campoDeColor('colorPrincipal', 'Principal', 'El de relleno, con letra blanca: botones, avatar.', partida.principal)}
               {campoDeColor('colorAcento', 'Acento', 'El que se escribe sobre oscuro: enlaces, filetes, foco.', partida.acento)}
             </Box>
-            <MuestraDeColores principal={colores.colorPrincipal} acento={colores.colorAcento} />
+            {/* En el asistente la vista previa ya enseña los colores al lado. */}
+            {!enAsistente && <MuestraDeColores principal={colores.colorPrincipal} acento={colores.colorAcento} />}
             {avisosColores.length
               ? <Alert severity="warning">{avisosColores.map((a) => <div key={a}>{a}</div>)}</Alert>
               : <Typography variant="body2" sx={{ color: 'success.main' }}>Los dos cumplen el contraste en todos los fondos.</Typography>}
           </Stack>
         </Ficha>
+      )}
 
-        <Ficha titulo="Imágenes" resumen="PNG, JPEG o WebP. Se guardan al subirlas; los visitantes las ven en la siguiente página que abran.">
+      {fichas.includes('imagenes') && (
+        <Ficha suelta={enAsistente} titulo="Imágenes" resumen="PNG, JPEG o WebP. Se guardan al subirlas; los visitantes las ven en la siguiente página que abran.">
           <Stack spacing={2}>
-            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(3, minmax(0, 1fr))' } }}>
-              {IMAGENES.map((pieza) => (
-                <Stack key={pieza.clave} spacing={1}>
-                  <TarjetaDeImagen
-                    pieza={pieza}
-                    imagen={data.imagenes[pieza.clave]}
-                    iconos={pieza.clave === 'escudoSobreOscuro' ? data.iconos : null}
-                    ocupada={subiendo === pieza.clave}
-                    onSubir={(fichero) => imagen.mutate({ clave: pieza.clave, fichero })}
-                    onQuitar={() => setQuitando(pieza)}
-                  />
-                  {errorDeImagen?.clave === pieza.clave && <Alert severity="error">{errorDeImagen.mensaje}</Alert>}
-                </Stack>
-              ))}
-            </Box>
+            {imagenes}
             {avisosImagenes.length > 0 && <Alert severity="warning">{avisosImagenes.map((a) => <div key={a}>{a}</div>)}</Alert>}
           </Stack>
         </Ficha>
+      )}
 
-        {guardar.isError && <Alert severity="error">{guardar.error.message}</Alert>}
-        <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end', alignItems: 'center' }}>
-          {hayErrores && <Typography variant="body2" color="text.secondary">Corrige los campos marcados para guardar.</Typography>}
-          <Button type="submit" variant="contained" disabled={!sinGuardar || hayErrores || guardar.isPending}>
-            {guardar.isPending ? 'Guardando…' : 'Guardar'}
-          </Button>
-        </Stack>
-      </Stack>
+      {guardar.isError && <Alert severity="error">{guardar.error.message}</Alert>}
+    </Stack>
+  )
+  const acciones: AccionesDelFormulario = { sinGuardar, hayErrores, guardando: guardar.isPending, guardar: () => guardar.mutate() }
+  const vista = vistaDeLaMarca(data, {
+    nombre: formulario.nombre.trim() || data.identidad.nombre,
+    nombreCorto: formulario.nombreCorto.trim() || data.identidad.nombreCorto,
+    localidad: formulario.localidad.trim(),
+    ...colores,
+  })
+
+  return (
+    <>
+      {marco ? marco(contenido, acciones, vista) : (
+        <Box component="form" noValidate onSubmit={(e) => { e.preventDefault(); guardar.mutate() }}>
+          <Stack spacing={3}>
+            {cambiado && (
+              <Alert severity="success" action={<Button color="inherit" size="small" onClick={() => window.location.reload()}>Recargar</Button>}>
+                Guardado. Quien abra la web ya lo ve nuevo; esta pestaña, al recargar.
+              </Alert>
+            )}
+            {contenido}
+            <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end', alignItems: 'center' }}>
+              {hayErrores && <Typography variant="body2" color="text.secondary">Corrige los campos marcados para guardar.</Typography>}
+              <Button type="submit" variant="contained" disabled={!sinGuardar || hayErrores || guardar.isPending}>
+                {guardar.isPending ? 'Guardando…' : 'Guardar'}
+              </Button>
+            </Stack>
+          </Stack>
+        </Box>
+      )}
       <DialogoConfirmacion
         abierto={quitando !== null}
         titulo={`Quitar «${quitando?.nombre ?? ''}»`}
@@ -422,6 +504,6 @@ export default function IdentidadYMarca() {
         onCancelar={() => setQuitando(null)}
       />
       <AvisoCambiosSinGuardar bloqueo={bloqueo} deQue="la identidad y los colores" />
-    </Box>
+    </>
   )
 }

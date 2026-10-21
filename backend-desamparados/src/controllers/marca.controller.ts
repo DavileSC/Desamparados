@@ -1,4 +1,5 @@
 import { MarcaService } from '../services/marca.service.js';
+import { AsistenteService } from '../services/asistente.service.js';
 import { AuditoriaService } from '../services/auditoria.service.js';
 import { HttpError } from '../utils/error.handle.js';
 import { manejar } from '../utils/manejar.js';
@@ -19,5 +20,13 @@ export class MarcaController {
 
   static quitar = manejar('Error quitando una imagen de la marca', async (req, res) => {
     res.status(200).json(await MarcaService.quitar(req.params.clave as never, AuditoriaService.metaFromReq(req)));
+  });
+
+  static asistente = manejar('Error leyendo el asistente de primer arranque', async (_req, res) => {
+    res.status(200).json(await AsistenteService.estado());
+  });
+
+  static guardarAsistente = manejar('Error guardando el asistente de primer arranque', async (req, res) => {
+    res.status(200).json(await AsistenteService.guardar(req.body, AuditoriaService.metaFromReq(req)));
   });
 }

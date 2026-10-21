@@ -197,6 +197,8 @@ export const ACCIONES_AUDITORIA = {
   CORPORACION_ACTUALIZAR: 'CORPORACION_ACTUALIZAR',
   // … y la identidad y la marca: nombre, colores e imágenes
   MARCA_ACTUALIZAR: 'MARCA_ACTUALIZAR',
+  // … y el asistente de primer arranque, al acabarlo
+  ASISTENTE_TERMINAR: 'ASISTENTE_TERMINAR',
   // CMS → Páginas: el nombre de una página en el menú público
   MENU_NOMBRES_ACTUALIZAR: 'MENU_NOMBRES_ACTUALIZAR',
   // Sistema → Abrir la web: abrirla al público o dejarla en «Próximamente»

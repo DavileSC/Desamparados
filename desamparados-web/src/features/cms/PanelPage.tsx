@@ -1,6 +1,10 @@
 import { useRef, useState, type KeyboardEvent } from 'react'
 import { Alert, Box, CircularProgress } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
+import { Navigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { CLAVE_ASISTENTE, asistenteDelCms } from '../../lib/api/corporacion'
+import FranjaDelAsistente from './asistente/FranjaDelAsistente'
 import { useAuthStore } from '../altas/auth/store'
 import { usePanelDeHoy } from '../../app/usePanelDeHoy'
 import { useModulos } from '../../hooks/useModulos'
@@ -18,6 +22,15 @@ const PESTANAS = [
   { clave: 'cifras', texto: 'Cifras' },
 ] as const
 type Pestana = (typeof PESTANAS)[number]['clave']
+
+/** Si se pulsó «Seguir más tarde» en esta sesión del navegador (asistente/AsistentePage). */
+function asistenteParaLuego(): boolean {
+  try {
+    return sessionStorage.getItem('cms.asistente.luego') === '1'
+  } catch {
+    return false
+  }
+}
 
 /** La última pestaña abierta se recuerda en este navegador; si no se puede leer, «Hoy». */
 const GUARDADA = 'cms.inicio.pestana'
@@ -50,6 +63,12 @@ export default function PanelPage() {
   const { referencia, alto } = useAltoDisponible()
   const [pestana, setPestana] = useState<Pestana>(pestanaGuardada)
   const botones = useRef<(HTMLButtonElement | null)[]>([])
+  // El asistente de primer arranque, solo para Administración: mientras no esté
+  // terminado, entrar en el Inicio lo abre; tras «Seguir más tarde», queda la franja.
+  const asistente = useQuery({ queryKey: CLAVE_ASISTENTE, queryFn: asistenteDelCms, enabled: role === 'ADMIN' })
+  const asistenteAMedias = asistente.data && !asistente.data.terminado ? asistente.data : null
+
+  if (asistenteAMedias && !asistenteParaLuego()) return <Navigate to="/cms/bienvenida" replace />
 
   if (isPending) {
     return <CircularProgress aria-label="Cargando el Inicio" />
@@ -105,6 +124,7 @@ export default function PanelPage() {
             '& > *': { flexShrink: 0 },
           }}
         >
+          {asistenteAMedias && <FranjaDelAsistente estado={asistenteAMedias} />}
           <Cabecera role={role} actividad={data.actividad} />
           <Box role="tablist" aria-label="Inicio" sx={{ display: 'flex', gap: 3.5, borderBottom: `1px solid ${FILETE}` }}>
             {PESTANAS.map((p, i) => {

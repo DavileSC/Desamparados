@@ -766,6 +766,12 @@ identidad). Lo de abajo sigue valiendo para esa semilla. Lo que no se ve:
   (`fixtures/almacen-temporal.ts`): una que llame a `MarcaService` sin ella
   escribiría la cabecera del ejemplo en el `storage/public` de desarrollo, y
   Vite la serviría.
+- **El asistente de primer arranque solo sale en una base recién
+  instalada.** Si al arrancar la API no existe la fila `asistente_inicial`, nace
+  terminado cuando ya hay hermanos o noticias: así ni el Grupo ni la web de
+  pruebas lo ven al desplegar, y la base de desarrollo tampoco. Para verlo en
+  local, «Repasar con el asistente» (Datos de la corporación), o poner a mano
+  en esa fila `{"paso":0,"saltados":[],"terminado":null}` para que salga sola.
 
 **Lo que se publica va en 0644, y lo de la instalación también tiene
 que poder leerse.** La API publica la marca en `storage/public/marca/` con

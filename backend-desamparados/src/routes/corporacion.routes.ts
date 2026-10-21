@@ -6,7 +6,7 @@ import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { cachePublica } from '../middleware/cache-publica.js';
 import { validate } from '../config/validate.js';
-import { corporacionSchema, identidadSchema, imagenDeMarcaSchema } from '../schemas/corporacion.schema.js';
+import { asistenteSchema, corporacionSchema, identidadSchema, imagenDeMarcaSchema } from '../schemas/corporacion.schema.js';
 import { imagenDeMarcaMiddleware } from '../middleware/upload.middleware.js';
 
 /** Secretaría, sede, redes y privacidad: públicos, los pinta la web para cualquiera. */
@@ -25,6 +25,8 @@ corporacionCmsRouter.get('/marca', soloAdministracion, MarcaController.leer);
 corporacionCmsRouter.put('/identidad', soloAdministracion, validate(identidadSchema), MarcaController.guardar);
 corporacionCmsRouter.put('/marca/:clave', soloAdministracion, validate(imagenDeMarcaSchema), imagenDeMarcaMiddleware.single('imagen'), MarcaController.subir);
 corporacionCmsRouter.delete('/marca/:clave', soloAdministracion, validate(imagenDeMarcaSchema), MarcaController.quitar);
+corporacionCmsRouter.get('/asistente', soloAdministracion, MarcaController.asistente);
+corporacionCmsRouter.put('/asistente', soloAdministracion, validate(asistenteSchema), MarcaController.guardarAsistente);
 corporacionCmsRouter.use(checkRole([Role.ADMIN, Role.SECRETARIA]));
 corporacionCmsRouter.get('/', CorporacionController.leer);
 corporacionCmsRouter.put('/', validate(corporacionSchema), CorporacionController.guardar);

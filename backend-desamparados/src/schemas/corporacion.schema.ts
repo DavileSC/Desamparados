@@ -69,3 +69,12 @@ export const identidadSchema = type({
 export const imagenDeMarcaSchema = type({
   params: { clave: "'escudoSobreOscuro' | 'escudoSobreClaro' | 'escudoDestacado' | 'compartir' | 'correoCabecera'" },
 });
+
+/** El asistente de primer arranque: por qué paso va, qué se ha saltado y si se acaba. */
+export const asistenteSchema = type({
+  body: {
+    paso: '0 <= number.integer <= 6',
+    saltados: "('escudo' | 'colores' | 'contacto' | 'legales' | 'secciones')[] <= 5",
+    terminar: 'boolean',
+  },
+});

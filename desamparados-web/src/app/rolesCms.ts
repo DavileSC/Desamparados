@@ -63,6 +63,8 @@ export const rolesPorRutaCms = {
   estadisticas: ['ADMIN', 'HERMANO_MAYOR'],
   // Los datos de contacto: la guarda de /api/cms/corporacion.
   corporacion: ['ADMIN', 'SECRETARIA'],
+  // El asistente de primer arranque: cambia el nombre, la marca y los módulos, que son solo de Administración.
+  bienvenida: ['ADMIN'],
   auditoria: ['ADMIN', 'HERMANO_MAYOR'],
   // Abrir la web al público o dejarla en «Próximamente»: la guarda de PUT /api/cms/web.
   web: ['ADMIN', 'HERMANO_MAYOR'],

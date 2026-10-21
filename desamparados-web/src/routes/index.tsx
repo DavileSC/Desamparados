@@ -82,6 +82,7 @@ const InventarioAdminPage = lazy(() => import('../features/cms/InventarioAdminPa
 const ContabilidadAdminPage = lazy(() => import('../features/cms/ContabilidadAdminPage'))
 const AuditoriaAdminPage = lazy(() => import('../features/cms/AuditoriaAdminPage'))
 const DatosCorporacionPage = lazy(() => import('../features/cms/DatosCorporacionPage'))
+const AsistentePage = lazy(() => import('../features/cms/asistente/AsistentePage'))
 const WebAbiertaPage = lazy(() => import('../features/cms/WebAbiertaPage'))
 const AjustesInicioPage = lazy(() => import('../features/cms/AjustesInicioPage'))
 const DatosInformesPage = lazy(() => import('../features/cms/datos/DatosInformesPage'))
@@ -288,6 +289,11 @@ const router = createBrowserRouter([
         // de <MarcoCms /> (sin menú del CMS) y fuera de <MarcoPublico /> (sin la
         // barra ni el pie ni el aviso de cookies de la web).
         path: '/cms/vista-previa/:slug', element: <ExigeRol roles={rolesPorRutaCms['paginas/:slug']}>{pagina(PaginaEnVivo, 'nucleo')}</ExigeRol>,
+      },
+      {
+        // El asistente de primer arranque: pantalla propia, sin el menú del CMS
+        // (es un camino con principio y fin), con el tema del CMS que pone él.
+        path: '/cms/bienvenida', element: <ExigeRol roles={rolesPorRutaCms.bienvenida}>{pagina(AsistentePage, 'nucleo')}</ExigeRol>,
       },
       { path: '/cms/acceso', element: pagina(AccesoCmsPage, 'nucleo') },
       {

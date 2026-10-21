@@ -78,6 +78,16 @@ try {
   process.exit(1);
 }
 
+// El asistente de primer arranque: la primera vez se decide si sale (base
+// recién instalada) o no (una web que ya tiene hermanos o noticias).
+const { AsistenteService } = await import('./services/asistente.service');
+try {
+  await AsistenteService.cargar();
+} catch (error) {
+  console.error(`[Asistente] No se pudo leer el asistente de primer arranque de la base de datos: ${describirErrorParaLog(error)}`);
+  process.exit(1);
+}
+
 // Los nombres del menú, igual: la web los pide en cada visita. Si la base no
 // responde aquí, tampoco respondería a lo anterior.
 const { MenuService } = await import('./services/menu.service');
