@@ -60,8 +60,10 @@ export default function MapaFueraDelRecorrido({ linea, onSinMapa }: {
   onSinMapa?: () => void
 }) {
   const contenedor = useRef<HTMLDivElement>(null)
+  // Al día en un efecto, como en RecorridoEnMapa: escribir una referencia
+  // mientras se pinta rompe el pintado concurrente de React.
   const avisarSinMapa = useRef(onSinMapa)
-  avisarSinMapa.current = onSinMapa
+  useEffect(() => { avisarSinMapa.current = onSinMapa }, [onSinMapa])
   const reducir = useReducedMotion() ?? false
   const [error, setError] = useState(false)
 
