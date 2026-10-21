@@ -29,3 +29,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Lo que dejan las pruebas de punta a punta (Playwright): trazas y capturas
+# de los fallos, y el informe. Se miran en local o en los artefactos del CI.
+test-results/
+playwright-report/

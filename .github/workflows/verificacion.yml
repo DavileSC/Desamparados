@@ -219,3 +219,89 @@ jobs:
 
       - name: Auditoría de dependencias
         run: npm audit --audit-level=high
+
+  e2e:
+    name: Punta a punta
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: desamparados-web
+
+    # La misma MariaDB que el job del backend: las pruebas recorren la web
+    # contra la API de verdad, con su base sembrada.
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_DATABASE: ci_desamparados
+          MARIADB_USER: ci
+          MARIADB_PASSWORD: ci
+          MARIADB_ROOT_PASSWORD: ci-root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    # Las del job del backend, para la API que arranca Playwright, y además:
+    # - PAGO_EN_LINEA=redsys con el entorno de pruebas de Redsys y sus claves
+    #   públicas: la compra de la tienda llega hasta el formulario firmado
+    #   para el banco (la prueba no sale a Redsys: hace ella de banco).
+    # - Sin EMAIL_USER: ningún correo sale, y el alta se puede probar entera.
+    env:
+      DATABASE_URL: mysql://ci:ci@127.0.0.1:3306/ci_desamparados
+      DATABASE_HOST: 127.0.0.1
+      DATABASE_USER: ci
+      DATABASE_PASSWORD: ci
+      DATABASE_NAME: ci_desamparados
+      JWT_SECRET: valor-de-relleno-solo-para-la-verificacion-automatica
+      NODE_ENV: test
+      PAGO_EN_LINEA: redsys
+      REDSYS_ENTORNO: pruebas
+      FRONTEND_URL: http://localhost:5173
+      API_URL: http://localhost:3001
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            backend-desamparados/package-lock.json
+            desamparados-web/package-lock.json
+
+      - name: Preparar la API y la base
+        working-directory: backend-desamparados
+        run: |
+          npm ci
+          npx prisma generate
+          npx prisma migrate deploy
+          npx prisma db seed
+
+      - name: Instalar dependencias de la web
+        run: npm ci
+
+      # Solo Chromium, con lo que necesita del sistema.
+      - name: Instalar el navegador
+        run: npx playwright install --with-deps chromium
+
+      - name: Pruebas de punta a punta
+        run: npx playwright test
+
+      # La traza de cada fallo (se abre con `npx playwright show-trace`) y el
+      # informe: sin ellos, un rojo de aquí no se puede mirar.
+      - name: Guardar trazas e informe
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: punta-a-punta
+          path: |
+            desamparados-web/test-results/
+            desamparados-web/playwright-report/
+          retention-days: 7
