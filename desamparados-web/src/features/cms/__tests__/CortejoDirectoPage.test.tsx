@@ -95,7 +95,8 @@ describe('CortejoDirectoPage', () => {
     expect(screen.getByRole('button', { name: 'Habitual' })).toHaveAttribute('aria-pressed', 'true')
     await user.click(alternativo)
     const cambio = fetch.mock.calls.find(([url]) => String(url).endsWith('/cortejo-directo/admin/recorrido'))
-    expect(JSON.parse(String((cambio?.[1] as RequestInit).body))).toEqual({ enUso: 'alternativo' })
+    expect(cambio).toBeDefined()
+    expect(JSON.parse(String((cambio![1] as RequestInit).body))).toEqual({ enUso: 'alternativo' })
     expect(await screen.findByRole('button', { name: 'Alternativo' })).toHaveAttribute('aria-pressed', 'true')
   })
 

@@ -9,6 +9,7 @@ import {
   aCentimos,
   avisoSinPlazo,
   clasificarRecibos,
+  diasHastaElUltimoAviso,
   esDiaHabilBancario,
   esIdentificadorAcreedorValido,
   fechaCobroMinima,
@@ -226,4 +227,20 @@ test('el aviso del cargo con menos de 14 días de antelación se le dice a Tesor
   assert.match(avisoSinPlazo('2026-10-13', '2026-09-30') ?? '', /menos de 14 días/);
   assert.equal(avisoSinPlazo('2026-10-14', '2026-09-30'), null);
   assert.equal(avisoSinPlazo('no es fecha', '2026-09-30'), null);
+});
+
+// AUD-001: el aviso no sale «hoy» si el tope diario de correos no da para
+// todos. La pantalla tiene que contar desde el día en que sale el último.
+test('el plazo del aviso se cuenta desde el día en que sale el último, con el tope diario', () => {
+  assert.equal(diasHastaElUltimoAviso({ avisos: 100, delante: 0, quedanHoy: 250, tope: 250 }), 0);
+  assert.equal(diasHastaElUltimoAviso({ avisos: 100, delante: 0, quedanHoy: 40, tope: 250 }), 1);
+  assert.equal(diasHastaElUltimoAviso({ avisos: 600, delante: 0, quedanHoy: 250, tope: 250 }), 2);
+  // Detrás de otra remesa que aún espera, y con el cupo de hoy ya gastado.
+  assert.equal(diasHastaElUltimoAviso({ avisos: 10, delante: 300, quedanHoy: -5, tope: 250 }), 2);
+
+  assert.equal(avisoSinPlazo('2026-10-14', '2026-09-30', 0), null);
+  const tarde = avisoSinPlazo('2026-10-14', '2026-09-30', 2) ?? '';
+  assert.match(tarde, /el último aviso del cargo sale el 02\/10\/2026/);
+  assert.match(tarde, /menos de 14 días/);
+  assert.doesNotMatch(tarde, /hoy/);
 });

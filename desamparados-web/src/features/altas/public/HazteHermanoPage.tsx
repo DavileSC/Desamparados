@@ -36,6 +36,7 @@ import FondoDeSolicitud from './FondoDeSolicitud'
 import { CAMPOS_API, VALORES_INICIALES, pasosDe, type Campo } from './pasos'
 import { deLaCorporacion, laCorporacion } from '../../../domain/articulos'
 import { site } from '../../../config/site'
+import { hoy as hoyAqui } from '../../../lib/fechas'
 import { useModulos } from '../../../hooks/useModulos'
 import { useNombreEnMenu } from '../../../hooks/useNombresEnMenu'
 
@@ -250,7 +251,7 @@ export default function HazteHermanoPage() {
     ...register(nombre),
   })
 
-  const hoy = new Date().toISOString().slice(0, 10)
+  const hoy = hoyAqui()
 
   return (
     <>

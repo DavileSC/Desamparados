@@ -148,4 +148,5 @@ export const esquemaDeSlug = (slug: SlugContenido) => ESQUEMAS[slug];
 
 /** Para el middleware `validate`: el documento viaja en `body.datos`. */
 export const guardarContenidoSchema = (slug: SlugContenido) =>
-  type({ body: { datos: ESQUEMAS[slug] } });
+  // `versionLeida`: desde qué versión editaba quien guarda (ver ContenidoService.guardar).
+  type({ body: { datos: ESQUEMAS[slug], 'versionLeida?': 'number.integer >= 1 | null' } });

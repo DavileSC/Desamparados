@@ -7,6 +7,7 @@ import { ErrorDeApi } from '../../../lib/api/cliente'
 import { esDniValido } from '../../../lib/validacion/identidad'
 import { MAYORIA_DE_EDAD, aniosCumplidos } from '../../altas/public/schema'
 import AvisoSuave from '../../../components/AvisoSuave'
+import { hoy as hoyAqui } from '../../../lib/fechas'
 
 type Modo = 'menor' | 'yo' | null
 
@@ -117,7 +118,7 @@ export default function DialogoAnadirFicha({ modo, primerApellidoDelTitular, onC
     }
   }
 
-  const hoy = new Date().toISOString().slice(0, 10)
+  const hoy = hoyAqui()
 
   return (
     <Dialog open={modo !== null} onClose={onCerrar} fullWidth maxWidth="sm">

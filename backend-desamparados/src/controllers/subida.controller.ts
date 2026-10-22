@@ -62,9 +62,29 @@ const CALIDAD_WEBP = 82;
  * Exportado para probarlo sin pasar por HTTP y para el script que pasa a WebP
  * las fotos subidas antes (`scripts/fotos-a-webp.ts`).
  */
-export function prepararFoto(original: Buffer): Promise<Buffer> {
-  return enFilaDeFotos(async () => (await convertirFoto(original)).foto);
+export function prepararFoto(original: Buffer, opciones: OpcionesDeFoto = {}): Promise<Buffer> {
+  return enFilaDeFotos(async () => (await convertirFoto(original, opciones)).foto);
 }
+
+/**
+ * Para las fotos que sube cualquiera sin sesión (el alta): un tope de píxeles
+ * propio y sin animación. Un PNG de 5 MB puede decir medir 16 000 × 16 000
+ * (se comprime casi a nada si es liso), y decodificarlo, y codificarlo dos
+ * veces, ocupaba la única fila de fotos del servidor (auditoría del
+ * 22-10-2026, AUD-006). 40 megapíxeles sobran para una foto de carné o un
+ * certificado fotografiado; el tope de serie de sharp son 268.
+ */
+export const FOTO_SIN_SESION: OpcionesDeFoto = { maxPixeles: 40_000_000, sinAnimacion: true };
+
+export interface OpcionesDeFoto {
+  /** Píxeles como mucho (ancho × alto, de todos los fotogramas): más, y se rechaza sin decodificarla. */
+  maxPixeles?: number;
+  /** Solo el primer fotograma de una animación. */
+  sinAnimacion?: boolean;
+}
+
+/** La foto mide más de lo que se admite: el mensaje lo pone quien la recibe. */
+export class FotoDemasiadoGrande extends Error {}
 
 interface FotoConVariantes {
   foto: Buffer;
@@ -111,21 +131,26 @@ async function reducir(foto: Buffer, sinPerdida: boolean): Promise<FotoConVarian
   return variantes;
 }
 
-async function convertirFoto(original: Buffer): Promise<{ foto: Buffer; sinPerdida: boolean }> {
+async function convertirFoto(original: Buffer, { maxPixeles, sinAnimacion = false }: OpcionesDeFoto = {}): Promise<{ foto: Buffer; sinPerdida: boolean }> {
   // 'error' y no el 'warning' por defecto: una foto con un aviso menor de
   // libvips se puede publicar; una que no se puede decodificar, no.
-  const datos = await sharp(original, { failOn: 'error', animated: true }).metadata();
+  const opciones = { failOn: 'error' as const, animated: !sinAnimacion, ...(maxPixeles ? { limitInputPixels: maxPixeles } : {}) };
+  // Leer la cabecera no decodifica nada: el tamaño se mira antes de gastar en ella.
+  const datos = await sharp(original, { failOn: 'error', animated: !sinAnimacion }).metadata();
   if (!['jpeg', 'png', 'webp'].includes(datos.format ?? '')) {
     throw new Error(`Tipo de imagen no admitido: ${datos.format}`);
+  }
+  if (maxPixeles && (datos.width ?? 0) * (datos.height ?? 0) > maxPixeles) {
+    throw new FotoDemasiadoGrande(`La foto mide ${datos.width} × ${datos.height}.`);
   }
 
   // Una animación se deja del tamaño que venga: al resolverla, el alto que ve
   // sharp es el de todos los fotogramas apilados, y un tope de alto la
   // encogería sin motivo. Son raras y pequeñas.
-  const animada = (datos.pages ?? 1) > 1;
+  const animada = !sinAnimacion && (datos.pages ?? 1) > 1;
 
   const leer = () => {
-    const imagen = sharp(original, { failOn: 'error', animated: true }).rotate();
+    const imagen = sharp(original, opciones).rotate();
     return animada
       ? imagen
       // `withoutEnlargement`: si ya es más pequeña, se deja como está. Nunca se

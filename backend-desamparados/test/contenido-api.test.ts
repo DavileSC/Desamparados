@@ -508,3 +508,38 @@ test('una página con los seis tipos de bloque se guarda y se lee tal cual', asy
     await borrarUsuarioPrueba(redes.id);
   }
 });
+
+test('AUD-004: con la versión que se leyó, un guardado que llega tarde no pisa el de otro', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const redes = await crearUsuarioPrueba(Role.REDES);
+  const antes = await db.contenidoPagina.findUnique({ where: { slug: 'portada' } });
+  const guardar = (titulo: string, versionLeida?: number | null) => {
+    const datos = porDefecto('portada') as any;
+    datos.hero.titulo = titulo;
+    return fetch(`${baseUrl}/api/contenido/portada`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Cookie: cookieCms(redes.id, Role.REDES) },
+      body: JSON.stringify(versionLeida === undefined ? { datos } : { datos, versionLeida }),
+    });
+  };
+  try {
+    // Dos editores abren la página a la vez: los dos leen la misma versión.
+    const leida = (await (await guardar('Punto de partida')).json() as { version: number }).version;
+    assert.ok(Number.isInteger(leida), 'guardar devuelve la versión nueva');
+
+    const primero = await guardar('Lo del primero', leida);
+    assert.equal(primero.status, 200);
+    const segundo = await guardar('Lo del segundo', leida);
+    assert.equal(segundo.status, 409);
+    assert.equal((await segundo.json() as { codigo?: string }).codigo, 'PAGINA_CAMBIADA');
+    const leido = await (await fetch(`${baseUrl}/api/contenido/portada`)).json() as any;
+    assert.equal(leido.hero.titulo, 'Lo del primero', 'lo del primero sigue publicado');
+
+    // «Guardar encima», a sabiendas: sin versión no se comprueba.
+    assert.equal((await guardar('Lo del segundo')).status, 200);
+  } finally {
+    await db.contenidoPagina.update({ where: { slug: 'portada' }, data: { datos: antes!.datos as object } });
+    await db.versionContenido.deleteMany({ where: { autorId: redes.id } });
+    await borrarUsuarioPrueba(redes.id);
+  }
+});

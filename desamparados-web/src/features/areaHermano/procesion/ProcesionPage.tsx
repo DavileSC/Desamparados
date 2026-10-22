@@ -499,7 +499,11 @@ function Solicitud({ salida, fichas, onHecho, onError }: { salida: SalidaDelHerm
   const diaElegido = salida.dias.find((d) => d.id === turnoId) ?? null
   const cuantas = elegidas.length
   const nombres = pueden.filter((f) => elegidas.includes(f.id)).map((f) => f.nombre)
-  const sinPuesto = elegidas.some((id) => !puestos[id]?.trim())
+  // Solo vale un puesto del catálogo: escrito a mano, una errata no casaba con
+  // los puestos que reparte el cortejo y la papeleta se quedaba sin tramo. El
+  // de la última salida se propone solo si sigue en la lista.
+  const puestoDe = (id: number) => opcionesPuesto.find((o) => o.localeCompare(puestos[id] ?? '', 'es', { sensitivity: 'base' }) === 0) ?? null
+  const sinPuesto = elegidas.some((id) => !puestoDe(id))
   const importeDonativo = donativo.trim() ? Number(donativo.replace(',', '.')) : 0
   const donativoValido = !conDonativo || (Number.isFinite(importeDonativo) && importeDonativo >= 0 && importeDonativo <= 1000)
   const cuotaSalida = salida.cuotaSalida ?? 0
@@ -513,7 +517,7 @@ function Solicitud({ salida, fichas, onHecho, onError }: { salida: SalidaDelHerm
     // Una a una: si una ficha ya tenía papeleta o el día se llena a mitad, las demás siguen.
     for (const id of elegidas) {
       try {
-        await pedirPapeleta({ hermanoId: id, turnoId, puesto: puestos[id].trim(), ...(conDonativo && { donativo: Math.round(importeDonativo * 100) / 100 }) })
+        await pedirPapeleta({ hermanoId: id, turnoId, puesto: puestoDe(id)!, ...(conDonativo && { donativo: Math.round(importeDonativo * 100) / 100 }) })
       } catch (e: unknown) {
         const nombre = pueden.find((f) => f.id === id)?.nombre ?? ''
         fallos.push(`${nombre}: ${mensaje(e, 'no se ha podido pedir')}`)
@@ -560,12 +564,10 @@ function Solicitud({ salida, fichas, onHecho, onError }: { salida: SalidaDelHerm
                   />
                   {marcada && (
                     <Autocomplete
-                      freeSolo
-                      autoSelect
                       options={opcionesPuesto}
-                      value={puestos[f.id] ?? ''}
+                      value={puestoDe(f.id)}
                       onChange={(_e, v) => setPuestos({ ...puestos, [f.id]: v ?? '' })}
-                      onInputChange={(_e, v, motivo) => { if (motivo === 'input') setPuestos({ ...puestos, [f.id]: v }) }}
+                      noOptionsText="Ese puesto no está en la lista"
                       renderInput={(params) => <TextField {...params} size="small" label={`Puesto que le gustaría a ${f.nombre}`} />}
                     />
                   )}

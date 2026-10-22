@@ -1393,6 +1393,16 @@ model CorreoEnCola {
   @@index([estado, enviadoEl])
 }
 
+/// Los correos que salen al momento, fuera de la cola (un alta, una
+/// contraseña, un justificante), contados por día de Madrid. El servicio de
+/// envío tiene un tope diario para todos: sin contarlos, la cola se gastaba su
+/// cupo entero y lo que fallaba era justo una recuperación de contraseña.
+model CorreosSueltosDelDia {
+  /// AAAA-MM-DD, el día de Madrid.
+  dia      String @id @db.Char(10)
+  enviados Int    @default(0)
+}
+
 enum TipoCabildo {
   ORDINARIO
   EXTRAORDINARIO

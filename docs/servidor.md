@@ -702,6 +702,36 @@ La última línea del volcado tiene que ser «Dump completed», `storage` traer
 las fotos e `instalacion` sus datos (las copias anteriores al 13-10-2026 no la
 llevan). Para volcarla en una base, `despliegue.md`, «Restaurar».
 
+### 7. Avisos si algo falla
+
+Sin esto, una copia que falla solo queda en `journalctl`, y la web caída solo
+se ve cuando alguien la abre (auditoría del 22-10-2026, AUD-003). Dos
+servicios gratuitos, con avisos por correo al de Administración:
+
+- **Las copias, en [healthchecks.io](https://healthchecks.io)**: dos
+  comprobaciones. «Copia del servidor», cada **1 día** con **2 horas** de
+  gracia; su dirección (`https://hc-ping.com/…`) va en `copia.env`:
+
+  ```bash
+  echo 'BACKUP_AVISO_URL=https://hc-ping.com/<la de la comprobación>' | sudo tee -a /etc/desamparados/copia.env >/dev/null
+  sudo systemctl start desamparados-copia.service   # tiene que salir «up» en healthchecks
+  ```
+
+  «Copia en el PC», cada **7 días** con **2 días** de gracia; su dirección, en
+  una variable de entorno del usuario del PC (la lee `bajar-copias.ps1`):
+
+  ```powershell
+  [Environment]::SetEnvironmentVariable('DESAMPARADOS_AVISO_COPIAS', 'https://hc-ping.com/<la otra>', 'User')
+  ```
+
+  El guion avisa con `/fail` si algo sale mal, y healthchecks escribe también
+  si un día (o una semana) no llega nada: el timer no corrió o el PC estuvo
+  apagado. `bajar-copias.ps1` además da por fallo una copia del servidor de
+  más de 3 días, así que ve también que allí se han parado.
+- **La web, en [UptimeRobot](https://uptimerobot.com)**: un monitor HTTP(s) a
+  `https://<dominio>/api/health` cada 5 minutos. Responde 200 con la API y la
+  web levantadas (pasa por nginx); cualquier otra cosa avisa.
+
 ## Estadísticas de visitas
 
 El módulo «Estadísticas de visitas» (Sistema → «Módulos») cuenta las páginas

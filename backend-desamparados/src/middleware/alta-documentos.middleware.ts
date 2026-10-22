@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import type { NextFunction, Request, Response } from 'express';
 import { fileTypeFromBuffer } from 'file-type';
 import { MAX_BYTES_IMAGEN, privateStorageDir } from './upload.middleware.js';
-import { conExtensionWebp, prepararFoto } from '../controllers/subida.controller.js';
+import { conExtensionWebp, FOTO_SIN_SESION, FotoDemasiadoGrande, prepararFoto } from '../controllers/subida.controller.js';
 import { scanBufferClamav } from '../utils/clamd.js';
 
 /**
@@ -170,8 +170,11 @@ export async function comprobarDocumentosDelAlta(req: Request, res: Response, ne
       if (tipo!.mime.startsWith('image/')) {
         let limpia: Buffer;
         try {
-          limpia = await prepararFoto(original);
-        } catch {
+          limpia = await prepararFoto(original, FOTO_SIN_SESION);
+        } catch (error) {
+          if (error instanceof FotoDemasiadoGrande) {
+            throw new DocumentoRechazado(campo, 'La foto es demasiado grande (tiene más de 40 megapíxeles). Hazle una captura o redúcela antes de adjuntarla.', 413);
+          }
           throw new DocumentoRechazado(campo, campo === 'foto' ? 'No se ha podido leer la foto. Comprueba que no está dañada.' : 'No se ha podido leer la foto del certificado. Comprueba que no está dañada.');
         }
         if (limpia.length > reglas.tope) throw new DocumentoRechazado(campo, reglas.pesada, 413);

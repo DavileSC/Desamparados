@@ -35,6 +35,11 @@
 #                          otro equipo, ver docs/servidor.md). Sin ella, solo las lee su dueño.
 #   PROYECTO_DIR           Carpeta con compose.yaml. Por defecto, la raíz del repositorio.
 #   APP_DIR                Carpeta de backend-desamparados. Por defecto, la de este script.
+#   BACKUP_AVISO_URL       Dirección de un vigilante de tareas (healthchecks.io u otro igual) a la
+#                          que se avisa al acabar: tal cual si salió bien, con /fail si no. El
+#                          vigilante escribe por correo si llega un fallo o si un día no llega nada
+#                          (el timer no corrió). Opcional, pero sin ella un fallo solo queda en
+#                          journalctl (docs/servidor.md, «Avisos si algo falla»).
 #
 # El volcado lo hace el contenedor de MariaDB con las credenciales que ya
 # tiene en su entorno: aquí no se leen ni se pasan por la línea de órdenes,
@@ -50,6 +55,19 @@ umask 077
 
 log() { printf '%s [copia] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 fallo() { log "ERROR: $*" >&2; exit 1; }
+
+# Cómo acabó, al vigilante (BACKUP_AVISO_URL). Va en la salida del script, así
+# que cubre cualquier fallo, también los que corta `set -e` sin pasar por
+# `fallo`. Un vigilante que no responde no tumba una copia que salió bien.
+avisar_fin() {
+  local codigo="$1"
+  [[ -n "${BACKUP_AVISO_URL:-}" ]] || return 0
+  local url="${BACKUP_AVISO_URL%/}"
+  (( codigo == 0 )) || url+="/fail"
+  curl -fsS -m 10 --retry 3 -o /dev/null "$url" || log "AVISO: no se ha podido avisar al vigilante de BACKUP_AVISO_URL."
+}
+trap 'avisar_fin $?' EXIT
+[[ -z "${BACKUP_AVISO_URL:-}" || "$BACKUP_AVISO_URL" =~ ^https://[^[:space:]]+$ ]] || fallo "BACKUP_AVISO_URL tiene que ser una dirección https://."
 
 APP_DIR="${APP_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 PROYECTO_DIR="${PROYECTO_DIR:-$(cd "$APP_DIR/.." && pwd)}"
@@ -95,7 +113,7 @@ if command -v flock >/dev/null; then
 fi
 
 TMP="$(mktemp -d "$BACKUP_DIR/.tmp.XXXXXX")"
-trap 'rm -rf "$TMP"' EXIT
+trap 'codigo=$?; rm -rf "$TMP"; avisar_fin "$codigo"' EXIT
 
 # --- 1. Volcado ---
 # Se vuelca DENTRO del contenedor de la base de datos. Las credenciales salen

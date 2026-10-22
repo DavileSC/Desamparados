@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+import { useEffect } from 'react'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
@@ -41,12 +42,13 @@ afterEach(() => { vi.unstubAllGlobals(); localStorage.clear() })
 
 describe('ProcesionAdminPage', () => {
   it('añadir o borrar un día de reparto hace que la Agenda y la mesa lo vuelvan a pedir', async () => {
-    let cliente: QueryClient | null = null
-    const Sonda = () => { cliente = useQueryClient(); return null }
+    // En un objeto y desde un efecto: reasignar una variable de fuera al pintar es un efecto secundario.
+    const visto: { cliente: QueryClient | null } = { cliente: null }
+    const Sonda = () => { const c = useQueryClient(); useEffect(() => { visto.cliente = c }); return null }
     const user = userEvent.setup()
     const llamadas = servidor()
     renderWithProviders(<><Sonda /><ProcesionAdminPage /></>)
-    const invalidar = vi.spyOn(cliente!, 'invalidateQueries')
+    const invalidar = vi.spyOn(visto.cliente!, 'invalidateQueries')
 
     await user.click(await screen.findByRole('button', { name: 'Nuevo día de reparto' }))
     await user.type(within(screen.getByRole('dialog')).getByLabelText(/^Día/), '2027-03-09')

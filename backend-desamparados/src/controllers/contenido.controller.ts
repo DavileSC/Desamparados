@@ -24,9 +24,10 @@ export class ContenidoController {
   /** PUT /api/contenido/:slug (CMS): sustituye el documento entero y deja una versión. */
   static guardar = manejar('Error guardando el contenido de la página', async (req, res) => {
     const slug = slugDe(req);
-    const datos = await ContenidoService.guardar(slug, req.body.datos, autorDeLaPeticion(req));
+    const datos = await ContenidoService.guardar(slug, req.body.datos, autorDeLaPeticion(req), req.body.versionLeida);
     AuditoriaService.log(ACCIONES_AUDITORIA.CONTENIDO_ACTUALIZAR, AuditoriaService.metaFromReq(req), 'contenido', slug);
-    res.status(200).json({ message: 'Contenido guardado', data: datos });
+    // La versión nueva: el editor la manda en el siguiente guardado.
+    res.status(200).json({ message: 'Contenido guardado', data: datos, version: await ContenidoService.versionActual(slug) });
   });
 
   /** GET /api/contenido/:slug/versiones (CMS): el historial, sin los documentos. */

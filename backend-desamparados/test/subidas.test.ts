@@ -22,7 +22,7 @@ import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { carpetaDeSubidas, publicStorageDir, MAX_BYTES_IMAGEN, MAX_BYTES_PDF } from '../src/middleware/upload.middleware.js';
-import { prepararFoto, LADO_MAXIMO } from '../src/controllers/subida.controller.js';
+import { prepararFoto, LADO_MAXIMO, FOTO_SIN_SESION, FotoDemasiadoGrande } from '../src/controllers/subida.controller.js';
 import { parseClamdResponse, reiniciarAvisoSinAntivirus, scanBufferClamav } from '../src/utils/clamd.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { SIN_DB } from './fixtures/sin-db.js';
@@ -161,6 +161,22 @@ describe('fotos sin metadatos (C5)', () => {
     assert.ok(webp.length <= paleta.length, `pasó de ${paleta.length} a ${webp.length} bytes`);
     const [antes, despues] = await Promise.all([sharp(paleta).removeAlpha().raw().toBuffer(), sharp(webp).removeAlpha().raw().toBuffer()]);
     assert.ok(antes.equals(despues), 'sin pérdida: los mismos píxeles');
+  });
+
+  test('AUD-006: la foto sin sesión (el alta) se rechaza si mide demasiado, sin decodificarla, y una animación queda en su primer fotograma', async () => {
+    // Liso, un PNG de 9000 × 5000 (45 Mpx) pesa casi nada: es justo el que cuela por debajo de los 5 MB.
+    const enorme = await sharp({ create: { width: 9000, height: 5000, channels: 3, background: '#ffffff' } }).png().toBuffer();
+    assert.ok(enorme.length < MAX_BYTES_IMAGEN);
+    await assert.rejects(prepararFoto(enorme, FOTO_SIN_SESION), FotoDemasiadoGrande);
+    // En el CMS, con sesión, sigue valiendo (y sale reducida a su lado máximo).
+    assert.equal((await sharp(await prepararFoto(enorme)).metadata()).width, LADO_MAXIMO);
+
+    const fotograma = (color: string) => sharp({ create: { width: 2400, height: 1200, channels: 3, background: color } }).raw().toBuffer();
+    const animada = await sharp(Buffer.concat([await fotograma('#ff0000'), await fotograma('#0000ff')]), { raw: { width: 2400, height: 2400, channels: 3, pageHeight: 1200 } })
+      .webp().toBuffer();
+    const fija = await sharp(await prepararFoto(animada, FOTO_SIN_SESION)).metadata();
+    assert.equal(fija.pages ?? 1, 1, 'sin animación');
+    assert.deepEqual([fija.width, fija.height], [LADO_MAXIMO, LADO_MAXIMO / 2], 'y reducida como cualquier foto');
   });
 
   test('un PNG con transparencia la conserva, y uno de 16 bits se publica en WebP', async () => {

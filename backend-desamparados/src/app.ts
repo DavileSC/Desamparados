@@ -3,6 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { publicStorageDir } from './middleware/upload.middleware.js';
 import { registroPeticiones } from './config/registro.js';
+import db from './config/db.js';
 
 import { authRoutes } from './routes/auth.routes.js';
 import { hermanoRoutes } from './routes/hermano.routes.js';
@@ -153,7 +154,22 @@ app.use(express.json({ limit: CUERPO_GENERAL }));
 // comprueba desde fuera: nginx solo manda a Node lo que va bajo `/api/`, y
 // `/health` por el dominio devolvería la web. `/health` se conserva para
 // comprobarlo en la propia máquina (curl http://127.0.0.1:3001/health).
-app.get(['/health', '/api/health'], (_req, res) => {
+//
+// `/api/health` mira además la base: es el que vigila el monitor de fuera
+// (docs/servidor.md, «Avisos si algo falla»), y una API viva con MariaDB caída
+// contestaba «ok» mientras la web daba errores. `/health` se queda en «el
+// proceso responde»: lo usa el HEALTHCHECK de Docker, y una caída de la base
+// no se arregla marcando la API como enferma.
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime() });
+});
+app.get('/api/health', async (_req, res) => {
+  const espera = new Promise<false>((resolve) => setTimeout(() => resolve(false), 3000).unref());
+  const conBase = await Promise.race([db.$queryRaw`SELECT 1`.then(() => true).catch(() => false), espera]);
+  if (!conBase) {
+    res.status(503).json({ status: 'sin-base', uptime: process.uptime() });
+    return;
+  }
   res.status(200).json({ status: 'ok', uptime: process.uptime() });
 });
 

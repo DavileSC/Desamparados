@@ -1,4 +1,6 @@
+import { Prisma } from '@prisma/client';
 import db from '../config/db.js';
+import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { mezclarConDefectos, porDefecto, type SlugContenido } from '../domain/contenido.js';
 import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-publicos.js';
 import { HttpError, NotFoundError } from '../utils/error.handle.js';
@@ -50,6 +52,15 @@ async function comprobarVideoDelHero(datos: object): Promise<void> {
   }
 }
 
+/** Código del 409 cuando otro guardó la página mientras se editaba (lo lee el editor del CMS). */
+export const PAGINA_CAMBIADA = 'PAGINA_CAMBIADA';
+
+/** La última versión de una página, en el mismo orden que el historial. */
+async function ultimaVersion(cliente: Prisma.TransactionClient | typeof db, slug: SlugContenido): Promise<number | null> {
+  const fila = await cliente.versionContenido.findFirst({ where: { slug }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], select: { id: true } });
+  return fila?.id ?? null;
+}
+
 export class ContenidoService {
   /**
    * El documento de una página, ya mezclado con los textos de siempre. Si la
@@ -76,12 +87,28 @@ export class ContenidoService {
    * mientras alguna versión del historial la lleve, y se libera cuando esa
    * versión sale de él por antigua.
    */
-  static async guardar(slug: SlugContenido, datos: object, autorId?: number): Promise<unknown> {
+  static async guardar(slug: SlugContenido, datos: object, autorId?: number, versionLeida?: number | null): Promise<unknown> {
     if (slug === 'portada') await comprobarVideoDelHero(datos);
     const anterior = await db.contenidoPagina.findUnique({ where: { slug }, select: { datos: true } });
     const autor = await autorDe(autorId);
 
-    await db.$transaction(async (tx) => {
+    // Serializable y con reintento: dos guardados a la vez de la misma página
+    // leerían la misma versión como la última y pasarían los dos la comprobación.
+    await transactionWithRetry(async (tx) => {
+      // Sin pisar lo de otro (auditoría del 22-10-2026, AUD-004): quien guarda
+      // dice desde qué versión editaba, y si desde entonces guardó otra
+      // persona (u otra pantalla, como el cambio de recorrido desde la calle)
+      // no se sustituye a ciegas. Sin `versionLeida` no se comprueba nada.
+      if (versionLeida !== undefined) {
+        const ultima = await ultimaVersion(tx, slug);
+        if (ultima !== versionLeida) {
+          throw new HttpError(
+            'Alguien ha guardado esta página mientras la editabas. Para no borrar sus cambios, recárgala y vuelve a hacer los tuyos, o guarda encima si estás seguro.',
+            409,
+            { codigo: PAGINA_CAMBIADA },
+          );
+        }
+      }
       await tx.contenidoPagina.upsert({
         where: { slug },
         update: { datos },
@@ -91,7 +118,7 @@ export class ContenidoService {
         await tx.versionContenido.create({ data: { slug, datos: anterior.datos as object, autorId: null, autorNombre: '' } });
       }
       await tx.versionContenido.create({ data: { slug, datos, ...autor } });
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     const sobrantes = await db.versionContenido.findMany({
       where: { slug },
@@ -112,6 +139,11 @@ export class ContenidoService {
   }
 
   /** El historial de una página, de la más nueva a la más antigua, sin los documentos. */
+  /** La versión publicada ahora (la más reciente del historial), o null si aún no hay historial. */
+  static async versionActual(slug: SlugContenido): Promise<number | null> {
+    return ultimaVersion(db, slug);
+  }
+
   static async versiones(slug: SlugContenido) {
     const filas = await db.versionContenido.findMany({
       where: { slug },

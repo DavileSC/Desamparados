@@ -309,9 +309,19 @@ export const CLAVE_RECORRIDO = ['contenido', 'recorrido'] as const
 /** El contenido de una página, ya mezclado por el servidor. Se lee sin sesión. */
 export const getContenido = <T,>(slug: SlugContenido) => llamarApi<T>(`/contenido/${slug}`)
 
-/** Sustituye el documento entero (CMS). */
-export const guardarContenido = (slug: SlugContenido, datos: unknown) =>
-  llamarApi<{ message: string; data: unknown }>(`/contenido/${slug}`, { method: 'PUT', json: { datos } })
+/** Código del 409 cuando otro guardó la página mientras se editaba. */
+export const PAGINA_CAMBIADA = 'PAGINA_CAMBIADA'
+
+/**
+ * Sustituye el documento entero (CMS). Con `versionLeida` (la de cuando se
+ * abrió), la API no guarda si desde entonces guardó otro: responde 409 con
+ * PAGINA_CAMBIADA. Sin ella, guarda encima a sabiendas.
+ */
+export const guardarContenido = (slug: SlugContenido, datos: unknown, versionLeida?: number | null) =>
+  llamarApi<{ message: string; data: unknown; version: number | null }>(`/contenido/${slug}`, {
+    method: 'PUT',
+    json: versionLeida === undefined ? { datos } : { datos, versionLeida },
+  })
 
 /** Una versión del historial de una página, sin su documento. */
 export interface VersionDePagina {
@@ -327,6 +337,9 @@ export interface VersionDePagina {
 
 /** El historial de una página, de la más nueva a la más antigua (CMS). */
 export const versionesDePagina = (slug: SlugContenido) => llamarApi<VersionDePagina[]>(`/contenido/${slug}/versiones`)
+
+/** La versión publicada ahora (la primera del historial), o null si la página aún no tiene historial. */
+export const versionActualDePagina = async (slug: SlugContenido) => (await versionesDePagina(slug))[0]?.id ?? null
 
 /** El documento de una versión, con la forma de ahora (CMS). */
 export const versionDePagina = (slug: SlugContenido, id: number) => llamarApi<PaginaDeBloques>(`/contenido/${slug}/versiones/${id}`)

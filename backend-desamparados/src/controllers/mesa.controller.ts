@@ -4,6 +4,8 @@ import { PapeletasService } from '../services/procesion/papeletas.service.js';
 import { anioDeLaMesa, ZonasService, type CobroEnMesa, type DevolucionEnMesa, type EntregaEnMesa, type InscripcionEnMesa } from '../services/procesion/zonas.service.js';
 import { recuentoDeCingulos } from '../services/procesion/cingulos.js';
 import { escucharLaMesa } from '../services/procesion/avisos-mesa.js';
+import { validateSessionAgainstDb } from '../middleware/session.js';
+import type { AuthTokenPayload } from '../utils/jwt.handle.js';
 import type { TipoRopa } from '../services/procesion/ropa.js';
 import { AuditoriaService } from '../services/auditoria.service.js';
 import { manejar } from '../utils/manejar.js';
@@ -19,6 +21,16 @@ const sinClave = <T extends { clave?: string }>(cuerpo: T) => {
 
 /** Cada cuánto se manda un latido por el canal: los proxies cortan las conexiones calladas. */
 const LATIDO_MS = 25_000;
+
+/**
+ * Si la sesión con que se abrió el canal de la mesa sigue valiendo: sin
+ * caducar, sin revocar (`validateSessionAgainstDb`) y con el mismo cargo.
+ */
+export async function canalSigueValiendo(sesion: AuthTokenPayload, ahora: number = Date.now()): Promise<boolean> {
+  if ((sesion.exp ?? Infinity) * 1000 <= ahora) return false;
+  const vigente = await validateSessionAgainstDb(sesion, 'cms').catch(() => null);
+  return vigente !== null && vigente.role === sesion.role;
+}
 
 /** Lo que ve y corrige quien pide: el censo entero, o solo lo que hace falta para cobrar y dar la ropa. */
 const accesoDe = (req: Request): AccesoMesa => ({ censo: esDelCensoEnMesa(req.user?.role) });
@@ -155,7 +167,15 @@ export class MesaController {
     });
     res.write('retry: 3000\n\n');
     const dejar = escucharLaMesa((aviso) => res.write(`data: ${JSON.stringify(aviso)}\n\n`));
-    const latido = setInterval(() => res.write(': latido\n\n'), LATIDO_MS);
+    // La sesión se comprobó al abrir el canal, que puede seguir abierto toda
+    // la tarde: con cada latido se vuelve a mirar en la base (cerrar sesión,
+    // un cargo quitado, la cuenta bloqueada, la sesión caducada). Si ya no
+    // vale o cambió de cargo, se cierra; el navegador reconecta solo y
+    // `checkRole` decide de nuevo (auditoría del 22-10-2026, AUD-011).
+    const sesion = req.sesiones.cms!;
+    const latido = setInterval(() => {
+      void canalSigueValiendo(sesion).then((vale) => (vale ? res.write(': latido\n\n') : res.end()));
+    }, LATIDO_MS);
     req.on('close', () => { clearInterval(latido); dejar(); });
   };
 }

@@ -126,16 +126,19 @@ retención (journald y logrotate) está en `docs/despliegue.md`.
 
 ## Escalado horizontal (varias instancias)
 
-Los contadores de lockout de login/2FA viven en memoria de cada instancia.
-Con una sola instancia (lo normal en una Hermandad) funciona tal cual. Si algún
-día corres varias réplicas detrás de un balanceador, mueve esos contadores y
-los rate limiters a un almacén compartido (Redis, `rate-limit-redis`).
+Los contadores de bloqueo (login, 2FA, cambio de contraseña, DNI del área) y
+las redes confiadas viven en MariaDB (`FalloDeAcceso`, `RedConfiada`) desde el
+15-10-2026: sobreviven a un despliegue y los comparten varias réplicas. Lo que
+sigue en memoria de cada instancia son los rate limiters por IP de
+`express-rate-limit`; con varias réplicas detrás de un balanceador habría que
+llevarlos a un almacén compartido. Lo caducado de esas tablas se borra cada
+hora, y al suprimir una cuenta se va todo lo suyo (`olvidarCuenta`).
 
 ## Protecciones implementadas (resumen)
 
 | Área | Medida |
 |---|---|
-| Autenticación | bcrypt (10 rondas), JWT HS256 8h, invalidación por `tokenValidAfter` |
+| Autenticación | bcrypt (10 rondas), JWT HS256 en cookie httpOnly (8 h el CMS, 4 h el área; con «Recuérdame», 2 y 7 días), invalidación por `tokenValidAfter` y el corte de cada área |
 | Fuerza bruta | Rate limit por IP (login/registro/2FA/reset) + lockout por cuenta (login y 2FA) |
 | 2FA | Solo staff del CMS, backup codes de un solo uso (hash SHA-256), rescate por ADMIN auditado |
 | Autorización | `checkRole` en rutas, verificación de propiedad (anti-IDOR) en todas las operaciones familiares |

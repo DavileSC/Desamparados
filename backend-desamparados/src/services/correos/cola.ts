@@ -12,7 +12,7 @@
  */
 import { EstadoComunicado, EstadoEnvio, Prisma, TipoComunicado } from '@prisma/client';
 import db from '../../config/db';
-import { diaMadridComoIntervalo } from '../../domain/contabilidad.js';
+import { diaMadrid, diaMadridComoIntervalo } from '../../domain/contabilidad.js';
 import { AvisosHermanosService } from '../avisos-hermanos.service.js';
 import type { AvisoAHermano } from '../push.js';
 import { enviarCorreo } from './envio.js';
@@ -41,16 +41,33 @@ function pausa(): number {
 }
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Lo que salió hoy (día de Madrid) por correo desde la cola, de las dos tablas. */
+/**
+ * Lo que salió hoy (día de Madrid) por correo: lo de la cola, de sus dos
+ * tablas, y los sueltos que salen al momento (`envio.ts`). El tope del
+ * servicio es uno para todo: contando solo la cola, un día de mucho envío se
+ * gastaba el cupo entero y lo que fallaba después era una contraseña.
+ */
 export async function enviadosHoy(ahora: Date = new Date()): Promise<number> {
   const { desde } = diaMadridComoIntervalo(ahora);
   const donde = { estado: EstadoEnvio.ENVIADO, enviadoEl: { gte: desde } };
-  const [comunicados, otros] = await Promise.all([
+  const [comunicados, otros, sueltos] = await Promise.all([
     db.comunicadoEnvio.count({ where: donde }),
     db.correoEnCola.count({ where: donde }),
+    db.correosSueltosDelDia.findUnique({ where: { dia: diaMadrid(ahora) }, select: { enviados: true } }),
   ]);
-  return comunicados + otros;
+  return comunicados + otros + (sueltos?.enviados ?? 0);
 }
+
+/**
+ * Los lotes del aviso previo del cargo de una remesa («remesa:12»). Salen
+ * delante de todo lo demás: la norma pide avisar con antelación del cargo, y
+ * detrás de un boletín a todos los hermanos el aviso esperaba días.
+ */
+export const LOTE_AVISO_DE_CARGO = 'remesa:';
+
+/** Los avisos de cargo que aún esperan su correo: los que la previa de una remesa tiene delante. */
+export const avisosDeCargoPendientes = () =>
+  db.correoEnCola.count({ where: { estado: EstadoEnvio.PENDIENTE, porMovil: false, lote: { startsWith: LOTE_AVISO_DE_CARGO } } });
 
 /**
  * Cómo se maqueta y avisa un comunicado: lo pone `comunicados.service`, que es
@@ -145,6 +162,15 @@ export async function reintentarLote(lote: string): Promise<number> {
  * «Rebotó» y no cuenta para el tope del día.
  */
 async function siguienteCorreo(): Promise<boolean> {
+  // El aviso de un cargo en cuenta, antes que nada (ver LOTE_AVISO_DE_CARGO).
+  const deCargo = await db.correoEnCola.findFirst({
+    where: { estado: EstadoEnvio.PENDIENTE, porMovil: false, lote: { startsWith: LOTE_AVISO_DE_CARGO } },
+    orderBy: [{ creadoEn: 'asc' }, { id: 'asc' }],
+  });
+  if (deCargo) {
+    await enviarDeLaCola(deCargo);
+    return true;
+  }
   const [comunicado, otro] = await Promise.all([
     db.comunicadoEnvio.findFirst({
       where: { estado: EstadoEnvio.PENDIENTE, porMovil: false, comunicado: { estado: EstadoComunicado.ENVIANDO } },
@@ -158,19 +184,24 @@ async function siguienteCorreo(): Promise<boolean> {
       ? EstadoEnvio.REBOTADO
       : (await enviarCorreo(comunicado.email, comunicado.comunicado.asunto, delComunicado.correo(comunicado.comunicado, comunicado), {
         uso: 'comunicado', cabeceras: delComunicado.cabeceras(comunicado.comunicado, comunicado.email),
+        desdeLaCola: true,
       })) ? EstadoEnvio.ENVIADO : EstadoEnvio.FALLIDO;
     await db.comunicadoEnvio.update({ where: { id: comunicado.id }, data: { estado, enviadoEl: new Date() } });
     await cerrarSiTermino(comunicado.comunicadoId);
     return true;
   }
   if (otro) {
-    const estado = (await RebotesService.rebota(otro.para))
-      ? EstadoEnvio.REBOTADO
-      : (await enviarCorreo(otro.para, otro.asunto, otro.html, { uso: otro.uso })) ? EstadoEnvio.ENVIADO : EstadoEnvio.FALLIDO;
-    await db.correoEnCola.update({ where: { id: otro.id }, data: { estado, enviadoEl: new Date() } });
+    await enviarDeLaCola(otro);
     return true;
   }
   return false;
+}
+
+async function enviarDeLaCola(envio: { id: number; para: string; asunto: string; html: string; uso: string }): Promise<void> {
+  const estado = (await RebotesService.rebota(envio.para))
+    ? EstadoEnvio.REBOTADO
+    : (await enviarCorreo(envio.para, envio.asunto, envio.html, { uso: envio.uso, desdeLaCola: true })) ? EstadoEnvio.ENVIADO : EstadoEnvio.FALLIDO;
+  await db.correoEnCola.update({ where: { id: envio.id }, data: { estado, enviadoEl: new Date() } });
 }
 
 // --- El repartidor ----------------------------------------------------------
@@ -215,11 +246,13 @@ export function despertarCola(): Promise<void> {
   return enMarcha;
 }
 
-/** Lo ya enviado de la cola se borra al mes: lleva el correo entero maquetado. */
+/** Lo ya enviado de la cola se borra al mes: lleva el correo entero maquetado. La cuenta de los sueltos, también. */
 async function limpiar(ahora: Date = new Date()): Promise<void> {
+  const haceUnMes = new Date(ahora.getTime() - 30 * 24 * 3600 * 1000);
   await db.correoEnCola.deleteMany({
-    where: { estado: { in: [EstadoEnvio.ENVIADO, EstadoEnvio.MOVIL, EstadoEnvio.REBOTADO] }, enviadoEl: { lt: new Date(ahora.getTime() - 30 * 24 * 3600 * 1000) } },
+    where: { estado: { in: [EstadoEnvio.ENVIADO, EstadoEnvio.MOVIL, EstadoEnvio.REBOTADO] }, enviadoEl: { lt: haceUnMes } },
   });
+  await db.correosSueltosDelDia.deleteMany({ where: { dia: { lt: diaMadrid(haceUnMes) } } });
 }
 
 /**

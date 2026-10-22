@@ -188,13 +188,30 @@ export function problemaFechaCobro(fechaCobro: string, hoy: string): string | nu
 export const DIAS_DE_AVISO_PREVIO = 14;
 
 /**
+ * Cuántos días después de hoy sale el último aviso de cargo, con el tope
+ * diario de correos: los avisos van delante de todo en la cola, pero detrás
+ * de los de otra remesa que aún esperan (`delante`), y hoy solo quedan
+ * `quedanHoy` correos. 0 es hoy.
+ */
+export function diasHastaElUltimoAviso({ avisos, delante, quedanHoy, tope }: { avisos: number; delante: number; quedanHoy: number; tope: number }): number {
+  const total = avisos + delante;
+  if (total <= Math.max(0, quedanHoy)) return 0;
+  return Math.ceil((total - Math.max(0, quedanHoy)) / Math.max(1, tope));
+}
+
+/**
  * Si el aviso a cada cuenta llegaría con menos antelación de la que pide la
  * norma, la frase para Tesorería; si no, null. No impide generar la remesa:
- * el mandato puede haber pactado un plazo más corto.
+ * el mandato puede haber pactado un plazo más corto. `retraso`: los días que
+ * tarda en salir el último aviso por el tope diario (`diasHastaElUltimoAviso`).
  */
-export function avisoSinPlazo(fechaCobro: string, hoy: string): string | null {
-  if (!esDiaValido(fechaCobro) || fechaCobro >= sumarDias(hoy, DIAS_DE_AVISO_PREVIO)) return null;
-  return `Cada cuenta recibe hoy el aviso del cargo, con menos de ${DIAS_DE_AVISO_PREVIO} días de antelación. La norma SEPA pide ${DIAS_DE_AVISO_PREVIO}, salvo que el mandato que firman los hermanos diga otro plazo.`;
+export function avisoSinPlazo(fechaCobro: string, hoy: string, retraso = 0): string | null {
+  const ultimo = sumarDias(hoy, Math.max(0, retraso));
+  if (!esDiaValido(fechaCobro) || fechaCobro >= sumarDias(ultimo, DIAS_DE_AVISO_PREVIO)) return null;
+  const cuando = retraso > 0
+    ? `Con el tope diario de correos, el último aviso del cargo sale el ${formatoDia(ultimo)}`
+    : 'Cada cuenta recibe hoy el aviso del cargo';
+  return `${cuando}, con menos de ${DIAS_DE_AVISO_PREVIO} días de antelación. La norma SEPA pide ${DIAS_DE_AVISO_PREVIO}, salvo que el mandato que firman los hermanos diga otro plazo.`;
 }
 
 const formatoDia = (dia: string) => `${dia.slice(8, 10)}/${dia.slice(5, 7)}/${dia.slice(0, 4)}`;

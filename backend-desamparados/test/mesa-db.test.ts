@@ -14,7 +14,8 @@ import type { Server } from 'node:http';
 import { EstadoCita, EstadoPago, EstadoPrenda, MetodoPago, Prisma, Role, TipoPrenda, TipoRecibo, TipoTransaccion } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
-import { generateToken } from '../src/utils/jwt.handle.js';
+import { generateToken, verifyToken } from '../src/utils/jwt.handle.js';
+import { canalSigueValiendo } from '../src/controllers/mesa.controller.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { PapeletasService } from '../src/services/procesion/papeletas.service.js';
 import { MesaService } from '../src/services/procesion/mesa.service.js';
@@ -1071,5 +1072,23 @@ test('la túnica de su talla: en su ficha y, sin repetir, en la hoja de preparac
     assert.equal((await MesaService.ficha(bea.id, await salida(PASION))).propuesta.tunica.numero, lejos.numero);
   } finally {
     await e.recoger();
+  }
+});
+
+test('AUD-011: el canal de la mesa deja de valer si se cierra la sesión, se cambia el cargo o caduca', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const u = await crearUsuarioPrueba(Role.TESORERIA);
+  try {
+    const sesion = verifyToken(generateToken(u.id, Role.TESORERIA, true, 'cms'), 'session')!;
+    assert.equal(await canalSigueValiendo(sesion), true);
+    assert.equal(await canalSigueValiendo(sesion, (sesion.exp! + 1) * 1000), false, 'caducada');
+
+    await db.user.update({ where: { id: u.id }, data: { role: Role.SECRETARIA } });
+    assert.equal(await canalSigueValiendo(sesion), false, 'otro cargo: que vuelva a pasar por checkRole');
+
+    await db.user.update({ where: { id: u.id }, data: { role: Role.TESORERIA, cmsValidoDesde: new Date(Date.now() + 1000) } });
+    assert.equal(await canalSigueValiendo(sesion), false, 'sesión cerrada');
+  } finally {
+    await borrarUsuarioPrueba(u.id);
   }
 });

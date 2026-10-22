@@ -440,7 +440,23 @@ las lleva. `deleteOwnAccount` retira lo pendiente (`retirarPendientes` de
 `correos/cola.ts`, que además cierra el comunicado que se queda sin nada) y
 anonimiza lo enviado. Una tabla nueva que guarde una dirección o un aparato de
 la persona entra ahí y en «Descargar mis datos» (`exportMisDatos`), o la
-supresión se queda a medias sin que nada falle.
+supresión se queda a medias sin que nada falle. Lo mismo con los contadores
+de la entrada, las redes confiadas y los rebotes (`FalloDeAcceso`,
+`RedConfiada`, `CorreoQueRebota`): guardan el correo en claro, y los borra
+`olvidarCuenta` (`utils/contador-fallos.ts`).
+
+**El tope diario es uno para todos los correos.** `enviadosHoy` suma lo de la
+cola y los sueltos (`CorreosSueltosDelDia`, que cuenta `enviarCorreo`). Un
+envío nuevo que salga por la cola pasa `desdeLaCola: true`, o se contaría dos
+veces; uno suelto no pasa nada y cuenta solo.
+
+**Los avisos de cargo de una remesa (lote `remesa:…`) salen delante de todo
+en la cola.** Es el aviso previo que pide la norma SEPA, y detrás de un
+boletín esperaba días. La previa de la remesa calcula con el tope cuándo sale
+el último (`diasHastaElUltimoAviso`). Si un recibo sale de la remesa con su
+aviso aún en la cola, `rehacerAvisoDeCargo` lo reescribe o lo retira: quien
+saque recibos de REMESADO por otro camino que `adminUpdateDetalles` tiene que
+llamarlo también.
 
 **El aviso de rechazo se envía después de borrar la cuenta.**
 `rechazarSolicitud` elimina el usuario entero cuando nunca llegó a aprobarse, así
@@ -947,5 +963,9 @@ o `itinerarioConMapa` (API, `cortejo-directo.service.ts`). Lo hacen ya el
 bloque público, la 404 y el directo; el CMS edita los dos por pestañas.
 
 Cambiar el recorrido en uso desde «Cortejo en directo» **reescribe la página**
-(con su versión en el historial). Si alguien la tiene abierta en el CMS y
-guarda después, vuelve a dejar el que tenía: en plena salida, el CMS cerrado.
+(con su versión en el historial). Desde el 22-10-2026 (AUD-004) eso ya no se
+pierde: el editor del CMS guarda con la versión que leyó al abrir
+(`versionLeida`), y si entretanto la página cambió la API responde 409
+`PAGINA_CAMBIADA` y el editor ofrece «Recargar» o «Guardar encima». Quien
+escriba otra pantalla que guarde una página entera tiene que mandar también
+la versión que leyó (`versionActualDePagina`), leída **antes** que el documento.

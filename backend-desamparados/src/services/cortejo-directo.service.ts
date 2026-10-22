@@ -211,6 +211,9 @@ export class CortejoDirectoService {
   static async cambiarRecorrido(enUso: Variante, meta: MetaDeAuditoria): Promise<CortejoParaLaJunta> {
     const r = await recorrido();
     if (!r) throw new NotFoundError('Ninguna página tiene un itinerario con mapa.');
+    // La versión antes que el documento: si alguien guarda entre las dos
+    // lecturas, el guardado de abajo se para en vez de deshacer lo suyo.
+    const versionLeida = await ContenidoService.versionActual(r.slug);
     const documento = await ContenidoService.leer(r.slug);
     const bloque = bloqueConMapa(documento);
     if (!bloque) throw new NotFoundError('Ninguna página tiene un itinerario con mapa.');
@@ -219,7 +222,7 @@ export class CortejoDirectoService {
     }
     if (varianteEnUso(bloque) !== enUso) {
       bloque.enUso = enUso;
-      await ContenidoService.guardar(r.slug, documento as object, meta.userId);
+      await ContenidoService.guardar(r.slug, documento as object, meta.userId, versionLeida);
       await AuditoriaService.log(ACCIONES_AUDITORIA.CORTEJO_DIRECTO_RECORRIDO, meta, 'contenidoPagina', r.slug, { enUso });
     }
     // Lo guardado un minuto ya no vale: el directo tiene que ver el cambio al momento.

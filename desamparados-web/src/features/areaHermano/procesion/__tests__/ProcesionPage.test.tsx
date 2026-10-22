@@ -15,7 +15,7 @@ const ficha = (id: number, nombre: string, extra: Partial<FichaEnLaProcesion> = 
   id, nombre, apellidos: 'Benítez Salas', esTitular: true, parentesco: null, activo: true, tieneTunicaPropia: true, numeroHermano: 120,
   cuotasPendientes: [], cuotasEnElBanco: 0,
   porSalida: {
-    'sabado-de-pasion': { ...vacia, ultima: { id: 9, year: 2026, puesto: 'Cirio', tramo: 'Tramo 3' }, ...pasion },
+    'sabado-de-pasion': { ...vacia, ultima: { id: 9, year: 2026, puesto: 'Nazareno', tramo: 'Tramo 3' }, ...pasion },
     'rosario-vespertino': { ...vacia, ...rosario },
   },
   ...extra,
@@ -70,7 +70,7 @@ describe('ProcesionPage', () => {
     renderWithProviders(<ProcesionPage />)
 
     expect(await screen.findByText(/aún no está abierta/i)).toBeInTheDocument()
-    expect(screen.getByText('2026 · Cirio · Tramo 3')).toBeInTheDocument()
+    expect(screen.getByText('2026 · Nazareno · Tramo 3')).toBeInTheDocument()
     expect(screen.getByText('Todavía no ha salido')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /pedir/i })).not.toBeInTheDocument()
   })
@@ -93,19 +93,27 @@ describe('ProcesionPage', () => {
     // Un día completo no se ofrece.
     expect(screen.getByRole('radio', { name: /9 de marzo/i })).toBeDisabled()
     // Se propone el puesto de la última vez; quien no salió nunca tiene que decirlo.
-    expect(screen.getByRole('combobox', { name: /le gustaría a Antonio/ })).toHaveValue('Cirio')
+    // El catálogo llega aparte: hasta entonces no se sabe si el de la última vez sigue en la lista.
+    await waitFor(() => expect(screen.getByRole('combobox', { name: /le gustaría a Antonio/ })).toHaveValue('Nazareno'))
     await user.click(screen.getByRole('radio', { name: /8 de marzo/i }))
     const pedir = screen.getByRole('button', { name: 'Pedir 2 papeletas' })
     expect(pedir).toBeDisabled()
     expect(screen.getByText('Di en qué puesto os gustaría ir.')).toBeInTheDocument()
 
-    await user.type(screen.getByRole('combobox', { name: /le gustaría a Pablo/ }), 'Monaguillo')
+    // Solo los del catálogo: lo escrito a mano no casaba con el cortejo (AUD-002).
+    const dePablo = screen.getByRole('combobox', { name: /le gustaría a Pablo/ })
+    await user.type(dePablo, 'Cirio')
+    expect(await screen.findByText('Ese puesto no está en la lista')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    expect(pedir).toBeDisabled()
+    await user.clear(dePablo)
+    await user.type(dePablo, 'Monaguillo')
     await user.click(await screen.findByRole('option', { name: 'Monaguillo' }))
     await user.click(pedir)
 
     await waitFor(() => expect(llamadas.filter((l) => l.metodo === 'POST')).toHaveLength(2))
     const cuerpos = llamadas.filter((l) => l.metodo === 'POST').map((l) => l.cuerpo)
-    expect(cuerpos).toEqual([{ hermanoId: 1, turnoId: 1, puesto: 'Cirio' }, { hermanoId: 2, turnoId: 1, puesto: 'Monaguillo' }])
+    expect(cuerpos).toEqual([{ hermanoId: 1, turnoId: 1, puesto: 'Nazareno' }, { hermanoId: 2, turnoId: 1, puesto: 'Monaguillo' }])
     expect(await screen.findByText(/papeletas pedidas/i)).toBeInTheDocument()
   })
 

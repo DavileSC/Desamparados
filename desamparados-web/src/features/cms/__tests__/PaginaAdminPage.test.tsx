@@ -268,6 +268,28 @@ describe('PaginaAdminPage', () => {
     expect(screen.queryByText(/^Error de validación$/)).not.toBeInTheDocument()
   })
 
+  it('si otro guardó mientras tanto, no pisa: avisa y deja recargar o guardar encima (AUD-004)', async () => {
+    const user = userEvent.setup()
+    const llamadas = montar({
+      status: 409,
+      cuerpo: { status: 'error', message: 'Alguien ha guardado esta página mientras la editabas.', codigo: 'PAGINA_CAMBIADA' },
+    })
+    await screen.findByDisplayValue('Corporación')
+    await user.type(screen.getByRole('textbox', { name: 'Subtítulo' }), ' extra')
+    await guardar(user)
+
+    expect(await screen.findByText(/mientras la editabas/)).toBeInTheDocument()
+    const puts = () => llamadas.filter((l) => l.metodo === 'PUT')
+    // Manda desde qué versión editaba (aquí, una página sin historial).
+    expect(puts()[0].cuerpo).toMatchObject({ versionLeida: null })
+    // El diálogo de confirmar aún se está cerrando: hasta entonces lo demás va en aria-hidden.
+    expect(await screen.findByRole('button', { name: 'Recargar' })).toBeInTheDocument()
+
+    await user.click(await screen.findByRole('button', { name: 'Guardar encima' }))
+    await waitFor(() => expect(puts()).toHaveLength(2))
+    expect(puts()[1].cuerpo).not.toHaveProperty('versionLeida')
+  })
+
   it('«Abrir la publicada» abre la página pública en otra pestaña', async () => {
     montar()
     await screen.findByDisplayValue('Corporación')

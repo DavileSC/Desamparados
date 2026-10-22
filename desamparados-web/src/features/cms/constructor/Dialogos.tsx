@@ -10,7 +10,7 @@ import { paginasPublicasActivas } from '../../../app/cmsNavegacion'
 import { useModulos } from '../../../hooks/useModulos'
 import { NOMBRE_BLOQUE } from '../bloques/formularios'
 import {
-  getContenido, guardarContenido, guardarSeccion, versionDePagina, versionesDePagina,
+  getContenido, guardarContenido, guardarSeccion, versionActualDePagina, versionDePagina, versionesDePagina,
   type Bloque, type PaginaDeBloques, type SlugContenido, type VersionDePagina,
 } from '../../../lib/api/contenido'
 
@@ -46,8 +46,10 @@ export function DialogoCopiarBloque({ bloque, slugActual, onCerrar }: { bloque: 
     if (!bloque || !destino) return
     setEstado('copiando'); setError(null)
     try {
+      // Con su versión: si alguien la guarda entre leerla y añadirle el bloque, no se pisa lo suyo.
+      const version = await versionActualDePagina(destino as SlugContenido)
       const documento = await getContenido<PaginaDeBloques>(destino as SlugContenido)
-      await guardarContenido(destino as SlugContenido, { ...documento, bloques: [...documento.bloques, sinAncla(bloque)] })
+      await guardarContenido(destino as SlugContenido, { ...documento, bloques: [...documento.bloques, sinAncla(bloque)] }, version)
       setEstado('hecho')
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'No se ha podido copiar el bloque.')

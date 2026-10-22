@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { olvidarCuenta } from '../utils/contador-fallos.js';
 import db from '../config/db';
 import { EstadoEnvio, Prisma, Role } from '@prisma/client';
 import { corteDeSesiones, esStaff } from '../utils/jwt.handle';
@@ -268,6 +269,16 @@ export class MisDatosService {
       { OR: [{ userId }, { userId: null, email: { in: direcciones } }] },
       { OR: [{ userId }, { userId: null, para: { in: direcciones } }] },
     );
+
+    // Los contadores de la entrada y las redes confiadas guardan el correo y
+    // las IP desde las que entraba; los rebotes, sus direcciones. Un rebote se
+    // queda si otra cuenta o ficha sigue usando esa dirección: sin él, la cola
+    // le volvería a gastar cupo en un buzón que no existe.
+    await olvidarCuenta(user.email, userId);
+    for (const direccion of new Set(direcciones)) {
+      const enUso = await db.user.count({ where: { email: direccion } }) + await db.hermano.count({ where: { email: direccion } });
+      if (enUso === 0) await db.correoQueRebota.deleteMany({ where: { email: direccion } });
+    }
 
     // Auditoría después de confirmar: si la transacción falla, el registro no
     // debe dar fe de un borrado que no ocurrió. El userId del registro sigue

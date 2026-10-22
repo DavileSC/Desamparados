@@ -20,7 +20,14 @@ param(
   [string]$Usuario = 'copias',
   [string]$Clave = "$env:USERPROFILE\.ssh\copias-desamparados",
   [string]$Destino = "$env:USERPROFILE\Copias Desamparados",
-  [int]$Conservar = 8
+  [int]$Conservar = 8,
+  # Una copia del servidor más vieja que esto es que allí se han parado: se da
+  # como fallo aunque aquí ya estuviera bajada.
+  [int]$DiasMaximos = 3,
+  # Vigilante de tareas (healthchecks.io u otro igual): se le avisa al acabar,
+  # con /fail si algo salió mal, y escribe por correo si no llega nada en la
+  # semana (docs/servidor.md, «Avisos si algo falla»).
+  [string]$Aviso = $env:DESAMPARADOS_AVISO_COPIAS
 )
 
 $ErrorActionPreference = 'Stop'
@@ -28,6 +35,13 @@ $patron = '^desamparados_\d{8}T\d{6}Z\.tar\.gz\.age$'
 
 New-Item -ItemType Directory -Force -Path $Destino | Out-Null
 $registro = Join-Path $Destino 'registro.txt'
+
+function Avisar([bool]$bien) {
+  if (-not $Aviso) { return }
+  $url = $Aviso.TrimEnd('/') + $(if ($bien) { '' } else { '/fail' })
+  try { Invoke-WebRequest -Uri $url -Method Get -TimeoutSec 10 -UseBasicParsing | Out-Null }
+  catch { Apuntar "AVISO: no se ha podido avisar al vigilante ($($_.Exception.Message))." }
+}
 
 function Apuntar([string]$texto) {
   $linea = '{0} {1}' -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $texto
@@ -65,6 +79,8 @@ try {
 
   $ultima = $remotas.Keys | Sort-Object | Select-Object -Last 1
   $local = Join-Path $Destino $ultima
+  $hecha = [datetime]::ParseExact($ultima.Substring(13, 8), 'yyyyMMdd', $null)
+  $dias = ((Get-Date).Date - $hecha).Days
 
   if (Test-Path $local) {
     Apuntar "La última copia ($ultima) ya estaba bajada."
@@ -94,7 +110,12 @@ try {
     Apuntar "Borrada la copia antigua $($vieja.Name)."
   }
   Get-ChildItem -Path $Destino -Filter '*.parcial' -File | Remove-Item -Force
+
+  # Al final, y no al principio: la que haya se baja igualmente.
+  if ($dias -gt $DiasMaximos) { throw "La última copia del servidor es de hace $dias días: allí las copias se han parado." }
+  Avisar $true
 } catch {
   Apuntar "ERROR: $($_.Exception.Message)"
+  Avisar $false
   exit 1
 }

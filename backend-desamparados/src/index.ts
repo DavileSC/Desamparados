@@ -146,6 +146,14 @@ void import('./services/comunicados.service.js')
 // La víspera de cada día de reparto, el recordatorio de la cita a quien la tiene.
 void import('./services/procesion/recordatorio-citas.service.js').then(({ arrancarRecordatorios }) => arrancarRecordatorios());
 
+// Los contadores de fallos al entrar y las redes confiadas guardan correos e
+// IP: lo caducado se borra cada hora, no solo cuando se juntan cien fallos.
+void import('./utils/contador-fallos.js').then(({ barrerCaducados }) => {
+  const barrer = () => barrerCaducados().catch((error) => console.error('❌ [Accesos] No se ha podido borrar lo caducado:', error));
+  void barrer();
+  setInterval(barrer, 60 * 60 * 1000).unref();
+});
+
 // Aviso, no barrera. Un despliegue que se salte la conversión a bloques no
 // falla: el CMS abre, `mezclarConDefectos` descarta las claves de la forma
 // antigua y el Recorrido, la Titular y la Historia vuelven a los textos de

@@ -29,7 +29,7 @@ import { Norma43Service } from '../src/services/norma43.service.js';
 import { inicioDiaMadrid } from '../src/domain/contabilidad.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 import { ponerTransporte, type TransporteDeCorreo } from '../src/services/correos/envio.js';
-import { despertarCola } from '../src/services/correos/cola.js';
+import { colaTerminada, despertarCola } from '../src/services/correos/cola.js';
 
 const YEAR = 2097;
 const IBAN_VALIDO = 'ES9121000418450200051332';
@@ -403,6 +403,58 @@ test('al generar, cada cuenta recibe por correo un aviso del cargo con todos sus
     assert.deepEqual(deA.cuota, { year: YEAR, importe: 30 });
     assert.deepEqual(deA.proximoCargo, { fecha: fechaCobro(), importe: 30 });
     assert.deepEqual(data.find((f) => f.id === b.id)!.proximoCargo, { fecha: fechaCobro(), importe: 12.5 });
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('AUD-001: el aviso del cargo sale delante de lo que ya esperaba en la cola', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  const lote = `apertura:prueba-${Date.now()}`;
+  try {
+    const a = await e.hermano();
+    await e.recibo(a.id, '30.00');
+    // Un envío a muchos que esperaba desde hace una hora (el tope del día).
+    await db.correoEnCola.create({
+      data: { lote, titulo: 'Prueba', para: 'antes@prueba.es', asunto: 'Esperaba antes', html: '<p>hola</p>', uso: 'prueba', creadoEn: new Date(Date.now() - 3600_000) },
+    });
+    const desde = enviados.length;
+    await RemesaService.generar({ fechaCobro: fechaCobro(), year: YEAR }, e.meta);
+    await despertarCola();
+    await colaTerminada();
+    const orden = enviados.slice(desde).map((c) => c.subject);
+    const deCargo = orden.findIndex((s) => /^Aviso de cargo en su cuenta/.test(s));
+    const anterior = orden.indexOf('Esperaba antes');
+    assert.ok(deCargo >= 0 && anterior >= 0, 'salen los dos');
+    assert.ok(deCargo < anterior, 'el aviso del cargo pasa delante');
+  } finally {
+    await db.correoEnCola.deleteMany({ where: { lote } });
+    await e.recoger();
+  }
+});
+
+test('AUD-001: un recibo que sale de la remesa rehace el aviso que aún espera, y sin nada que cargar lo retira', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    const a = await e.hermano();
+    const b = await e.hermano();
+    const ra = await e.recibo(a.id, '30.00');
+    const rb = await e.recibo(b.id, '12.50');
+    const remesa = await RemesaService.generar({ fechaCobro: fechaCobro(), year: YEAR }, e.meta);
+    await colaTerminada();
+    // Como si el tope del día lo hubiera dejado esperando.
+    const lote = `remesa:${remesa.id}`;
+    await db.correoEnCola.updateMany({ where: { lote }, data: { estado: 'PENDIENTE', enviadoEl: null } });
+
+    await ReciboService.adminUpdateDetalles(rb.id, { estado: 'ANULADO' }, e.meta);
+    const rehecho = await db.correoEnCola.findFirstOrThrow({ where: { lote } });
+    assert.match(rehecho.asunto, /30,00 €/, 'el aviso ya solo carga lo que sigue en la remesa');
+    assert.ok(!rehecho.html.includes('12,50'), 'sin el recibo anulado');
+
+    await ReciboService.adminUpdateDetalles(ra.id, { estado: 'ANULADO' }, e.meta);
+    assert.equal(await db.correoEnCola.count({ where: { lote } }), 0, 'sin nada que cargar, no se avisa');
   } finally {
     await e.recoger();
   }

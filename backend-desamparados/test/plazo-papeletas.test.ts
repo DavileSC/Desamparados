@@ -163,7 +163,13 @@ test('con el plazo cerrado no se reserva día; abierto, sí', async (t) => {
     assert.equal(res.status, 409);
 
     await fijarPlazo(true);
-    const pedida = await MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: turno.id, hermanoId: e.sobrino.id, puesto: 'Monaguillo' });
+    // Un puesto escrito a mano no entra (AUD-002): el cortejo no lo
+    // reconocería. Ni por la API, aunque la pantalla ya no deje escribirlo.
+    const inventado = await comoHermano(e.usuario.id, '/api/procesion/avisar', { method: 'POST', json: { turnoId: turno.id, hermanoId: e.sobrino.id, puesto: 'Nazareno de ciriod' } });
+    assert.equal(inventado.status, 400);
+    assert.equal(await db.cita.count({ where: { hermanoId: e.sobrino.id } }), 0, 'sin puesto válido no queda cita reservada');
+    // Se reconoce sin distinguir mayúsculas y se guarda como está en el catálogo.
+    const pedida = await MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: turno.id, hermanoId: e.sobrino.id, puesto: 'monaguillo' });
     assert.equal((await db.cita.findUniqueOrThrow({ where: { id: pedida.citaId } })).estado, 'RESERVADA');
     const solicitud = await db.solicitud.findUniqueOrThrow({ where: { id: pedida.solicitudId } });
     assert.equal(solicitud.puesto, 'Monaguillo', 'queda lo que pidió: el puesto lo decide el Grupo');

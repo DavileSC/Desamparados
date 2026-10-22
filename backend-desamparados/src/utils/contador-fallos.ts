@@ -251,3 +251,54 @@ export class RegistroReciente {
     await db.redConfiada.deleteMany({ where: { vistaEn: { lt: new Date(this.ahora() - this.opciones.vigenciaMs) } } });
   }
 }
+
+/**
+ * Lo que los contadores y las redes confiadas guardan de una cuenta: su
+ * correo en claro (solo o con la red, «correo|ip») y su número (el doble
+ * factor, el cambio de contraseña, los DNI del área). Al suprimirla (RGPD,
+ * art. 17) se va todo: la cuenta ya no existe, y su correo y sus IP seguían
+ * aquí semanas (auditoría del 22-10-2026, AUD-005).
+ *
+ * El prefijo se busca con LIKE y se filtra después con la comparación exacta,
+ * como en `limpiarPrefijo`: un `_` del correo valdría por cualquier letra y se
+ * llevaría los contadores de otra cuenta.
+ */
+export async function olvidarCuenta(email: string, userId: number): Promise<void> {
+  const correo = email.trim().toLowerCase();
+  const prefijo = `${correo}|`;
+  const [fallos, redes] = await Promise.all([
+    db.falloDeAcceso.findMany({ where: { OR: [{ clave: correo }, { clave: { startsWith: prefijo } }] }, select: { contador: true, clave: true } }),
+    db.redConfiada.findMany({ where: { clave: { startsWith: prefijo } }, select: { clave: true } }),
+  ]);
+  const suyos = fallos.filter((f) => f.clave === correo || f.clave.startsWith(prefijo));
+  await db.falloDeAcceso.deleteMany({
+    where: {
+      OR: [
+        ...suyos.map((f) => ({ contador: f.contador, clave: f.clave })),
+        { contador: { in: CONTADORES_POR_CUENTA }, clave: String(userId) },
+      ],
+    },
+  });
+  const suyas = redes.map((r) => r.clave).filter((c) => c.startsWith(prefijo));
+  if (suyas.length) await db.redConfiada.deleteMany({ where: { clave: { in: suyas } } });
+}
+
+/** Los contadores cuya clave es el número de la cuenta (ver quién crea cada `ContadorFallos`). */
+const CONTADORES_POR_CUENTA = ['doble-factor', 'cambio-de-contrasena', 'dni-desde-el-area'];
+
+/**
+ * Lo caducado, con reloj: el barrido de cada contador salta cada 100 fallos
+ * de su proceso, y con pocos fallos (o un despliegue entre medias, que pone la
+ * cuenta a cero) un correo mal escrito al entrar, con su IP, se quedaba en la
+ * tabla indefinidamente. Lo llama cada hora `src/index.ts`.
+ */
+export async function barrerCaducados(ahora: number = Date.now()): Promise<void> {
+  const hecho = new Date(ahora);
+  // El plazo más largo de olvido de cualquier contador (las tandas del doble
+  // factor, un día) más margen: aquí no se sabe de qué contador es cada fila,
+  // y borrar antes de tiempo levantaría un bloqueo creciente.
+  const limite = new Date(ahora - 2 * 24 * 3600 * 1000);
+  await db.falloDeAcceso.deleteMany({ where: { bloqueadoHasta: { lte: hecho, lt: limite }, ultimoFallo: { lt: limite } } });
+  // Las redes confiadas valen 30 días (`AuthService.redesConfiadas`).
+  await db.redConfiada.deleteMany({ where: { vistaEn: { lt: new Date(ahora - 30 * 24 * 3600 * 1000) } } });
+}

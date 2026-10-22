@@ -26,7 +26,7 @@ import { leerDatosEvento } from '../recibos/comunes.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../auditoria.service.js';
 import { idCategoriaDevoluciones } from '../recibos/comunes.js';
 import { PlazoPapeletasService, cuotaDe } from './plazo.service.js';
-import { SalidasService, exigirProximaFecha, type SalidaConActo } from './salidas.service.js';
+import { SalidasService, exigirProximaFecha, exigirPuestoDeLaLista, type SalidaConActo } from './salidas.service.js';
 import { PapeletasService } from './papeletas.service.js';
 import { cuotasQueCuentan, pendienteDe } from './zonas.service.js';
 import { avisarALaMesa } from './avisos-mesa.js';
@@ -97,6 +97,10 @@ export class MiProcesionService {
         throw new HttpError(`La inscripción ${deArticulo(articulo, salida.nombre)} no está abierta.`, 409);
       }
       exigirProximaFecha(salida);
+      // Como en la mesa: solo un puesto del catálogo. Escrito a mano, el
+      // cortejo no lo reconocía y la papeleta se quedaba sin tramo, y la mesa
+      // lo daba después por bueno porque ya era «el que tenía».
+      const puestoDelCatalogo = exigirPuestoDeLaLista(salida.puestos, puesto);
       // El año de la salida que se prepara, no el de hoy ni el del reparto: un
       // reparto en otoño es para la salida del año siguiente.
       const year = PlazoPapeletasService.anioDeLaProcesion(salida);
@@ -137,7 +141,7 @@ export class MiProcesionService {
 
       // Comprueba dentro que no tenga ya solicitud ni papeleta de esta salida.
       const solicitud = await PapeletasService.crearSolicitudEnTransaccion(tx, {
-        hermanoId, salida, year, puesto, donativo, citaId: cita.id, origen: OrigenSolicitud.WEB,
+        hermanoId, salida, year, puesto: puestoDelCatalogo, donativo, citaId: cita.id, origen: OrigenSolicitud.WEB,
       });
       return { id: cita.id, citaId: cita.id, salida: salida.slug, salidaId: salida.id, solicitudId: solicitud.id };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });

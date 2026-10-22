@@ -11,6 +11,10 @@ interface DatosDePrueba {
   admin: CuentaDelCms
   redaccion: CuentaDelCms
   secretaria: CuentaDelCms
+  paginas: CuentaDelCms
+  puerta: CuentaDelCms
+  /** La página de bloques que edita la prueba del constructor, y el subtítulo que le pone. */
+  pagina: { slug: string; ruta: string; subtitulo: string }
   hermano: { email: string; salida: string }
   producto: { id: number; nombre: string }
   /** Correos libres para lo que la prueba crea: el comprador y quien pide el alta. */

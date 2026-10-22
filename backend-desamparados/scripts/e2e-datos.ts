@@ -35,6 +35,12 @@ const noticia = (sufijo: string) => `Noticia de prueba ${sufijo}`;
 
 const correo = (quien: string, sufijo: string) => `e2e-${quien}-${sufijo}@pruebas.invalido`;
 
+/**
+ * La página de bloques que edita la prueba del constructor: una del núcleo,
+ * que está en cualquier instalación. La recogida la deja como estaba.
+ */
+const PAGINA = { slug: 'formacion', ruta: '/nuestros-fines/formacion' } as const;
+
 async function cuenta(quien: string, sufijo: string, role: Role, extra: { twoFactorEnabled?: boolean; twoFactorSecret?: string } = {}) {
   return db.user.create({
     data: {
@@ -94,6 +100,9 @@ async function preparar(sufijo: string) {
     admin: await conCodigo('admin'),
     redaccion: await conCodigo('noticias'),
     secretaria: await conCodigo('altas'),
+    paginas: await conCodigo('paginas'),
+    puerta: await conCodigo('puerta'),
+    pagina: { ...PAGINA, subtitulo: `Subtítulo de prueba ${sufijo}` },
     hermano: { email: hermano.email, salida: salida.nombre },
     producto: { id: enVenta.id, nombre: enVenta.nombre },
     comprador: correo('compra', sufijo),
@@ -122,6 +131,22 @@ async function limpiar(sufijo: string) {
   await db.transaccion.deleteMany({ where: { id: { in: apuntes } } });
   await db.producto.deleteMany({ where: { nombre: producto(sufijo) } });
   await db.noticia.deleteMany({ where: { titulo: noticia(sufijo) } });
+
+  // Las páginas que se editaron: vuelven a la última versión que no es de
+  // estas cuentas (o a su texto de partida si no tenían fila), y fuera las
+  // versiones de la prueba.
+  const deLaPrueba = (await db.user.findMany({ where: { email: deEstaEjecucion }, select: { id: true } })).map((u) => u.id);
+  const tocadas = await db.versionContenido.findMany({ where: { autorId: { in: deLaPrueba } }, select: { slug: true }, distinct: ['slug'] });
+  for (const { slug } of tocadas) {
+    const anterior = await db.versionContenido.findFirst({
+      where: { slug, OR: [{ autorId: null }, { autorId: { notIn: deLaPrueba } }] },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: { datos: true },
+    });
+    if (anterior) await db.contenidoPagina.update({ where: { slug }, data: { datos: anterior.datos as object } });
+    else await db.contenidoPagina.deleteMany({ where: { slug } });
+  }
+  await db.versionContenido.deleteMany({ where: { autorId: { in: deLaPrueba } } });
 
   // Las fichas, con sus papeletas y recibos, y después las cuentas. La foto
   // y el certificado del alta se quedarían en disco sin ficha que los nombre.

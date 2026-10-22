@@ -461,8 +461,8 @@ test('D16: dos avisos a la vez para dos días no dejan al hermano con dos citas;
     // Reservar exige el plazo abierto (plazo-papeletas.test.ts prueba el cerrado).
     await conLaPasion({ plazoAbierto: true }, async () => {
       const resultados = await Promise.allSettled([
-        MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t1.id, hermanoId: hermano.id, puesto: 'Cirio' }),
-        MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t2.id, hermanoId: hermano.id, puesto: 'Cirio' }),
+        MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t1.id, hermanoId: hermano.id, puesto: 'Nazareno' }),
+        MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t2.id, hermanoId: hermano.id, puesto: 'Nazareno' }),
       ]);
       assert.equal(resultados.filter((r) => r.status === 'fulfilled').length, 1, 'solo una reserva puede ganar');
       const reservadas = await db.cita.findMany({ where: { hermanoId: hermano.id, estado: EstadoCita.RESERVADA } });
@@ -473,7 +473,7 @@ test('D16: dos avisos a la vez para dos días no dejan al hermano con dos citas;
       // La cita es única por [hermano, turno]: cancelar y volver a pedir el mismo día chocaba con la clave.
       await MiProcesionService.cancelarAsistencia(e.usuario.id, reservadas[0].id);
       assert.equal(await db.solicitud.count({ where: { hermanoId: hermano.id, estado: 'PENDIENTE' } }), 0, 'cancelar cancela la solicitud');
-      const otraVez = await MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: reservadas[0].turnoId, hermanoId: hermano.id, puesto: 'Cirio' });
+      const otraVez = await MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: reservadas[0].turnoId, hermanoId: hermano.id, puesto: 'Nazareno' });
       assert.equal(otraVez.id, reservadas[0].id);
       assert.equal((await db.cita.findUniqueOrThrow({ where: { id: otraVez.id } })).estado, EstadoCita.RESERVADA);
     });
@@ -582,7 +582,7 @@ test('NG3: quien no pasó su día cambia a otro con la misma solicitud, o la can
     const t1 = await e.turno(new Date(Date.now() + 60 * 60 * 1000));
     const t2 = await e.turno(new Date(Date.now() + 2 * 60 * 60 * 1000));
     await conLaPasion({ plazoAbierto: true }, async () => {
-      const { citaId, solicitudId } = await MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t1.id, hermanoId: hermano.id, puesto: 'Vara' });
+      const { citaId, solicitudId } = await MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t1.id, hermanoId: hermano.id, puesto: 'Nazareno' });
       // Lo que deja «Procesar ausencias».
       await db.cita.update({ where: { id: citaId }, data: { estado: EstadoCita.NO_PRESENTADO } });
 
@@ -591,7 +591,7 @@ test('NG3: quien no pasó su día cambia a otro con la misma solicitud, o la can
       assert.equal(cambio.solicitudId, solicitudId);
       const solicitud = await db.solicitud.findUniqueOrThrow({ where: { id: solicitudId } });
       assert.equal(solicitud.citaId, cambio.citaId);
-      assert.equal(solicitud.puesto, 'Vara', 'la solicitud es la misma');
+      assert.equal(solicitud.puesto, 'Nazareno', 'la solicitud es la misma');
       assert.equal((await db.cita.findUniqueOrThrow({ where: { id: cambio.citaId } })).estado, EstadoCita.RESERVADA);
       assert.equal((await db.cita.findUniqueOrThrow({ where: { id: citaId } })).estado, EstadoCita.NO_PRESENTADO, 'la ausencia queda como estaba');
       assert.ok(await auditoria(ACCIONES_AUDITORIA.SOLICITUD_SALIDA_CAMBIAR_DIA, solicitudId));
@@ -605,7 +605,7 @@ test('NG3: quien no pasó su día cambia a otro con la misma solicitud, o la can
       }
 
       // Cancelar la de quien no pasó: antes exigía RESERVADA.
-      const delOtro = await MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t1.id, hermanoId: otro.id, puesto: 'Cirio' });
+      const delOtro = await MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t1.id, hermanoId: otro.id, puesto: 'Nazareno' });
       await db.cita.update({ where: { id: delOtro.citaId }, data: { estado: EstadoCita.NO_PRESENTADO } });
       await MiProcesionService.cancelarAsistencia(e.usuario.id, delOtro.citaId);
       assert.equal((await db.solicitud.findUniqueOrThrow({ where: { id: delOtro.solicitudId } })).estado, 'CANCELADA');

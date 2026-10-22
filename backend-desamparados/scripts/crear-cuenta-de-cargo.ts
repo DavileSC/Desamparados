@@ -13,11 +13,15 @@ import crypto from 'node:crypto';
 import { Role } from '@prisma/client';
 import db from '../src/config/db.js';
 import { encrypt } from '../src/utils/bcrypt.handle.js';
+import { ACCIONES_AUDITORIA, AuditoriaService } from '../src/services/auditoria.service.js';
 
 const CARGOS = [Role.ADMIN, Role.TESORERIA, Role.ALBACERIA, Role.HERMANO_MAYOR, Role.REDES, Role.SECRETARIA] as const;
 
 try {
-  const [email, cargo, nombre, apellidos] = process.argv.slice(2).map((a) => a.trim());
+  const [escrito, cargo, nombre, apellidos] = process.argv.slice(2).map((a) => a.trim());
+  // En minúsculas, como lo guardan el alta y el login: con mayúsculas, las
+  // comparaciones que se hacen fuera de la base (la cola, los rebotes) no la reconocían.
+  const email = escrito?.toLowerCase();
   if (!email || !cargo || !nombre || !apellidos) {
     throw new Error('Uso: npm run cuenta:crear-cargo -- correo CARGO "Nombre" "Apellidos"');
   }
@@ -29,7 +33,7 @@ try {
   }
 
   const password = crypto.randomBytes(18).toString('base64url');
-  await db.user.create({
+  const creada = await db.user.create({
     data: {
       email,
       // El mismo hash que el resto de la aplicación (bcrypt, 10 rondas).
@@ -43,6 +47,10 @@ try {
       role: cargo as Role,
     },
   });
+
+  // Queda en la auditoría como cualquier cargo dado desde Accesos: una cuenta
+  // de Administración creada en el servidor no podía aparecer sin rastro.
+  await AuditoriaService.log(ACCIONES_AUDITORIA.STAFF_PROMOTE, {}, 'user', creada.id, { despues: { rol: cargo }, cuentaNueva: true, desde: 'npm run cuenta:crear-cargo' });
 
   console.log(JSON.stringify({ email, cargo, password }));
 } catch (error) {

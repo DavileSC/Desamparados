@@ -31,7 +31,7 @@ import { paginaPublica } from '../../app/cmsNavegacion'
 import { ErrorDeApi } from '../../lib/api/cliente'
 import { site } from '../../config/site'
 import {
-  getContenido, guardarContenido,
+  getContenido, guardarContenido, versionActualDePagina, PAGINA_CAMBIADA,
   type Bloque, type CabeceraPagina, type PaginaDeBloques, type SlugContenido,
 } from '../../lib/api/contenido'
 
@@ -129,15 +129,31 @@ export default function PaginaAdminPage() {
   const [historial, setHistorial] = useState(false)
   const [vistaEnPantalla, setVistaEnPantalla] = useState(false)
   const [quitado, setQuitado] = useState(false)
+  // Desde qué versión se edita: al guardar, la API no pisa lo que otro haya
+  // guardado mientras tanto (otro editor, o el cambio de recorrido desde la
+  // calle). `undefined` si no se pudo saber: entonces se guarda como antes.
+  const [version, setVersion] = useState<number | null | undefined>(undefined)
+  const [conflicto, setConflicto] = useState(false)
+  const [recargas, setRecargas] = useState(0)
 
   useEffect(() => {
-    getContenido<PaginaDeBloques>(slug as SlugContenido)
-      .then(({ cabecera: c, bloques }) => {
+    // La versión antes que el documento: si alguien guarda entre las dos
+    // lecturas, al guardar se avisa de más, nunca se pisa de menos.
+    versionActualDePagina(slug as SlugContenido)
+      .then((v) => v, () => undefined)
+      .then((v) => getContenido<PaginaDeBloques>(slug as SlugContenido).then(({ cabecera: c, bloques }) => {
+        setVersion(v)
         reiniciar({ cabecera: c, filas: bloques.map(conClave) })
         setInicial({ cabecera: c, bloques })
-      })
+      }))
       .catch(() => setError('No se ha podido cargar la página.'))
-  }, [slug, reiniciar])
+  }, [slug, reiniciar, recargas])
+
+  /** Trae lo que guardó el otro, sin lo de aquí (es lo que pide el aviso del choque). */
+  const recargar = () => {
+    setConflicto(false); setError(null); setClavesInvalidas(new Set()); setAbierta(null)
+    setRecargas((n) => n + 1)
+  }
 
   // Ctrl+Z y Ctrl+Mayús+Z (o Ctrl+Y). Dentro del editor de texto con formato
   // no: tiene su propio deshacer, el de lo que se está escribiendo ahí.
@@ -191,7 +207,8 @@ export default function PaginaAdminPage() {
     requestAnimationFrame(() => document.querySelector(`[data-fila-bloque="${indice}"]`)?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' }))
   }, [filas])
 
-  const guardar = async () => {
+  /** `encima`: guardar aunque otro haya guardado mientras tanto (lo elige quien edita tras el aviso). */
+  const guardar = async (encima = false) => {
     if (!cabecera) return
     if (cabecera.titulo.trim() === '') { setError(AVISO_SIN_TITULO); return }
 
@@ -220,16 +237,20 @@ export default function PaginaAdminPage() {
 
     const datos: PaginaDeBloques = { cabecera, bloques: sinClave(filas) }
     if (JSON.stringify(datos) === JSON.stringify(inicial)) return
-    setGuardando(true); setError(null); setClavesInvalidas(new Set())
+    setGuardando(true); setError(null); setConflicto(false); setClavesInvalidas(new Set())
     try {
-      await guardarContenido(slug as SlugContenido, datos)
+      const { version: nueva } = await guardarContenido(slug as SlugContenido, datos, encima ? undefined : version)
+      setVersion(nueva ?? undefined)
       setInicial(datos)
       // Lo guardado es el nuevo punto de partida: deshacer no vuelve a antes de guardar.
       reiniciar({ cabecera, filas })
       setAviso('Página guardada y publicada. Queda una versión nueva en el historial.')
       void queryClient.invalidateQueries({ queryKey: ['contenido', slug] })
     } catch (e: unknown) {
-      if (e instanceof ErrorDeApi && Object.keys(e.fields).length > 0) {
+      if (e instanceof ErrorDeApi && e.status === 409 && (e.payload as { codigo?: string } | undefined)?.codigo === PAGINA_CAMBIADA) {
+        setConflicto(true)
+        setError(e.message)
+      } else if (e instanceof ErrorDeApi && Object.keys(e.fields).length > 0) {
         setError(mensajeDelServidor(e.fields, filas))
         const claves = clavesDelServidor(e.fields, filas)
         setClavesInvalidas(claves)
@@ -265,14 +286,28 @@ export default function PaginaAdminPage() {
   return (
     <>
       <Helmet><title>{`${cabecera.titulo} | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
-      {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}
+      {error && (
+        <Alert
+          severity="error"
+          sx={{ mb: 3 }}
+          onClose={conflicto ? undefined : () => setError(null)}
+          action={conflicto ? (
+            <Stack direction="row" spacing={1}>
+              <Button color="inherit" size="small" onClick={recargar}>Recargar</Button>
+              <Button color="inherit" size="small" onClick={() => void guardar(true)}>Guardar encima</Button>
+            </Stack>
+          ) : undefined}
+        >
+          {error}
+        </Alert>
+      )}
       <PantallaEdicion
         titulo={cabecera.titulo || 'Página'}
         nombre={ficha ? `Página «${ficha.nombre}»` : 'Página de la web pública'}
         sucio={JSON.stringify(documento) !== JSON.stringify(inicial)}
         guardando={guardando}
         volverA="/cms/paginas"
-        onGuardar={guardar}
+        onGuardar={() => guardar()}
         onDescartar={descartar}
         anchoCompleto
         extra={(

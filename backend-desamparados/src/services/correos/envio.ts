@@ -10,6 +10,8 @@ import { AuditoriaService, ACCIONES_AUDITORIA } from '../auditoria.service.js';
 import { aTexto, imagenesDe } from './plantilla.js';
 import { fotosDe } from './fotos.js';
 import { esDireccionDeNadie } from '../../domain/cuenta-de-custodia.js';
+import { diaMadrid } from '../../domain/contabilidad.js';
+import db from '../../config/db.js';
 import { identidad } from '../../domain/datos-entidad.js';
 
 /**
@@ -168,6 +170,22 @@ interface OpcionesDeEnvio {
   uso?: string;
   /** Cabeceras propias del correo (la baja en un clic del boletín). */
   cabeceras?: Record<string, string>;
+  /** Lo manda la cola, que lleva su propia cuenta: no se suma a los sueltos del día. */
+  desdeLaCola?: boolean;
+}
+
+/**
+ * Un correo suelto más en la cuenta del día. Nunca lanza: si no se puede
+ * apuntar, el correo ya ha salido y lo único que se pierde es la cuenta.
+ */
+async function contarSuelto(ahora: Date = new Date()): Promise<void> {
+  const dia = diaMadrid(ahora);
+  try {
+    await db.correosSueltosDelDia.upsert({ where: { dia }, create: { dia, enviados: 1 }, update: { enviados: { increment: 1 } } });
+  } catch {
+    // Dos a la vez el primero del día: la otra ya creó la fila.
+    await db.correosSueltosDelDia.update({ where: { dia }, data: { enviados: { increment: 1 } } }).catch((e) => console.error('[Correo] No se ha podido contar un correo suelto:', e));
+  }
 }
 
 /**
@@ -195,7 +213,7 @@ export async function enviarCorreo(
   to: string,
   subject: string,
   html: string,
-  { replyTo, cuenta, adjuntos = [], uso = 'sin_clasificar', cabeceras }: OpcionesDeEnvio = {},
+  { replyTo, cuenta, adjuntos = [], uso = 'sin_clasificar', cabeceras, desdeLaCola = false }: OpcionesDeEnvio = {},
 ): Promise<boolean> {
   // Todos los correos pasan por aquí, y muchos caen en la dirección de la
   // cuenta cuando la ficha no trae una (el aviso de baja, la papeleta, el
@@ -222,6 +240,9 @@ export async function enviarCorreo(
       ...(replyTo || process.env.CONTACT_EMAIL_TO ? { replyTo: replyTo || process.env.CONTACT_EMAIL_TO } : {}),
     });
     console.log(`✅ Email enviado con éxito a: ${enmascararEmail(to)}`);
+    // Los de la cuenta de contacto salen por otro servicio, y los de la cola
+    // ya los cuenta ella: los demás gastan del mismo tope diario (ver `enviadosHoy`).
+    if (!desdeLaCola && !cuenta) await contarSuelto();
     return true;
   } catch (error) {
     const motivo = resumenDelFallo(error);

@@ -13,6 +13,7 @@ import { EstadoCita, EstadoPago, Prisma, MetodoPago, TipoRecibo, TipoTransaccion
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { transactionWithRetry } from '../utils/transaction-retry.js';
+import { rehacerAvisoDeCargo } from './aviso-de-cargo.service.js';
 import { anulaPapeleta, estadosCobrablesCon, MENSAJE_REMESADO_EN_MANO, puedeCobrarse, puedeTransicionar, requiereReverso } from '../domain/recibo-estados.js';
 import { diaMadrid, instanteDelApunte } from '../domain/contabilidad.js';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
@@ -508,6 +509,12 @@ export class ReciboService {
       antes: resultado.antes,
       despues: resultado.despues
     });
+
+    // Sale de la remesa (anulado, devuelto…): si el aviso del cargo de su
+    // cuenta aún no ha salido de la cola, anunciaría un importe que ya no se carga.
+    if (resultado.antes.estado === EstadoPago.REMESADO && resultado.despues.estado !== EstadoPago.REMESADO) {
+      await rehacerAvisoDeCargo(reciboId);
+    }
 
     // Lo que ha pasado en Contabilidad, dicho en el aviso: desde allí no se ve el porqué.
     const enContabilidad = [

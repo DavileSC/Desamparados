@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { contrasenaNueva } from '../../../lib/politicaDeContrasena'
+import { hoy as hoyAqui } from '../../../lib/fechas'
 import {
   esDniValido, esTelefonoValido, esCodigoPostalValido, esTextoValido, esIbanValido,
 } from '../../../lib/validacion/identidad'
@@ -156,7 +157,7 @@ export const membershipSchema = z.object({
   if (conFichaPropia(datos.camino)) {
     if (!datos.sexo) ctx.addIssue({ code: 'custom', path: ['sexo'], message: 'Elige una opción' })
     if (!datos.estadoCivil) ctx.addIssue({ code: 'custom', path: ['estadoCivil'], message: 'Elige una opción' })
-    const hoy = new Date().toISOString().slice(0, 10)
+    const hoy = hoyAqui()
     if (!datos.fechaBautismo) {
       ctx.addIssue({ code: 'custom', path: ['fechaBautismo'], message: 'La fecha de bautismo es obligatoria' })
     } else if (datos.fechaBautismo > hoy || (datos.fechaNacimiento && datos.fechaBautismo < datos.fechaNacimiento)) {

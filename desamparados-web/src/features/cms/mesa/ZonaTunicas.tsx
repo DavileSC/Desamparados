@@ -205,12 +205,12 @@ export default function ZonaTunicas({ ficha, salida, role, onHecho, onRecargar, 
   if (sinRopa) filas.push([campoObservaciones, null])
   else if (conTocado) {
     filas.push([tunicaOrigen, tocadoElegido])
-    if (tunicaNumero || tocadoNumero) filas.push([tunicaNumero, tocadoNumero ?? <span />])
+    if (tunicaNumero || tocadoNumero) filas.push([tunicaNumero, tocadoNumero ?? <span key="hueco" />])
     filas.push([campoCingulo, campoObservaciones])
   } else {
     // Sin tocado (los de trono): el cíngulo sube al lado de la túnica.
     filas.push([tunicaOrigen, campoCingulo])
-    filas.push([tunicaNumero ?? <span />, campoObservaciones])
+    filas.push([tunicaNumero ?? <span key="hueco" />, campoObservaciones])
   }
 
   // Los botones de túnica, tocado y cíngulo, en una línea: partidos en dos, la ficha crecía media pantalla.
