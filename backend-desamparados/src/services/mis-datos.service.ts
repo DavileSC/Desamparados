@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import db from '../config/db';
-import { Prisma, Role } from '@prisma/client';
+import { EstadoEnvio, Prisma, Role } from '@prisma/client';
 import { corteDeSesiones, esStaff } from '../utils/jwt.handle';
 import { verified } from '../utils/bcrypt.handle';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service';
@@ -12,6 +12,7 @@ import { consumirCodigoDeRespaldo, reclamarTotp } from './auth/codigos-2fa.js';
 import { borrarDocumentosPrivados, documentosDe } from '../utils/documentos-privados.js';
 import { PapeletasService, type SolicitudConRecibo } from './procesion/papeletas.service.js';
 import { idCategoriaDevoluciones } from './recibos/comunes.js';
+import { retirarPendientes } from './correos/cola.js';
 
 // Datos de contacto de una ficha, fuera, en la supresión de la cuenta.
 // La foto y el certificado de bautismo también salen: no hacen falta para la
@@ -45,12 +46,33 @@ export class MisDatosService {
             recibos: { orderBy: { year: 'desc' } },
             papeletas: { orderBy: { year: 'desc' } },
             citas: { include: { turno: true } },
-            transacciones: true
+            transacciones: true,
+            solicitudes: { orderBy: { year: 'desc' } },
+            prendas: { select: { tipo: true, numero: true, talla: true, estado: true, fechaAsignacion: true } },
+            cingulosSueltos: true,
+            asistenciasCabildo: { include: { cabildo: { select: { tipo: true, fecha: true, lugar: true } } } }
           }
-        }
+        },
+        // Sin la dirección ni las claves del servicio de push: identifican el aparato, no a la persona.
+        movilesDeAvisos: { select: { nombre: true, creadoEn: true, usadoEn: true } },
+        avisosPersonales: { select: { asunto: true, resumen: true, creadoEn: true }, orderBy: { creadoEn: 'desc' } }
       }
     });
     if (!user) throw new NotFoundError('Usuario no encontrado');
+    // Lo que no cuelga de la cuenta en el esquema pero es suyo: lo que pagó en
+    // línea y los comunicados que le llegaron.
+    const [pagosEnLinea, comunicadosRecibidos] = await Promise.all([
+      db.pagoEnLinea.findMany({
+        where: { userId },
+        select: { pedido: true, importe: true, metodo: true, estado: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      db.comunicadoEnvio.findMany({
+        where: { userId },
+        select: { email: true, estado: true, enviadoEl: true, comunicado: { select: { asunto: true } } },
+        orderBy: { id: 'desc' },
+      }),
+    ]);
 
     // Auditoría (las exportaciones masivas de datos también son rastreables)
     AuditoriaService.log(ACCIONES_AUDITORIA.CUENTA_DATOS_EXPORT, meta ?? {}, 'user', userId);
@@ -62,7 +84,9 @@ export class MisDatosService {
       exportadoEn: new Date().toISOString(),
       aviso: 'Exportación de datos personales conforme al art. 15 RGPD.',
       usuario: safeUser,
-      perfilesHermanos: user.hermanos
+      perfilesHermanos: user.hermanos,
+      pagosEnLinea,
+      comunicadosRecibidos
     };
   }
 
@@ -148,6 +172,20 @@ export class MisDatosService {
       // nombres, importes y la carta entera.
       await tx.twoFactorBackupCode.deleteMany({ where: { userId } });
       await tx.avisoPersonal.deleteMany({ where: { userId } });
+      // Los móviles de los avisos (su dirección en el servicio de push es del
+      // aparato de la persona), y lo que ya salió por la cola: el registro de
+      // envíos guardaba la dirección y el nombre para siempre, y la cola, el
+      // correo entero. Lo pendiente se retira al acabar (`retirarPendientes`).
+      await tx.movilDeAvisos.deleteMany({ where: { userId } });
+      const enviados = await tx.comunicadoEnvio.findMany({ where: { userId, estado: { not: EstadoEnvio.PENDIENTE } }, select: { id: true } });
+      for (const { id } of enviados) {
+        // Una por fila: la dirección es única dentro de cada comunicado.
+        await tx.comunicadoEnvio.update({ where: { id }, data: { email: `envio-${id}${DOMINIO_CUENTA_ELIMINADA}`, nombre: null, sexo: null } });
+      }
+      await tx.correoEnCola.updateMany({
+        where: { userId, estado: { not: EstadoEnvio.PENDIENTE } },
+        data: { para: `anon-${userId}${DOMINIO_CUENTA_ELIMINADA}`, html: '', aviso: Prisma.DbNull },
+      });
 
       // 3. Fichas, según su estado (el mismo criterio que la retirada de un
       // perfil desde el área de hermanos, `deleteProfileIfOwned`). Antes todas
@@ -221,6 +259,15 @@ export class MisDatosService {
     });
 
     await borrarDocumentosPrivados(documentosDe(user.hermanos));
+
+    // Lo que aún esperaba en la cola ya no sale: con el tope del día, un envío
+    // a todos tarda varios, y la cuenta no existe desde hoy. Por la cuenta, o
+    // por sus direcciones si el envío no la apuntó.
+    const direcciones = [user.email, ...user.hermanos.map((h) => h.email)].flatMap((e) => (e?.trim() ? [e.trim().toLowerCase()] : []));
+    await retirarPendientes(
+      { OR: [{ userId }, { userId: null, email: { in: direcciones } }] },
+      { OR: [{ userId }, { userId: null, para: { in: direcciones } }] },
+    );
 
     // Auditoría después de confirmar: si la transacción falla, el registro no
     // debe dar fe de un borrado que no ocurrió. El userId del registro sigue

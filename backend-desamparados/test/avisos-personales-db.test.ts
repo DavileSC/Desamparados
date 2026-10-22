@@ -18,7 +18,7 @@ import { ponerTransporte } from '../src/services/correos/envio.js';
 import { EmailService } from '../src/services/email.service.js';
 import { AvisosPersonalesService } from '../src/services/avisos-personales.service.js';
 import { recordarCitas } from '../src/services/procesion/recordatorio-citas.service.js';
-import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { crearUsuarioPrueba, borrarUsuarioPrueba, PASSWORD_PRUEBA } from './fixtures/usuarios.js';
 import { encenderModulos } from './fixtures/modulos.js';
 import { idDeSalida } from './fixtures/salidas.js';
 import { SIN_DB } from './fixtures/sin-db.js';
@@ -182,4 +182,62 @@ test('la víspera de la cita, a partir de las diez, un recordatorio por cuenta c
   assert.match(aviso.html, /miércoles, 11 de marzo/);
   assert.match(aviso.html, /de 19:00 a 21:00/);
   assert.equal(await db.cita.count({ where: { turnoId: turno.id, recordadaEl: null } }), 1, 'solo queda sin recordar la de hoy');
+});
+
+test('si preparar el recordatorio falla, las citas no se dan por recordadas y la siguiente vuelta lo manda', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const ahora = new Date(Date.UTC(2099, 3, 14, 10, 30));
+  const turno = await db.turno.create({
+    data: {
+      fecha: new Date(Date.UTC(2099, 3, 15)), horaInicio: new Date(Date.UTC(2099, 3, 15, 17)), horaFin: new Date(Date.UTC(2099, 3, 15, 19)),
+      capacidadEstimada: 100, salidaId: await idDeSalida(),
+    },
+  });
+  turnos.push(turno.id);
+  const ana = await cuenta('Ana');
+  await db.cita.create({ data: { turnoId: turno.id, hermanoId: ana.ficha.id } });
+
+  const fallo = t.mock.method(EmailService, 'correoRecordatorioCita', async () => { throw new Error('la plantilla no se pudo leer'); });
+  await assert.rejects(recordarCitas(ahora), /la plantilla no se pudo leer/);
+  assert.equal(await db.cita.count({ where: { turnoId: turno.id, recordadaEl: null } }), 1, 'la cita sigue sin recordar');
+
+  fallo.mock.restore();
+  assert.equal(await recordarCitas(ahora), 1);
+  await colaTerminada();
+  assert.equal(await db.correoEnCola.count({ where: { lote: 'cita:2099-04-15', userId: ana.id } }), 1);
+});
+
+test('al borrar la cuenta se van sus móviles, lo que esperaba en la cola y su dirección del registro de envíos', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const ana = await cuenta('Ana');
+  await activarMovil(ana);
+  const comunicado = await db.comunicado.create({ data: { tipo: 'BOLETIN', asunto: 'Boletín de prueba', cuerpo: '<p>x</p>', segmento: {}, estado: 'ENVIANDO' } });
+  const otro = await db.comunicado.create({ data: { tipo: 'BOLETIN', asunto: 'Boletín anterior', cuerpo: '<p>x</p>', segmento: {}, estado: 'ENVIADO' } });
+  try {
+    await db.comunicadoEnvio.create({ data: { comunicadoId: comunicado.id, email: ana.email, nombre: 'Ana', userId: ana.id } });
+    await db.comunicadoEnvio.create({ data: { comunicadoId: otro.id, email: ana.email, nombre: 'Ana', userId: ana.id, estado: 'ENVIADO', enviadoEl: new Date() } });
+    await db.correoEnCola.create({ data: { lote: 'prueba-supresion', titulo: 'Prueba', userId: ana.id, para: ana.email, asunto: 'Aviso', html: '<p>Ana Prueba</p>', uso: 'prueba' } });
+    await db.correoEnCola.create({ data: { lote: 'prueba-supresion', titulo: 'Prueba', userId: ana.id, para: ana.email, asunto: 'Aviso', html: '<p>Ana Prueba</p>', uso: 'prueba', estado: 'ENVIADO', enviadoEl: new Date() } });
+
+    // Antes de irse, «Descargar mis datos» trae también los móviles y los comunicados (art. 15).
+    const datos = await (await pedir('/auth/mis-datos', ana.cookie)).json() as { usuario: { movilesDeAvisos: { nombre: string; endpoint?: string }[] }; comunicadosRecibidos: { comunicado: { asunto: string } }[]; pagosEnLinea: unknown[] };
+    assert.deepEqual(datos.usuario.movilesDeAvisos.map((m) => [m.nombre, m.endpoint]), [['Android · Chrome', undefined]]);
+    assert.deepEqual(datos.comunicadosRecibidos.map((c) => c.comunicado.asunto).sort(), ['Boletín anterior', 'Boletín de prueba']);
+    assert.deepEqual(datos.pagosEnLinea, []);
+
+    const res = await pedir('/auth/mi-cuenta', ana.cookie, 'DELETE', { password: PASSWORD_PRUEBA });
+    assert.equal(res.status, 200, await res.clone().text());
+
+    assert.equal(await db.movilDeAvisos.count({ where: { userId: ana.id } }), 0, 'sin móviles');
+    assert.equal(await db.comunicadoEnvio.count({ where: { userId: ana.id, estado: 'PENDIENTE' } }), 0, 'el boletín pendiente ya no sale');
+    assert.equal((await db.comunicado.findUniqueOrThrow({ where: { id: comunicado.id } })).estado, 'ENVIADO', 'y el comunicado no se queda «enviándose»');
+    const enviado = await db.comunicadoEnvio.findFirstOrThrow({ where: { comunicadoId: otro.id, userId: ana.id } });
+    assert.ok(!enviado.email.includes(ana.email) && enviado.nombre === null, 'el registro de envíos ya no dice quién era');
+    const cola = await db.correoEnCola.findMany({ where: { lote: 'prueba-supresion' } });
+    assert.deepEqual(cola.map((c) => c.estado), ['ENVIADO']);
+    assert.ok(cola[0].para !== ana.email && cola[0].html === '');
+  } finally {
+    await db.comunicado.deleteMany({ where: { id: { in: [comunicado.id, otro.id] } } });
+    await db.correoEnCola.deleteMany({ where: { lote: 'prueba-supresion' } });
+  }
 });

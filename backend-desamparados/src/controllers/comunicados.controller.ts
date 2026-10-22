@@ -49,6 +49,10 @@ export class ComunicadosController {
     res.json(await ComunicadosService.reintentarFallidos(id(req)));
   });
 
+  static reintentarEnvio = manejar('Error reintentando los envíos', async (req, res) => {
+    res.json(await ComunicadosService.reintentarEnvio((req.body as { clave: string }).clave));
+  });
+
   static bajaBoletin = manejar('Error dando de baja del boletín', async (req, res) => {
     res.json(await ComunicadosService.bajaDelBoletin((req.body as { token: string }).token));
   });

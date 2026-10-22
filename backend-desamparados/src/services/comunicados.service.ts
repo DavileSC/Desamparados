@@ -13,7 +13,7 @@ import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearContenidoCms, extractoPlano } from '../utils/sanear-html.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
 import { enviarCorreo } from './correos/envio.js';
-import { colaTerminada, despertarCola, ponerMaquetaDeComunicados } from './correos/cola.js';
+import { colaTerminada, despertarCola, ponerMaquetaDeComunicados, reintentarLote, retirarBoletinesPendientes } from './correos/cola.js';
 import { AvisosHermanosService } from './avisos-hermanos.service.js';
 import { firma, maquetar, parrafo, saludo, urlDeLaWeb } from './correos/plantilla.js';
 import { anioDeLaMesa } from './procesion/zonas.service.js';
@@ -260,14 +260,30 @@ export class ComunicadosService {
     return { message: `Reintentando ${r[0].count === 1 ? '1 envío' : `${r[0].count} envíos`}.` };
   }
 
+  /**
+   * Los fallidos de un envío a muchos por la clave con que lo enseña la
+   * pantalla de envíos: `comunicado:<id>` o el lote de la cola.
+   */
+  static async reintentarEnvio(clave: string) {
+    const comunicado = /^comunicado:(\d+)$/.exec(clave);
+    if (comunicado) return ComunicadosService.reintentarFallidos(Number(comunicado[1]));
+    const cuantos = await reintentarLote(clave);
+    if (cuantos === 0) throw new HttpError('No hay envíos fallidos que reintentar.', 409);
+    return { message: `Reintentando ${cuantos === 1 ? '1 envío' : `${cuantos} envíos`}.` };
+  }
+
   /** La baja del boletín desde el enlace del correo: todas las fichas con esa dirección. */
   static async bajaDelBoletin(token: string) {
     const email = emailDeToken(token, secreto());
     if (!email) throw new HttpError('El enlace de baja no es válido. Cópialo entero del correo, o date de baja desde tu área de hermanos.');
+    // Las mismas fichas que da de baja el aviso de Brevo (`RebotesService`),
+    // también las que guardan el correo en blanco y usan el de su cuenta.
     const r = await db.hermano.updateMany({
-      where: { boletin: true, OR: [{ email }, { email: null, user: { email } }] },
+      where: { boletin: true, OR: [{ email }, { email: null, user: { email } }, { email: '', user: { email } }] },
       data: { boletin: false },
     });
+    // Con el tope del día, el boletín siguiente puede estar aún en la cola.
+    await retirarBoletinesPendientes(email);
     await AuditoriaService.log(ACCIONES_AUDITORIA.BOLETIN_BAJA, {}, 'boletin', undefined, { despues: { fichas: r.count } });
     return { message: `Hecho: ya no recibirás el boletín. Los avisos ${deLaCorporacion({ corto: true })} (cuotas, cabildos) te seguirán llegando.`, fichas: r.count };
   }

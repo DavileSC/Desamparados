@@ -233,6 +233,50 @@ test('la baja del boletín desde el enlace, sin sesión y con el módulo apagado
   }
 });
 
+test('quien deja el boletín no recibe el que aún espera en la cola, y el enlace vale para la ficha con el correo en blanco', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    // Sin correo propio (en blanco) y con el de la cuenta, como guardaban algunas fichas.
+    const luis = await e.ficha({ nombre: 'Luis', email: '', boletin: true });
+    const c = await e.crear('BOLETIN');
+    // Puesto en cola a mano, sin despertarla: así se queda esperando como con el tope del día lleno.
+    await db.comunicado.update({ where: { id: c.id }, data: { estado: 'ENVIANDO', enviadoEl: new Date() } });
+    await db.comunicadoEnvio.create({ data: { comunicadoId: c.id, email: e.familia.email, userId: e.familia.id } });
+
+    await ComunicadosService.bajaDelBoletin(tokenDeBaja(e.familia.email, process.env.JWT_SECRET!));
+
+    assert.equal((await db.hermano.findUniqueOrThrow({ where: { id: luis.id } })).boletin, false);
+    assert.equal(await db.comunicadoEnvio.count({ where: { comunicadoId: c.id } }), 0, 'el pendiente ya no está en la cola');
+    assert.equal((await db.comunicado.findUniqueOrThrow({ where: { id: c.id } })).estado, 'ENVIADO');
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('los fallidos de un lote de la cola se reintentan desde la pantalla de envíos', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  const lote = `prueba-reintento-${Date.now()}`;
+  try {
+    await db.correoEnCola.create({ data: { lote, titulo: 'Apertura de prueba', para: 'fallo.lote@ejemplo.test', asunto: 'Ya puedes pedir tu papeleta', html: '<p>x</p>', uso: 'prueba', estado: 'FALLIDO', enviadoEl: new Date() } });
+    const cookie = `${COOKIE_CMS}=${generateToken(e.staff.id, Role.SECRETARIA, false, 'cms')}`;
+    const pedir = (clave: string) => fetch(`${baseUrl}/api/comunicados/envios/reintentar`, { method: 'POST', headers: { Cookie: cookie, 'Content-Type': 'application/json' }, body: JSON.stringify({ clave }) });
+
+    enviados.length = 0;
+    const res = await pedir(lote);
+    assert.equal(res.status, 200, await res.clone().text());
+    await envioTerminado();
+    assert.deepEqual(enviados.map((m) => m.to), ['fallo.lote@ejemplo.test']);
+    assert.equal((await db.correoEnCola.findFirstOrThrow({ where: { lote } })).estado, 'ENVIADO');
+
+    assert.equal((await pedir(lote)).status, 409, 'sin fallidos, no hay nada que reintentar');
+  } finally {
+    await db.correoEnCola.deleteMany({ where: { lote } });
+    await e.recoger();
+  }
+});
+
 test('el resto de rutas piden sesión de quien lleva la comunicación', async (t) => {
   assert.equal((await fetch(`${baseUrl}/api/comunicados`)).status, 401);
   if (!dbDisponible) { t.skip(SIN_DB); return; }

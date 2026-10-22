@@ -12,6 +12,8 @@ import db from '../../config/db';
 import { enmascararEmail } from '../../utils/log-privacidad.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../auditoria.service.js';
 import type { AvisoDeEnvio } from '../../domain/avisos-de-envio.js';
+// Ciclo con cola.ts (que pregunta aquí si una dirección rebota): solo se usan dentro de funciones.
+import { retirarBoletinesPendientes } from './cola.js';
 
 /** Cuánto atrás se busca el envío del que avisa: Brevo avisa en minutos, a veces en horas. */
 const VENTANA_MS = 7 * 24 * 3600 * 1000;
@@ -40,6 +42,8 @@ export class RebotesService {
           data: { boletin: false },
         })).count
         : 0;
+      // El boletín siguiente puede estar aún en la cola, esperando al tope del día.
+      if (aviso.bajaDelBoletin) await retirarBoletinesPendientes(aviso.email);
       // Un buzón bloqueado avisa en cada envío: solo se apunta lo que cambia algo.
       if (nuevo || bajas > 0) {
         await AuditoriaService.log(ACCIONES_AUDITORIA.CORREO_REBOTA, {}, 'email', undefined, {

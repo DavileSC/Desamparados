@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
-import { Box, Chip, LinearProgress, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material'
-import { enviosEnMarcha, type EnvioEnMarcha } from '../../lib/api/comunicados'
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Alert, Box, Button, Chip, LinearProgress, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material'
+import { enviosEnMarcha, reintentarEnvio, type EnvioEnMarcha } from '../../lib/api/comunicados'
 
 const ESTADO: Record<EnvioEnMarcha['estado'], { texto: string; color: 'default' | 'info' | 'warning' | 'success' }> = {
   EN_COLA: { texto: 'En cola', color: 'default' },
@@ -22,6 +23,15 @@ export default function EnviosEnMarcha() {
     // Mientras algo sale, se va viendo cómo avanza.
     refetchInterval: (q) => (q.state.data?.envios.some((e) => e.estado === 'ENVIANDO' || e.estado === 'EN_COLA') ? 15_000 : false),
   })
+  const cliente = useQueryClient()
+  const [aviso, setAviso] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null)
+  // Si el servicio de correo se cae a mitad, todo lo pendiente queda fallido:
+  // la apertura de papeletas y los recordatorios no tenían otra forma de volver a salir.
+  const reintentar = useMutation({
+    mutationFn: reintentarEnvio,
+    onSuccess: (r) => { setAviso({ tipo: 'success', texto: r.message }); void cliente.invalidateQueries({ queryKey: ['envios-en-marcha'] }) },
+    onError: (e) => setAviso({ tipo: 'error', texto: e instanceof Error ? e.message : 'No se ha podido reintentar.' }),
+  })
   if (!data) return null
   const { hoy, envios } = data
   const lleno = Math.min(100, (hoy.enviados / hoy.tope) * 100)
@@ -42,6 +52,7 @@ export default function EnviosEnMarcha() {
       {envios.length > 0 && (
         <Paper sx={{ p: 2.5 }}>
           <Typography component="h2" sx={{ fontSize: 18, fontWeight: 600, mb: 1 }}>Envíos de esta semana</Typography>
+          {aviso && <Alert severity={aviso.tipo} sx={{ mb: 1.5 }} onClose={() => setAviso(null)}>{aviso.texto}</Alert>}
           <TableContainer>
             <Table size="small" aria-label="Envíos de esta semana">
               <TableHead>
@@ -62,6 +73,11 @@ export default function EnviosEnMarcha() {
                       <TableCell align="right" sx={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
                         {porCorreo ? `${e.enviados + e.rebotados} de ${porCorreo}` : '—'}
                         {e.fallidos > 0 && <Typography component="span" variant="body2" color="error"> · {e.fallidos} fallidos</Typography>}
+                        {e.fallidos > 0 && (
+                          <Button size="small" sx={{ ml: 1, minHeight: 36 }} disabled={reintentar.isPending} onClick={() => reintentar.mutate(e.clave)}>
+                            Reintentar
+                          </Button>
+                        )}
                         {e.rebotados > 0 && <Typography component="span" variant="body2" color="text.secondary"> · {e.rebotados} rebotados</Typography>}
                       </TableCell>
                       <TableCell><Chip size="small" label={ESTADO[e.estado].texto} color={ESTADO[e.estado].color} /></TableCell>

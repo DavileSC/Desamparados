@@ -6,7 +6,7 @@ import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { validate } from '../config/validate.js';
 import { idParam } from '../config/common.js';
-import { comunicadoSchema, destinatariosSchema } from '../schemas/comunicados.schema.js';
+import { comunicadoSchema, destinatariosSchema, reintentarEnvioSchema } from '../schemas/comunicados.schema.js';
 
 const comunicadosRoutes = Router();
 
@@ -23,6 +23,7 @@ const validateId = validate(type({ params: { id: idParam } }));
 comunicadosRoutes.get('/', checkRole(rolesComunicacion), ComunicadosController.listar);
 // Los envíos a muchos (comunicados y aperturas de papeletas) y el tope del día. Antes que '/:id'.
 comunicadosRoutes.get('/envios', checkRole(rolesComunicacion), ComunicadosController.envios);
+comunicadosRoutes.post('/envios/reintentar', checkRole(rolesComunicacion), validate(reintentarEnvioSchema), ComunicadosController.reintentarEnvio);
 comunicadosRoutes.post('/destinatarios', checkRole(rolesComunicacion), validate(destinatariosSchema), ComunicadosController.destinatarios);
 comunicadosRoutes.post('/', checkRole(rolesComunicacion), validate(comunicadoSchema), ComunicadosController.crear);
 comunicadosRoutes.get('/:id', checkRole(rolesComunicacion), validateId, ComunicadosController.obtener);

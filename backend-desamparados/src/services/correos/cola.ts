@@ -10,7 +10,7 @@
  * pasan por aquí: salen siempre al momento, y por eso el tope por defecto
  * (250) deja margen.
  */
-import { EstadoComunicado, EstadoEnvio, TipoComunicado } from '@prisma/client';
+import { EstadoComunicado, EstadoEnvio, Prisma, TipoComunicado } from '@prisma/client';
 import db from '../../config/db';
 import { diaMadridComoIntervalo } from '../../domain/contabilidad.js';
 import { AvisosHermanosService } from '../avisos-hermanos.service.js';
@@ -105,6 +105,35 @@ async function avisosAlMovil(): Promise<void> {
 async function cerrarSiTermino(comunicadoId: number): Promise<void> {
   const quedan = await db.comunicadoEnvio.count({ where: { comunicadoId, estado: EstadoEnvio.PENDIENTE } });
   if (quedan === 0) await db.comunicado.updateMany({ where: { id: comunicadoId, estado: EstadoComunicado.ENVIANDO }, data: { estado: EstadoComunicado.ENVIADO } });
+}
+
+/**
+ * Quita de la cola los envíos pendientes que ya no deben salir y cierra los
+ * comunicados que se quedan sin nada pendiente (si no, seguirían «enviándose»
+ * para siempre). Lo usan la baja del boletín, que con el tope del día podía
+ * llegar mientras el boletín aún esperaba, y la supresión de la cuenta.
+ */
+export async function retirarPendientes(donde: Prisma.ComunicadoEnvioWhereInput, dondeOtros?: Prisma.CorreoEnColaWhereInput): Promise<void> {
+  const afectados = await db.comunicadoEnvio.findMany({ where: { ...donde, estado: EstadoEnvio.PENDIENTE }, select: { comunicadoId: true }, distinct: ['comunicadoId'] });
+  await db.comunicadoEnvio.deleteMany({ where: { ...donde, estado: EstadoEnvio.PENDIENTE } });
+  if (dondeOtros) await db.correoEnCola.deleteMany({ where: { ...dondeOtros, estado: EstadoEnvio.PENDIENTE } });
+  for (const { comunicadoId } of afectados) await cerrarSiTermino(comunicadoId);
+}
+
+/** Quien deja el boletín (por el enlace o por el aviso de Brevo) no recibe el que aún espera en la cola. */
+export const retirarBoletinesPendientes = (email: string) =>
+  retirarPendientes({ email: email.trim().toLowerCase(), comunicado: { tipo: TipoComunicado.BOLETIN } });
+
+/**
+ * Los fallidos de un lote de la cola (la apertura de papeletas, los
+ * recordatorios) vuelven a esperar turno. Si el servicio de correo se cae a
+ * mitad, todo lo que quedaba sale fallido; los comunicados tenían su
+ * «Reintentar», los lotes no. Devuelve cuántos.
+ */
+export async function reintentarLote(lote: string): Promise<number> {
+  const { count } = await db.correoEnCola.updateMany({ where: { lote, estado: EstadoEnvio.FALLIDO }, data: { estado: EstadoEnvio.PENDIENTE, enviadoEl: null } });
+  if (count > 0) void despertarCola();
+  return count;
 }
 
 /**

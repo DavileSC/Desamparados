@@ -22,6 +22,11 @@ export const comunicadoSchema = type({ body: comunicado });
 
 export const destinatariosSchema = type({ body: { tipo: comunicado.tipo, segmento } });
 
+/** La clave de un envío a muchos, como la da `GET /comunicados/envios`: `comunicado:<id>` o el lote de la cola. */
+export const reintentarEnvioSchema = type({
+    body: { clave: type("1 <= string <= 60").describe("la clave del envío") }
+});
+
 export const bajaBoletinSchema = type({
     body: { token: type("string <= 400").describe("el enlace de baja del correo") }
 });

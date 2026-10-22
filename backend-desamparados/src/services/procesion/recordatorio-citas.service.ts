@@ -46,8 +46,21 @@ export async function recordarCitas(ahora: Date = new Date()): Promise<number> {
   // cruzan, cada cita se la lleva solo una y nadie recibe el aviso dos veces.
   const marca = new Date();
   await db.cita.updateMany({ where: { id: { in: candidatas.map((c) => c.id) }, recordadaEl: null }, data: { recordadaEl: marca } });
+  try {
+    return await avisarDeLasMarcadas(marca, candidatas.map((c) => c.id), manana.desde);
+  } catch (error) {
+    // La marca se puso antes de preparar los avisos: si algo falla después,
+    // se quita, o esas citas se quedarían sin recordatorio para siempre. La
+    // siguiente vuelta (diez minutos) lo intenta otra vez.
+    await db.cita.updateMany({ where: { id: { in: candidatas.map((c) => c.id) }, recordadaEl: marca }, data: { recordadaEl: null } });
+    throw error;
+  }
+}
+
+/** Los avisos de las citas que se ha llevado esta vuelta (las que tienen su marca), a la cola. */
+async function avisarDeLasMarcadas(marca: Date, ids: number[], dia: Date): Promise<number> {
   const citas = await db.cita.findMany({
-    where: { id: { in: candidatas.map((c) => c.id) }, recordadaEl: marca },
+    where: { id: { in: ids }, recordadaEl: marca },
     select: {
       hermano: {
         select: {
@@ -81,8 +94,8 @@ export async function recordarCitas(ahora: Date = new Date()): Promise<number> {
     });
     filas.push({ userId: user.id, email: user.email, correo });
   }
-  const dia = diaMadrid(manana.desde);
-  return AvisosPersonalesService.ponerEnCola(`cita:${dia}`, `Recordatorio de la cita · ${dia.split('-').reverse().join('/')}`, filas);
+  const diaDeLaCita = diaMadrid(dia);
+  return AvisosPersonalesService.ponerEnCola(`cita:${diaDeLaCita}`, `Recordatorio de la cita · ${diaDeLaCita.split('-').reverse().join('/')}`, filas);
 }
 
 /**

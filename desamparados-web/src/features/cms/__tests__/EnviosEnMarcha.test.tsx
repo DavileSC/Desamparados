@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import EnviosEnMarcha from '../EnviosEnMarcha'
 
@@ -38,5 +39,26 @@ describe('EnviosEnMarcha', () => {
 
     expect(await screen.findByText('40 de 40')).toBeInTheDocument()
     expect(screen.getByText(/2 rebotados/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument()
+  })
+
+  it('un lote con fallidos se reintenta por su clave', async () => {
+    const fetchSimulado = vi.fn(async (url: string) => (url.endsWith('/envios/reintentar')
+      ? respuesta({ message: 'Reintentando 3 envíos.' })
+      : respuesta({
+        hoy: { enviados: 10, tope: 250 },
+        envios: [{
+          clave: 'apertura:3:2027', tipo: 'apertura', titulo: 'Apertura de papeletas', desde: '2026-10-14T10:00:00.000Z',
+          alMovil: 0, enviados: 7, fallidos: 3, rebotados: 0, pendientes: 0, total: 10, estado: 'TERMINADO',
+        }],
+      })))
+    vi.stubGlobal('fetch', fetchSimulado)
+    renderWithProviders(<EnviosEnMarcha />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Reintentar' }))
+    expect(await screen.findByText('Reintentando 3 envíos.')).toBeInTheDocument()
+    const llamada = fetchSimulado.mock.calls.find(([url]) => String(url).endsWith('/envios/reintentar')) as unknown as [string, RequestInit]
+    expect(llamada[1].method).toBe('POST')
+    expect(JSON.parse(String(llamada[1].body))).toEqual({ clave: 'apertura:3:2027' })
   })
 })

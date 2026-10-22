@@ -433,6 +433,15 @@ rellenan ahí y aparecen solos.** El escudo y la imagen bajo el membrete no
 van ahí: son ficheros de `instalacion/marca/` (§13); sin `correo-cabecera.jpg`
 el correo va sin imagen.
 
+**La cola de correos guarda direcciones, y la supresión las tiene que quitar.**
+`ComunicadoEnvio` y `CorreoEnCola` llevan la dirección (y el nombre o el correo
+entero) de cada envío, sin clave ajena a la cuenta: borrar la cuenta no se
+las lleva. `deleteOwnAccount` retira lo pendiente (`retirarPendientes` de
+`correos/cola.ts`, que además cierra el comunicado que se queda sin nada) y
+anonimiza lo enviado. Una tabla nueva que guarde una dirección o un aparato de
+la persona entra ahí y en «Descargar mis datos» (`exportMisDatos`), o la
+supresión se queda a medias sin que nada falle.
+
 **El aviso de rechazo se envía después de borrar la cuenta.**
 `rechazarSolicitud` elimina el usuario entero cuando nunca llegó a aprobarse, así
 que el email y el nombre se leen **antes** de la transacción. Por el mismo motivo

@@ -81,6 +81,9 @@ export const enviosEnMarcha = () => llamarApi<{ hoy: { enviados: number; tope: n
 
 export const reintentarFallidos = (id: number) => llamarApi<{ message: string }>(`/comunicados/${id}/reintentar`, { method: 'POST' })
 
+/** Los fallidos de un envío a muchos, por su clave: un comunicado o un lote de la cola (la apertura de papeletas, los recordatorios). */
+export const reintentarEnvio = (clave: string) => llamarApi<{ message: string }>('/comunicados/envios/reintentar', { method: 'POST', json: { clave } })
+
 /**
  * La baja del boletín desde el enlace del correo: sin sesión. Va por el núcleo
  * (`/boletin`), no por Comunicados: apagar el módulo no deja sin baja a quien
