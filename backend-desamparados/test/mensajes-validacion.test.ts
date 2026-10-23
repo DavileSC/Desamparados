@@ -48,6 +48,11 @@ test('un predicado con motivo propio usa ese motivo y no revienta', () => {
   assert.match(m.newPassword, /^La contraseña /);
 });
 
+test('un predicado sin descripción ni motivo propio no sale en inglés', () => {
+  const m = mensajes(type({ codigo: type('string').narrow((s) => s === 'A') }), { codigo: 'B' });
+  assert.equal(m.codigo, 'Debe ser un valor válido');
+});
+
 test('ningún mensaje conserva la ruta ni el valor recibido', () => {
   const m = mensajes(type({ body: { importe: 'number > 0' } }), { body: { importe: -1 } });
   assert.equal(m['body.importe'], 'Debe ser mayor que cero');

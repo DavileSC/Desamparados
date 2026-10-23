@@ -29,7 +29,7 @@ export default function ListaImpagos({ puedeDarDeBaja }: Props) {
   const [minimo, setMinimo] = useState(1)
   const [filas, setFilas] = useState<HermanoConImpagos[]>([])
   const [meta, setMeta] = useState<MetaPaginacion | null>(null)
-  const [anioActual, setAnioActual] = useState(new Date().getFullYear())
+  const [anioActual, setAnioActual] = useState(() => new Date().getFullYear())
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const { pagina, porPagina, irAPagina, cambiarTamano } = usePaginacion('Impagos')

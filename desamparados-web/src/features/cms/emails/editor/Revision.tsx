@@ -2,6 +2,7 @@ import { Box, Button, Paper, Stack, Typography } from '@mui/material'
 import type { BloqueDeUso, VistaPrevia } from '../../../../lib/api/emails'
 import { site } from '../../../../config/site'
 import Repaso from './Repaso'
+import { useAhora } from '../../../../hooks/useAhora'
 
 interface Props {
   previa: VistaPrevia | null
@@ -29,7 +30,7 @@ const rotulo = (texto: string) => (
  */
 export default function Revision({ previa, asunto, bloques, firma, onProbar, probando }: Props) {
   const resumen = previa ? resumenDelHtml(previa.html) : ''
-  const ahora = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+  const ahora = useAhora().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
 
   return (
     <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: '380px minmax(0, 1fr)' }, alignItems: 'start' }}>

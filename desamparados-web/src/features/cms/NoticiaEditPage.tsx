@@ -21,6 +21,7 @@ import { useTemaCms } from '../../app/useTemaCms'
 import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
 import { crearNoticia, noticiaDelCms, actualizarNoticia, invalidarNoticiasPublicas, type NoticiaDeLaApi, type DatosDeNoticia } from '../../lib/api/noticias'
 import { site } from '../../config/site'
+import { useAhora } from '../../hooks/useAhora'
 
 /** Lo que cabe en las tres líneas de la tarjeta de la portada; pasarse no impide guardar. */
 const EXTRACTO_RECOMENDADO = 180
@@ -59,6 +60,8 @@ export default function NoticiaEditPage() {
       vacio: vacia(),
       errorAlCargar: 'No se ha podido cargar la noticia.',
     })
+
+  const ahora = useAhora()
 
   if (error && !form) return <Alert severity="error">{error}</Alert>
   if (!form || !inicial) return <CircularProgress aria-label="Cargando la noticia" />
@@ -210,7 +213,7 @@ export default function NoticiaEditPage() {
                 <TarjetaNoticia noticia={{
                   id: String(id ?? 'nueva'), slug: form.slug || 'vista-previa', categoria: 'Noticias',
                   titulo: form.titulo.trim() || 'Título de la noticia', extracto: form.extracto ?? '', contenido: form.contenido,
-                  imagen: form.imagenUrl || undefined, fecha: form.fecha ? `${form.fecha}T12:00:00` : new Date().toISOString(),
+                  imagen: form.imagenUrl || undefined, fecha: form.fecha ? `${form.fecha}T12:00:00` : ahora.toISOString(),
                 }} />
               </div>
             </Panel>

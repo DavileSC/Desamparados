@@ -4,6 +4,7 @@ import { contar } from './plural'
 import { fechaCorta } from '../contabilidad/formato'
 import type { PanelResponse } from '../../../lib/api/panel'
 import { SERIF, VERSALITAS } from './estiloRetablo'
+import { useAhora } from '../../../hooks/useAhora'
 
 interface Props {
   role?: string
@@ -18,7 +19,8 @@ interface Props {
  * Lo que espera lo cuenta la lista de asuntos, justo debajo. Sin botones de
  * crear: cada cosa se crea desde su sección.
  */
-export default function Cabecera({ role, actividad, hoy = new Date() }: Props) {
+export default function Cabecera({ role, actividad, hoy: hoyDado }: Props) {
+  const hoy = useAhora(hoyDado)
   const cargo = role ? NOMBRE_CARGO[role] ?? '' : ''
   // En el móvil la página se desplaza: el texto entero cabe partiendo líneas.
   const unaLinea = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', '@container columna (max-width: 559px)': { whiteSpace: 'normal' } } as const

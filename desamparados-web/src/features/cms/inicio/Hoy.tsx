@@ -7,6 +7,7 @@ import ProximoActo from './ProximoActo'
 import ElAnio from './ElAnio'
 import { actosDelAnio } from './tandas'
 import type { Tarea } from './tareas'
+import { useAhora } from '../../../hooks/useAhora'
 
 /**
  * La pestaña «Hoy»: arriba los asuntos que esperan; debajo, el próximo acto en
@@ -18,9 +19,10 @@ import type { Tarea } from './tareas'
  * En pantallas bajas (un portátil con el escalado de Windows) caben tres filas
  * de asuntos y no cuatro: con cuatro, el año se quedaba sin sitio.
  */
-export default function Hoy({ tareas, role, userId, eventos, hoy = new Date() }: {
+export default function Hoy({ tareas, role, userId, eventos, hoy: hoyDado }: {
   tareas: Tarea[]; role?: string; userId?: number; eventos: PanelResponse['anio']['eventos']; hoy?: Date
 }) {
+  const hoy = useAhora(hoyDado)
   const [todos, setTodos] = useState(false)
   const [avisoNuevo, setAvisoNuevo] = useState(false)
   const alta = useMediaQuery('(min-height: 700px)')

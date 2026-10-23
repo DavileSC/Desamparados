@@ -7,6 +7,7 @@ import { conArticulo } from '../../../domain/articulos'
 import type { CuentaDeHoy } from '../../../lib/api/panel'
 import { FOTO_DE_SIEMPRE_REDUCIDA } from '../../../config/fotosDeLaInstalacion'
 import { useFotoQueFalla } from '../../../hooks/useFotoQueFalla'
+import { useAhora } from '../../../hooks/useAhora'
 
 const FECHA_LARGA = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
 const FECHA_CORTA = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -46,7 +47,7 @@ function rotuloDe(c: CuentaDeHoy, hoy: Date): Rotulo {
 /** La foto de siempre (la del hero de la web) y su encuadre: el rostro de la Virgen. */
 export const FOTO_POR_DEFECTO = FOTO_DE_SIEMPRE_REDUCIDA
 
-export default function Retablo({ hoy = new Date(), foto = FOTO_POR_DEFECTO, x = 50, y = 30, cuenta }: {
+export default function Retablo({ hoy: hoyDado, foto = FOTO_POR_DEFECTO, x = 50, y = 30, cuenta }: {
   hoy?: Date
   /** La que toca hoy según «Ajustes del Inicio» (la de todo el año o la de su tiempo). */
   foto?: string
@@ -60,6 +61,7 @@ export default function Retablo({ hoy = new Date(), foto = FOTO_POR_DEFECTO, x =
    */
   cuenta?: CuentaDeHoy | null
 }) {
+  const hoy = useAhora(hoyDado)
   const rotulo = cuenta ? rotuloDe(cuenta, hoy) : null
   // La de siempre es una foto fija que otra instalación no tiene (404): sin
   // ella el retablo se queda en su fondo oscuro, sin el icono roto con el

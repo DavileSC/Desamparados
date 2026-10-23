@@ -19,6 +19,7 @@ import { TIPOS_EVENTO } from './agenda/tiposEvento'
 import { haceCuanto } from './redaccion/completitud'
 import { crearEvento, traerEvento, actualizarEvento, invalidarAgendaPublica, type ApiEvent, type DatosDeActo } from '../../lib/api/agenda'
 import { site } from '../../config/site'
+import { useAhora } from '../../hooks/useAhora'
 
 /** El formulario: día y hora por separado, que es como se piensa un acto. */
 interface Formulario {
@@ -101,6 +102,8 @@ export default function AgendaEditPage() {
   const guardado = nuevo ? null : cargado
   const original = nuevo ? cargado?.title ?? null : null
 
+  const ahora = useAhora()
+
   if (error && !form) return <Alert severity="error">{error}</Alert>
   if (!form || !inicial) return <CircularProgress aria-label="Cargando el evento" />
 
@@ -109,11 +112,11 @@ export default function AgendaEditPage() {
   const finAntes = Boolean(inicio && fin && fin < inicio)
   // La vista previa, con el día aunque falte la hora, y sin inventarse una:
   // antes enseñaba la hora de ahora (y el día de hoy si faltaba el día).
-  const hoy = new Date(new Date().setHours(0, 0, 0, 0))
+  const hoy = new Date(new Date(ahora).setHours(0, 0, 0, 0))
   const inicioPrevia = inicio ?? momento(form.dia, '00:00') ?? hoy
   // Mismo corte que el servidor: lo anterior a hoy a las 00:00 va a «Pasados».
   // Basta el día para saberlo: el aviso sale antes de poner la hora.
-  const yaPaso = Boolean(form.dia && form.dia < diaEnMadrid(new Date()))
+  const yaPaso = Boolean(form.dia && form.dia < diaEnMadrid(ahora))
   const falta = [form.title.trim() === '' && 'el título', !form.dia && 'el día', !form.hora && 'la hora', form.conFin && !form.horaFin && 'la hora del final'].filter(Boolean) as string[]
   const sePuedeGuardar = falta.length === 0 && !finAntes
 

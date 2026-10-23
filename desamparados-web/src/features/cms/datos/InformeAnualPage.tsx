@@ -14,6 +14,7 @@ import { site } from '../../../config/site'
 import { useModulos } from '../../../hooks/useModulos'
 import { cumple, type Modulo } from '../../../domain/modulos'
 import { anioPorDefecto, puedeEscribir } from './informeAnual'
+import { useAhora } from '../../../hooks/useAhora'
 
 type ClaveCapitulo = 'portada' | 'presentacion' | 'patrimonio' | 'epilogo' | 'datos'
 
@@ -87,7 +88,7 @@ export default function InformeAnualPage() {
   const { anio: anioRuta } = useParams()
   const navigate = useNavigate()
   const role = useAuthStore((s) => s.cms?.role)
-  const actual = new Date().getFullYear()
+  const actual = useAhora().getFullYear()
   const anio = anioRuta && /^\d{4}$/.test(anioRuta) ? Number(anioRuta) : anioPorDefecto()
   const cliente = useQueryClient()
   const { referencia, alto } = useAltoDisponible()

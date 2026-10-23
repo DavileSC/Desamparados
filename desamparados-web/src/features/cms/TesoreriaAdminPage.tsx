@@ -180,9 +180,9 @@ export default function TesoreriaAdminPage() {
   }
 
   // Se limpia al abrir, no al cerrar, y parte del año que se está viendo.
-  const anioPropuesto = year || String(new Date().getFullYear())
-  const abrirCuotas = () => { setCuotas({ year: anioPropuesto, importe: '', concepto: CONCEPTO_POR_DEFECTO }); setErrorCuotas(null); setGenerando(true) }
-  const abrirNuevo = (inicial: NuevoRecibo = { hermano: null, year: anioPropuesto, concepto: '', importe: '', tipo: '' }) => {
+  const anioPropuesto = () => year || String(new Date().getFullYear())
+  const abrirCuotas = () => { setCuotas({ year: anioPropuesto(), importe: '', concepto: CONCEPTO_POR_DEFECTO }); setErrorCuotas(null); setGenerando(true) }
+  const abrirNuevo = (inicial: NuevoRecibo = { hermano: null, year: anioPropuesto(), concepto: '', importe: '', tipo: '' }) => {
     setNuevo(inicial); setBusqueda(inicial.hermano ? nombreHermano(inicial.hermano) : ''); setCandidatos(inicial.hermano ? [inicial.hermano] : []); setErrorNuevo(null); setEmitiendo(true)
   }
   // Reemitir un devuelto es emitir uno nuevo con sus mismos datos, ya rellenos.

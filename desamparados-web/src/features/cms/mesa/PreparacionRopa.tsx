@@ -14,6 +14,7 @@ import { CLAVE_MESA } from './enVivo'
 import { alturaEnMetros, fechaCorta } from './formato'
 import { Dato, DatosDeFicha, Ficha, ListaDeFichas } from '../listados/Fichas'
 import { useEnFichas } from '../listados/useEnFichas'
+import { useAhora } from '../../../hooks/useAhora'
 
 const formatoDia = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', weekday: 'long', day: 'numeric', month: 'long' })
 const tenue = { color: 'text.disabled' } as const
@@ -37,7 +38,7 @@ export default function PreparacionRopa({ salida }: { salida: string }) {
   })
   const cingulos = useQuery({ queryKey: [...CLAVE_MESA, 'cingulos'], queryFn: cingulosDeLaMesa })
 
-  const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+  const hoy = new Date(useAhora()); hoy.setHours(0, 0, 0, 0)
   const proximos = (turnos.data ?? []).filter((t) => new Date(t.horaFin) >= hoy).sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))
   const filas = lista.data ?? []
   const hacenFaltaCingulos = filas.filter((f) => f.propuesta.cingulo === 'PRESTADO').length

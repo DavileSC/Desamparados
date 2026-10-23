@@ -29,6 +29,8 @@ const EXPRESIONES: Array<[RegExp, (m: RegExpMatchArray) => string]> = [
   [/^at most (\S+)$/, (m) => `${m[1]} o menos`],
   [/^more than (\S+)$/, (m) => `mayor que ${m[1]}`],
   [/^less than (\S+)$/, (m) => `menor que ${m[1]}`],
+  // Un `.narrow()` sin `.describe()` ni motivo propio.
+  [/^valid according to an anonymous predicate$/, () => 'un valor válido'],
 ];
 
 function traducirEsperado(esperado: string): string {
@@ -55,11 +57,13 @@ function leer(obtener: () => string | undefined): string | undefined {
 export function mensajeValidacion(problema: Pick<ArkError, 'code' | 'expected' | 'problem'>): string {
   if (problema.code === 'required') return 'Es obligatorio';
   // En un predicado rechazado con `ctx.reject({ problem })` (la contraseña
-  // débil, por ejemplo), `expected` no existe y leerlo lanza; el texto propio,
-  // ya en español, está en `problem`.
+  // débil, por ejemplo) el texto propio, ya en español, está en `problem`. Va
+  // antes que `expected`: hasta arktype 2.1 leerlo lanzaba, y desde la 2.2 trae
+  // «valid according to an anonymous predicate», que taparía el motivo.
+  const propio = leer(() => problema.problem);
+  const conMotivo = propio && !/^must\b/.test(propio) ? propio.charAt(0).toUpperCase() + propio.slice(1) : undefined;
+  if (problema.code === 'predicate' && conMotivo) return conMotivo;
   const esperado = leer(() => problema.expected);
   if (esperado) return `Debe ser ${traducirEsperado(esperado)}`;
-  const propio = leer(() => problema.problem);
-  if (propio && !/^must\b/.test(propio)) return propio.charAt(0).toUpperCase() + propio.slice(1);
-  return 'No tiene un valor válido';
+  return conMotivo ?? 'No tiene un valor válido';
 }

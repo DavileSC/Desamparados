@@ -2,6 +2,7 @@ import { Box, Typography } from '@mui/material'
 import { cuandoFalta, diaMes, type Acto } from './tandas'
 import { entrada } from './animaciones'
 import { FILETE, ORO, SERIF, VERSALITAS } from './estiloRetablo'
+import { useAhora } from '../../../hooks/useAhora'
 
 const DIA_SEMANA = new Intl.DateTimeFormat('es-ES', { weekday: 'long' })
 const mayuscula = (texto: string) => `${texto[0].toUpperCase()}${texto.slice(1)}`
@@ -12,7 +13,8 @@ const mayuscula = (texto: string) => `${texto[0].toUpperCase()}${texto.slice(1)}
  * se parte en dos filas: la fecha y la hora arriba, el título debajo. Si el
  * curso ya no tiene nada por delante, lo dice.
  */
-export default function ProximoActo({ acto, hoy = new Date() }: { acto?: Acto; hoy?: Date }) {
+export default function ProximoActo({ acto, hoy: hoyDado }: { acto?: Acto; hoy?: Date }) {
+  const hoy = useAhora(hoyDado)
   const etiqueta = (
     <Typography id="proximo-acto" component="h2" className="etiqueta" sx={{ ...VERSALITAS, fontSize: 10.5, color: acto ? ORO : 'text.secondary' }}>
       Próximo acto{acto && ` · ${cuandoFalta(hoy, acto.fecha)}`}

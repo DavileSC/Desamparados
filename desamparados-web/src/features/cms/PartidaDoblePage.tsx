@@ -29,7 +29,7 @@ type Vista = 'resultados' | 'sumas' | 'diario' | 'plan'
  * siempre, y aquí se ve con sus cuentas.
  */
 export default function PartidaDoblePage() {
-  const [anio, setAnio] = useState(String(new Date().getFullYear()))
+  const [anio, setAnio] = useState(() => String(new Date().getFullYear()))
   const [vista, setVista] = useState<Vista>('resultados')
   const [ejercicio, setEjercicio] = useState<EjercicioContable | null>(null)
   const [plan, setPlan] = useState<PlanDeCuentas | null>(null)

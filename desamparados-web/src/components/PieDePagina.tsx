@@ -16,6 +16,7 @@ import { useConsentimientoDeCookies } from '../hooks/useConsentimientoDeCookies'
 import { useModulos } from '../hooks/useModulos'
 import { BOTON } from './estiloDeBoton'
 import { designTokens } from '../theme'
+import { useAhora } from '../hooks/useAhora'
 
 // El pie es una sola franja (05-10-2026): el mapa del sitio entero lo hacía
 // demasiado alto y repetía el menú de arriba. Quedan los destinos que más se buscan,
@@ -76,7 +77,7 @@ export default function PieDePagina() {
   // Mientras llegan, sus huecos quedan vacíos: mejor que un dato inventado.
   const contacto = useContacto()
   const enlacesDeRedes = useEnlacesDeRedes()
-  const year = new Date().getFullYear()
+  const year = useAhora().getFullYear()
 
   return (
     <Box component="footer" data-pie-publico="" sx={{ backgroundColor: designTokens.colors.footer, borderTop: `1px solid ${LINEA}` }}>

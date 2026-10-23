@@ -34,7 +34,7 @@ export default function CabildosAdminPage() {
   const [nuevo, setNuevo] = useState<Nuevo>(VACIO)
   const [guardando, setGuardando] = useState(false)
   const [errorNuevo, setErrorNuevo] = useState<string | null>(null)
-  const [anioLibro, setAnioLibro] = useState(String(new Date().getFullYear()))
+  const [anioLibro, setAnioLibro] = useState(() => String(new Date().getFullYear()))
 
   useEffect(() => {
     let cancelado = false

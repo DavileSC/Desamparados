@@ -19,6 +19,7 @@ import { haceCuanto, piezasDePublicacion } from './redaccion/completitud'
 import { AYUDA_PDF, AYUDA_PORTADA, ETIQUETA_PORTADA, TIPOS_PUBLICACION } from './portadaPublicacion'
 import { crearPublicacion, publicacionDelCms, actualizarPublicacion, invalidarPublicacionesPublicas, type PublicacionDeLaApi, type DatosDePublicacion } from '../../lib/api/publicaciones'
 import { site } from '../../config/site'
+import { useAhora } from '../../hooks/useAhora'
 
 type Accion = 'borrador' | 'publicar' | 'guardar' | 'despublicar'
 
@@ -57,6 +58,8 @@ export default function PublicacionEditPage() {
       vacio: vacia(),
       errorAlCargar: 'No se ha podido cargar la publicación.',
     })
+
+  const ahora = useAhora()
 
   if (error && !form) return <Alert severity="error">{error}</Alert>
   if (!form || !inicial) return <CircularProgress aria-label="Cargando la publicación" />
@@ -171,7 +174,7 @@ export default function PublicacionEditPage() {
                 <Box inert data-testid="vista-previa-tarjeta" sx={{ p: 2, borderRadius: 1, backgroundColor: 'background.default', color: 'text.primary', fontFamily: temaPublico.typography.fontFamily, pointerEvents: 'none', '& > *': { maxWidth: 340 } }}>
                   <TarjetaPublicacion publicacion={{
                     id: String(id ?? 'nueva'), titulo: form.titulo.trim() || 'Título de la publicación', descripcion: form.descripcion || undefined,
-                    imagen: form.imagenUrl || undefined, fecha: form.fecha ? `${form.fecha}T12:00:00` : new Date().toISOString(), categoria: form.categoria,
+                    imagen: form.imagenUrl || undefined, fecha: form.fecha ? `${form.fecha}T12:00:00` : ahora.toISOString(), categoria: form.categoria,
                   }} />
                 </Box>
               </ThemeProvider>

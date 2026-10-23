@@ -2,6 +2,7 @@ import { MenuItem, TextField } from '@mui/material'
 import type { Category, MetodoPago, TipoApunte } from '../../../lib/api/contabilidad'
 import { METODOS, dia } from './filtros'
 import { categoriasParaApunte, errorConcepto, errorFecha, errorImporte, type FormApunte } from './apunte'
+import { useAhora } from '../../../hooks/useAhora'
 
 interface Props {
   form: FormApunte
@@ -13,6 +14,7 @@ interface Props {
 
 /** Los campos de un apunte manual, iguales para apuntar y para corregir. */
 export default function CamposApunte({ form, onCambiar, categorias, categoriaOriginal }: Props) {
+  const hoy = useAhora()
   const disponibles = categoriasParaApunte(categorias, form.tipo, categoriaOriginal)
   const fallo = { concepto: errorConcepto(form.concepto), importe: errorImporte(form.importe), fecha: errorFecha(form.fecha) }
   const cambiar = (cambios: Partial<FormApunte>) => onCambiar({ ...form, ...cambios })
@@ -40,7 +42,7 @@ export default function CamposApunte({ form, onCambiar, categorias, categoriaOri
       error={Boolean(fallo.fecha)}
       helperText={fallo.fecha ?? 'El día en que entró o salió el dinero.'}
       // La caja apunta lo que ya ha pasado: nada después de hoy.
-      slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: dia(new Date()) } }}
+      slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: dia(hoy) } }}
       fullWidth
     />
     <TextField select label="Método de pago" value={form.metodoPago} onChange={(e) => cambiar({ metodoPago: e.target.value as MetodoPago })} fullWidth>

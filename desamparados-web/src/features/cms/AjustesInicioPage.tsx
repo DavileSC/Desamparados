@@ -21,6 +21,7 @@ import { conArticulo } from '../../domain/articulos'
 import { fotosDelAnio, hoyEnTexto, tiempoDelDia, tramoEnPalabras } from '../../domain/tiemposDelRetablo'
 import { site } from '../../config/site'
 import { useFotoQueFalla } from '../../hooks/useFotoQueFalla'
+import { useAhora } from '../../hooks/useAhora'
 
 const TIPOS = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_BYTES = 5 * 1024 * 1024
@@ -97,7 +98,8 @@ function DiaDelAnio({ etiqueta, valor, onCambiar }: { etiqueta: string; valor: s
 
 /** Cada día del año con la foto que le toca, en tramos: se ve de un vistazo cuándo cambia. */
 function BarraDelAnio({ ajustes }: { ajustes: AjustesRetablo }) {
-  const anio = new Date().getFullYear()
+  const hoy = useAhora()
+  const anio = hoy.getFullYear()
   const tramos = useMemo(() => {
     const dias = fotosDelAnio(ajustes.tiempos, anio)
     const lista: { indice: number; dias: number }[] = []
@@ -108,7 +110,6 @@ function BarraDelAnio({ ajustes }: { ajustes: AjustesRetablo }) {
     }
     return { lista, total: dias.length }
   }, [ajustes.tiempos, anio])
-  const hoy = new Date()
   const diaDelAnio = Math.round((Date.UTC(anio, hoy.getMonth(), hoy.getDate()) - Date.UTC(anio, 0, 1)) / 86_400_000)
   const encuadre = (i: number) => (i < 0 ? { foto: ajustes.foto ?? FOTO_POR_DEFECTO, x: ajustes.x, y: ajustes.y } : ajustes.tiempos[i])
   return (

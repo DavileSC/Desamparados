@@ -3,13 +3,15 @@ import { diaMes, parteDelAnio, type Acto } from './tandas'
 import { contar } from './plural'
 import { crecerX, entrada, sinMovimiento } from './animaciones'
 import { FILETE, FILETE_SUAVE, FONDO_PIEZA, ORO_GRAFICA, SERIF, VERSALITAS } from './estiloRetablo'
+import { useAhora } from '../../../hooks/useAhora'
 
 /**
  * El año, del 1 de enero al 31 de diciembre: cuánto ha pasado y lo que viene
  * después del próximo acto (ese va en grande a su lado). La lista llena lo que
  * queda de la pieza y lo que no cabe se desplaza dentro.
  */
-export default function ElAnio({ actos, hoy = new Date() }: { actos: Acto[]; hoy?: Date }) {
+export default function ElAnio({ actos, hoy: hoyDado }: { actos: Acto[]; hoy?: Date }) {
+  const hoy = useAhora(hoyDado)
   const porcentaje = parteDelAnio(hoy)
   const porDelante = actos.filter((a) => !a.pasado)
   const despues = porDelante.slice(1)

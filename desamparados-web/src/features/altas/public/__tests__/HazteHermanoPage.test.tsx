@@ -193,6 +193,11 @@ describe('HazteHermanoPage', () => {
     await rellenarDatos(u)
     await continuar(u)
     expect(router.state.location.search).toBe('?paso=2')
+    // El router ya tiene `?paso=2`, pero React lo pinta en una transición que,
+    // según cuándo resuelva la validación, queda fuera del `act` de la
+    // pulsación. Sin dejarla terminar, el «atrás» la sustituye en el mismo
+    // lote y la página ve la dirección pasar de 1 a 1, sin cambio que seguir.
+    await act(() => new Promise((listo) => setTimeout(listo, 0)))
 
     await act(() => router.navigate(-1))
     await waitFor(() => expect(pasoDe('Nombre')).not.toHaveAttribute('inert'))
