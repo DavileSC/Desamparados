@@ -496,6 +496,16 @@ el script y el arranque, y la fija `test/paginas-sin-migrar.test.ts`.
 el cambio necesita su propio paso de migración y alguien que avise si falta. El
 compilador no ve dentro de una columna JSON.
 
+**Una migración de contenido no busca el JSON como texto con su formato.**
+MariaDB guarda tal cual lo que escribe Prisma (`{"a":1}`), pero una fila que ha
+pasado por `JSON_SET` o `JSON_REPLACE` queda con espacios (`{"a": 1}`). La de
+Formación del 23-10-2026 buscaba `LIKE '%"estilo":"carta"%'`: en el PC encajó y
+en la web de pruebas, cuya página tenía la foto puesta por `JSON_SET`, no hizo
+nada sin dar error. Hizo falta otra (`…_formacion_en_preguntas_sin_espacios`).
+Para mirar un valor, `JSON_VALUE(datos, '$.ruta')`; un `LIKE` solo para un
+trozo de texto de dentro de una cadena (un párrafo, un título). Y dentro de un
+literal SQL las barras invertidas del JSON van dobladas (`\\"`), o llega roto.
+
 **Las claves del contenido de partida son la forma, aunque su valor esté
 vacío** (desde la etapa 6 de la Fase 8, `shared/contenido-por-defecto.json` es
 neutro). Por la misma regla de `mezclarConDefectos`, una clave que no está en
