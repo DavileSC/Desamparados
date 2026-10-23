@@ -4,25 +4,25 @@ import { generateToken, generatePending2FAToken, esStaff, corteDeSesiones } from
 import type { AreaSesion } from '../utils/cookies';
 import crypto from 'crypto';
 import { Prisma, Role } from '@prisma/client';
-import { RegisterDto, LoginDto, ReactivacionDto } from '../dtos/auth.dto';
-import { comprobarEsAdulto, comprobarEsMenor } from '../domain/fechas-hermano.js';
+import { LoginDto } from '../dtos/auth.dto';
+
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service';
 
 // --- NUEVA LIBRERÍA: OTPAUTH ---
-import * as OTPAuth from 'otpauth';
-import qrcode from 'qrcode';
+
+
 import { EmailService } from './email.service';
 import { HttpError, NotFoundError } from '../utils/error.handle';
-import { enmascararEmail } from '../utils/log-privacidad.js';
+
 import { ipKeyGenerator } from 'express-rate-limit';
 import { ContadorFallos, RegistroReciente } from '../utils/contador-fallos.js';
 import {
   MENSAJE_CODIGO_USADO, comprobarBloqueo2FA, consumirCodigoDeRespaldo, normalizarCodigo2FA,
   reclamarTotp, registrarFallo2FA,
 } from './auth/codigos-2fa.js';
-import { cifrarSecretoTotp, leerSecretoTotp, SecretoTotpIlegibleError } from '../utils/cifrado-totp.js';
-import { DOMINIO_CUENTA_ELIMINADA, PREFIJO_DNI_ELIMINADO } from '../domain/cuenta-anonimizada.js';
-import { suprimirDatosPersonales } from '../domain/auditoria-supresion.js';
+
+
+
 import { ModulosService } from './modulos.service.js';
 import {
   PERFILES_DE_LA_SESION, Testigo2FACaducadoError, alPasarSegundoFactor, avanzarPasoDelTestigo, comprobarTestigo, sesionDe,

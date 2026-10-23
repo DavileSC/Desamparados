@@ -68,7 +68,7 @@ export function serieCensoMensual(
   const altasPorMes = porMes(altas);
   const bajasPorMes = porMes(bajas);
 
-  const serie: PuntoCenso[] = new Array(meses.length);
+  const serie: PuntoCenso[] = [];
   let acumulado = activosHoy;
 
   for (let i = meses.length - 1; i >= 0; i--) {

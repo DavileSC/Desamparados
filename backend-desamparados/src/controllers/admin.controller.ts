@@ -1,6 +1,4 @@
-import { Response, Request } from 'express';
 import { AdminService } from '../services/admin.service.js';
-import { handleHttp } from '../utils/error.handle.js';
 import { manejar } from '../utils/manejar.js';
 import { AuditoriaService } from '../services/auditoria.service.js';
 

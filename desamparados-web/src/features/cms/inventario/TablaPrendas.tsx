@@ -2,7 +2,8 @@ import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, Tab
 import type { Prenda } from '../../../lib/api/inventario'
 import { useColoresContabilidad } from '../contabilidad/tema'
 import { cabeceraTabla, soloLector } from './tabla'
-import { BotonPaso, MenuPrenda, PildoraEstado, prestadaA, type AccionesPrenda } from './piezasPrenda'
+import { BotonPaso, MenuPrenda, PildoraEstado, type AccionesPrenda } from './piezasPrenda'
+import { prestadaA } from './prestadaA'
 
 interface Props extends AccionesPrenda {
   prendas: Prenda[]

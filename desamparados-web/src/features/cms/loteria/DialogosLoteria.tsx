@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import type { MetodoDeLoteria, Sorteo, Talonario } from '../../../lib/api/loteria'
 import { euros } from '../contabilidad/formato'
+import { aNumero } from './aNumero'
 
 const METODOS_DE_LOTERIA: { valor: MetodoDeLoteria; etiqueta: string }[] = [
   { valor: 'EFECTIVO', etiqueta: 'Efectivo' },
@@ -9,12 +10,6 @@ const METODOS_DE_LOTERIA: { valor: MetodoDeLoteria; etiqueta: string }[] = [
   { valor: 'TRANSFERENCIA', etiqueta: 'Transferencia' },
   { valor: 'TARJETA', etiqueta: 'Tarjeta' },
 ]
-
-/** «12,5» o «12.5»: en España se escribe con coma. Null si no es un número. */
-export const aNumero = (texto: string): number | null => {
-  const limpio = texto.trim().replace(',', '.')
-  return /^\d+(?:\.\d{1,2})?$/.test(limpio) ? Number(limpio) : null
-}
 
 const entero = (texto: string): number | null => (/^\d+$/.test(texto.trim()) ? Number(texto.trim()) : null)
 

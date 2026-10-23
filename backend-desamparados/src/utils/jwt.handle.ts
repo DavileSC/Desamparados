@@ -153,7 +153,7 @@ const verifyToken = (jwtToken: string, expectedType: TokenType): AuthTokenPayloa
     const payload = jwt.verify(jwtToken, JWT_SECRET, { algorithms: ['HS256'] }) as AuthTokenPayload;
     if (payload.typ !== expectedType) return null;
     return payload;
-  } catch (e) {
+  } catch {
     return null;
   }
 };

@@ -1,6 +1,6 @@
 import { InventarioService } from '../services/inventario.service.js';
 import { fichaDePatrimonioEnPdf } from '../services/ficha-patrimonio-pdf.js';
-import { handleHttp } from '../utils/error.handle.js';
+
 import { manejar } from '../utils/manejar.js';
 import { AuditoriaService, ACCIONES_AUDITORIA } from '../services/auditoria.service.js';
 import { cambiarTotalDeCingulos, recuentoDeCingulos } from '../services/procesion/cingulos.js';

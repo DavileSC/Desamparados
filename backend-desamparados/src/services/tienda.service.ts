@@ -18,7 +18,7 @@ import { PagoEnLineaService, intentosVigentesDesde, registrarOrigenDePago, type 
 import { idCategoriaDeRecibos } from './recibos/comunes.js';
 import { enviarCorreo } from './correos/envio.js';
 import { PlantillasCorreoService } from './plantillas-correo.service.js';
-import { bloqueDeSecretaria, datos, esc, firma, maquetar, parrafo, urlDeLaWeb } from './correos/plantilla.js';
+import { bloqueDeSecretaria, datos, esc, urlDeLaWeb } from './correos/plantilla.js';
 import { modoDePago, pagoParaLaWeb } from '../domain/redsys.js';
 import { aCentimos } from '../domain/sepa.js';
 import { nombreConTalla, prepararPedido, type LineaPedida } from '../domain/tienda.js';

@@ -6,15 +6,15 @@ import AvisoCambiosSinGuardar from '../ficha/AvisoCambiosSinGuardar'
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
 import { useAvisoAlCerrarLaPestana } from '../../../hooks/useAvisoAlCerrarLaPestana'
 import {
-  guardarIdentidad, marcaDelCms, quitarImagenDeMarca, subirImagenDeMarca,
+  CLAVE_MARCA, guardarIdentidad, marcaDelCms, quitarImagenDeMarca, subirImagenDeMarca,
   type ClaveDeImagen, type EstadoDeLaMarca, type ImagenDeLaMarca,
 } from '../../../lib/api/corporacion'
 import { ErrorDeApi } from '../../../lib/api/cliente'
 import { FONDOS, avisosDeMarca, paletaDeMarca } from '../../../../../shared/colores-de-marca.mjs'
 import type { Articulo } from '../../../../../shared/datos-entidad.mjs'
 import type { AccionesDelFormulario } from './acciones'
+import { vistaDeLaMarca, type VistaDeLaMarca } from './vistaDeLaMarca'
 
-export const CLAVE_MARCA = ['cms', 'corporacion', 'marca'] as const
 const CLAVE = CLAVE_MARCA
 
 // Los de shared/datos-entidad.mjs, escritos aquí: ese módulo lee el disco
@@ -201,32 +201,6 @@ function MuestraDeColores({ principal, acento }: { principal: string | null; ace
 
 export type FichaDeLaMarca = 'identidad' | 'legales' | 'colores' | 'imagenes'
 const TODAS: FichaDeLaMarca[] = ['identidad', 'legales', 'colores', 'imagenes']
-
-/** Lo que la vista previa del asistente necesita para pintar la web como quedará. */
-export interface VistaDeLaMarca {
-  nombre: string
-  nombreCorto: string
-  localidad: string
-  colorPrincipal: string | null
-  colorAcento: string | null
-  escudo: string | null
-  escudoSobreClaro: string | null
-  icono: string | null
-}
-
-/** La vista de lo guardado o, si se está escribiendo, de lo escrito. */
-export function vistaDeLaMarca(estado: EstadoDeLaMarca, escrito?: Pick<VistaDeLaMarca, 'nombre' | 'nombreCorto' | 'localidad' | 'colorPrincipal' | 'colorAcento'>): VistaDeLaMarca {
-  return {
-    nombre: escrito?.nombre ?? estado.identidad.nombre,
-    nombreCorto: escrito?.nombreCorto ?? estado.identidad.nombreCorto,
-    localidad: escrito?.localidad ?? estado.identidad.localidad,
-    colorPrincipal: escrito ? escrito.colorPrincipal : estado.colores.colorPrincipal,
-    colorAcento: escrito ? escrito.colorAcento : estado.colores.colorAcento,
-    escudo: estado.imagenes.escudoSobreOscuro?.url ?? null,
-    escudoSobreClaro: estado.imagenes.escudoSobreClaro?.propia ? estado.imagenes.escudoSobreClaro.url : null,
-    icono: estado.iconos.appleTouchIcon,
-  }
-}
 
 /**
  * Sistema › Datos de la corporación › Identidad y marca: el nombre, los colores

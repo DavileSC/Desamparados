@@ -91,7 +91,7 @@ async function pedir(rol: Rol, ruta: string, metodo = 'GET', cuerpo?: unknown) {
       Cookie: `${COOKIE_CMS}=${generateToken(usuarios[rol]!, rol)}`,
       ...(cuerpo !== undefined ? { 'Content-Type': 'application/json' } : {}),
     },
-    body: cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined,
+    ...(cuerpo !== undefined && { body: JSON.stringify(cuerpo) }),
   });
   const texto = await res.text();
   return { status: res.status, cuerpo: texto ? JSON.parse(texto) : null };

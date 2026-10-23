@@ -501,7 +501,7 @@ test('P5: por HTTP, una fecha futura o ilegible es un 400 y una pasada se proces
     const valida = await fetch(url, { method: 'POST', headers: cabeceras, body: JSON.stringify({ fechaLimite: '2000-01-01', cierreDefinitivo: true }) });
     assert.equal(valida.status, 200);
     const registro = await db.auditLog.findFirst({ where: { action: ACCIONES_AUDITORIA.AUSENCIAS_PROCESAR, userId: e.admin.id } });
-    assert.equal((registro?.detalles as { citasAfectadas: number }).citasAfectadas, 0);
+    assert.equal((registro!.detalles as { citasAfectadas: number }).citasAfectadas, 0);
   } finally {
     await e.recoger();
   }
@@ -734,11 +734,11 @@ test('D19: crear y borrar un turno queda auditado con sus datos', async (t) => {
     e.turnos.push(turno.id);
 
     const alta = await auditoria(ACCIONES_AUDITORIA.TURNO_CREAR, turno.id);
-    assert.equal((alta?.detalles as { despues: { capacidadEstimada: number } }).despues.capacidadEstimada, 40);
+    assert.equal((alta!.detalles as { despues: { capacidadEstimada: number } }).despues.capacidadEstimada, 40);
 
     await TurnosService.eliminarTurno(turno.id, e.meta);
     const baja = await auditoria(ACCIONES_AUDITORIA.TURNO_ELIMINAR, turno.id);
-    assert.equal((baja?.detalles as { antes: { capacidadEstimada: number } }).antes.capacidadEstimada, 40);
+    assert.equal((baja!.detalles as { antes: { capacidadEstimada: number } }).antes.capacidadEstimada, 40);
   } finally {
     await e.recoger();
   }
@@ -892,7 +892,7 @@ test('un recibo que el banco devuelve apunta su comisión; uno cobrado, además,
     );
 
     const registro = await auditoria(ACCIONES_AUDITORIA.RECIBO_ACTUALIZAR, cobrado.id);
-    assert.equal((registro?.detalles as { despues: { comision?: number } }).despues.comision, 2);
+    assert.equal((registro!.detalles as { despues: { comision?: number } }).despues.comision, 2);
   } finally {
     await e.recoger();
   }

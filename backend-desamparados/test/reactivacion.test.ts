@@ -9,7 +9,6 @@ import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import { randomInt } from 'node:crypto';
 import db from '../src/config/db.js';
-import { AuthService } from '../src/services/auth.service.js';
 import { RegistroService } from '../src/services/registro.service.js';
 import { SolicitudesService } from '../src/services/solicitudes.service.js';
 import { CensoService } from '../src/services/censo.service.js';

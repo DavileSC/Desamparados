@@ -89,7 +89,7 @@ async function pedir(ruta: string, cookie: string, metodo = 'GET', cuerpo?: unkn
   return fetch(`${baseUrl}/api${ruta}`, {
     method: metodo,
     headers: { Cookie: cookie, ...(cuerpo !== undefined ? { 'Content-Type': 'application/json' } : {}) },
-    body: cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined,
+    ...(cuerpo !== undefined && { body: JSON.stringify(cuerpo) }),
   });
 }
 

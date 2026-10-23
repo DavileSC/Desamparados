@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Box } from '@mui/material'
 import Hueso from '../../components/esqueleto/Hueso'
-import { useTrasUnMomento } from '../../components/esqueleto/EnCarga'
+import { useTrasUnMomento } from '../../components/esqueleto/esperaDeCarga'
 import { usePortadaEnCarga } from './useContenidoPortada'
 
 interface Props {

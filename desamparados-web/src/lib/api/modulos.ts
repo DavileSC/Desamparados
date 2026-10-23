@@ -2,6 +2,8 @@ import { llamarApi } from './cliente'
 import type { ClaveModulo, FichaDeModulo } from '../../domain/modulos'
 
 export const CLAVE_MODULOS = ['modulos'] as const
+/** La lista de Sistema → Módulos, con sus datos: la comparten esa pantalla y el asistente. */
+export const CLAVE_LISTA = ['modulos', 'cms'] as const
 
 /** Qué módulos están encendidos. Sin sesión: la web lo necesita antes de pintar la barra. */
 export const modulosActivos = () => llamarApi<{ activos: ClaveModulo[] }>('/modulos', { auth: false }).then((r) => r.activos)

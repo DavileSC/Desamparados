@@ -18,7 +18,7 @@ import { idCategoriaDeRecibos } from './recibos/comunes.js';
 import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { enviarCorreo } from './correos/envio.js';
 import { PlantillasCorreoService } from './plantillas-correo.service.js';
-import { datos, esc, firma, maquetar, parrafo, urlDeLaWeb } from './correos/plantilla.js';
+import { datos, esc, parrafo, urlDeLaWeb } from './correos/plantilla.js';
 import { modoDePago, pagoParaLaWeb } from '../domain/redsys.js';
 import { aCentimos } from '../domain/sepa.js';
 import type { DatosFiscales } from './pagos/donativo.service.js';

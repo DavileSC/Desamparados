@@ -1,6 +1,6 @@
 import { Box, Stack, Typography } from '@mui/material'
 import { FONDOS, paletaDeMarca } from '../../../../../shared/colores-de-marca.mjs'
-import type { VistaDeLaMarca } from '../corporacion/IdentidadYMarca'
+import type { VistaDeLaMarca } from '../corporacion/vistaDeLaMarca'
 
 const ETIQUETA = { fontSize: 12, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'text.secondary' } as const
 

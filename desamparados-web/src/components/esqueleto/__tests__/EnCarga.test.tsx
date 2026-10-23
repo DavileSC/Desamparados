@@ -1,7 +1,8 @@
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import EnCarga, { ESPERA_ANTES_DEL_ESQUELETO } from '../EnCarga'
+import EnCarga from '../EnCarga'
+import { ESPERA_ANTES_DEL_ESQUELETO } from '../esperaDeCarga'
 
 const esqueleto = <div data-testid="esqueleto">huesos</div>
 

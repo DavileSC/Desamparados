@@ -2,7 +2,7 @@
 // a la vez por el banco, el segundo queda como incidencia), el nombre solo sale
 // si se pidió, el ingreso va a contabilidad y la gestión pide sesión del CMS.
 
-import crypto from 'node:crypto';
+
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import type { AddressInfo } from 'node:net';

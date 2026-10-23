@@ -1,6 +1,5 @@
 import { PortadaService } from '../services/portada.service.js';
 import { ContenidoService } from '../services/contenido.service.js';
-import { handleHttp } from '../utils/error.handle.js';
 import { manejar } from '../utils/manejar.js';
 import { AuditoriaService, ACCIONES_AUDITORIA } from '../services/auditoria.service.js';
 

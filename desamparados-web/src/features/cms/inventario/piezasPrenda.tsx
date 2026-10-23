@@ -33,11 +33,6 @@ export function PildoraEstado({ estado }: { estado: Prenda['estado'] }) {
   )
 }
 
-/** Quien la tiene, como se lee en el ropero: «Apellidos, Nombre (n.º 23)». */
-export const prestadaA = (p: Prenda) => (p.hermano
-  ? `${p.hermano.apellidos}, ${p.hermano.nombre}${p.hermano.numeroHermano ? ` (n.º ${p.hermano.numeroHermano})` : ''}`
-  : null)
-
 /**
  * El paso siguiente de la prenda, con su palabra: es la razón de estar en
  * esta pantalla. Sin relleno ni mayúsculas: hay uno por fila y, en granate,

@@ -86,7 +86,7 @@ after(async () => {
 const como = (rol: string, ruta: string, init: RequestInit = {}) =>
   fetch(`${baseUrl}${ruta}`, {
     ...init,
-    headers: { Cookie: `${COOKIE_CMS}=${generateToken(roleToUserId[rol]!, rol)}`, ...(init.headers ?? {}) },
+    headers: { Cookie: `${COOKIE_CMS}=${generateToken(roleToUserId[rol]!, rol)}`, ...init.headers },
   });
 
 describe('permisos del Hermano Mayor', () => {

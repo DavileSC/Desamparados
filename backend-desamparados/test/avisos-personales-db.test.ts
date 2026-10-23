@@ -81,7 +81,7 @@ async function pedir(ruta: string, cookie: string, metodo = 'GET', cuerpo?: unkn
   return fetch(`${baseUrl}/api${ruta}`, {
     method: metodo,
     headers: { Cookie: cookie, ...(cuerpo !== undefined ? { 'Content-Type': 'application/json' } : {}) },
-    body: cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined,
+    ...(cuerpo !== undefined && { body: JSON.stringify(cuerpo) }),
   });
 }
 
@@ -110,7 +110,7 @@ test('con móvil, el aviso llega al móvil y no por correo; sin móvil, por corr
   await AvisosPersonalesService.mandar({ userId: sinMovil.id, email: sinMovil.email }, await justificante());
 
   assert.ok(!enviados.some((e) => e.to === conMovil.email), 'sin correo para quien lo recibió en el móvil');
-  assert.ok(enviados.some((e) => e.to === sinMovil.email && /^Justificante de su pago de 30,00/.test(e.subject)));
+  assert.ok(enviados.some((e) => e.to === sinMovil.email && e.subject.startsWith('Justificante de su pago de 30,00')));
 
   const lista = await (await pedir('/hermanos/mis-avisos', conMovil.cookie)).json() as { id: number; tipo: string; asunto: string; extracto: string }[];
   const mio = lista.find((a) => a.tipo === 'personal');

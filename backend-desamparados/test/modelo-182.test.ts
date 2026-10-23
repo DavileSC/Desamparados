@@ -70,6 +70,7 @@ test('se junta todo lo de un NIF del ejercicio y los años de antes deciden si e
 
 test('el fichero: líneas de 250, campos en su posición y en mayúsculas sin tildes', () => {
   assert.equal(textoAeat('Muñoz Pérez, José-María'), 'MUÑOZ PEREZ JOSE MARIA');
+  assert.equal(textoAeat('Garçon Ibáñez'), 'GARÇON IBAÑEZ');
   const declarados = declaradosDelEjercicio([
     aportacion({ centimos: 300_50 }),
     aportacion({ nif: 'B12345674', apellidosYNombre: 'TALLERES SL', nombre: 'Talleres SL', centimos: 100_00 }),

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 import multer from 'multer';
 import { handleHttp, HttpError, traducirErrorPrisma } from '../utils/error.handle.js';
 
-export const notFoundHandler = (req: Request, res: Response, next: NextFunction) => {
+export const notFoundHandler = (req: Request, res: Response, _next: NextFunction) => {
     handleHttp(res, null, 'Endpoint no encontrado', 404);
 };
 
@@ -35,7 +35,7 @@ const MENSAJES_CUERPO: Record<string, string> = {
     'request.aborted': 'La petición se interrumpió antes de terminar de enviarse.',
 };
 
-export const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
+export const globalErrorHandler: ErrorRequestHandler = (err, req, res, _next) => {
 
     // A. ERRORES DE NEGOCIO (HttpError): viajan al cliente con su estado y mensaje
     if (err instanceof HttpError) {

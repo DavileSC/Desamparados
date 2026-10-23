@@ -16,7 +16,6 @@
 //   npm run 2fa:rescatar          → pregunta el correo
 import { createInterface } from 'node:readline/promises';
 import db from '../src/config/db.js';
-import { AuthService } from '../src/services/auth.service.js';
 import { DobleFactorService } from '../src/services/doble-factor.service.js';
 
 async function pedirCorreo(): Promise<string> {

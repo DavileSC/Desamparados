@@ -35,7 +35,7 @@ function esFecha(valor: string): boolean {
 }
 
 /** Las opciones que admite un tipo de bloque: las comunes y las suyas. */
-const opcionesDe = (tipo: string): Record<string, Opcion> => ({ ...COMUNES, ...(POR_TIPO[tipo] ?? {}) });
+const opcionesDe = (tipo: string): Record<string, Opcion> => ({ ...COMUNES, ...POR_TIPO[tipo] });
 
 interface ProblemaDePresentacion { campo: string; problema: string }
 

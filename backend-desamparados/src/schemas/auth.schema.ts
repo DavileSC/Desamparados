@@ -1,5 +1,5 @@
 import { type } from 'arktype';
-import { email, password, dni, textoRequerido, textoOpcional, telefono, idParam, codigoPostal, iban } from '../config/common';
+import { email, password, dni, textoRequerido, textoOpcional, telefono, codigoPostal, iban } from '../config/common';
 
 // =================================================================
 //  1. ESQUEMAS BASE REUTILIZABLES

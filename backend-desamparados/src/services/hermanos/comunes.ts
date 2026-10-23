@@ -9,20 +9,13 @@
  * emancipación, que hacen igual el tutor y Secretaría.
  */
 import db from '../../config/db';
-import { encrypt } from '../../utils/bcrypt.handle';
 import { Prisma, Role } from '@prisma/client';
-import { CreateHermanoDto, UpdateHermanoDto, EmancipateHermanoDto, UpdateAdminHermanoDto } from '../../dtos/hermano.dto';
+import { UpdateAdminHermanoDto } from '../../dtos/hermano.dto';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from '../auditoria.service';
-import { HttpError, NotFoundError } from '../../utils/error.handle';
-import { comprobarBajaNoFutura, comprobarEsAdulto, comprobarEsMenor, comprobarFechasHermano, comprobarMayoriaDeEdad, diaDeHoy, instanteDeDia, mismoDia } from '../../domain/fechas-hermano';
-import { esCuentaAnonimizada } from '../../domain/cuenta-anonimizada';
-import { diferenciasFicha, valorParaAuditoria } from '../../domain/cambios-ficha';
-import crypto from 'crypto';
+import { HttpError } from '../../utils/error.handle';
+import { comprobarMayoriaDeEdad, instanteDeDia, mismoDia } from '../../domain/fechas-hermano';
 import { AuthService } from '../auth.service';
 import { EmailService } from '../email.service';
-import { condicionBusqueda } from '../../domain/busqueda-texto.js';
-import { sanearPaginacion, respuestaPaginada } from '../../domain/paginacion.js';
-import { ORDENES_CENSO, ordenDe } from '../../domain/ordenacion.js';
 import { esConflictoTransitorio } from '../../utils/transaction-retry.js';
 
 // 1. DICCIONARIO DE ERRORES (Centralizado)

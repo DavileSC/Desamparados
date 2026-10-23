@@ -3,10 +3,8 @@ import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { GRUPOS } from '../../../app/cmsNavegacion'
 import { ErrorDeApi } from '../../../lib/api/cliente'
-import { CLAVE_MODULOS, cambiarModulo, listasDelRechazo, modulosDelCms, type ModuloDelCms } from '../../../lib/api/modulos'
+import { CLAVE_LISTA, CLAVE_MODULOS, cambiarModulo, listasDelRechazo, modulosDelCms, type ModuloDelCms } from '../../../lib/api/modulos'
 import { dependientesActivos, fichaDeModulo, type ClaveModulo } from '../../../domain/modulos'
-
-export const CLAVE_LISTA = ['modulos', 'cms'] as const
 
 /** «12 productos, 1 venta de caja», o nada. */
 const datosEnPalabras = (m: ModuloDelCms) => m.datos.map((d) => `${d.total} ${d.total === 1 ? d.uno : d.que}`).join(', ')

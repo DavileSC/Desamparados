@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { olvidarCuenta } from '../utils/contador-fallos.js';
 import db from '../config/db';
-import { EstadoEnvio, Prisma, Role } from '@prisma/client';
+import { EstadoEnvio, Prisma } from '@prisma/client';
 import { corteDeSesiones, esStaff } from '../utils/jwt.handle';
 import { verified } from '../utils/bcrypt.handle';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service';
@@ -9,7 +9,7 @@ import { HttpError, NotFoundError } from '../utils/error.handle';
 import { DOMINIO_CUENTA_ELIMINADA, PREFIJO_DNI_ELIMINADO } from '../domain/cuenta-anonimizada.js';
 import { suprimirDatosPersonales } from '../domain/auditoria-supresion.js';
 import { asegurarQueQuedaOtroAdmin } from './auth.service';
-import { consumirCodigoDeRespaldo, reclamarTotp } from './auth/codigos-2fa.js';
+
 import { borrarDocumentosPrivados, documentosDe } from '../utils/documentos-privados.js';
 import { PapeletasService, type SolicitudConRecibo } from './procesion/papeletas.service.js';
 import { idCategoriaDevoluciones } from './recibos/comunes.js';
@@ -80,7 +80,7 @@ export class MisDatosService {
 
     // Nunca exponemos secretos en la exportación: el cliente Prisma ya los omite
     // globalmente (ver config/db.ts), así que `user` llega sin password/2FA/reset.
-    const { hermanos, ...safeUser } = user;
+    const { hermanos: _hermanos, ...safeUser } = user;
     return {
       exportadoEn: new Date().toISOString(),
       aviso: 'Exportación de datos personales conforme al art. 15 RGPD.',

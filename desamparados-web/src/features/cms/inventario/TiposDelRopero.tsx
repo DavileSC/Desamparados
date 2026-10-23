@@ -1,8 +1,8 @@
 import { Box, ButtonBase, Tab, Tabs, Typography } from '@mui/material'
 import type { Prenda, RecuentoDeTipo } from '../../../lib/api/inventario'
 import { ESTADO_PRENDA } from './colores'
+import { tiposConPrendas } from './ordenDeTipos'
 
-const ORDEN_TIPOS: Prenda['tipo'][] = ['TUNICA', 'CAPIROTE', 'FARAONA', 'CAPA', 'OTRO']
 const NOMBRE_TIPO: Record<Prenda['tipo'], string> = { TUNICA: 'Túnicas', CAPIROTE: 'Capirotes', FARAONA: 'Faraonas', CAPA: 'Capas', OTRO: 'Otras prendas' }
 const MASCULINO: Record<Prenda['tipo'], boolean> = { TUNICA: false, CAPIROTE: true, FARAONA: false, CAPA: false, OTRO: false }
 const ORDEN_ESTADOS: Prenda['estado'][] = ['DISPONIBLE', 'PRESTADA', 'LAVADO', 'TALLER', 'BAJA']
@@ -18,11 +18,6 @@ function cuentaDeEstado(n: number, estado: Prenda['estado'], tipo: Prenda['tipo'
           : 'de baja'
   return `${n} ${texto}`
 }
-
-/** Los tipos que tienen alguna prenda, en el orden de siempre. */
-export const tiposConPrendas = (recuento: RecuentoDeTipo[]) => ORDEN_TIPOS
-  .map((tipo) => recuento.find((r) => r.tipo === tipo))
-  .filter((r): r is RecuentoDeTipo => Boolean(r && r.total > 0))
 
 interface Props {
   recuento: RecuentoDeTipo[]

@@ -21,7 +21,7 @@ import { EmailService } from '../src/services/email.service.js';
 import { buzonDePruebas, buzonPedido } from '../src/utils/buzon-pruebas.js';
 import { ponerCuentaDeContacto, ponerTransporte, resumenDelFallo } from '../src/services/correos/envio.js';
 import db from '../src/config/db.js';
-import { AuthService } from '../src/services/auth.service.js';
+
 import { PASSWORD_PRUEBA } from './fixtures/usuarios.js';
 import { RegistroService } from '../src/services/registro.service.js';
 import { SolicitudesService } from '../src/services/solicitudes.service.js';

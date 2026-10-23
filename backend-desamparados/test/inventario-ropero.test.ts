@@ -67,7 +67,7 @@ const como = (rol: Role, ruta: string, metodo = 'GET', cuerpo?: unknown) =>
   fetch(`${baseUrl}${esRopero(ruta) ? '/api/ropero' : '/api/inventario'}${ruta}`, {
     method: metodo,
     headers: { 'Content-Type': 'application/json', Cookie: `${COOKIE_CMS}=${generateToken(usuarios[rol]!, rol)}` },
-    body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
+    ...(cuerpo !== undefined && { body: JSON.stringify(cuerpo) }),
   });
 
 describe('quién ve el ropero (P1)', () => {

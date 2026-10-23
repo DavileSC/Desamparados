@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import { randomInt } from 'node:crypto';
 import db from '../src/config/db.js';
-import { AuthService } from '../src/services/auth.service.js';
+
 import { MAXIMO_MENORES_POR_ALTA, registerSchema } from '../src/schemas/auth.schema.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { RegistroService } from '../src/services/registro.service.js';

@@ -3,28 +3,14 @@ import { Alert, Box, Button, CircularProgress, MenuItem, TextField, Typography }
 import { Helmet } from 'react-helmet-async'
 import { Link, useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
-import { guardarEnDisco, traerDatos, traerInforme, type AreaDato, type CifraDato, type ClaveArea } from '../../../lib/api/datos'
-import { eurosResumen, numero } from '../contabilidad/formato'
+import { guardarEnDisco, traerDatos, traerInforme, type AreaDato, type ClaveArea } from '../../../lib/api/datos'
 import { useAltoDisponible } from '../inicio/useAltoDisponible'
 import { entrada } from '../inicio/animaciones'
 import { FILETE, FONDO_PIEZA, ORO, ROJO_GRAFICA, SERIF, VERDE, VERSALITAS } from '../inicio/estiloRetablo'
 import GraficaDatos, { Muestra } from './GraficaDatos'
 import { site } from '../../../config/site'
 import { useModulos } from '../../../hooks/useModulos'
-
-const decimal = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
-
-/** La cifra escrita igual que en el PDF: con signo las diferencias, con coma la edad. */
-export function escribirCifra(c: Pick<CifraDato, 'valor' | 'formato'>): string {
-  const signo = c.valor > 0 ? '+' : c.valor < 0 ? '−' : ''
-  switch (c.formato) {
-    case 'euros': return eurosResumen(Math.round(c.valor))
-    case 'decimal': return decimal.format(c.valor)
-    case 'diferencia': return `${signo}${numero(Math.abs(c.valor))}`
-    case 'diferencia-euros': return `${signo}${eurosResumen(Math.round(Math.abs(c.valor)))}`
-    default: return numero(c.valor)
-  }
-}
+import { escribirCifra } from './escribirCifra'
 
 /**
  * Junta › Datos e informes: cómo va el Grupo, área por área, con una gráfica

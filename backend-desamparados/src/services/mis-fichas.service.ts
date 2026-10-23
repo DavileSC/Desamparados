@@ -1,18 +1,16 @@
-import crypto from 'crypto';
 import db from '../config/db';
-import { EstadoPago, Prisma, Role, TipoRecibo } from '@prisma/client';
+import { EstadoPago, Prisma, TipoRecibo } from '@prisma/client';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import {
-  ADMIN_EDITABLE_FIELDS, FICHA_PENDIENTE, HERMANO_ERRORS, HERMANO_SAFE_SELECT,
-  USER_EDITABLE_FIELDS, WHERE_SITUACION, emanciparFicha,
-  esCuentaStaff, getNextNumeroHermano, prepareUpdateData, sinFechasDelMismoDia,
-  transaccionReintentable, type FichaEmancipable, type SearchHermanoQuery,
+  HERMANO_ERRORS, USER_EDITABLE_FIELDS, emanciparFicha,
+  esCuentaStaff, prepareUpdateData, sinFechasDelMismoDia,
+  transaccionReintentable,
 } from './hermanos/comunes.js';
 import { encrypt } from '../utils/bcrypt.handle';
 import { CreateHermanoDto, UpdateHermanoDto, EmancipateHermanoDto } from '../dtos/hermano.dto';
-import { comprobarBautismo, comprobarEsAdulto, comprobarEsMenor, comprobarFechasHermano, diaDeHoy } from '../domain/fechas-hermano';
+import { comprobarBautismo, comprobarEsAdulto, comprobarEsMenor, diaDeHoy } from '../domain/fechas-hermano';
 import { diferenciasFicha, valorParaAuditoria } from '../domain/cambios-ficha';
 import { apellidosTrasCambio, partirApellidos } from '../domain/apellidos.js';
 import { enmascararIban } from '../domain/iban.js';

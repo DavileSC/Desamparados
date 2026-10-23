@@ -3,7 +3,8 @@ import type { Prenda } from '../../../lib/api/inventario'
 import { ETIQUETA_TIPO } from '../ropero'
 import { Dato, DatosDeFicha, Ficha, ListaDeFichas } from '../listados/Fichas'
 import { ESTADO_PRENDA } from './colores'
-import { BotonPaso, MenuPrenda, PildoraEstado, prestadaA, type AccionesPrenda } from './piezasPrenda'
+import { BotonPaso, MenuPrenda, PildoraEstado, type AccionesPrenda } from './piezasPrenda'
+import { prestadaA } from './prestadaA'
 
 interface Props extends AccionesPrenda {
   prendas: Prenda[]

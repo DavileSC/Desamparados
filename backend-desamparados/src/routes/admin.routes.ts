@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { type } from 'arktype';
+
 import { AdminController } from '../controllers/admin.controller.js';
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';

@@ -390,7 +390,7 @@ test('al generar, cada cuenta recibe por correo un aviso del cargo con todos sus
     assert.equal(enCola[0].porMovil, false, 'el aviso que pide la norma va por correo, tenga o no el móvil');
 
     await despertarCola();
-    const aviso = enviados.find((c) => c.to === e.usuario.email && /^Aviso de cargo en su cuenta: 42,50 €/.test(c.subject));
+    const aviso = enviados.find((c) => c.to === e.usuario.email && c.subject.startsWith('Aviso de cargo en su cuenta: 42,50 €'));
     assert.ok(aviso, 'sale el aviso con el total de la cuenta');
     assert.ok(aviso.html.includes(ACREEDOR.SEPA_ACREEDOR_ID), 'con el identificador del acreedor');
     assert.match(aviso.html, /mandato HERMANO-\d{6}-\d{8}/);
@@ -424,7 +424,7 @@ test('AUD-001: el aviso del cargo sale delante de lo que ya esperaba en la cola'
     await despertarCola();
     await colaTerminada();
     const orden = enviados.slice(desde).map((c) => c.subject);
-    const deCargo = orden.findIndex((s) => /^Aviso de cargo en su cuenta/.test(s));
+    const deCargo = orden.findIndex((s) => s.startsWith('Aviso de cargo en su cuenta'));
     const anterior = orden.indexOf('Esperaba antes');
     assert.ok(deCargo >= 0 && anterior >= 0, 'salen los dos');
     assert.ok(deCargo < anterior, 'el aviso del cargo pasa delante');

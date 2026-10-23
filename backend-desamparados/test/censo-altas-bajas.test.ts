@@ -23,7 +23,7 @@ import { esClaveConfiguracion } from '../src/domain/configuracion.js';
 import { diaDeHoy } from '../src/domain/fechas-hermano.js';
 import { diaMadrid } from '../src/domain/contabilidad.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
-import { MisDatosService } from '../src/services/mis-datos.service.js';
+
 import { SolicitudesService } from '../src/services/solicitudes.service.js';
 import { MisFichasService } from '../src/services/mis-fichas.service.js';
 import { CensoService } from '../src/services/censo.service.js';

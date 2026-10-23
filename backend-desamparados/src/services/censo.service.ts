@@ -1,14 +1,14 @@
 import crypto from 'crypto';
 import db from '../config/db';
-import { Prisma, Role } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import {
-  ADMIN_EDITABLE_FIELDS, FICHA_PENDIENTE, HERMANO_ERRORS, HERMANO_SAFE_SELECT,
-  USER_EDITABLE_FIELDS, WHERE_SITUACION, comprobarDniLibre, emanciparFicha,
+  ADMIN_EDITABLE_FIELDS, HERMANO_ERRORS, HERMANO_SAFE_SELECT,
+  WHERE_SITUACION, comprobarDniLibre, emanciparFicha,
   esCuentaStaff, getNextNumeroHermano, prepareUpdateData, sinFechasDelMismoDia,
-  transaccionReintentable, type FichaEmancipable, type SearchHermanoQuery,
+  transaccionReintentable, type SearchHermanoQuery,
 } from './hermanos/comunes.js';
 import { UpdateAdminHermanoDto, type MotivoBaja } from '../dtos/hermano.dto';
 import { encrypt } from '../utils/bcrypt.handle';

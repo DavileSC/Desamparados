@@ -9,7 +9,7 @@
  */
 import db from '../config/db';
 import { EmitirReciboDto, GenerarCuotasDto, UpdateReciboDto } from '../dtos/recibo.dto.js';
-import { EstadoCita, EstadoPago, Prisma, MetodoPago, TipoRecibo, TipoTransaccion } from '@prisma/client';
+import { EstadoPago, Prisma, MetodoPago, TipoRecibo, TipoTransaccion } from '@prisma/client';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { transactionWithRetry } from '../utils/transaction-retry.js';
@@ -27,8 +27,6 @@ import {
 } from './recibos/comunes.js';
 
 export type { ConsultaRecibos };
-
-type Tx = Prisma.TransactionClient;
 
 export class ReciboService {
 

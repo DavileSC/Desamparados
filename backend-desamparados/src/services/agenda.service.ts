@@ -1,5 +1,5 @@
 import db from '../config/db';
-import { Prisma, TipoEvento } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { CreateEventDto, UpdateEventDto, EventFilterDto, PeriodoAgenda, AdminEventFilterDto, AdminCalendarioDto } from '../dtos/agenda.dto';
 import { condicionBusqueda } from '../domain/busqueda-texto.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';

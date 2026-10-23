@@ -86,7 +86,7 @@ async function peticion(ruta: string, cookie: string, metodo = 'POST', cuerpo?: 
   return fetch(`${baseUrl}/api${ruta}`, {
     method: metodo,
     headers: { Cookie: cookie, 'Content-Type': 'application/json' },
-    body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo)
+    ...(cuerpo !== undefined && { body: JSON.stringify(cuerpo) })
   });
 }
 

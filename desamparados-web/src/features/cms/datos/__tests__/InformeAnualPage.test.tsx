@@ -4,7 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { Route, Routes } from 'react-router-dom'
 import { renderWithProviders } from '../../../../test/test-utils'
 import { useAuthStore } from '../../../altas/auth/store'
-import InformeAnualPage, { anioPorDefecto, puedeEscribir } from '../InformeAnualPage'
+import InformeAnualPage from '../InformeAnualPage'
+import { anioPorDefecto, puedeEscribir } from '../informeAnual'
 import type { TextosInforme } from '../../../../lib/api/datos'
 
 const json = (cuerpo: unknown, status = 200) =>

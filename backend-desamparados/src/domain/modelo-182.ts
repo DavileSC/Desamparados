@@ -142,9 +142,9 @@ export function declaradosDelEjercicio(aportaciones: Aportacion[], ejercicio: nu
 export function textoAeat(texto: string): string {
   return texto
     .toUpperCase()
-    .replace(/Ñ/g, '\u0001').replace(/Ç/g, '\u0002')
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/\u0001/g, 'Ñ').replace(/\u0002/g, 'Ç')
+    // NFD parte la Ñ y la Ç en letra y marca: se recomponen antes de quitar las tildes.
+    .normalize('NFD').replace(/N\u0303/g, 'Ñ').replace(/C\u0327/g, 'Ç')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^A-Z0-9ÑÇ ]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();

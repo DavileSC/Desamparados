@@ -15,7 +15,8 @@ import { useEnlaceVivo } from '../../../hooks/useEnlaceVivo'
 import { useBorradorPagina } from '../../../components/bloques/borrador'
 import BloquesEsqueleto from '../../../components/bloques/BloquesEsqueleto'
 import ConBloquesCargados from '../../../components/bloques/ConBloquesCargados'
-import EnCarga, { estadoDeConsulta } from '../../../components/esqueleto/EnCarga'
+import EnCarga from '../../../components/esqueleto/EnCarga'
+import { estadoDeConsulta } from '../../../components/esqueleto/esperaDeCarga'
 import { Lineas } from '../../../components/esqueleto/Hueso'
 import {
   getContenido,

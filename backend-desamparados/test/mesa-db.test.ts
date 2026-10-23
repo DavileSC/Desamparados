@@ -871,7 +871,7 @@ test('por HTTP: la mesa es de la Junta que reparte; perdonar, de Tesorería y el
       fetch(`${baseUrl}/api/procesion${ruta}`, {
         method: metodo,
         headers: { Cookie: `${COOKIE_CMS}=${generateToken(userId, rol)}`, ...(cuerpo !== undefined && { 'Content-Type': 'application/json' }) },
-        body: cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined,
+        ...(cuerpo !== undefined && { body: JSON.stringify(cuerpo) }),
       });
 
     assert.equal((await como(e.usuario.id, Role.USER, '/admin/mesa/personas?q=Buscable')).status, 403);
@@ -931,7 +931,7 @@ test('por HTTP: Tesorería y Albacería en la mesa solo ven y corrigen fichas en
       fetch(`${baseUrl}/api/procesion${ruta}`, {
         method: metodo,
         headers: { Cookie: `${COOKIE_CMS}=${generateToken(userId, rol)}`, ...(cuerpo !== undefined && { 'Content-Type': 'application/json' }) },
-        body: cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined,
+        ...(cuerpo !== undefined && { body: JSON.stringify(cuerpo) }),
       });
     const buscar = async (userId: number, rol: Role, q: string) =>
       (await (await como(userId, rol, `/admin/mesa/personas?q=${encodeURIComponent(q)}&salida=${PASION}`)).json() as { id: number }[]).map((p) => p.id);

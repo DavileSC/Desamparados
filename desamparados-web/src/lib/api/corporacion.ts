@@ -16,6 +16,8 @@ export interface DatosDeContacto {
 }
 
 export const CLAVE_CORPORACION = ['corporacion'] as const
+/** Identidad y marca, del CMS: la comparten su ficha y el asistente. */
+export const CLAVE_MARCA = ['cms', 'corporacion', 'marca'] as const
 
 /** Sin sesión: el pie, los textos legales y el alta los enseñan a cualquiera. */
 export const datosDeContacto = () => llamarApi<DatosDeContacto>('/corporacion', { auth: false })

@@ -3,7 +3,7 @@ import { InventarioController } from '../controllers/inventario.controller.js';
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { ROLES_PATRIMONIO } from './roles.js';
-import { Role } from '@prisma/client';
+
 import { validate } from '../config/validate.js';
 import { type } from 'arktype';
 import { idParam } from '../config/common.js'; 

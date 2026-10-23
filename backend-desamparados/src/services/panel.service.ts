@@ -316,8 +316,8 @@ export class PanelService {
     // Altas y bajas del recorrido completo, ya agrupadas por mes: se dejan en
     // constantes con nombre (y no solo dentro de la llamada) porque la
     // siguiente tarea las necesita por separado.
-    const altasPorMes = contarPorMes(fechasAlta.flatMap((f) => new Array(f._count._all).fill(f.fechaAlta)));
-    const bajasPorMes = contarPorMes(fechasBaja.flatMap((f) => new Array(f._count._all).fill(f.fechaBaja)));
+    const altasPorMes = contarPorMes(fechasAlta.flatMap((f) => Array.from({ length: f._count._all }, () => f.fechaAlta)));
+    const bajasPorMes = contarPorMes(fechasBaja.flatMap((f) => Array.from({ length: f._count._all }, () => f.fechaBaja)));
     // serieCensoMensual reconstruye hacia atrás desde hoy con TODO el recorrido
     // (mesesRecorridos); aquí se recorta a los meses que de verdad se enseñan.
     const serieCompleta = serieCensoMensual(activos, altasPorMes, bajasPorMes, mesesRecorridos);
@@ -357,7 +357,7 @@ export class PanelService {
     // groupBy da una fila por valor distinto; agruparPorTextoLibre espera la
     // lista repetida, así que se expande por su recuento.
     const expandir = <T extends { _count: { _all: number } }>(filas: T[], valor: (f: T) => string | null) =>
-      filas.flatMap((f) => new Array<string | null>(f._count._all).fill(valor(f)));
+      filas.flatMap((f) => Array.from({ length: f._count._all }, () => valor(f)));
 
     return {
       generadoEn: hoy.toISOString(),

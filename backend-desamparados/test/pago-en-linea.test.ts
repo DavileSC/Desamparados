@@ -202,7 +202,7 @@ test('el banco avisa del cobro: el recibo queda pagado una sola vez', async (t) 
     assert.ok(justificante.html.includes(`Rafael ${e.hermano.apellidos}`));
     assert.ok(justificante.html.includes(inicio.pedido));
     await new Promise((r) => setTimeout(r, 100));
-    assert.equal(enviados.filter((c) => c.to === e.usuario.email && /^Justificante/.test(c.subject)).length, 1, 'el aviso repetido no manda otro');
+    assert.equal(enviados.filter((c) => c.to === e.usuario.email && c.subject.startsWith('Justificante')).length, 1, 'el aviso repetido no manda otro');
 
     // Otro usuario no ve ese pago.
     const otro = await crearUsuarioPrueba(Role.USER);

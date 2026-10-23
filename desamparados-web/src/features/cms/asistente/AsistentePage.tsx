@@ -10,10 +10,13 @@ import {
   type EstadoDeLaMarca, type EstadoDelAsistente, type PasoSaltable,
 } from '../../../lib/api/corporacion'
 import { modulosDelCms } from '../../../lib/api/modulos'
-import IdentidadYMarca, { CLAVE_MARCA, vistaDeLaMarca, type VistaDeLaMarca } from '../corporacion/IdentidadYMarca'
+import IdentidadYMarca from '../corporacion/IdentidadYMarca'
+import { vistaDeLaMarca, type VistaDeLaMarca } from '../corporacion/vistaDeLaMarca'
+import { CLAVE_MARCA } from '../../../lib/api/corporacion'
 import Contacto from '../corporacion/Contacto'
 import type { AccionesDelFormulario } from '../corporacion/acciones'
-import ListaDeModulos, { CLAVE_LISTA } from '../modulos/ListaDeModulos'
+import ListaDeModulos from '../modulos/ListaDeModulos'
+import { CLAVE_LISTA } from '../../../lib/api/modulos'
 import VistaPrevia from './VistaPrevia'
 import { site } from '../../../config/site'
 

@@ -23,7 +23,7 @@ import { unaVez } from '../procesion/una-vez.js';
 import { urlDeLaWeb } from '../correos/plantilla.js';
 import { EmailService } from '../email.service.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from '../auditoria.service.js';
-import { aCentimos, claveDelCobro, urlDelAviso, type InicioDePago, type MetodoEnLinea } from './comunes.js';
+import { claveDelCobro, urlDelAviso, type InicioDePago, type MetodoEnLinea } from './comunes.js';
 import { euros } from '../../utils/euros.js';
 
 export interface PeticionDeDonativo {

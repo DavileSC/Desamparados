@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import BloqueDonativo from '../BloqueDonativo'
-import { leerImportes } from '../../../features/cms/bloques/formularios/donativo'
+import { leerImportes } from '../../../features/cms/bloques/formularios/leerImportes'
 import type { BloqueDonativo as Datos } from '../../../lib/api/contenido'
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })

@@ -4,14 +4,12 @@ import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditor
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import {
-  ADMIN_EDITABLE_FIELDS, FICHA_PENDIENTE, HERMANO_ERRORS, HERMANO_SAFE_SELECT,
-  USER_EDITABLE_FIELDS, WHERE_SITUACION, comprobarDniLibre, emanciparFicha,
-  esCuentaStaff, getNextNumeroHermano, prepareUpdateData, sinFechasDelMismoDia,
-  transaccionReintentable, type FichaEmancipable, type SearchHermanoQuery,
+  FICHA_PENDIENTE, HERMANO_ERRORS, HERMANO_SAFE_SELECT,
+  esCuentaStaff, getNextNumeroHermano, transaccionReintentable,
 } from './hermanos/comunes.js';
-import { AuthService } from './auth.service';
+
 import { EmailService } from './email.service';
-import { esCuentaAnonimizada } from '../domain/cuenta-anonimizada';
+
 import { borrarDocumentosPrivados, documentosDe } from '../utils/documentos-privados.js';
 
 /**

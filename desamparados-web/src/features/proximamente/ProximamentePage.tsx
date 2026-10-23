@@ -12,7 +12,7 @@ import type { EstadoDeLaWeb } from '../../lib/api/web'
 export const MENSAJE_DE_SIEMPRE = 'Estamos preparando la nueva web. Muy pronto podrás conocer aquí nuestra historia, los cultos y la agenda.'
 
 /** «Sábado, 20 de marzo de 2027». En UTC: el día guardado es un día, no un instante. */
-export function diaDeLaPresentacion(fecha: string): string {
+function diaDeLaPresentacion(fecha: string): string {
   const texto = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
     .format(new Date(`${fecha}T00:00:00Z`))
   return texto.charAt(0).toUpperCase() + texto.slice(1)

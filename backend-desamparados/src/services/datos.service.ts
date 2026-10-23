@@ -166,7 +166,7 @@ async function datosCrudos(p: Periodo, hoy: Date): Promise<DatosCrudos> {
     ...vivosFilas.map((r) => ({ estado: r.estado as 'PENDIENTE' | 'REMESADO', total: r._count._all, importe: euros2(Number(r._sum.importe ?? 0)) })),
     { estado: 'DEVUELTO' as const, ...devueltosFila },
   ];
-  const expandir = (filas: { puesto: string; _count: { _all: number } }[]) => filas.flatMap((f) => new Array<string>(f._count._all).fill(f.puesto));
+  const expandir = (filas: { puesto: string; _count: { _all: number } }[]) => filas.flatMap((f) => Array.from({ length: f._count._all }, () => f.puesto));
 
   const altasMes = porMes(fechasAlta, (f) => f.fechaAlta, (f) => f._count._all, p.meses);
   const bajasMes = porMes(fechasBaja, (f) => f.fechaBaja, (f) => f._count._all, p.meses);

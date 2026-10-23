@@ -3,7 +3,7 @@ import { PapeletasService } from '../services/procesion/papeletas.service.js';
 import { TurnosService } from '../services/procesion/turnos.service.js';
 import { PlazoPapeletasService } from '../services/procesion/plazo.service.js';
 import { SalidasService, salidaDe } from '../services/procesion/salidas.service.js';
-import { handleHttp, HttpError } from '../utils/error.handle.js';
+import { HttpError } from '../utils/error.handle.js';
 import { instanteLimiteAusencias } from '../domain/datos-procesion.js';
 import { AuditoriaService } from '../services/auditoria.service.js';
 import { manejar } from '../utils/manejar.js';

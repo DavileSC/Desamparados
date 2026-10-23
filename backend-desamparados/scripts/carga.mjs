@@ -162,7 +162,7 @@ async function pedir(medida, grupo, ruta, { metodo = 'GET', cuerpo, cabeceras = 
   if (sesion && cookieCms) h.cookie = cookieCms;
   const t0 = performance.now();
   try {
-    const res = await fetch(BASE + ruta, { method: metodo, body: cuerpo, headers: h, signal: AbortSignal.timeout(timeout) });
+    const res = await fetch(BASE + ruta, { method: metodo, ...(cuerpo !== undefined && { body: cuerpo }), headers: h, signal: AbortSignal.timeout(timeout) });
     const buf = await res.arrayBuffer();
     if (sesion && res.status === 401 && cookieCms && (await reentrar(h.cookie))) {
       return pedir(medida, grupo, ruta, { metodo, cuerpo, cabeceras, sesion, json, timeout });

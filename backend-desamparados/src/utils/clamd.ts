@@ -60,7 +60,7 @@ export function parseClamdResponse(raw: string): ScanResult {
   if (/(^|:\s*)OK$/.test(resp)) {
     return { veredicto: 'limpio', clean: true, scanned: true };
   }
-  if (/FOUND$/.test(resp)) {
+  if (resp.endsWith('FOUND')) {
     return { veredicto: 'infectado', clean: false, scanned: true, reason: resp };
   }
   return noDisponible(resp || 'Respuesta vacía del antivirus');

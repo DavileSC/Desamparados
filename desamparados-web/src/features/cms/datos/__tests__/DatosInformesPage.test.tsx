@@ -2,7 +2,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
-import DatosInformesPage, { escribirCifra } from '../DatosInformesPage'
+import DatosInformesPage from '../DatosInformesPage'
+import { escribirCifra } from '../escribirCifra'
 import type { AreaDato, DatosResponse } from '../../../../lib/api/datos'
 
 const json = (cuerpo: unknown, status = 200) =>

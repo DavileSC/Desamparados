@@ -22,7 +22,6 @@
  *   npm run 2fa:cifrar-secretos
  */
 import db from '../src/config/db.js';
-import { AuthService } from '../src/services/auth.service.js';
 import { DobleFactorService } from '../src/services/doble-factor.service.js';
 
 try {

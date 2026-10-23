@@ -14,7 +14,8 @@ import {
   guardarSorteo, liquidarTalonario, pdfDeParticipaciones, quitarTalonario, sorteo as leerSorteo, sorteos as leerSorteos,
   type DatosSorteo, type SorteoConTalonarios, type Talonario,
 } from '../../../lib/api/loteria'
-import { DialogoCompra, DialogoEntrega, DialogoImprimir, DialogoLiquidacion, DialogoPremios, aNumero } from './DialogosLoteria'
+import { DialogoCompra, DialogoEntrega, DialogoImprimir, DialogoLiquidacion, DialogoPremios } from './DialogosLoteria'
+import { aNumero } from './aNumero'
 
 const CLAVE = ['loteria'] as const
 const mensaje = (e: unknown, porDefecto: string) => (e instanceof Error && e.message ? e.message : porDefecto)

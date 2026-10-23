@@ -240,7 +240,7 @@ const api = (ruta: string, metodo = 'GET', cuerpo?: unknown) =>
   fetch(`${baseUrl}/api${ruta}`, {
     method: metodo,
     headers: { 'Content-Type': 'application/json', Cookie: `${COOKIE_CMS}=${generateToken(usuarioId, Role.REDES)}` },
-    body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
+    ...(cuerpo !== undefined && { body: JSON.stringify(cuerpo) }),
   });
 
 describe('noticias contra el servidor', () => {
