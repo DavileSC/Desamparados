@@ -4,7 +4,7 @@ import {
 } from '@mui/material'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  enviarCertificados, guardarConfiguracionModelo182, justificantePorDefecto, resumenModelo182, traerCertificados, traerFicheroModelo182,
+  enviarCertificados, guardarConfiguracionModelo182, justificantePorDefecto, reintentarCertificados, resumenModelo182, traerCertificados, traerFicheroModelo182,
   type ConfiguracionModelo182,
 } from '../../../lib/api/modelo182'
 import { guardarEnDisco } from '../../../lib/api/datos'
@@ -87,6 +87,17 @@ export default function Modelo182({ puedeCambiar }: Props) {
     finally { setOcupado(null) }
   }
 
+  const reintentar = async () => {
+    if (!r) return
+    setOcupado('reintentar')
+    setError(null)
+    try {
+      setAviso((await reintentarCertificados(r.ejercicio)).message)
+      await cliente.invalidateQueries({ queryKey: ['modelo182'] })
+    } catch (err: unknown) { setError(mensaje(err, 'No se han podido volver a mandar.')) }
+    finally { setOcupado(null) }
+  }
+
   const conCorreo = r?.declarados.filter((d) => d.email).length ?? 0
   const justificanteValido = /^182\d{10}$/.test(justificante)
 
@@ -158,7 +169,7 @@ export default function Modelo182({ puedeCambiar }: Props) {
                 {ocupado === 'todos' ? 'Preparando…' : 'Todos los certificados (PDF)'}
               </Button>
               {puedeCambiar && (
-                <Button variant="contained" disabled={conCorreo === 0 || !r.configuracion.nif || ocupado !== null} onClick={() => setConfirmarEnvio(true)}>
+                <Button variant="contained" disabled={conCorreo === 0 || !r.configuracion.nif || r.envio.pendientes > 0 || ocupado !== null} onClick={() => setConfirmarEnvio(true)}>
                   Mandarlos por correo ({conCorreo})
                 </Button>
               )}
@@ -166,7 +177,18 @@ export default function Modelo182({ puedeCambiar }: Props) {
           </Stack>
           {r.enviados && (
             <Alert severity="info" sx={{ mb: 1.5 }}>
-              Ya se mandaron el {new Date(r.enviados.el).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })} ({r.enviados.cuantos}). Mandarlos otra vez llega a todos de nuevo.
+              {r.envio.pendientes > 0
+                ? <>Puestos en la cola de correos el {new Date(r.enviados.el).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}: quedan {r.envio.pendientes} de {r.enviados.cuantos} por salir. Salen solos; lo que no cabe en el tope de correos de hoy, mañana.</>
+                : <>Ya se mandaron el {new Date(r.enviados.el).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })} ({r.enviados.cuantos}). Mandarlos otra vez llega a todos de nuevo.</>}
+            </Alert>
+          )}
+          {r.envio.fallidos > 0 && (
+            <Alert
+              severity="warning"
+              sx={{ mb: 1.5 }}
+              action={puedeCambiar && <Button color="inherit" size="small" disabled={ocupado !== null} onClick={() => void reintentar()}>{ocupado === 'reintentar' ? 'Poniéndolos…' : 'Volver a intentarlo'}</Button>}
+            >
+              {r.envio.fallidos === 1 ? '1 certificado no ha podido salir' : `${r.envio.fallidos} certificados no han podido salir`} (el servicio de correo falló o la dirección no existe).
             </Alert>
           )}
           {!r.configuracion.nif && r.declarados.length > 0 && <Alert severity="info" sx={{ mb: 1.5 }}>Los certificados llevan el NIF {delGrupo()}: ponlo en «Datos {delGrupo()}» para sacarlos.</Alert>}
@@ -239,7 +261,7 @@ export default function Modelo182({ puedeCambiar }: Props) {
       <DialogoConfirmacion
         abierto={confirmarEnvio}
         titulo="Mandar los certificados por correo"
-        mensaje={`Se manda a cada donante de ${r?.ejercicio ?? ''} con correo (${conCorreo}) su certificado en PDF. Los que no tienen correo se descargan y se entregan a mano.`}
+        mensaje={`Se manda a cada donante de ${r?.ejercicio ?? ''} con correo (${conCorreo}) su certificado en PDF. Salen por la cola de correos: si no caben todos en el tope de hoy, el resto sale los días siguientes, solo. Los que no tienen correo se descargan y se entregan a mano.`}
         textoConfirmar={ocupado === 'enviar' ? 'Mandando…' : 'Mandar'}
         onConfirmar={() => void enviar()}
         onCancelar={() => setConfirmarEnvio(false)}

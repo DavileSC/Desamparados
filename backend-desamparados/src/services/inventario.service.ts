@@ -267,8 +267,11 @@ export class InventarioService {
       const existe = await db.prenda.findUnique({ where: { tipo_numero: { tipo, numero } } });
       if (existe && existe.id !== id) throw new HttpError(`Ya hay ${NOMBRE_TIPO[tipo]} con el número ${numero}.`);
     }
-    return await db.prenda.update({
-      where: { id },
+    // Condicionada al estado leído: si la mesa la presta mientras se edita la
+    // ficha, el formulario (que reenvía «Disponible») la dejaba disponible con
+    // el hermano todavía apuntado.
+    const { count } = await db.prenda.updateMany({
+      where: { id, estado: actual.estado },
       data: {
         numero: data.numero,
         tipo: data.tipo,
@@ -277,6 +280,8 @@ export class InventarioService {
         observaciones: data.observaciones
       }
     });
+    if (count === 0) throw new HttpError('La prenda ha cambiado mientras la editabas (se ha prestado o devuelto): vuelve a abrirla.', 409);
+    return db.prenda.findUniqueOrThrow({ where: { id } });
   }
 
   static async deletePrenda(id: number) {

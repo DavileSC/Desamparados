@@ -43,6 +43,8 @@ interface ResumenModelo182 {
   faltaParaElFichero: string[]
   /** Cuándo se mandaron por correo los certificados de este ejercicio, y a cuántos. */
   enviados: { el: string; cuantos: number } | null
+  /** Cómo va ese envío en la cola de correos: lo que espera turno y lo que falló. */
+  envio: { pendientes: number; fallidos: number }
 }
 
 export const resumenModelo182 = (ejercicio: number) => llamarApi<ResumenModelo182>(`/recibos/admin/modelo-182?ejercicio=${ejercicio}`)
@@ -54,7 +56,9 @@ export const traerCertificados = (ejercicio: number, nif?: string) =>
   traerArchivo(`/recibos/admin/modelo-182/certificados?ejercicio=${ejercicio}${nif ? `&nif=${encodeURIComponent(nif)}` : ''}`)
 
 export const enviarCertificados = (ejercicio: number) =>
-  llamarApi<{ enviados: number; fallidos: number; sinCorreo: number; message: string }>(`/recibos/admin/modelo-182/enviar?ejercicio=${ejercicio}`, { method: 'POST' })
+  llamarApi<{ enCola: number; sinCorreo: number; message: string }>(`/recibos/admin/modelo-182/enviar?ejercicio=${ejercicio}`, { method: 'POST' })
+export const reintentarCertificados = (ejercicio: number) =>
+  llamarApi<{ message: string }>(`/recibos/admin/modelo-182/enviar/reintentar?ejercicio=${ejercicio}`, { method: 'POST' })
 
 /** Los certificados del área de hermanos: los de su cuenta, por ejercicio cerrado. */
 interface MisCertificados {

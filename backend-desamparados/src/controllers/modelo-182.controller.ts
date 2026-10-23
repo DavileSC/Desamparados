@@ -41,6 +41,10 @@ export class Modelo182Controller {
     res.json(await Modelo182Service.enviarCertificados(ejercicioDe(req.query), AuditoriaService.metaFromReq(req)));
   });
 
+  static reintentar = manejar('Error volviendo a mandar los certificados', async (req, res) => {
+    res.json(await Modelo182Service.reintentarCertificados(ejercicioDe(req.query)));
+  });
+
   // ---- El área de hermanos: los certificados de su cuenta.
   static misCertificados = manejar('Error buscando tus certificados', async (req, res) => {
     res.json(await Modelo182Service.misCertificados(req.user!.id));

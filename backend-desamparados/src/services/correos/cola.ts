@@ -84,6 +84,18 @@ export function ponerMaquetaDeComunicados(m: DelComunicado): void {
   delComunicado = m;
 }
 
+/**
+ * El PDF que lleva un correo de la cola, hecho al enviarlo: la fila guarda
+ * solo de qué es (`adjunto`), no cientos de PDF. Cada tipo lo pone el
+ * servicio que sabe hacerlo, como la maqueta de los comunicados.
+ */
+export interface AdjuntoDeLaCola { tipo: string }
+type Adjunto = { filename: string; content: Buffer; contentType: string };
+const fabricasDeAdjuntos = new Map<string, (a: AdjuntoDeLaCola) => Promise<Adjunto>>();
+export function ponerFabricaDeAdjuntos(tipo: string, fabrica: (a: AdjuntoDeLaCola) => Promise<Adjunto>): void {
+  fabricasDeAdjuntos.set(tipo, fabrica);
+}
+
 // --- Los dos pasos ------------------------------------------------------------
 
 /**
@@ -197,11 +209,32 @@ async function siguienteCorreo(): Promise<boolean> {
   return false;
 }
 
-async function enviarDeLaCola(envio: { id: number; para: string; asunto: string; html: string; uso: string }): Promise<void> {
-  const estado = (await RebotesService.rebota(envio.para))
-    ? EstadoEnvio.REBOTADO
-    : (await enviarCorreo(envio.para, envio.asunto, envio.html, { uso: envio.uso, desdeLaCola: true })) ? EstadoEnvio.ENVIADO : EstadoEnvio.FALLIDO;
+async function enviarDeLaCola(envio: { id: number; para: string; asunto: string; html: string; uso: string; adjunto: Prisma.JsonValue }): Promise<void> {
+  let estado: EstadoEnvio = EstadoEnvio.REBOTADO;
+  if (!(await RebotesService.rebota(envio.para))) {
+    const adjuntos = await adjuntosDe(envio);
+    const enviado = adjuntos !== null && (await enviarCorreo(envio.para, envio.asunto, envio.html, { uso: envio.uso, desdeLaCola: true, adjuntos }));
+    estado = enviado ? EstadoEnvio.ENVIADO : EstadoEnvio.FALLIDO;
+  }
   await db.correoEnCola.update({ where: { id: envio.id }, data: { estado, enviadoEl: new Date() } });
+}
+
+/**
+ * El PDF del correo, o `null` si no se puede hacer (el certificado ya no
+ * sale, o falta quien lo haga): entonces el correo no sale sin él, queda
+ * fallido con su «Reintentar» y la cola sigue con los demás.
+ */
+async function adjuntosDe(envio: { id: number; adjunto: Prisma.JsonValue }): Promise<Adjunto[] | null> {
+  if (envio.adjunto === null) return [];
+  const adjunto = envio.adjunto as unknown as AdjuntoDeLaCola;
+  const fabrica = fabricasDeAdjuntos.get(adjunto.tipo);
+  try {
+    if (!fabrica) throw new Error(`no hay quien haga el adjunto «${adjunto.tipo}»`);
+    return [await fabrica(adjunto)];
+  } catch (error) {
+    console.error(`❌ [Cola de correos] El correo ${envio.id} no sale: sin su adjunto.`, error);
+    return null;
+  }
 }
 
 // --- El repartidor ----------------------------------------------------------

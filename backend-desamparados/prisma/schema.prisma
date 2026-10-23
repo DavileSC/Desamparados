@@ -1384,6 +1384,9 @@ model CorreoEnCola {
   uso       String      @db.VarChar(60)
   /// Título, texto y adónde lleva el aviso al móvil, si la cuenta tiene.
   aviso     Json?
+  /// Qué PDF va adjunto («{ tipo: 'certificado_182', ejercicio, nif }»): se
+  /// hace al enviarlo, no se guarda aquí cientos de veces.
+  adjunto   Json?
   estado    EstadoEnvio @default(PENDIENTE)
   creadoEn  DateTime    @default(now())
   enviadoEl DateTime?

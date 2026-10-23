@@ -157,6 +157,38 @@ describe('préstamos del ropero (D15)', () => {
     assert.equal((await como(Role.ALBACERIA, `/prendas/${prendaId}`, 'PUT', { estado: 'DISPONIBLE' })).status, 200);
   });
 
+  // La mesa la presta mientras Albacería tiene abierta la ficha: el formulario
+  // reenvía el «Disponible» que leyó, y la dejaba disponible a nombre de alguien.
+  test('editar la ficha no pisa un préstamo hecho mientras tanto', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const propia = await db.prenda.create({ data: { numero: `${numeroPrenda}-CARRERA`, tipo: 'TUNICA', estado: 'DISPONIBLE' } });
+    // Los modelos de Prisma son proxies que `t.mock.method` no envuelve: se cambia a mano y se repone.
+    const modelo = db.prenda as unknown as { findUnique: typeof db.prenda.findUnique };
+    const leer = modelo.findUnique;
+    let primera = true;
+    modelo.findUnique = (async (...args: Parameters<typeof leer>) => {
+      const leida = await leer(...args);
+      // Justo después de leerla para editarla, otro la presta.
+      if (primera) {
+        primera = false;
+        await db.prenda.update({ where: { id: propia.id }, data: { estado: 'PRESTADA', hermanoId, fechaAsignacion: new Date() } });
+      }
+      return leida;
+    }) as unknown as typeof leer;
+    try {
+      const res = await como(Role.ALBACERIA, `/prendas/${propia.id}`, 'PUT', { estado: 'DISPONIBLE', observaciones: 'Repasada' });
+      modelo.findUnique = leer;
+      assert.equal(res.status, 409);
+      const prenda = await db.prenda.findUnique({ where: { id: propia.id } });
+      assert.equal(prenda?.estado, 'PRESTADA');
+      assert.equal(prenda?.hermanoId, hermanoId);
+      assert.equal(prenda?.observaciones, null, 'no se guarda nada de la edición');
+    } finally {
+      modelo.findUnique = leer;
+      await db.prenda.deleteMany({ where: { id: propia.id } });
+    }
+  });
+
   // Cada una con su prenda: antes dependían de la que creaba la prueba de
   // arriba y, si esa fallaba, se omitían en vez de fallar (SA4).
   test('prestar a un hermano que no existe responde 404 y no toca la prenda', async (t) => {

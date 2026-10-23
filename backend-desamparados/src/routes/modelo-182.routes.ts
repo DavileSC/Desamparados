@@ -19,5 +19,7 @@ modelo182Router.put('/configuracion', checkRole([Role.ADMIN, Role.TESORERIA]), v
 modelo182Router.get('/fichero', checkRole(ROLES_TESORERIA), validate(ficheroModelo182Schema), Modelo182Controller.fichero);
 modelo182Router.get('/certificados', checkRole(ROLES_TESORERIA), validate(certificadosQuerySchema), Modelo182Controller.certificados);
 modelo182Router.post('/enviar', checkRole([Role.ADMIN, Role.TESORERIA]), validate(ejercicioQuerySchema), Modelo182Controller.enviar);
+// Los que fallaron al salir: la pantalla de envíos de la cola es de Secretaría, no de Tesorería.
+modelo182Router.post('/enviar/reintentar', checkRole([Role.ADMIN, Role.TESORERIA]), validate(ejercicioQuerySchema), Modelo182Controller.reintentar);
 
 export { modelo182Router as modelo182Routes };

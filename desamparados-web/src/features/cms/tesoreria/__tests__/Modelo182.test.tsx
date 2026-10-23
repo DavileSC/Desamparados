@@ -17,13 +17,15 @@ const RESUMEN = {
   ejercicio: anio, configuracion: CONFIG, declarados: [ANA], total: 300_00,
   excluidos: [{ nombre: 'Pedro Sin Dni', centimos: 30_00, motivo: 'Sin DNI en la ficha.' }],
   anonimos: { cuantos: 2, centimos: 15_00 }, faltaParaElFichero: [], enviados: null,
+  envio: { pendientes: 0, fallidos: 0 },
 }
 
 function servidor(resumen: unknown = RESUMEN) {
   const llamadas: { url: string; metodo: string }[] = []
   vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string, init: RequestInit = {}) => {
     llamadas.push({ url: String(url), metodo: init.method ?? 'GET' })
-    if (String(url).includes('/enviar')) return Promise.resolve(json({ enviados: 1, fallidos: 0, sinCorreo: 0, message: 'Certificados enviados: 1 de 1.' }))
+    if (String(url).includes('/enviar/reintentar')) return Promise.resolve(json({ message: '2 certificados vuelven a la cola de correos.' }))
+    if (String(url).includes('/enviar')) return Promise.resolve(json({ enCola: 1, sinCorreo: 0, message: '1 certificado puesto en la cola de correos.' }))
     return Promise.resolve(json(resumen))
   }))
   return llamadas
@@ -56,8 +58,25 @@ describe('Modelo182', () => {
     renderWithProviders(<Modelo182 puedeCambiar />)
     await user.click(await screen.findByRole('button', { name: 'Mandarlos por correo (1)' }))
     await user.click(screen.getByRole('button', { name: 'Mandar' }))
-    expect(await screen.findByText('Certificados enviados: 1 de 1.')).toBeInTheDocument()
+    expect(await screen.findByText('1 certificado puesto en la cola de correos.')).toBeInTheDocument()
     await waitFor(() => expect(llamadas.some((l) => l.metodo === 'POST' && l.url.includes(`/modelo-182/enviar?ejercicio=${anio}`))).toBe(true))
+  })
+
+  it('mientras quedan certificados en la cola no deja mandarlos otra vez, y dice cuántos faltan', async () => {
+    servidor({ ...RESUMEN, enviados: { el: `${anio + 1}-01-20T10:00:00Z`, cuantos: 400 }, envio: { pendientes: 150, fallidos: 0 } })
+    renderWithProviders(<Modelo182 puedeCambiar />)
+    expect(await screen.findByText(/quedan 150 de 400 por salir/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Mandarlos por correo (1)' })).toBeDisabled()
+  })
+
+  it('los que fallaron se vuelven a intentar desde aquí', async () => {
+    const user = userEvent.setup()
+    const llamadas = servidor({ ...RESUMEN, enviados: { el: `${anio + 1}-01-20T10:00:00Z`, cuantos: 3 }, envio: { pendientes: 0, fallidos: 2 } })
+    renderWithProviders(<Modelo182 puedeCambiar />)
+    expect(await screen.findByText(/2 certificados no han podido salir/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Volver a intentarlo' }))
+    expect(await screen.findByText('2 certificados vuelven a la cola de correos.')).toBeInTheDocument()
+    expect(llamadas.some((l) => l.metodo === 'POST' && l.url.includes(`/modelo-182/enviar/reintentar?ejercicio=${anio}`))).toBe(true)
   })
 
   it('el Hermano Mayor lo ve, pero no manda ni cambia los datos', async () => {

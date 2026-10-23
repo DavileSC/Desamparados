@@ -19,7 +19,7 @@
  * `Configuracion` y se rellenan desde Tesorería: el NIF no va en el
  * repositorio ni se publica en la web.
  */
-import { EstadoPago, EstadoPagoEnLinea, EstadoPedido, TipoPagoEnLinea, TipoRecibo, type Prisma } from '@prisma/client';
+import { EstadoEnvio, EstadoPago, EstadoPagoEnLinea, EstadoPedido, TipoPagoEnLinea, TipoRecibo, type Prisma } from '@prisma/client';
 import db from '../config/db.js';
 import { HttpError, NotFoundError } from '../utils/error.handle.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from './auditoria.service.js';
@@ -33,7 +33,7 @@ import {
 } from '../domain/modelo-182.js';
 import type { DatosDelDonativo } from './pagos/donativo.service.js';
 import { certificadosEnPdf } from './modelo-182-pdf.js';
-import { enviarCorreo } from './correos/envio.js';
+import { despertarCola, ponerFabricaDeAdjuntos, reintentarLote, type AdjuntoDeLaCola } from './correos/cola.js';
 import { PlantillasCorreoService } from './plantillas-correo.service.js';
 
 const eurosTexto = (c: number) => `${(c / 100).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
@@ -88,11 +88,17 @@ interface ResumenModelo182 {
   anonimos: { cuantos: number; centimos: number };
   /** Lo que falta para poder sacar el fichero. Vacío: se puede. */
   faltaParaElFichero: string[];
-  /** Cuándo se mandaron por correo los certificados de este ejercicio, y a cuántos. */
+  /** Cuándo se pusieron en la cola de correos los certificados de este ejercicio, y cuántos. */
   enviados: { el: string; cuantos: number } | null;
+  /** Cómo va ese envío: lo que espera turno (el tope diario) y lo que falló. */
+  envio: { pendientes: number; fallidos: number };
 }
 
 const claveEnviados = (ejercicio: number) => `modelo_182_enviados_${ejercicio}`;
+/** El lote de la cola de los certificados de un ejercicio. */
+const loteDeCertificados = (ejercicio: number) => `certificados:${ejercicio}`;
+
+interface AdjuntoCertificado extends AdjuntoDeLaCola { tipo: 'certificado_182'; ejercicio: number; nif: string }
 
 const inicio = (anio: number) => new Date(Date.UTC(anio - 1, 11, 31)); // un día antes: el día se mira en hora de Madrid
 const fin = (anio: number) => new Date(Date.UTC(anio + 1, 0, 2));
@@ -290,6 +296,10 @@ export class Modelo182Service {
       provinciaSupuesta: d.provincia === null,
     }));
     const enviados = await db.configuracion.findUnique({ where: { key: claveEnviados(ejercicio) } });
+    const porEstado = await db.correoEnCola.groupBy({
+      by: ['estado'], where: { lote: loteDeCertificados(ejercicio), estado: { in: [EstadoEnvio.PENDIENTE, EstadoEnvio.FALLIDO] } }, _count: { _all: true },
+    });
+    const cuantos = (e: EstadoEnvio) => porEstado.find((f) => f.estado === e)?._count._all ?? 0;
     return {
       ejercicio,
       configuracion,
@@ -299,6 +309,7 @@ export class Modelo182Service {
       anonimos,
       faltaParaElFichero: faltaParaElFichero(configuracion),
       enviados: enviados ? JSON.parse(enviados.value) as { el: string; cuantos: number } : null,
+      envio: { pendientes: cuantos(EstadoEnvio.PENDIENTE), fallidos: cuantos(EstadoEnvio.FALLIDO) },
     };
   }
 
@@ -327,35 +338,55 @@ export class Modelo182Service {
   }
 
   /**
-   * Manda a cada donante con correo su certificado en PDF. Se apunta cuándo y
-   * a cuántos, para que Tesorería vea que ya salieron y no los mande dos veces
-   * sin querer (puede, si corrige algo: el aviso solo lo dice).
+   * Pone en la cola de correos, a cada donante con correo, su certificado en
+   * PDF. Por la cola y no de golpe: con las cuotas declaradas, los donantes
+   * son casi todo el censo, y mandados en la misma petición se pasaban del
+   * tope diario del servicio de envío; lo que no cabe hoy sale mañana solo.
+   * Se apunta cuándo y a cuántos, para que Tesorería vea que ya salieron y no
+   * los mande dos veces sin querer (puede, si corrige algo: el aviso solo lo
+   * dice); mientras queden esperando turno, no se vuelven a poner.
    */
   static async enviarCertificados(ejercicio: number, meta: MetaDeAuditoria) {
     const r = await Modelo182Service.resumen(ejercicio);
     if (!r.configuracion.nif) throw new HttpError(`Falta el NIF ${deLaCorporacion({ corto: true })} (Tesorería → Modelo 182 → Datos ${deLaCorporacion({ corto: true })}).`, 409);
+    if (r.envio.pendientes > 0) throw new HttpError(`Aún quedan ${r.envio.pendientes} certificados de ${ejercicio} esperando turno en la cola de correos: salen solos, sin volver a mandarlos.`, 409);
     const conCorreo = r.declarados.filter((d) => d.email);
     if (conCorreo.length === 0) throw new HttpError('Ningún donante de este año tiene correo: los certificados se descargan y se entregan a mano.', 409);
-    let enviados = 0;
+    const lote = loteDeCertificados(ejercicio);
+    const filas = [];
     for (const d of conCorreo) {
-      const pdf = await certificadosEnPdf(r.configuracion, ejercicio, [d]);
       const correo = await correoDelCertificado(d.nombre, ejercicio, d.centimos);
-      const ok = await enviarCorreo(d.email!, correo.asunto, correo.html, {
-        uso: correo.uso, adjuntos: [{ filename: `certificado-donativos-${ejercicio}.pdf`, content: pdf, contentType: 'application/pdf' }],
+      const adjunto: AdjuntoCertificado = { tipo: 'certificado_182', ejercicio, nif: d.nif };
+      filas.push({
+        lote, titulo: `Certificados de donativos ${ejercicio}`, para: d.email!, asunto: correo.asunto, html: correo.html, uso: correo.uso,
+        adjunto: adjunto as unknown as Prisma.InputJsonValue,
       });
-      if (ok) enviados += 1;
     }
-    const valor = JSON.stringify({ el: new Date().toISOString(), cuantos: enviados });
+    // Los fallidos de un envío anterior salen con este: no se quedan dos veces en la lista.
+    await db.correoEnCola.deleteMany({ where: { lote, estado: EstadoEnvio.FALLIDO } });
+    await db.correoEnCola.createMany({ data: filas });
+    void despertarCola();
+    const enCola = filas.length;
+    const valor = JSON.stringify({ el: new Date().toISOString(), cuantos: enCola });
     await db.configuracion.upsert({
       where: { key: claveEnviados(ejercicio) },
       update: { value: valor },
       create: { key: claveEnviados(ejercicio), value: valor, descripcion: `Cuándo se mandaron los certificados de donativos de ${ejercicio}` },
     });
-    await AuditoriaService.log(ACCIONES_AUDITORIA.MODELO_182_ENVIAR, meta, 'modelo182', ejercicio, { despues: { ejercicio, conCorreo: conCorreo.length, enviados } });
+    await AuditoriaService.log(ACCIONES_AUDITORIA.MODELO_182_ENVIAR, meta, 'modelo182', ejercicio, { despues: { ejercicio, conCorreo: conCorreo.length, enCola } });
+    const sinCorreo = r.declarados.length - conCorreo.length;
     return {
-      enviados, fallidos: conCorreo.length - enviados, sinCorreo: r.declarados.length - conCorreo.length,
-      message: `Certificados enviados: ${enviados} de ${conCorreo.length}.${r.declarados.length > conCorreo.length ? ` ${r.declarados.length - conCorreo.length} sin correo: se descargan y se entregan a mano.` : ''}`,
+      enCola, sinCorreo,
+      message: `${enCola === 1 ? '1 certificado puesto' : `${enCola} certificados puestos`} en la cola de correos: hoy salen los que quepan en el tope diario y el resto, solos, los días siguientes.`
+        + (sinCorreo > 0 ? ` ${sinCorreo} sin correo: se descargan y se entregan a mano.` : ''),
     };
+  }
+
+  /** Los certificados de un ejercicio que fallaron al salir vuelven a esperar turno. */
+  static async reintentarCertificados(ejercicio: number) {
+    const vuelven = await reintentarLote(loteDeCertificados(ejercicio));
+    if (vuelven === 0) throw new HttpError(`No hay certificados de ${ejercicio} que hayan fallado.`, 409);
+    return { message: `${vuelven === 1 ? '1 certificado vuelve' : `${vuelven} certificados vuelven`} a la cola de correos.` };
   }
 
   /**
@@ -408,4 +439,11 @@ export class Modelo182Service {
     return Modelo182Service.certificados(ejercicio, [nif]);
   }
 }
+
+// El certificado de cada correo de la cola se hace al enviarlo, con lo que
+// haya entonces: si Tesorería corrigió algo después de ponerlos, sale corregido.
+ponerFabricaDeAdjuntos('certificado_182', async (a) => {
+  const { ejercicio, nif } = a as AdjuntoCertificado;
+  return { filename: `certificado-donativos-${ejercicio}.pdf`, content: await Modelo182Service.certificados(ejercicio, [nif]), contentType: 'application/pdf' };
+});
 

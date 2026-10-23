@@ -17,6 +17,9 @@ import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js'
 import { idDeSalida, ROSARIO } from './fixtures/salidas.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 import { deLaCorporacion } from '../src/domain/articulos.js';
+import { ponerTransporte } from '../src/services/correos/envio.js';
+import { colaTerminada, despertarCola } from '../src/services/correos/cola.js';
+import type { CorreoParaBuzon } from '../src/utils/buzon-pruebas.js';
 
 const EJERCICIO = 2091;
 let dbDisponible = false;
@@ -195,11 +198,36 @@ test('el resumen, el fichero y los certificados del ejercicio', async (t) => {
     assert.equal(pdf.headers.get('content-type'), 'application/pdf');
     assert.equal(Buffer.from(await pdf.arrayBuffer()).subarray(0, 5).toString(), '%PDF-');
 
-    // Por correo, a quien lo dejó: en las pruebas no sale ninguno, pero se apunta cuándo se intentó.
-    const envio = await Modelo182Service.enviarCertificados(EJERCICIO, meta);
-    assert.equal(envio.enviados + envio.fallidos, 3, 'la madre, la hija (al correo de su madre) y Rosa');
-    assert.equal(await db.auditLog.count({ where: { userId: tesorero.id, action: 'MODELO_182_ENVIAR' } }), 1);
-    assert.ok((await Modelo182Service.resumen(EJERCICIO)).enviados);
+    // Por correo, a quien lo dejó, por la cola (con su tope diario) y con el
+    // PDF hecho al salir. Mientras esperan turno no se ponen otra vez.
+    const salidos: CorreoParaBuzon[] = [];
+    ponerTransporte({ sendMail: async (correo) => { if (correo.subject.includes(String(EJERCICIO))) salidos.push(correo); } });
+    try {
+      await db.correoEnCola.create({ data: { lote: `certificados:${EJERCICIO}`, titulo: 'x', para: 'espera@ejemplo.test', asunto: 'x', html: 'x', uso: 'x', estado: 'PENDIENTE', creadoEn: new Date('2999-01-01') } });
+      await assert.rejects(Modelo182Service.enviarCertificados(EJERCICIO, meta), /esperando turno/);
+      await db.correoEnCola.deleteMany({ where: { lote: `certificados:${EJERCICIO}` } });
+
+      const envio = await Modelo182Service.enviarCertificados(EJERCICIO, meta);
+      assert.equal(envio.enCola, 3, 'la madre, la hija (al correo de su madre) y Rosa');
+      assert.match(envio.message, /cola de correos/);
+      await despertarCola();
+      await colaTerminada();
+      const lote = await db.correoEnCola.findMany({ where: { lote: `certificados:${EJERCICIO}` }, select: { estado: true } });
+      assert.deepEqual(lote.map((f) => f.estado), ['ENVIADO', 'ENVIADO', 'ENVIADO']);
+      assert.equal(salidos.length, 3);
+      for (const correo of salidos) {
+        const pdf = correo.attachments?.find((a) => 'filename' in a && a.filename === `certificado-donativos-${EJERCICIO}.pdf`);
+        assert.ok(pdf && 'content' in pdf && pdf.content.subarray(0, 5).toString() === '%PDF-', 'cada correo lleva su certificado');
+      }
+      assert.equal(await db.auditLog.count({ where: { userId: tesorero.id, action: 'MODELO_182_ENVIAR' } }), 1);
+      const resumen = await Modelo182Service.resumen(EJERCICIO);
+      assert.equal(resumen.enviados?.cuantos, 3);
+      assert.deepEqual(resumen.envio, { pendientes: 0, fallidos: 0 });
+      await assert.rejects(Modelo182Service.reintentarCertificados(EJERCICIO), /que hayan fallado/);
+    } finally {
+      ponerTransporte(undefined);
+      await db.correoEnCola.deleteMany({ where: { lote: `certificados:${EJERCICIO}` } });
+    }
 
     // El hermano saca los de su cuenta (el suyo y el de su hija), no el de otra persona.
     const hoy = new Date(`${EJERCICIO + 1}-02-01T10:00:00Z`);

@@ -139,7 +139,12 @@ export class CabildosService {
   }
 
   static async actualizar(id: number, datos: DatosCabildo) {
-    exigirAbierto(await cabildoOError(id));
+    const c = await cabildoOError(id);
+    exigirAbierto(c);
+    // Celebrado, el censo con voto ya está guardado, y es el de ese día.
+    if (c.estado === EstadoCabildo.CELEBRADO && diaMadrid(new Date(datos.fecha)) !== diaMadrid(c.fecha)) {
+      throw new HttpError('El cabildo ya se celebró: se puede corregir la hora o el lugar, pero no el día, que fija quién tenía voto.', 409);
+    }
     await db.cabildo.update({
       where: { id },
       data: { tipo: datos.tipo, fecha: new Date(datos.fecha), lugar: datos.lugar.trim(), ordenDelDia: datos.ordenDelDia.map((p) => p.trim()).filter(Boolean) },
@@ -190,6 +195,17 @@ export class CabildosService {
 
   static async quitarAsistente(id: number, hermanoId: number) {
     exigirAbierto(await cabildoOError(id));
+    // Las votaciones se comprueban al apuntarlas contra los presentes de ese
+    // momento: quitar después a uno con voto podía dejar más votos que votantes.
+    const estado = await CabildosService.obtener(id);
+    const quitado = estado.asistentes.find((a) => a.hermanoId === hermanoId);
+    if (quitado?.conVoto) {
+      const quedan = estado.quorum.presentesConVoto - 1;
+      const pasada = estado.votaciones.find((v) => problemaRecuento(v, quedan) !== null);
+      if (pasada) {
+        throw new HttpError(`La votación «${pasada.asunto}» tiene ${pasada.aFavor + pasada.enContra + pasada.abstenciones} votos y sin este hermano quedarían ${quedan} presentes con voto: corrige o borra antes la votación.`, 409);
+      }
+    }
     await db.cabildoAsistencia.deleteMany({ where: { cabildoId: id, hermanoId } });
     return CabildosService.obtener(id);
   }

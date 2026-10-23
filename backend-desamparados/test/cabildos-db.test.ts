@@ -111,6 +111,14 @@ test('convocar, apuntar asistencia y votaciones, celebrar, redactar y aprobar el
     await e.hermano();
     assert.equal((await CabildosService.obtener(c.id)).quorum.censoConVoto, censo);
 
+    // Celebrado, el día ya no cambia (fija quién tenía voto); la hora y el lugar, sí.
+    await assert.rejects(CabildosService.actualizar(c.id, { tipo: 'ORDINARIO', fecha: '2099-10-22T18:30:00.000Z', lugar: 'Salón parroquial', ordenDelDia: [] }), (err: unknown) => err instanceof HttpError && err.status === 409 && /no el día/.test(err.message));
+    assert.equal((await CabildosService.actualizar(c.id, { tipo: 'ORDINARIO', fecha: '2099-10-15T19:00:00.000Z', lugar: 'Sala de juntas', ordenDelDia: ['Lectura del acta anterior', 'Cuentas del ejercicio'] })).lugar, 'Sala de juntas');
+
+    // El único con voto votó: quitarlo dejaría un voto sin votante. A los que no votan, sí.
+    await assert.rejects(CabildosService.quitarAsistente(c.id, conVoto.id), (err: unknown) => err instanceof HttpError && err.status === 409 && /Aprobación de las cuentas/.test(err.message));
+    assert.equal((await CabildosService.quitarAsistente(c.id, joven.id)).asistentes.length, 2);
+
     await assert.rejects(CabildosService.aprobarActa(c.id, e.meta), (err: unknown) => err instanceof HttpError && /vacía/.test(err.message));
     const conActa = await CabildosService.guardarActa(c.id, '<p>Se abre la sesión.</p><script>x</script><p>Se aprueban las cuentas.</p>');
     assert.ok(!conActa.acta.includes('<script>'));
