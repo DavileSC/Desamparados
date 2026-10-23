@@ -65,6 +65,11 @@ describe('bloque de tarjetas', () => {
     assert.ok(!falla('tarjetas', doc([TARJETA])));
   });
 
+  test('la etiqueta es opcional y corta, como una línea encima del título', () => {
+    assert.ok(!falla('tarjetas', doc([{ ...TARJETA, etiqueta: 'Durante el curso' }])));
+    assert.ok(falla('tarjetas', doc([{ ...TARJETA, etiqueta: 'x'.repeat(61) }])));
+  });
+
   test('rechaza un enlace que se va fuera del sitio', () => {
     assert.ok(falla('tarjetas', doc([{ ...TARJETA, enlace: 'https://otro.test' }])));
     assert.ok(falla('tarjetas', doc([{ ...TARJETA, enlace: 'javascript:alert(1)' }])));

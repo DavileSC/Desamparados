@@ -32,19 +32,27 @@ const CallesDelRecorrido = lazy(() => import('./CallesDelRecorrido'))
 const TARJETA_NUEVA: TarjetaEnlace = { titulo: '', descripcion: '', enlace: '' }
 
 export function FormularioTarjetas({ bloque, onCambio }: Props<BloqueTarjetas>) {
-  // Numeradas, el número hace de icono: ni foto ni icono se pintan, así que no se piden.
-  const numeradas = valorDe(bloque, 'estilo') === 'numeradas'
+  // Numeradas, el número hace de icono; con filete, la etiqueta. Ni foto ni
+  // icono se pintan en esos dos, así que no se piden.
+  const estilo = valorDe(bloque, 'estilo')
+  const numeradas = estilo === 'numeradas' || estilo === 'filetes'
   return (
     <Stack spacing={2}>
       {numeradas && (
         <Typography variant="body2" color="text.secondary">
-          En el estilo «Numeradas» cada tarjeta lleva su número en vez de foto o icono.
+          {estilo === 'filetes'
+            ? 'En el estilo «Columnas con filete» las tarjetas van sin foto ni icono: la etiqueta va encima del título.'
+            : 'En el estilo «Numeradas» cada tarjeta lleva su número en vez de foto o icono.'}
         </Typography>
       )}
       <ListaEditable elementos={bloque.tarjetas} onCambio={(tarjetas) => onCambio({ tarjetas })} nuevo={() => ({ ...TARJETA_NUEVA })}
         nombre="Tarjeta" maximo={topes.tarjetasPorBloque}
         pintar={(tarjeta, cambiar, indice) => (
           <>
+            <TextField label="Etiqueta" value={tarjeta.etiqueta ?? ''} size="small" fullWidth
+              onChange={(e) => cambiar({ etiqueta: e.target.value })}
+              helperText="Opcional. Una línea corta encima del título: cuándo o con quién («Durante el curso»)."
+              slotProps={{ htmlInput: { maxLength: topes.etiqueta } }} />
             <TextField label={`Título de la tarjeta ${indice + 1}`} value={tarjeta.titulo}
               onChange={(e) => cambiar({ titulo: e.target.value })} size="small" fullWidth
               slotProps={{ htmlInput: { maxLength: topes.titulo } }} />

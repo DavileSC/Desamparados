@@ -79,6 +79,9 @@ const tarjetaSchema = type({
   'foto?': sinFoto.or(rutaImagenPublica),
   'fotoAlt?': DESCRIPCION,
   'icono?': type.enumerated('', ...presentacion.iconosDeTarjeta),
+  // Una línea corta encima del título («Durante el curso», «Con los
+  // Pasionistas»): cuándo o con quién. Opcional, como la foto y el icono.
+  'etiqueta?': ETIQUETA,
 });
 
 const tarjetasSchema = type({

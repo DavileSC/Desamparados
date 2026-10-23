@@ -33,7 +33,8 @@ export function opcionesSinEfecto(bloque: Bloque): Set<string> {
     // Fundida, la foto va de lado a lado de la ventana: ni su ancho ni el del bloque cambian nada.
     for (const clave of ['anchoFoto', 'proporcion', 'alineacionVertical', 'ancho']) fuera.add(clave)
   }
-  if (bloque.tipo === 'tarjetas' && valorDe(bloque, 'estilo') === 'numeradas') fuera.add('orientacion')
+  // Numeradas y con filete son columnas de texto: ni van de lado ni llevan foto.
+  if (bloque.tipo === 'tarjetas' && ['numeradas', 'filetes'].includes(valorDe(bloque, 'estilo'))) fuera.add('orientacion')
   if (bloque.tipo === 'foto' && valorDe(bloque, 'tamano') === 'completa') fuera.add('marco')
   return fuera
 }

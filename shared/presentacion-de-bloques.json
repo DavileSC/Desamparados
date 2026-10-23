@@ -62,7 +62,9 @@
           "normal",
           "entradilla",
           "destacado",
-          "carta"
+          "carta",
+          "preguntas",
+          "margen"
         ]
       },
       "columnas": {
@@ -145,7 +147,8 @@
           "papel",
           "contorno",
           "granate",
-          "numeradas"
+          "numeradas",
+          "filetes"
         ]
       },
       "orientacion": {

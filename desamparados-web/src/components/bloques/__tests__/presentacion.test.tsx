@@ -206,4 +206,29 @@ describe('los bloques nuevos', () => {
     expect(screen.getByRole('img', { name: 'Reparto de alimentos' })).toBeInTheDocument()
     expect(screen.getByTestId('MenuBookIcon')).toBeInTheDocument()
   })
+
+  it('tarjetas con filete: una lista, con la etiqueta encima del título y sin icono', () => {
+    renderWithProviders(<BloquesDePagina bloques={[{ tipo: 'tarjetas', titulo: '', presentacion: { estilo: 'filetes', columnas: '4' }, tarjetas: [
+      { titulo: 'Retiros y oración', descripcion: 'Para parar y rezar juntos.', enlace: '', etiqueta: 'Adviento y Cuaresma', icono: 'libro' },
+      { titulo: 'Catequesis', descripcion: 'Durante el curso.', enlace: '' },
+    ] }]} />)
+    const [retiros, catequesis] = screen.getAllByRole('listitem')
+    expect(within(retiros).getByText('Adviento y Cuaresma')).toBeInTheDocument()
+    expect(within(retiros).getByRole('heading', { name: 'Retiros y oración' })).toBeInTheDocument()
+    expect(screen.queryByTestId('MenuBookIcon')).not.toBeInTheDocument()
+    // Sin etiqueta, ni el hueco: solo el título y el texto.
+    expect(catequesis.querySelectorAll('p')).toHaveLength(1)
+  })
+
+  it('texto en preguntas grandes: el signo de cierre de cada pregunta, aparte para el dorado', () => {
+    const { container } = renderWithProviders(<BloquesDePagina bloques={[{ tipo: 'texto', titulo: '', presentacion: { estilo: 'preguntas' },
+      html: '<p>¿Por qué rezamos un triduo?</p><p>¿Qué significa el besamanos?</p>' }]} />)
+    expect(container.querySelectorAll('.signo')).toHaveLength(2)
+    expect(screen.getByText(/Por qué rezamos un triduo/).textContent).toBe('¿Por qué rezamos un triduo?')
+  })
+
+  it('un enlace dentro de un texto sigue siendo un enlace a su página', () => {
+    renderWithProviders(<BloquesDePagina bloques={[{ ...TEXTO, html: '<p>Las fechas, en la <a href="/agenda">Agenda</a>.</p>' }]} />)
+    expect(screen.getByRole('link', { name: 'Agenda' })).toHaveAttribute('href', '/agenda')
+  })
 })

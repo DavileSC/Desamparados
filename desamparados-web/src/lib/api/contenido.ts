@@ -146,6 +146,8 @@ export interface TarjetaEnlace {
   foto?: string
   fotoAlt?: string
   icono?: IconoTarjeta | ''
+  /** Opcional: una línea corta encima del título, cuándo o con quién. */
+  etiqueta?: string
 }
 export interface BloqueTarjetas extends BloqueBase { tipo: 'tarjetas'; tarjetas: TarjetaEnlace[] }
 /** Mismos medios que la galería de la Titular, y con las mismas reglas: el

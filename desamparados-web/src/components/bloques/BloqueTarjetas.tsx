@@ -10,7 +10,7 @@ import { propsDeFoto } from '../../lib/fotoSubida'
 import { useFotoQueFalla } from '../../hooks/useFotoQueFalla'
 import { MARCA, alfa } from '../../theme/marca'
 
-type Estilo = 'cristal' | 'papel' | 'contorno' | 'granate' | 'numeradas'
+type Estilo = 'cristal' | 'papel' | 'contorno' | 'granate' | 'numeradas' | 'filetes'
 
 /**
  * Cuántas columnas ocupa cada tarjeta. En `auto` (el de siempre) depende de
@@ -27,7 +27,7 @@ function columnas(cuantas: number, eleccion: string) {
 }
 
 /** El recuadro de cada estilo. `cristal` es el de siempre. */
-const FONDOS: Record<Exclude<Estilo, 'cristal' | 'numeradas'>, object> = {
+const FONDOS: Record<Exclude<Estilo, 'cristal' | 'numeradas' | 'filetes'>, object> = {
   // Sin bordes (26-09-2026): cada estilo se distingue por su fondo. `contorno`
   // conserva el nombre guardado en las páginas, pero ya es un recuadro sobrio.
   papel: { backgroundColor: PAPEL, color: '#1b1c1a', borderRadius: '8px' },
@@ -49,6 +49,7 @@ export default function BloqueTarjetas({ bloque }: { bloque: Datos }) {
   const horizontal = valorDe(bloque, 'orientacion') === 'horizontal'
   const centrada = valorDe(bloque, 'alineacion') === 'centro'
   if (estilo === 'numeradas') return <Numeradas bloque={bloque} />
+  if (estilo === 'filetes') return <ConFilete bloque={bloque} />
   return (
     // La última fila, si no se llena, va centrada y no pegada a la izquierda.
     <Grid container spacing={3} sx={{ justifyContent: 'center', maxWidth: anchoMaximo(bloque, estrecha ? '1000px' : 'none'), mx: 'auto' }}>
@@ -70,7 +71,7 @@ export default function BloqueTarjetas({ bloque }: { bloque: Datos }) {
  * parte es una promesa que no se cumple, y además aparecería en la lista de
  * enlaces de quien navega con lector de pantalla.
  */
-function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEnlace; estilo: Exclude<Estilo, 'numeradas'>; horizontal: boolean; centrada: boolean }) {
+function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEnlace; estilo: Exclude<Estilo, 'numeradas' | 'filetes'>; horizontal: boolean; centrada: boolean }) {
   const enlaceVivo = useEnlaceVivo()
   const icono = tarjeta.icono ? ICONOS[tarjeta.icono] : null
   const foto = tarjeta.foto ?? ''
@@ -97,6 +98,7 @@ function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEn
 
   const textos = (
     <Box sx={{ p: visible ? { xs: 3, md: 3.5 } : 0, textAlign: centrada ? 'center' : 'left', minWidth: 0 }}>
+      <Etiqueta tarjeta={tarjeta} sx={{ color: oscura ? GOLD : estilo === 'papel' ? GRANATE : MARCA.acentoApagado }} />
       <Typography variant="h6" component="h3" sx={{ mb: 1, color: oscura ? '#fff' : estilo === 'papel' ? '#1b1c1a' : 'text.primary' }}>{tarjeta.titulo}</Typography>
       <Typography variant="body2" sx={{ color: oscura ? 'rgba(255,255,255,0.8)' : estilo === 'papel' ? '#4a454a' : 'text.secondary', lineHeight: 1.6 }}>{tarjeta.descripcion}</Typography>
     </Box>
@@ -167,6 +169,7 @@ function Numeradas({ bloque }: { bloque: Datos }) {
             <Typography component="span" aria-hidden sx={{ display: 'block', fontFamily: SERIF, fontSize: { xs: 38, md: 44 }, lineHeight: 1, fontWeight: 300, color: ROSA, mb: 1.5 }}>
               {String(indice + 1).padStart(2, '0')}
             </Typography>
+            <Etiqueta tarjeta={tarjeta} />
             <Typography variant="h6" component="h3" sx={{ mb: 1, color: 'text.primary' }}>{tarjeta.titulo}</Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>{tarjeta.descripcion}</Typography>
           </>
@@ -175,6 +178,64 @@ function Numeradas({ bloque }: { bloque: Datos }) {
           <Box component="li" key={indice} sx={{
             // Sin filetes entre una y otra (26-09-2026): las separa el aire.
             pt: 3.5, pb: { xs: 1, md: 0 }, textAlign: centrada ? 'center' : 'left',
+          }}>
+            {enlace ? (
+              <Box component={Link} to={enlace} sx={{ display: 'block', textDecoration: 'none', color: 'inherit', '&:hover h3': { color: GOLD } }}>{contenido}</Box>
+            ) : contenido}
+          </Box>
+        )
+      })}
+    </Box>
+  )
+}
+
+/** La etiqueta de la tarjeta (cuándo o con quién), en versalitas encima del título. */
+function Etiqueta({ tarjeta, sx }: { tarjeta: TarjetaEnlace; sx?: object }) {
+  if (!tarjeta.etiqueta?.trim()) return null
+  return (
+    <Typography component="p" sx={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: MARCA.acentoApagado, mb: 1.25, ...sx }}>
+      {tarjeta.etiqueta}
+    </Typography>
+  )
+}
+
+/**
+ * Columnas con filete (Formación, 23-10-2026): sin recuadro ni número, un
+ * filete encima de todas y otro entre una y otra; la etiqueta, encima del
+ * título. En el móvil, una debajo de otra, separadas por el filete de abajo.
+ */
+function ConFilete({ bloque }: { bloque: Datos }) {
+  const enlaceVivo = useEnlaceVivo()
+  const cuantas = bloque.tarjetas.length
+  const eleccion = valorDe(bloque, 'columnas')
+  const porFila = eleccion === 'auto' ? Math.min(cuantas, 4) : Number(eleccion)
+  const centrada = valorDe(bloque, 'alineacion') === 'centro'
+  const filete = alfa(MARCA.acentoApagado, 0.28)
+  return (
+    <Box component="ul" sx={{
+      listStyle: 'none', m: 0, p: 0, maxWidth: anchoMaximo(bloque, '1100px'), mx: 'auto',
+      display: 'grid', gridTemplateColumns: { xs: '1fr', md: `repeat(${porFila}, minmax(0, 1fr))` },
+      borderTop: `1px solid ${filete}`,
+    }}>
+      {bloque.tarjetas.map((tarjeta, indice) => {
+        const enlace = tarjeta.enlace && enlaceVivo(tarjeta.enlace) ? tarjeta.enlace : ''
+        const contenido = (
+          <>
+            <Etiqueta tarjeta={tarjeta} />
+            <Typography variant="h6" component="h3" sx={{ mb: 1.25, color: 'text.primary', fontWeight: 400, lineHeight: 1.25 }}>{tarjeta.titulo}</Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>{tarjeta.descripcion}</Typography>
+          </>
+        )
+        // El filete de la izquierda, solo entre columnas de la misma fila.
+        const primeraDeFila = indice % porFila === 0
+        return (
+          <Box component="li" key={indice} sx={{
+            textAlign: centrada ? 'center' : 'left',
+            py: { xs: 2.75, md: 3.5 },
+            px: { xs: 0, md: 3.5 },
+            pl: { md: primeraDeFila ? 0 : 3.5 },
+            borderBottom: { xs: `1px solid ${filete}`, md: 0 },
+            borderLeft: { xs: 0, md: primeraDeFila ? 0 : `1px solid ${filete}` },
           }}>
             {enlace ? (
               <Box component={Link} to={enlace} sx={{ display: 'block', textDecoration: 'none', color: 'inherit', '&:hover h3': { color: GOLD } }}>{contenido}</Box>
