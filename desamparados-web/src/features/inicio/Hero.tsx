@@ -1,6 +1,6 @@
 import { useContext, useEffect, useRef, useState, type MouseEvent } from 'react'
 import CuentaAtrasDeSalida from './CuentaAtrasDeSalida'
-import { Box, IconButton, Typography } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import { m, useMotionValue, useReducedMotion, useSpring } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
@@ -249,7 +249,9 @@ export default function Hero() {
       />
 
       {(conVideo || rotan) && (
-        <IconButton
+        <Box
+          component="button"
+          type="button"
           className="sobre-la-foto"
           onClick={alternarPausa}
           aria-label={conVideo
@@ -264,18 +266,34 @@ export default function Hero() {
             // de la barra fija, que tapa los primeros 72 px.
             top: { xs: 'auto', md: 96 },
             bottom: { xs: 24, md: 'auto' },
-            right: { xs: 16, md: 28 },
-            // 44 px: el mínimo para el dedo.
-            width: 44,
-            height: 44,
-            color: 'rgba(255,255,255,0.8)',
-            border: '1px solid rgba(255,255,255,0.3)',
-            bgcolor: 'rgba(7,6,8,0.35)',
-            '&:hover': { bgcolor: 'rgba(7,6,8,0.6)', color: '#fff' },
+            right: { xs: 12, md: 28 },
+            // Discreto a la vista (el círculo de antes pesaba demasiado), pero
+            // con 32 px que pulsar: por encima de los 24 que pide WCAG 2.5.8.
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 0.5,
+            minWidth: 32,
+            minHeight: 32,
+            px: { xs: 0, md: 0.75 },
+            border: 0,
+            borderRadius: 1,
+            bgcolor: 'transparent',
+            color: 'rgba(255,255,255,0.6)',
+            filter: 'drop-shadow(0 1px 3px rgba(0,0,0,.6))',
+            font: 'inherit',
+            fontSize: 12,
+            letterSpacing: '0.08em',
+            cursor: 'pointer',
+            transition: 'color .2s',
+            '&:hover': { color: '#fff' },
+            '&:focus-visible': { outline: '2px solid #fff', outlineOffset: 2 },
           }}
         >
-          {pausado ? <PlayArrowRoundedIcon fontSize="small" /> : <PauseRoundedIcon fontSize="small" />}
-        </IconButton>
+          {pausado ? <PlayArrowRoundedIcon sx={{ fontSize: 16 }} /> : <PauseRoundedIcon sx={{ fontSize: 16 }} />}
+          {/* En el móvil no cabe la palabra junto a los botones: queda el icono. */}
+          <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>{pausado ? 'Seguir' : 'Pausar'}</Box>
+        </Box>
       )}
       <CuentaAtrasDeSalida forma="hero" />
       <Box
@@ -346,7 +364,7 @@ export default function Hero() {
           </Revela>
           <Revela alMontar retraso={RETRASO_TEXTOS_S} orden={3}>
             {/* Con vídeo o fotos que rotan, el rincón de la derecha es de su botón de pausa. */}
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: { xs: 'flex-start', md: 'flex-end' }, alignItems: 'center', gap: { xs: 1.5, md: 3 }, pr: { xs: conVideo || rotan ? 7 : 0, md: 0 } }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: { xs: 'flex-start', md: 'flex-end' }, alignItems: 'center', gap: { xs: 1.5, md: 3 }, pr: { xs: conVideo || rotan ? 5 : 0, md: 0 } }}>
               <Boton component={Link} to="/historia" sx={{ px: { xs: 2.5, md: 3.5 }, fontSize: { xs: 14, md: 15 } }}>
                 <TextoDePortada anchos={['8em']}>{textos.hero.botonPrincipal}</TextoDePortada>
               </Boton>
