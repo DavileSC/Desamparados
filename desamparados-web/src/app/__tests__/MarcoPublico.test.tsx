@@ -77,6 +77,13 @@ describe('la web cerrada', () => {
     expect(screen.queryByRole('link', { name: 'Abrirla' })).not.toBeInTheDocument()
   })
 
+  it('en la web de pruebas se ve entera sin sesión, y sin el aviso', () => {
+    montar('/historia', { ...CERRADA, siempreAbiertaAqui: true })
+    expect(screen.getByText('La página de verdad')).toBeInTheDocument()
+    expect(screen.queryByText('Próximamente')).not.toBeInTheDocument()
+    expect(screen.queryByText(/La web está cerrada/)).not.toBeInTheDocument()
+  })
+
   it('abierta, nadie ve el aviso', () => {
     useAuthStore.setState({ cms: cargo('ADMIN') })
     montar('/historia', { abierta: true, mensaje: null, fecha: null })

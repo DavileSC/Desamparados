@@ -12,7 +12,8 @@ import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { ACCIONES_AUDITORIA } from '../src/services/auditoria.service.js';
 import { WebAbiertaService } from '../src/services/web-abierta.service.js';
-import { depurarEstado, esDiaValido, TOPE_MENSAJE_PROXIMAMENTE, WEB_ABIERTA } from '../src/domain/web-abierta.js';
+import { depurarEstado, esDiaValido, siempreAbiertaEn, TOPE_MENSAJE_PROXIMAMENTE, WEB_ABIERTA } from '../src/domain/web-abierta.js';
+import { request } from 'node:http';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 
@@ -80,6 +81,15 @@ describe('depurarEstado', () => {
     );
   });
 
+  test('siempre abierta solo en los nombres de la lista, sin mirar mayúsculas', () => {
+    const lista = ' pruebas.desamparadosmalaga.com , otra.ejemplo.es';
+    assert.equal(siempreAbiertaEn('pruebas.desamparadosmalaga.com', lista), true);
+    assert.equal(siempreAbiertaEn('PRUEBAS.desamparadosmalaga.com', lista), true);
+    assert.equal(siempreAbiertaEn('www.desamparadosmalaga.com', lista), false);
+    assert.equal(siempreAbiertaEn('pruebas.desamparadosmalaga.com', undefined), false);
+    assert.equal(siempreAbiertaEn('', 'a.es,,b.es'), false);
+  });
+
   test('un día que no existe no es una fecha', () => {
     assert.equal(esDiaValido('2028-02-29'), true);
     assert.equal(esDiaValido('2027-02-29'), false);
@@ -94,7 +104,7 @@ describe('abrir y cerrar la web', () => {
     WebAbiertaService.olvidar();
     const res = await pedir('/api/web');
     assert.equal(res.status, 200);
-    assert.deepEqual(res.cuerpo, WEB_ABIERTA);
+    assert.deepEqual(res.cuerpo, { ...WEB_ABIERTA, siempreAbiertaAqui: false });
     assert.equal(res.cache, 'public, no-cache');
   });
 
@@ -102,7 +112,7 @@ describe('abrir y cerrar la web', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const res = await guardar('HERMANO_MAYOR', { abierta: false, mensaje: '  Nos vemos el Sábado de Pasión ', fecha: '2027-03-20' });
     assert.equal(res.status, 200);
-    const cerrada = { abierta: false, mensaje: 'Nos vemos el Sábado de Pasión', fecha: '2027-03-20' };
+    const cerrada = { abierta: false, mensaje: 'Nos vemos el Sábado de Pasión', fecha: '2027-03-20', siempreAbiertaAqui: false };
     assert.deepEqual(res.cuerpo, cerrada);
     assert.deepEqual((await pedir('/api/web')).cuerpo, cerrada);
 
@@ -122,9 +132,31 @@ describe('abrir y cerrar la web', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const res = await guardar('ADMIN', { abierta: true, mensaje: '', fecha: null });
     assert.equal(res.status, 200);
-    assert.deepEqual(res.cuerpo, WEB_ABIERTA);
+    assert.deepEqual(res.cuerpo, { ...WEB_ABIERTA, siempreAbiertaAqui: false });
     assert.ok(await db.auditLog.findFirst({ where: { action: ACCIONES_AUDITORIA.WEB_ABRIR, userId: usuarios.ADMIN } }));
     assert.match(String((await pedir('/sitemap.xml')).cuerpo), /<url>/);
+  });
+
+  test('cerrada, quien entra por un nombre de WEB_SIEMPRE_ABIERTA_EN lo sabe; los demás, no', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    await guardar('ADMIN', { abierta: false, mensaje: null, fecha: null });
+    const antes = process.env.WEB_SIEMPRE_ABIERTA_EN;
+    process.env.WEB_SIEMPRE_ABIERTA_EN = 'pruebas.ejemplo.es';
+    t.after(async () => {
+      if (antes === undefined) delete process.env.WEB_SIEMPRE_ABIERTA_EN;
+      else process.env.WEB_SIEMPRE_ABIERTA_EN = antes;
+      await guardar('ADMIN', { abierta: true, mensaje: null, fecha: null });
+    });
+    // Con http y no fetch: fetch no deja cambiar la cabecera Host.
+    const conNombre = (host: string) => new Promise<Record<string, unknown>>((resolver, fallar) => {
+      request(`${baseUrl}/api/web`, { headers: { Host: host } }, (res) => {
+        let datos = '';
+        res.setEncoding('utf8').on('data', (c) => { datos += c; }).on('end', () => resolver(JSON.parse(datos)));
+      }).on('error', fallar).end();
+    });
+    // Lo guardado sigue diciendo cerrada: es lo que enseña el CMS de pruebas.
+    assert.deepEqual(await conNombre('pruebas.ejemplo.es'), { abierta: false, mensaje: null, fecha: null, siempreAbiertaAqui: true });
+    assert.equal((await conNombre('www.ejemplo.es')).siempreAbiertaAqui, false);
   });
 
   test('sin sesión es un 401 y otro cargo del CMS, un 403', async (t) => {

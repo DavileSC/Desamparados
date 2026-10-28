@@ -68,6 +68,11 @@ export default function WebAbiertaPage() {
                 ? 'Cualquiera ve la web entera y los buscadores la recorren.'
                 : 'El público ve «Próximamente» y los buscadores no guardan nada. Siguen abiertos los textos legales, la baja del boletín, la vuelta de un pago y el área de hermanos.'}
             </Typography>
+            {data.siempreAbiertaAqui && (
+              <Alert severity="info" sx={{ mt: 1 }}>
+                Estás en {window.location.hostname}, que se ve siempre entera aunque la cierres. Este interruptor abre y cierra el dominio principal.
+              </Alert>
+            )}
             <FormControlLabel
               sx={{ mt: 1 }}
               control={<Switch checked={formulario.abierta} onChange={(e) => cambiar({ abierta: e.target.checked })} />}

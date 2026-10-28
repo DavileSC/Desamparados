@@ -10,6 +10,11 @@ export interface EstadoDeLaWeb {
   mensaje: string | null
   /** El día de la presentación, AAAA-MM-DD, si ya se sabe. */
   fecha: string | null
+  /**
+   * Solo en la respuesta: si por este nombre se ve siempre entera, cerrada o
+   * no (la web de pruebas, `WEB_SIEMPRE_ABIERTA_EN` de la API).
+   */
+  siempreAbiertaAqui?: boolean
 }
 
 export const CLAVE_ESTADO_DE_LA_WEB = ['web', 'estado'] as const

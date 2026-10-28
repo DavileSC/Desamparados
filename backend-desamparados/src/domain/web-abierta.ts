@@ -21,6 +21,19 @@ export const WEB_ABIERTA: EstadoDeLaWeb = { abierta: true, mensaje: null, fecha:
 
 export const TOPE_MENSAJE_PROXIMAMENTE = 280;
 
+/**
+ * Si quien entra por `nombre` ve siempre la web entera, cerrada o no.
+ * `lista` es `WEB_SIEMPRE_ABIERTA_EN`, nombres separados por comas: la web de
+ * pruebas es el mismo montaje y la misma base que el dominio principal, y con
+ * el principal cerrado hasta la presentación se sigue probando en ella (ya
+ * pide usuario y contraseña en el nginx). Sin la variable, ninguno.
+ */
+export function siempreAbiertaEn(nombre: string, lista: string | undefined): boolean {
+  if (!lista) return false;
+  const buscado = nombre.trim().toLowerCase();
+  return lista.split(',').some((n) => n.trim().toLowerCase() === buscado && buscado !== '');
+}
+
 export const FECHA_DIA = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Que el día exista: «2026-02-30» pasa el patrón, pero no es una fecha. */

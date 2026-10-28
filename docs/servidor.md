@@ -826,8 +826,19 @@ lo que quede en los registros.
 
 Se prepara **antes**, con la web cerrada, para que ese día baste con pulsar
 «Abrir la web» en el CMS. Web de pruebas y dominio principal son el mismo
-montaje y la misma base: cerrarla también deja «Próximamente» en `pruebas`
-para quien no tenga sesión del CMS.
+montaje y la misma base: lo que se edita en el CMS de uno sale en el otro, y
+el interruptor es uno solo. Para que `pruebas` se siga viendo entera con el
+principal cerrado, su nombre va en el `.env` del servidor:
+
+```bash
+echo 'WEB_SIEMPRE_ABIERTA_EN=pruebas.desamparadosmalaga.com' | sudo tee -a /srv/desamparados/.env >/dev/null
+sudo grep -c '^WEB_SIEMPRE_ABIERTA_EN=' /srv/desamparados/.env   # tiene que dar 1
+```
+
+y entra en vigor al recrear la API (el siguiente despliegue). El CMS de
+`pruebas` sigue diciendo si la web está cerrada de verdad, con un aviso de que
+ese nombre se ve entero: **pulsar «Abrir la web» ahí abre el dominio
+principal**. Cuando la web real esté abierta, la variable sobra.
 
 Queda aparte, también antes: la base buena con su propia `TOTP_ENC_KEY`, las
 copias de seguridad configuradas antes de cargar datos reales, el correo del

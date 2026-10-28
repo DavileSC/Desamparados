@@ -25,7 +25,7 @@ export default function MarcoPublico() {
   const { estado, fallo } = useEstadoDeLaWeb()
   const sesion = useAuthStore((s) => s.status)
   const junta = useAuthStore((s) => s.cms)
-  const cerrada = estado?.abierta === false && !siempreAbierta(pathname)
+  const cerrada = estado?.abierta === false && !estado.siempreAbiertaAqui && !siempreAbierta(pathname)
 
   // Hasta saber si está abierta (y, cerrada, si quien entra es de la Junta),
   // nada: un instante de la web de verdad ya la enseñaría. Si la API no
