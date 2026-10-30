@@ -385,8 +385,8 @@
     "fotoFija": {
       "lado": {
         "valores": [
-          "izquierda",
-          "derecha"
+          "derecha",
+          "izquierda"
         ]
       }
     },

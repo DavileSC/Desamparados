@@ -93,7 +93,7 @@ export function ejemploDe(tipo: string, fotos: string[]): Bloque[] {
       return [{
         tipo, ...sinTitulo,
         pasos: ['La primera parte', 'La siguiente', 'La última'].map((titulo, n) => ({
-          titulo, texto: 'Mientras se lee esta parte, la foto de al lado es la suya; al bajar, cambia con un fundido.', foto: { url: foto(n), alt: 'Foto de ejemplo', pie: '' },
+          titulo, texto: 'Mientras se lee esta parte, la foto del fondo es la suya; al bajar, cambia con un fundido.', foto: { url: foto(n), alt: 'Foto de ejemplo', pie: '' },
         })),
       }]
     case 'video':
