@@ -6,34 +6,21 @@ import type { ApiEvent } from '../../../lib/api/agenda'
 import { TIPOS, diasDeLaRejilla, inicioDeMes, nombreDelMes, sumarMeses } from '../../inicio/agenda'
 import { claveDelDia, cuandoEnCartel, hora, primerDiaEnElMes, repartoDeLaSemana, ultimoMes } from './cultos'
 import VentanaDelActo from './VentanaDelActo'
-import Hueso from '../../../components/esqueleto/Hueso'
+import { CABECERA_SEMANA, GRANATE, GRIS, PAPEL, RAYA, SEMANA, SEMANA_LARGA } from './CalendarioDeCultosEsqueleto'
 import { CORMORANT } from './letraAlmanaque'
 import { FONDOS, MARCA } from '../../../theme/marca'
 import { diaDelCalendario, hoyDelCalendario } from '../../../lib/horaDeMadrid'
 
-const PAPEL = FONDOS.almanaque
 /** Los días de otro mes, un poco más apagados que la hoja. */
 const PAPEL_FUERA = '#ece5d9'
 /** Los días de culto solemne: un rosa viejo que se nota sin teñir la hoja. */
 const SOLEMNE = FONDOS.solemne
-/**
- * El granate del Grupo en la hoja: el principal de la marca, con su suelo de
- * contraste sobre este papel y sobre el rosa, que son más oscuros que el
- * blanco donde lo tiene `MARCA.principal`.
- */
-const GRANATE = MARCA.principalAlmanaque
-const RAYA = '#d9cfc1'
 export const TINTA = '#231d20'
 const TINTA_SUAVE = '#5b4f53'
-const GRIS = '#7a6c70'
 /** El granate oscuro de los títulos solemnes, sobre el rosa. */
 const GRANATE_TINTA = MARCA.principalTinta
-const SEMANA = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom']
-const SEMANA_LARGA = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
 /** El aire que se deja entre el pie de la hoja y el borde de la pantalla. */
 const AIRE = 16
-/** La fila con los nombres de los días, que va dentro de lo medido. */
-const CABECERA_SEMANA = 32
 /**
  * El alto de una semana, entre estos dos (móvil, tableta y escritorio), en un mes de
  * cinco semanas. La rejilla entera mide siempre eso por cinco, tenga el mes
@@ -478,41 +465,4 @@ function MesDeAlLado({ nombre, lado }: { nombre: string; lado: 'anterior' | 'sig
     </Box>
   )
   return <>{capa(false)}{capa(true)}</>
-}
-
-/**
- * La hoja mientras llegan los actos: el mismo papel, los días de la semana y
- * cinco semanas de casillas vacías, con el mes y los números en huesos. Las
- * semanas tienen el alto de siempre en el móvil y uno medio en escritorio (la
- * hoja de verdad lo ajusta a la pantalla).
- */
-export function CalendarioDeCultosEsqueleto() {
-  return (
-    <Box sx={{ bgcolor: PAPEL, borderRadius: '3px', p: { xs: '14px 12px 10px', md: '32px 44px 20px' } }}>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: '0 24px', mb: { xs: 0.5, md: 2 } }}>
-        <Box sx={{ height: { xs: 36, md: 65 }, display: 'flex', alignItems: 'center' }}>
-          <Hueso papel sx={{ width: { xs: 150, md: 280 }, height: { xs: 26, md: 46 } }} />
-        </Box>
-        <Box sx={{ height: 44, display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Hueso papel sx={{ width: { xs: 36, sm: 90 }, height: 12 }} />
-          <Hueso papel sx={{ width: { xs: 36, sm: 100 }, height: 12 }} />
-        </Box>
-      </Box>
-      <Box aria-hidden sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', height: CABECERA_SEMANA, alignItems: 'center' }}>
-        {SEMANA.map((d, i) => (
-          <Box key={d} sx={{ px: { xs: '6px', md: '12px' }, color: i === 6 ? GRANATE : GRIS, fontFamily: { xs: 'inherit', md: CORMORANT }, fontStyle: { md: 'italic' }, fontSize: { xs: 11, md: 17 }, letterSpacing: { xs: '0.12em', md: 0 }, textTransform: { xs: 'uppercase', md: 'none' } }}>
-            <Box component="span" sx={{ display: { xs: 'inline', md: 'none' } }}>{d}</Box>
-            <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>{SEMANA_LARGA[i]}</Box>
-          </Box>
-        ))}
-      </Box>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', borderTop: `1px solid ${RAYA}`, borderLeft: `1px solid ${RAYA}`, '& > *': { borderRight: `1px solid ${RAYA}`, borderBottom: `1px solid ${RAYA}` } }}>
-        {Array.from({ length: 35 }, (_, i) => (
-          <Box key={i} sx={{ height: { xs: 48, md: 88 }, p: { xs: '4px 6px', md: '8px 12px' } }}>
-            <Hueso papel sx={{ width: { xs: 14, md: 22 }, height: { xs: 14, md: 22 } }} />
-          </Box>
-        ))}
-      </Box>
-    </Box>
-  )
 }

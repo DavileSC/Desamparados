@@ -112,7 +112,7 @@ export default function PaginaDeBloquesPublica({ slug }: Props) {
               )}
             <SeccionAnimada sx={seccion}>
               <ContenedorDePagina>
-                <ConBloquesCargados bloques={guardada.bloques} esqueleto={<BloquesEsqueleto />}>
+                <ConBloquesCargados bloques={guardada.bloques} esqueleto={<BloquesEsqueleto slug={slug} />}>
                   <BloquesDePagina bloques={guardada.bloques} />
                 </ConBloquesCargados>
               </ContenedorDePagina>
@@ -125,7 +125,7 @@ export default function PaginaDeBloquesPublica({ slug }: Props) {
               : <Box className="esqueleto-quieto"><CabeceraASangreEsqueleto ceja={ceja} titulo={titulo} /></Box>}
             <Box sx={seccion}>
               <ContenedorDePagina>
-                <EnCarga avisoArriba estado="error" que="esta página" alReintentar={() => { void consulta.refetch() }} esqueleto={<BloquesEsqueleto />} />
+                <EnCarga avisoArriba estado="error" que="esta página" alReintentar={() => { void consulta.refetch() }} esqueleto={<BloquesEsqueleto slug={slug} />} />
               </ContenedorDePagina>
             </Box>
           </>
@@ -138,7 +138,7 @@ export default function PaginaDeBloquesPublica({ slug }: Props) {
               <>
                 {!sinCabecera && <CabeceraASangreEsqueleto ceja={ceja} />}
                 <Box sx={seccion}>
-                  <ContenedorDePagina><BloquesEsqueleto /></ContenedorDePagina>
+                  <ContenedorDePagina><BloquesEsqueleto slug={slug} /></ContenedorDePagina>
                 </Box>
               </>
             )}

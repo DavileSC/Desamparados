@@ -6,7 +6,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import TituloDeSeccion from '../TituloDeSeccion'
 import TarjetaNoticia, { TarjetaNoticiaEsqueleto } from '../TarjetaNoticia'
 import TarjetaEvento, { TarjetaEventoEsqueleto } from '../TarjetaEvento'
-import TarjetaPublicacion, { TarjetaPublicacionEsqueleto } from '../TarjetaPublicacion'
+import TarjetaPublicacion from '../TarjetaPublicacion'
 import EnCarga from '../esqueleto/EnCarga'
 import { Lineas } from '../esqueleto/Hueso'
 import Paginador from '../Paginador'
@@ -21,6 +21,7 @@ import type { BloqueListado as Datos, FuenteListado } from '../../lib/api/conten
 import { valorDe } from './presentacion'
 import { BOTON, enlaceConFlecha } from '../estiloDeBoton'
 import AvisoSuave from '../AvisoSuave'
+import { ArchivoDeNoticiasEsqueleto, PublicacionesEsqueleto, rejillaDeNoticias } from './esqueletosDeListado'
 
 /**
  * Lo que el Grupo Parroquial publica desde otras pantallas del CMS —noticias,
@@ -105,12 +106,6 @@ function Encabezado({ bloque, enlace, accion }: { bloque: Datos; enlace?: { text
     </Box>
   )
 }
-
-const rejillaDeNoticias = (columnas = 3) => ({
-  listStyle: 'none', m: 0, p: 0, display: 'grid',
-  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: `repeat(${columnas}, 1fr)` },
-  gap: { xs: 3, md: 3.25 },
-}) as const
 
 /** «3 oct 2026», como en las tarjetas de noticia. */
 const fechaDeLista = (iso: string) => {
@@ -342,12 +337,7 @@ function ArchivoDeNoticias({ titulo, bloque }: PropsListado) {
           estado={loading || cargandoMas ? 'cargando' : 'error'}
           que="las noticias"
           alReintentar={cargarMas}
-          esqueleto={(
-            <Box sx={rejillaDeNoticias(columnasDe(bloque, 3))}>
-              <Box sx={{ display: 'flex', gridColumn: '1 / -1' }}><TarjetaNoticiaEsqueleto destacada /></Box>
-              {Array.from({ length: 3 }, (_, i) => <Box key={i} sx={{ display: 'flex' }}><TarjetaNoticiaEsqueleto /></Box>)}
-            </Box>
-          )}
+          esqueleto={<ArchivoDeNoticiasEsqueleto columnas={columnasDe(bloque, 3)} />}
         />
       )}
       {!loading && !error && items.length === 0 && <AvisoSuave>No hay noticias publicadas.</AvisoSuave>}
@@ -405,16 +395,7 @@ function Publicaciones({ bloque, categoria, etiqueta, que, vacio, fallo }: Props
           estado={loading ? 'cargando' : 'error'}
           que={que}
           alReintentar={reintentar}
-          esqueleto={(
-            <Grid container spacing={3}>
-              {Array.from({ length: columnas }, (_, i) => (
-                // Una fila: una tarjeta en el móvil, dos en tableta y todas en escritorio.
-                <Grid key={i} size={{ xs: 12, sm: 6, lg: 12 / columnas }} sx={{ display: { xs: i > 0 ? 'none' : 'block', sm: i > 1 ? 'none' : 'block', lg: 'block' } }}>
-                  <TarjetaPublicacionEsqueleto />
-                </Grid>
-              ))}
-            </Grid>
-          )}
+          esqueleto={<PublicacionesEsqueleto columnas={columnas} />}
         />
       )}
       {!loading && !error && items.length === 0 && <AvisoSuave>{vacio}</AvisoSuave>}
