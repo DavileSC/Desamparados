@@ -78,7 +78,10 @@ export default function Escenario({ medios, actual, onIr, onAbrir, medidaDe, med
             <Box component="img" {...propsDeFoto(imagenDe(sale), '(min-width: 900px) 75vw, 100vw')} alt="" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', objectFit: medidaDe(sale).formato === 'h' ? 'cover' : 'contain' }} />
           </Box>
         )}
-        <Box component="img" key={`fondo-${actual}`} {...propsDeFoto(imagenDe(medio), '320px')} alt="" aria-hidden="true" sx={{ ...fondoDesenfocado(38, 0.45), ...animacionDeEntrada(sale !== undefined) }} />
+        {/* Envuelto: el `filter` de la entrada pisaría el desenfoque del fondo, que se vería nítido y saltaría al acabar. */}
+        <Box key={`fondo-${actual}`} aria-hidden="true" sx={{ position: 'absolute', inset: 0, ...animacionDeEntrada(sale !== undefined) }}>
+          <Box component="img" {...propsDeFoto(imagenDe(medio), '320px')} alt="" sx={fondoDesenfocado(38, 0.45)} />
+        </Box>
         {reproduciendo ? (
           <ReproductorEnLinea medio={medio} onTerminar={() => setSonando(null)} />
         ) : (
