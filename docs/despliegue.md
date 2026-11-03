@@ -388,6 +388,43 @@ En la web de pruebas, la contraseña de nginx tapa la ruta: el bloque
 `location = /api/correo/avisos` de `docker/servidor/nginx-pruebas.conf` la deja
 pasar, como el aviso del banco.
 
+### Instagram (publicar las noticias)
+
+Desde la ficha de una noticia publicada, panel «Redes», se publica en la
+cuenta de Instagram del Grupo con su foto y un pie que se revisa antes. X no
+usa API (cobra por publicar): el botón abre X con el post escrito.
+
+No hay variables de entorno: el token se pega en el CMS y va cifrado en la
+base (tabla `CuentaInstagram`) con `TOTP_ENC_KEY`. Dura 60 días y la API lo
+renueva sola cada semana; si no puede, el panel lo dice.
+
+1. La cuenta de Instagram, **profesional** (empresa o creador), desde la app
+   de Instagram. Una personal no puede publicar por la API y el CMS no la
+   acepta.
+2. En [Meta for Developers](https://developers.facebook.com/apps/), con
+   cualquier cuenta de Facebook de la Junta: «Crear app», caso de uso
+   «Gestionar mensajes y contenido en Instagram». La app se queda en modo
+   desarrollo: para publicar en la cuenta propia no hace falta que Meta la
+   revise.
+3. En la app: Instagram → «Configuración de la API con inicio de sesión de
+   Instagram» → «Generar tokens de acceso» → «Añadir cuenta», entrar con la
+   cuenta del Grupo y aceptar. Si pide que la cuenta sea evaluadora:
+   «Roles de la app» → añadirla como evaluador de Instagram y aceptar la
+   invitación en la app de Instagram (Configuración → Sitios web y apps).
+4. «Generar token» junto a la cuenta, copiarlo entero y pegarlo en el CMS:
+   Noticias → una noticia publicada → «Redes» → «Conectar Instagram».
+5. Probarlo con una noticia publicada que tenga foto.
+
+Instagram se descarga la foto de `https://DOMINIO/storage/public/instagram/`
+(un JPEG con nombre al azar que se borra al terminar), así que tiene que
+llegar sin contraseña: en la web de pruebas lo deja pasar un bloque de
+`docker/servidor/nginx-pruebas.conf`. Desde el equipo de casa no se puede
+probar de verdad, porque Instagram no llega a `localhost`.
+
+Al rotar `TOTP_ENC_KEY` (más abajo), el token se pasa a la clave nueva en la
+siguiente comprobación, que se hace cada hora: esperar una hora antes de quitar
+la anterior. Si se quita antes, basta con volver a conectar la cuenta.
+
 ### El Modelo 182 (donativos)
 
 No necesita variables de entorno. Antes de enero, en Tesorería → «Modelo 182»
@@ -1353,7 +1390,8 @@ pasos, sin cortar el servicio más que en los reinicios:
 2. `docker compose run --rm herramientas npm run 2fa:cifrar-secretos`.
    Reescribe con la nueva todo lo que estaba con la anterior. Si termina
    diciendo que hay secretos ilegibles, **no seguir**: esos estaban cifrados
-   con una clave que no es ninguna de las dos.
+   con una clave que no es ninguna de las dos. El token de Instagram no lo
+   toca este script: se pasa solo en la hora siguiente al paso 1.
 3. Quitar `TOTP_ENC_KEY_ANTERIOR` del `.env` y `docker compose up -d api` otra
    vez. Guardar la nueva clave fuera del servidor.
 

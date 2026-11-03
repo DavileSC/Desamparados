@@ -16,6 +16,10 @@ export interface NoticiaDeLaApi {
   fijada: boolean
   /** Última vez que se guardó; para decir de un borrador cuándo se tocó. */
   updatedAt?: string
+  /** Si se mandó a Instagram desde el CMS: su id allí, el enlace y cuándo. */
+  instagramId?: string | null
+  instagramEnlace?: string | null
+  instagramEl?: string | null
 }
 
 /** Los listados públicos (portada y archivo) vienen sin `contenido`: solo lo trae la ficha. */

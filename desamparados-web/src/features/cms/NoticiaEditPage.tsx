@@ -14,6 +14,7 @@ import { ANCHO_EDICION } from './PantallaEdicion'
 import AvisoCambiosSinGuardar from './ficha/AvisoCambiosSinGuardar'
 import { useFichaCms } from './ficha/useFichaCms'
 import CampoImagen from './CampoImagen'
+import PanelRedes from './redes/PanelRedes'
 import EditorTexto from './EditorTexto'
 import { EtiquetaEstado, Progreso } from './redaccion/FilaRedaccion'
 import { haceCuanto, piezasDeNoticia, tieneTexto } from './redaccion/completitud'
@@ -192,6 +193,12 @@ export default function NoticiaEditPage() {
                 )}
               </Stack>
             </Panel>
+
+            {!nueva && guardada && (
+              <Panel titulo="Redes">
+                <PanelRedes noticia={guardada} sucio={sucio} />
+              </Panel>
+            )}
 
             <Panel titulo="Foto">
               <CampoImagen

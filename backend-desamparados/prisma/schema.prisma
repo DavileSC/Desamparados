@@ -868,6 +868,12 @@ model Noticia {
   /// siguen siendo las más recientes. Solo una a la vez (fijar una suelta la
   /// anterior) y solo si está publicada. El archivo no la mira: ahí manda la fecha.
   fijada    Boolean  @default(false)
+  /// Su publicación en Instagram, si se mandó desde el CMS: el id que da
+  /// Instagram, el enlace para verla allí y cuándo. Con ellos puestos, el CMS
+  /// no la deja mandar otra vez sin preguntar.
+  instagramId     String?   @db.VarChar(40)
+  instagramEnlace String?   @db.VarChar(300)
+  instagramEl     DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1042,6 +1048,30 @@ model Configuracion {
   value       String   @db.Text
   descripcion String?
   updatedAt   DateTime @updatedAt
+}
+
+/// La cuenta profesional de Instagram en la que el CMS publica las noticias.
+/// Una sola fila (id 1), o ninguna si no se ha conectado. El token va en la
+/// base y no en el .env porque caduca a los 60 días y el servidor lo renueva
+/// solo: tiene que poder reescribirlo. Va cifrado con la clave del doble
+/// factor (utils/cifrado-totp.ts): un volcado de la base no da para publicar
+/// en nombre del Grupo.
+model CuentaInstagram {
+  id           Int       @id @default(1)
+  /// El id de la cuenta en Instagram, al que se mandan las publicaciones.
+  cuentaId     String    @db.VarChar(40)
+  /// El nombre de usuario, sin @, para que el CMS diga dónde se publica.
+  usuario      String    @db.VarChar(60)
+  token        String    @db.Text
+  caducaEl     DateTime
+  /// La última vez que se renovó (o se conectó): Instagram no deja renovar
+  /// un token con menos de 24 horas.
+  renovadoEl   DateTime
+  conectadoEl  DateTime  @default(now())
+  /// El correo de quien la conectó desde el CMS.
+  conectadoPor String?   @db.VarChar(120)
+  /// Por qué falló la última renovación, para enseñarlo en el CMS; null si fue bien.
+  errorAlRenovar String? @db.VarChar(500)
 }
 
 /// Qué módulos tiene encendidos esta instalación. El catálogo (nombre, grupo,

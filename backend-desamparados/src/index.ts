@@ -146,6 +146,13 @@ void import('./services/comunicados.service.js')
 // La víspera de cada día de reparto, el recordatorio de la cita a quien la tiene.
 void import('./services/procesion/recordatorio-citas.service.js').then(({ arrancarRecordatorios }) => arrancarRecordatorios());
 
+// El token de Instagram caduca a los 60 días: se renueva solo cada semana.
+// Cada hora se mira si toca; casi siempre no, y no sale nada a la red.
+void import('./services/redes/instagram.service.js').then(({ InstagramService }) => {
+  void InstagramService.renovarSiToca();
+  setInterval(() => void InstagramService.renovarSiToca(), 60 * 60 * 1000).unref();
+});
+
 // Los contadores de fallos al entrar y las redes confiadas guardan correos e
 // IP: lo caducado se borra cada hora, no solo cuando se juntan cien fallos.
 void import('./utils/contador-fallos.js').then(({ barrerCaducados }) => {
