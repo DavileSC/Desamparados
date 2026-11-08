@@ -391,8 +391,8 @@ pasar, como el aviso del banco.
 ### Instagram (publicar las noticias)
 
 Desde la ficha de una noticia publicada, panel «Redes», se publica en la
-cuenta de Instagram del Grupo con su foto y un pie que se revisa antes. X no
-usa API (cobra por publicar): el botón abre X con el post escrito.
+cuenta de Instagram del Grupo con su foto y un pie que se revisa antes. X va
+aparte, en el apartado siguiente.
 
 No hay variables de entorno: el token se pega en el CMS y va cifrado en la
 base (tabla `CuentaInstagram`) con `TOTP_ENC_KEY`. Dura 60 días y la API lo
@@ -424,6 +424,39 @@ probar de verdad, porque Instagram no llega a `localhost`.
 Al rotar `TOTP_ENC_KEY` (más abajo), el token se pasa a la clave nueva en la
 siguiente comprobación, que se hace cada hora: esperar una hora antes de quitar
 la anterior. Si se quita antes, basta con volver a conectar la cuenta.
+
+### X (publicar las noticias)
+
+En el mismo panel «Redes», la noticia se publica en la cuenta de X del Grupo
+por la API de X, que es de pago: el título y el enlace (se pueden cambiar
+antes de mandar, hasta 280 caracteres, y cada enlace cuenta 23) y, si se
+quiere, la foto. Sin cuenta conectada, el botón abre X con el post escrito y
+se publica allí a mano.
+
+No hay variables de entorno: las cuatro claves de la app se pegan en el CMS y
+van cifradas en la base (tabla `CuentaX`) con `TOTP_ENC_KEY`. No caducan.
+
+1. En [console.x.com](https://console.x.com/), con la cuenta de X del Grupo,
+   la app con saldo o plan para publicar.
+2. En la app → «User authentication settings»: permisos **Read and write**,
+   tipo «Web App, Automated App or Bot», y en «Callback URI» y «Website URL»
+   la dirección de la web (no se usan, pero X las pide).
+3. «Keys and tokens»: la **API Key** y su **Secret**, y **después** del paso 2
+   generar el **Access Token** y su **Secret**. Uno sacado antes de dar el
+   permiso de escritura se queda en solo lectura y X no deja publicar (403):
+   el CMS lo dice, y basta con regenerarlo y volver a conectar.
+4. Pegar las cuatro en el CMS: Noticias → una noticia publicada → «Redes» →
+   «Conectar X».
+5. Probarlo con una noticia publicada.
+
+La foto la sube la API a X (en JPEG, entera, 2048 px de lado como mucho): X no
+tiene que llegar al servidor, así que no hace falta tocar nginx y se puede
+probar desde el equipo de casa. El enlace del post es siempre el de la web
+pública (`dominio` de `instalacion/datos-entidad.json`), también desde la web
+de pruebas, que pide contraseña.
+
+Cada post gasta saldo de la cuenta de desarrollador. Si se acaba, X contesta
+402 y el CMS pide recargarla.
 
 ### El Modelo 182 (donativos)
 

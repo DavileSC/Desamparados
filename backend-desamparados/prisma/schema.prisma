@@ -874,6 +874,10 @@ model Noticia {
   instagramId     String?   @db.VarChar(40)
   instagramEnlace String?   @db.VarChar(300)
   instagramEl     DateTime?
+  /// Lo mismo en X: el id del post, su enlace y cuándo se mandó.
+  xId             String?   @db.VarChar(40)
+  xEnlace         String?   @db.VarChar(300)
+  xEl             DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1072,6 +1076,26 @@ model CuentaInstagram {
   conectadoPor String?   @db.VarChar(120)
   /// Por qué falló la última renovación, para enseñarlo en el CMS; null si fue bien.
   errorAlRenovar String? @db.VarChar(500)
+}
+
+/// La cuenta de X en la que el CMS publica las noticias, por la API de pago.
+/// Una sola fila (id 1), o ninguna si no se ha conectado. Las cuatro claves de
+/// OAuth 1.0a van juntas en un JSON cifrado con la clave del doble factor,
+/// como el token de Instagram: un volcado de la base no da para publicar en
+/// nombre del Grupo. En la base y no en el .env para que Redes las cambie
+/// desde el CMS sin tocar el servidor.
+model CuentaX {
+  id            Int      @id @default(1)
+  /// El id de la cuenta en X.
+  cuentaId      String   @db.VarChar(40)
+  /// El nombre de usuario, sin @: dice dónde se publica y forma el enlace de cada post.
+  usuario       String   @db.VarChar(60)
+  claves        String   @db.Text
+  conectadoEl   DateTime @default(now())
+  /// El correo de quien la conectó desde el CMS.
+  conectadoPor  String?  @db.VarChar(120)
+  /// Si X rechazó las claves al publicar (cambiadas o de solo lectura), por qué; null si no.
+  errorDeClaves String?  @db.VarChar(500)
 }
 
 /// Qué módulos tiene encendidos esta instalación. El catálogo (nombre, grupo,

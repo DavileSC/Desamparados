@@ -20,6 +20,10 @@ export interface NoticiaDeLaApi {
   instagramId?: string | null
   instagramEnlace?: string | null
   instagramEl?: string | null
+  /** Lo mismo en X: el id del post, su enlace y cuándo. */
+  xId?: string | null
+  xEnlace?: string | null
+  xEl?: string | null
 }
 
 /** Los listados públicos (portada y archivo) vienen sin `contenido`: solo lo trae la ficha. */

@@ -21,6 +21,7 @@ import { cartaRoutes } from './routes/carta.routes.js';
 import { agendaRoutes } from './routes/agenda.routes.js';
 import { noticiaRoutes } from './routes/noticia.routes.js'; 
 import { instagramRoutes } from './routes/instagram.routes.js';
+import { xRoutes } from './routes/x.routes.js';
 import { subidaRoutes } from './routes/subida.routes.js';
 import { inventarioRoutes } from './routes/inventario.routes.js';
 import { adminRoutes } from './routes/admin.routes.js';
@@ -189,6 +190,7 @@ app.use('/api/pagos', nucleo, pagoRoutes);       // Avisos del banco (Redsys), s
 app.use('/api/events', conModulo('agenda'), agendaRoutes);    // Agenda
 app.use('/api/news', conModulo('noticias'), noticiaRoutes);        // Noticias
 app.use('/api/instagram', conModulo('noticias'), instagramRoutes); // La cuenta de Instagram y publicar en ella las noticias
+app.use('/api/x', conModulo('noticias'), xRoutes); // La cuenta de X y publicar en ella las noticias
 app.use('/api/publications', conModulo('publicaciones'), publicacionRoutes); // Publicaciones
 app.use('/api/contact', nucleo, contactoRoutes); // Formulario de contacto
 app.use('/api/upload', nucleo, subidaRoutes); // Subida de archivos
