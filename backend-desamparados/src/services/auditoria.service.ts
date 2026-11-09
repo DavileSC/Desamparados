@@ -136,6 +136,11 @@ export const ACCIONES_AUDITORIA = {
   // como si se hubiera creado (no puede decir quién está en el censo), y esto
   // es lo que le queda a Secretaría para saberlo.
   ALTA_NO_TRAMITADA: 'ALTA_NO_TRAMITADA',
+  // Un alta con un DNI ya registrado: espera en Solicitudes (AltaRetenida) a
+  // que Secretaría compruebe quién es y la tramite con el DNI bueno o la descarte.
+  ALTA_RETENIDA: 'ALTA_RETENIDA',
+  ALTA_RETENIDA_TRAMITAR: 'ALTA_RETENIDA_TRAMITAR',
+  ALTA_RETENIDA_DESCARTAR: 'ALTA_RETENIDA_DESCARTAR',
   SOLICITUD_APROBAR: 'SOLICITUD_APROBAR',
   SOLICITUD_RECHAZAR: 'SOLICITUD_RECHAZAR',
   HERMANO_BAJA: 'HERMANO_BAJA',

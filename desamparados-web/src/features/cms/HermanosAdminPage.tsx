@@ -6,7 +6,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../altas/auth/store'
 import { useModulos } from '../../hooks/useModulos'
 import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
-import { aprobarSolicitud, cerrarHuecosDeNumero, descartarPeticionVuelta, solicitudesPendientes, reactivarHermano, rechazarSolicitud, buscarHermanos, type AdminBrother, type FiltrosCenso, type PendingRequest, type PeticionVuelta } from '../../lib/api/hermanos'
+import { aprobarSolicitud, cerrarHuecosDeNumero, descartarPeticionVuelta, descartarRetenida, solicitudesPendientes, reactivarHermano, rechazarSolicitud, buscarHermanos, tramitarRetenida, type AdminBrother, type AltaRetenida, type FiltrosCenso, type PendingRequest, type PeticionVuelta } from '../../lib/api/hermanos'
+import AltasRetenidas from './censo/AltasRetenidas'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
@@ -116,6 +117,8 @@ export default function HermanosAdminPage() {
   const [requests, setRequests] = useState<PendingRequest[]>([])
   // Las peticiones de volver llegan con las solicitudes, en la misma respuesta.
   const [vueltas, setVueltas] = useState<PeticionVuelta[]>([])
+  // Y las altas con un DNI ya registrado, que esperan a que Secretaría compruebe quién es.
+  const [retenidas, setRetenidas] = useState<AltaRetenida[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -146,7 +149,7 @@ export default function HermanosAdminPage() {
   const cargar = useCallback((vigente: () => boolean = () => true) => Promise.all([
     puedeGestionar
       ? solicitudesPendientes({ pagina: solicitudes.pagina, porPagina: solicitudes.porPagina })
-      : Promise.resolve({ data: [] as PendingRequest[], meta: { total: 0, page: 1, limit: solicitudes.porPagina, totalPages: 0 }, reactivaciones: [] as PeticionVuelta[] }),
+      : Promise.resolve({ data: [] as PendingRequest[], meta: { total: 0, page: 1, limit: solicitudes.porPagina, totalPages: 0 }, reactivaciones: [] as PeticionVuelta[], retenidas: [] as AltaRetenida[] }),
     buscarHermanos(filtros as FiltrosCenso, { pagina, porPagina }),
   ]).then(([pendientes, censo]) => {
     if (!vigente()) return
@@ -154,6 +157,7 @@ export default function HermanosAdminPage() {
     setMeta(censo.meta)
     setRequests(pendientes.data)
     setVueltas(pendientes.reactivaciones ?? [])
+    setRetenidas(pendientes.retenidas ?? [])
     setMetaSolicitudes(pendientes.meta)
   }), [puedeGestionar, filtros, pagina, porPagina, solicitudes.pagina, solicitudes.porPagina])
 
@@ -219,6 +223,23 @@ export default function HermanosAdminPage() {
     finally { enMarcha.current = false; setProcesando(null) }
   }
 
+  /** Una retenida: tramitarla con el DNI corregido o descartarla. La misma guarda del doble clic. */
+  const atenderRetenida = async (retenida: AltaRetenida, accion: () => Promise<{ message: string }>) => {
+    if (enMarcha.current) return
+    enMarcha.current = true
+    setProcesando(-retenida.id); setError(null); setNotice(null)
+    try {
+      const { message } = await accion()
+      await recargarYRefrescarMenu()
+      setNotice(message)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'No se ha podido atender la solicitud.')
+    } finally {
+      setProcesando(null)
+      enMarcha.current = false
+    }
+  }
+
   /** Reparte los números que faltan. `enMarcha` es la guarda del doble clic, igual que al aprobar. */
   const asignarNumeros = async () => {
     if (enMarcha.current) return
@@ -255,7 +276,7 @@ export default function HermanosAdminPage() {
         return siguientes
       })}>
         <Tab value="censo" label="Censo" />
-        <Tab value="solicitudes" label={`Solicitudes (${metaSolicitudes?.total ?? 0})`} />
+        <Tab value="solicitudes" label={`Solicitudes (${(metaSolicitudes?.total ?? 0) + retenidas.length})`} />
         <Tab value="impagos" label="Impagos" />
         {conDifuntos && <Tab value="difuntos" label="Difuntos" />}
         {conPrimerAcceso && <Tab value="primer-acceso" label="Primer acceso" />}
@@ -289,7 +310,14 @@ export default function HermanosAdminPage() {
       onConfirmar={() => { setPorAsignarNumeros(false); void asignarNumeros() }}
       onCancelar={() => setPorAsignarNumeros(false)}
     />
-    {vista === 'primer-acceso' ? <VistaPrimerAcceso /> : vista === 'difuntos' ? <VistaDifuntos puedeGestionar={puedeGestionar} /> : vista === 'impagos' ? <ListaImpagos puedeDarDeBaja={puedeGestionar} /> : vista === 'solicitudes' ? <Paper sx={{ p: 3 }}><Stack spacing={2}>
+    {vista === 'primer-acceso' ? <VistaPrimerAcceso /> : vista === 'difuntos' ? <VistaDifuntos puedeGestionar={puedeGestionar} /> : vista === 'impagos' ? <ListaImpagos puedeDarDeBaja={puedeGestionar} /> : vista === 'solicitudes' ? <Paper sx={{ p: 3 }}>
+    <AltasRetenidas
+      retenidas={retenidas}
+      ocupado={procesando !== null}
+      onTramitar={(retenida, dnis) => atenderRetenida(retenida, () => tramitarRetenida(retenida.id, dnis))}
+      onDescartar={(retenida) => atenderRetenida(retenida, () => descartarRetenida(retenida.id))}
+    />
+    <Stack spacing={2}>
       {requests.map((request) => (
         <Box key={request.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap' }}>
           <Box>
@@ -313,7 +341,7 @@ export default function HermanosAdminPage() {
           </Stack>
         </Box>
       ))}
-      {requests.length === 0 && <Alert severity="info">No hay solicitudes pendientes.</Alert>}
+      {requests.length === 0 && <Alert severity="info">{retenidas.length > 0 ? 'No hay más solicitudes pendientes.' : 'No hay solicitudes pendientes.'}</Alert>}
     </Stack>
     {metaSolicitudes && <Paginador meta={metaSolicitudes} onPagina={solicitudes.irAPagina} onTamano={solicitudes.cambiarTamano} etiqueta="solicitudes de alta" />}
 

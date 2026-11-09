@@ -40,12 +40,13 @@ export class AuthController {
       });
     }
 
-    const { creada, ...respuesta } = await RegistroService.registerUser(
+    const { creada, retenida, ...respuesta } = await RegistroService.registerUser(
       { ...body, documentos: req.documentosDelAlta }, AuditoriaService.metaFromReq(req),
     );
-    // Ya están en la ficha: que no los borre la limpieza de alta-documentos.
-    // Si el alta chocó con algo ya registrado, no hay ficha y se borran.
-    res.locals.conservarDocumentos = creada;
+    // Ya están en la ficha, o en el alta retenida esperando a Secretaría: que
+    // no los borre la limpieza de alta-documentos. Si el alta no sigue (el
+    // correo ya era de una cuenta), no hay dónde guardarlos y se borran.
+    res.locals.conservarDocumentos = creada || retenida;
 
     // El mismo 201 y el mismo cuerpo se haya creado o no: ver registerUser.
     res.status(201).json(respuesta);

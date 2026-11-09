@@ -9,6 +9,7 @@ import {
 } from './hermanos/comunes.js';
 
 import { EmailService } from './email.service';
+import { AltasRetenidasService } from './altas-retenidas.service';
 
 import { borrarDocumentosPrivados, documentosDe } from '../utils/documentos-privados.js';
 
@@ -63,7 +64,12 @@ export class SolicitudesService {
       db.user.count({ where })
     ]);
 
-    return { ...respuestaPaginada(data, total, paginacion), reactivaciones: await SolicitudesService.getReactivacionesPedidas() };
+    return {
+      ...respuestaPaginada(data, total, paginacion),
+      reactivaciones: await SolicitudesService.getReactivacionesPedidas(),
+      // Las altas con un DNI ya registrado: sin paginar, como las de volver.
+      retenidas: await AltasRetenidasService.listar(),
+    };
   }
 
   /**

@@ -114,9 +114,42 @@ export function buscarHermanos(filtros: FiltrosCenso, pagina: { pagina: number; 
 export function solicitudesPendientes(pagina: { pagina: number; porPagina: number }) {
   // Las peticiones de vuelta llegan con las altas: se atienden en la misma
   // pantalla, aunque con otro botón.
-  return llamarApi<RespuestaPaginada<PendingRequest> & { reactivaciones: PeticionVuelta[] }>(
+  return llamarApi<RespuestaPaginada<PendingRequest> & { reactivaciones: PeticionVuelta[]; retenidas?: AltaRetenida[] }>(
     `/hermanos/admin/solicitudes?${paramsPagina(pagina)}`,
   )
+}
+
+/** De quién es un DNI que ya estaba registrado, como lo ve Secretaría. */
+export type ConQuienChoca =
+  | { tipo: 'cuenta'; nombre: string; apellidos: string }
+  | { tipo: 'ficha'; id: number; numeroHermano: number | null; nombre: string; apellidos: string; situacion: 'activo' | 'baja' | 'pendiente'; fechaBaja: string | null }
+  | { tipo: 'ya-no-esta' }
+
+/**
+ * Un alta por la web con un DNI ya registrado. A quien la mandó se le
+ * respondió como a cualquier alta; aquí espera a que Secretaría compruebe
+ * quién es y la tramite con el DNI bueno o la descarte. `quien` es «adulto»
+ * (quien rellenó el formulario) o la posición del menor.
+ */
+export interface AltaRetenida {
+  id: number
+  creadaEl: string
+  nombre: string
+  apellidos: string
+  email: string
+  telefono: string
+  personas: { quien: 'adulto' | number; nombre: string; apellidos: string; dni: string | null; fechaNacimiento: string | null; seHaceHermano: boolean }[]
+  choques: { quien: 'adulto' | number; motivo: 'dni_de_cuenta' | 'dni_en_el_censo' | 'dni_de_menor_en_el_censo'; dni: string; con: ConQuienChoca }[]
+}
+
+/** Tramitar una retenida con los DNI corregidos: pasa a ser una solicitud normal. */
+export function tramitarRetenida(id: number, dnis: { adulto?: string; menores?: { indice: number; dni: string }[] }) {
+  return llamarApi<{ message: string }>(`/hermanos/admin/solicitudes/retenidas/${id}/tramitar`, { method: 'POST', json: dnis })
+}
+
+/** Descartarla: se borra con sus documentos y no se escribe a nadie. */
+export function descartarRetenida(id: number) {
+  return llamarApi<{ message: string }>(`/hermanos/admin/solicitudes/retenidas/${id}`, { method: 'DELETE' })
 }
 
 /** Descartar una petición de vuelta: la ficha se queda de baja, como estaba. */

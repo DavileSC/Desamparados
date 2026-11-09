@@ -979,3 +979,32 @@ pierde: el editor del CMS guarda con la versión que leyó al abrir
 `PAGINA_CAMBIADA` y el editor ofrece «Recargar» o «Guardar encima». Quien
 escriba otra pantalla que guarde una página entera tiene que mandar también
 la versión que leyó (`versionActualDePagina`), leída **antes** que el documento.
+
+---
+
+## 16. El alta no dice quién está en el censo: las retenidas
+
+El formulario de alta responde siempre lo mismo (201, `fichas` y `message`) y
+manda el mismo correo de confirmación, se cree el alta o no. Si dijera «ese DNI
+ya existe», serviría para averiguar quién es hermano probando DNI, y eso
+revela creencias (art. 9 RGPD). Lo fija `test/alta-sin-delatar.test.ts`.
+
+Desde el 09-11-2026, un alta con un **DNI ya registrado** (en otra cuenta, en
+el censo o en la ficha de un menor) no se pierde: se guarda en
+`AltaRetenida` y sale en Hermanos → Solicitudes con el aviso de con quién
+choca. Secretaría comprueba quién es y la tramita con el DNI corregido (pasa a
+ser una solicitud normal, por `RegistroService.crearCuentaYFichas`) o la
+descarta. No se crea la cuenta antes porque `User.dni` es obligatorio y único.
+Un **correo** que ya es de una cuenta sigue sin guardarse: solo se avisa a ese
+buzón (`ALTA_NO_TRAMITADA`).
+
+Trampas:
+
+- **Sus documentos viven en storage/private sin ficha.** Por eso
+  `documentosPrivadosReferenciados` suma los de `AltaRetenida`; sin eso, la
+  limpieza de huérfanos se los llevaría a las 24 horas.
+- **Al tramitar no se escribe a nadie** (la confirmación ya salió) y al
+  descartar tampoco: el correo del formulario puede ser de quien usó un DNI
+  ajeno. Si hay que avisar, lo hace Secretaría en persona.
+- **Caducan a los 60 días** (`DIAS_DE_RETENCION`): las borra el barrido de cada
+  hora de `index.ts`, con sus documentos.

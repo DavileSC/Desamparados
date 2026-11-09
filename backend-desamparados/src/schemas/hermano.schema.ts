@@ -1,5 +1,5 @@
 import { type } from 'arktype';
-import { dni, textoRequerido, textoOpcional, telefono, email, iban, password, ordenQuery, codigoPostal } from '../config/common';
+import { idParam, dni, textoRequerido, textoOpcional, telefono, email, iban, password, ordenQuery, codigoPostal } from '../config/common';
 import { ORDENES_CENSO } from '../domain/ordenacion.js';
 
 // ==========================================
@@ -222,4 +222,16 @@ export const nuevoSufragioSchema = type({
 
 export const pesameSchema = type({
     body: { email }
+});
+
+/**
+ * Tramitar un alta retenida: los DNI corregidos. Solo los que cambian; el
+ * resto se queda como vino. `indice` es la posición del menor en la solicitud.
+ */
+export const tramitarRetenidaSchema = type({
+    params: { id: idParam },
+    body: type({
+        "adulto?": dni,
+        "menores?": type({ indice: "number.integer >= 0", dni: dni }).array(),
+    }),
 });

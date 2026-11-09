@@ -161,6 +161,14 @@ void import('./utils/contador-fallos.js').then(({ barrerCaducados }) => {
   setInterval(barrer, 60 * 60 * 1000).unref();
 });
 
+// Las altas retenidas (DNI ya registrado) que nadie atiende en DIAS_DE_RETENCION días se
+// borran con sus documentos: son datos personales que ya no sirven para nada.
+void import('./services/altas-retenidas.service.js').then(({ AltasRetenidasService }) => {
+  const barrer = () => AltasRetenidasService.borrarCaducadas().catch((error) => console.error('❌ [Altas] No se han podido borrar las retenidas caducadas:', error));
+  void barrer();
+  setInterval(barrer, 60 * 60 * 1000).unref();
+});
+
 // Aviso, no barrera. Un despliegue que se salte la conversión a bloques no
 // falla: el CMS abre, `mezclarConDefectos` descarta las claves de la forma
 // antigua y el Recorrido, la Titular y la Historia vuelven a los textos de

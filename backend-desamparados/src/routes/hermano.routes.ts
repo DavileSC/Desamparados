@@ -23,6 +23,7 @@ import {
     emancipateSchema,
     emancipateByStaffSchema,
     bajaHermanoSchema,
+    tramitarRetenidaSchema,
     exportarCensoSchema,
     guardarListaSchema,
     difuntosQuerySchema,
@@ -73,6 +74,10 @@ hermanoRouter.delete('/admin/solicitudes/:id/rechazar', checkRole(rolesGestionCe
 // se atienden con «reactivar» (más abajo) o descartándolas: nunca con aprobar,
 // que es para quien nunca estuvo en el censo.
 hermanoRouter.delete('/admin/reactivaciones/:id', checkRole(rolesGestionCenso), validateId, HermanoController.descartarReactivacion);
+// Las altas con un DNI ya registrado esperan en la misma pantalla: se tramitan
+// con el DNI corregido (pasan a ser una solicitud normal) o se descartan.
+hermanoRouter.post('/admin/solicitudes/retenidas/:id/tramitar', checkRole(rolesGestionCenso), validate(tramitarRetenidaSchema), HermanoController.tramitarRetenida);
+hermanoRouter.delete('/admin/solicitudes/retenidas/:id', checkRole(rolesGestionCenso), validateId, HermanoController.descartarRetenida);
 
 // 4. Operaciones sobre un Hermano Específico
 // Las búsquedas guardadas del censo. Antes de `/admin/:id`: si no, «listas» se

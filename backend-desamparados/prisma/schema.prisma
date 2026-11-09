@@ -1161,6 +1161,27 @@ model AvisoPersonal {
   @@index([creadoEn])
 }
 
+/// Un alta por la web cuyo DNI ya estaba registrado (en una cuenta, en el
+/// censo o en la ficha de un menor). La web responde como a cualquier alta
+/// —no puede decir quién está en el censo— y la solicitud espera aquí, en
+/// Solicitudes, a que Secretaría compruebe quién es: corrige el DNI y la
+/// tramita, o la descarta. No se crea la cuenta porque el DNI es único en
+/// `User` y en `Hermano`. Ver `services/altas-retenidas.service.ts`.
+model AltaRetenida {
+  id        Int      @id @default(autoincrement())
+  creadaEl  DateTime @default(now())
+  /// El formulario tal como llegó (RegisterDto sin la contraseña) y los
+  /// documentos que se adjuntaron.
+  datos     Json
+  /// La contraseña ya cifrada, para crear la cuenta al tramitarla.
+  password  String
+  /// Los choques al recibirla: [{ motivo, quien, dni, con }]. Al listarla y al
+  /// tramitarla se vuelven a buscar: lo que hubiera entonces puede haber cambiado.
+  choques   Json
+
+  @@index([creadaEl])
+}
+
 // Intentos fallidos con bloqueo (login por red y por correo, 2FA, cambio de
 // contraseña, DNI desde el área): ver `utils/contador-fallos.ts`. En la base y
 // no en memoria para que un reinicio o un despliegue no levante los bloqueos.

@@ -4,9 +4,11 @@
 // registrado respondía 409 «Ya hay una ficha en el censo con el DNI …»
 // (antes de crear nada), y el formulario servía para averiguar si alguien es
 // hermano probando DNI uno a uno: eso revela creencias (art. 9 RGPD). Ahora
-// responde lo mismo que un alta hecha, no crea nada y deja el choque en la
-// auditoría. Al correo del formulario le llega lo mismo que tras un alta
-// hecha, salvo que el choque sea ese mismo correo: entonces se avisa a su dueño.
+// responde lo mismo que un alta hecha y no crea la cuenta: con un DNI ya
+// registrado, el alta espera en Solicitudes (AltaRetenida) a que Secretaría
+// compruebe quién es; con el correo de otra cuenta, no sigue. Al correo del
+// formulario le llega lo mismo que tras un alta hecha, salvo que el choque
+// sea ese mismo correo: entonces se avisa a su dueño.
 
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
@@ -67,10 +69,17 @@ after(async () => {
     const ids = usuarios.map((u) => u.id);
     await db.hermano.deleteMany({ where: { userId: { in: ids } } });
     await db.user.deleteMany({ where: { id: { in: ids } } });
-    await db.auditLog.deleteMany({ where: { action: 'ALTA_NO_TRAMITADA', createdAt: { gte: new Date(Date.now() - 10 * 60_000) } } });
+    await db.auditLog.deleteMany({ where: { action: { in: ['ALTA_NO_TRAMITADA', 'ALTA_RETENIDA'] }, createdAt: { gte: new Date(Date.now() - 10 * 60_000) } } });
+    for (const r of await retenidasDe(correos)) await db.altaRetenida.delete({ where: { id: r.id } });
   }
   await db.$disconnect();
 });
+
+/** Las altas retenidas con alguno de estos correos (el correo va dentro del JSON). */
+async function retenidasDe(emails: string[]) {
+  const todas = await db.altaRetenida.findMany({ select: { id: true, datos: true } });
+  return todas.filter((r) => emails.includes((r.datos as { usuario: { email: string } }).usuario.email));
+}
 
 const esperarCorreos = async () => { for (let i = 0; i < 40; i++) await new Promise((r) => setTimeout(r, 25)); };
 
@@ -101,7 +110,12 @@ describe('un dato ya registrado no se delata', () => {
       assert.deepEqual(await r.json(), cuerpoBueno, `${caso}: la respuesta es la misma que la de un alta hecha`);
 
       const email = cuerpo.usuario.email;
-      if (email !== primero) assert.equal(await db.user.count({ where: { email } }), 0, `${caso}: no se crea la cuenta`);
+      if (email !== primero) {
+        assert.equal(await db.user.count({ where: { email } }), 0, `${caso}: no se crea la cuenta`);
+        assert.equal((await retenidasDe([email])).length, 1, `${caso}: espera en Solicitudes, retenida`);
+      } else {
+        assert.equal((await retenidasDe([email])).length, 0, `${caso}: con el correo de otra cuenta no se guarda`);
+      }
 
       await esperarCorreos();
       const aviso = enviados.find((c) => c.to === email);
@@ -119,9 +133,12 @@ describe('un dato ya registrado no se delata', () => {
       for (const dni of [dniAdulto, dniMenor]) assert.ok(!aviso.html.includes(dni), `${caso}: el correo no dice qué DNI`);
     }
 
-    // Secretaría lo ve en la auditoría, con el motivo y sin el DNI ni el correo en claro.
-    const rastros = await db.auditLog.findMany({ where: { action: 'ALTA_NO_TRAMITADA', createdAt: { gte: new Date(Date.now() - 60_000) } } });
-    const motivos = rastros.map((r) => (r.detalles as { motivo: string }).motivo);
+    // La auditoría guarda el motivo, sin el DNI ni el correo en claro.
+    const rastros = await db.auditLog.findMany({ where: { action: { in: ['ALTA_NO_TRAMITADA', 'ALTA_RETENIDA'] }, createdAt: { gte: new Date(Date.now() - 60_000) } } });
+    const motivos = rastros.flatMap((r) => {
+      const detalles = r.detalles as { motivo?: string; motivos?: string[] };
+      return detalles.motivos ?? (detalles.motivo ? [detalles.motivo] : []);
+    });
     for (const motivo of ['dni_de_menor_en_el_censo', 'dni_de_cuenta', 'correo_de_cuenta']) assert.ok(motivos.includes(motivo), motivo);
     for (const r of rastros) {
       const texto = JSON.stringify(r.detalles);

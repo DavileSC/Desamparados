@@ -36,17 +36,25 @@ export const documentosDe = (fichas: { foto: string | null; certificadoBautismo:
   fichas.flatMap((f) => [f.foto, f.certificadoBautismo]);
 
 /**
- * Los documentos privados que alguna ficha sigue mencionando. Solo la ficha
- * del censo guarda nombres de storage/private (`foto` y
- * `certificadoBautismo`, puestos por el alta): si algún día otra tabla guarda
- * uno, tiene que sumarse aquí o la limpieza lo daría por huérfano.
+ * Los documentos privados que algo sigue mencionando. Guardan nombres de
+ * storage/private la ficha del censo (`foto` y `certificadoBautismo`, puestos
+ * por el alta) y el alta retenida, que los conserva hasta tramitarse o
+ * descartarse: si algún día otra tabla guarda uno, tiene que sumarse aquí o la
+ * limpieza lo daría por huérfano.
  */
 export async function documentosPrivadosReferenciados(): Promise<Set<string>> {
-  const fichas = await db.hermano.findMany({
-    where: { OR: [{ foto: { not: null } }, { certificadoBautismo: { not: null } }] },
-    select: { foto: true, certificadoBautismo: true },
+  const [fichas, retenidas] = await Promise.all([
+    db.hermano.findMany({
+      where: { OR: [{ foto: { not: null } }, { certificadoBautismo: { not: null } }] },
+      select: { foto: true, certificadoBautismo: true },
+    }),
+    db.altaRetenida.findMany({ select: { datos: true } }),
+  ]);
+  const deRetenidas = retenidas.flatMap(({ datos }) => {
+    const documentos = (datos as { documentos?: { foto?: string; certificadoBautismo?: string } }).documentos ?? {};
+    return [documentos.foto, documentos.certificadoBautismo];
   });
-  return new Set(documentosDe(fichas).filter((n): n is string => Boolean(n)).map((n) => n.toLowerCase()));
+  return new Set([...documentosDe(fichas), ...deRetenidas].filter((n): n is string => Boolean(n)).map((n) => n.toLowerCase()));
 }
 
 interface DocumentoHuerfano { nombre: string; bytes: number; modificado: Date }

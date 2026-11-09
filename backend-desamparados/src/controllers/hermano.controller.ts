@@ -2,6 +2,7 @@ import { handleHttp } from '../utils/error.handle';
 import { manejar } from '../utils/manejar';
 import { AuditoriaService } from '../services/auditoria.service';
 import { SolicitudesService } from '../services/solicitudes.service.js';
+import { AltasRetenidasService } from '../services/altas-retenidas.service.js';
 import { MisFichasService } from '../services/mis-fichas.service.js';
 import { CensoService } from '../services/censo.service.js';
 import { ListasService } from '../services/listas.service.js';
@@ -166,6 +167,14 @@ export class HermanoController {
   static rechazarSolicitud = manejar('Error rechazando la solicitud', async (req, res) => {
     const result = await SolicitudesService.rechazarSolicitud(Number(req.params.id), AuditoriaService.metaFromReq(req));
     res.status(200).json(result);
+  });
+
+  static tramitarRetenida = manejar('Error tramitando la solicitud retenida', async (req, res) => {
+    res.status(200).json(await AltasRetenidasService.tramitar(Number(req.params.id), req.body ?? {}, AuditoriaService.metaFromReq(req)));
+  });
+
+  static descartarRetenida = manejar('Error descartando la solicitud retenida', async (req, res) => {
+    res.status(200).json(await AltasRetenidasService.descartar(Number(req.params.id), AuditoriaService.metaFromReq(req)));
   });
 
   static darDeBajaHermano = manejar('Error dando de baja al hermano', async (req, res) => {

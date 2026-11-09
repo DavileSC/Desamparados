@@ -150,6 +150,9 @@ const ACCIONES: Record<string, string> = {
   CORREO_REBOTA: 'Correo que rebota (aviso del servicio de envío)',
   CORREO_REBOTA_QUITAR: 'Quitar la marca de correo que rebota',
   ALTA_NO_TRAMITADA: 'Alta por la web no tramitada (datos ya registrados)',
+  ALTA_RETENIDA: 'Alta por la web retenida (DNI ya registrado)',
+  ALTA_RETENIDA_TRAMITAR: 'Tramitar un alta retenida con el DNI corregido',
+  ALTA_RETENIDA_DESCARTAR: 'Descartar un alta retenida',
   FAMILIAR_DNI_OCUPADO: 'DNI de otra ficha escrito desde el área de hermanos',
   CONTRASENA_CAMBIAR: 'Cambiar su contraseña',
   PAGO_EN_LINEA_INCIDENCIA: 'Pago en línea que no cuadra',
@@ -207,7 +210,7 @@ const NOMBRE_DE_CORREO: Record<string, string> = {
   ...Object.fromEntries(CORREOS.usos.map((uso) => [uso.clave, uso.nombre])),
 }
 
-/** Con qué chocó un alta no tramitada (registro.service: `Choque`). */
+/** Con qué chocó un alta no tramitada o retenida (registro.service: `Choque` y `ChoqueDeDni`). */
 const MOTIVOS_ALTA: Record<string, string> = {
   correo_de_cuenta: 'El correo ya es de una cuenta',
   dni_de_cuenta: 'El DNI ya es de una cuenta',
@@ -227,6 +230,7 @@ function legibles(accion: string, detalles: unknown): unknown {
   const conCodigo = (nombre: string | undefined, codigo: string) => (nombre ? `${nombre} (${codigo})` : codigo)
   if (accion === 'EMAIL_FALLIDO' && typeof salida.uso === 'string') salida.uso = conCodigo(NOMBRE_DE_CORREO[salida.uso], salida.uso)
   if (accion === 'ALTA_NO_TRAMITADA' && typeof salida.motivo === 'string') salida.motivo = conCodigo(MOTIVOS_ALTA[salida.motivo], salida.motivo)
+  if (accion === 'ALTA_RETENIDA' && Array.isArray(salida.motivos)) salida.motivos = salida.motivos.map((m) => (typeof m === 'string' ? conCodigo(MOTIVOS_ALTA[m], m) : m))
   return salida
 }
 
