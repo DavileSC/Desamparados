@@ -67,9 +67,14 @@ export default function MarcoAreaHermano() {
   const esActiva = (href: string) =>
     location.pathname === href || location.pathname.startsWith(`${href}/`)
 
+  // El menú entero cabe siempre sin desplazarlo ni pisarse: los márgenes van
+  // con el alto de la pantalla (su tamaño de siempre a partir de unos 800 px)
+  // y las entradas se reparten lo que queda, sin pasar de su alto normal. En
+  // una pantalla baja se aprietan justo lo necesario, sin dejar hueco.
+  const aire = (minimo: number, vh: number, maximo: number) => `clamp(${minimo}px, ${vh}vh, ${maximo}px)`
   const cajon = (
-    <Box sx={{ height: '100%', backgroundColor: '#070608' }}>
-      <Box sx={{ p: 3, borderBottom: '1px solid rgba(204, 196, 201, 0.2)' }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#070608' }}>
+      <Box sx={{ flexShrink: 0, px: 3, py: aire(8, 3, 24), borderBottom: '1px solid rgba(204, 196, 201, 0.2)' }}>
         <Box
           component={Link}
           to="/"
@@ -94,11 +99,11 @@ export default function MarcoAreaHermano() {
           </Box>
         </Box>
       </Box>
-      <List sx={{ py: 2 }}>
+      <List sx={{ flex: '1 1 auto', minHeight: entradas.length * 36 + 8, display: 'flex', flexDirection: 'column', py: aire(4, 2, 16) }}>
         {entradas.map((item) => {
           const activa = esActiva(item.href)
           return (
-            <ListItem key={item.label} disablePadding>
+            <ListItem key={item.label} disablePadding sx={{ flex: '0 1 56px', minHeight: 36 }}>
               <ListItemButton
                 component={Link}
                 to={hrefDe(item.href)}
@@ -106,7 +111,8 @@ export default function MarcoAreaHermano() {
                 onClick={() => setCajonAbierto(false)}
                 sx={{
                   px: 3,
-                  py: 1.5,
+                  py: 0,
+                  height: '100%',
                   color: activa ? 'secondary.contrastText' : 'text.secondary',
                   backgroundColor: activa ? 'primary.main' : 'transparent',
                   '&:hover': {
@@ -134,9 +140,11 @@ export default function MarcoAreaHermano() {
           )
         })}
       </List>
-      <Box sx={{ position: 'absolute', bottom: 0, width: '100%', p: 2, display: 'grid', gap: 0.5 }}>
+      {/* Abajo del todo, pero en el flujo y no encima: con la tarjeta de la ficha el pie
+          creció, y en una pantalla baja tapaba las últimas entradas del menú. */}
+      <Box sx={{ flexShrink: 0, px: 2, py: aire(4, 2, 16), display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 0.5 }}>
         {fichas.length > 0 && (
-          <Box sx={{ pt: 2, pb: 1.5, mb: 0.5, borderTop: '1px solid rgba(204, 196, 201, 0.2)' }}>
+          <Box sx={{ pt: aire(8, 2, 16), pb: aire(4, 1.5, 12), borderTop: '1px solid rgba(204, 196, 201, 0.2)' }}>
             <SelectorDeFicha variante="cajon" fichas={fichas} elegida={elegida} onElegir={elegir} />
           </Box>
         )}
@@ -151,6 +159,7 @@ export default function MarcoAreaHermano() {
           aria-current={esActiva('/area-hermano/cuenta') ? 'page' : undefined}
           sx={{
             justifyContent: 'flex-start',
+            py: aire(2, 0.75, 6),
             color: esActiva('/area-hermano/cuenta') ? 'text.primary' : 'text.secondary',
             backgroundColor: esActiva('/area-hermano/cuenta') ? 'rgba(255,255,255,0.08)' : 'transparent',
             textTransform: 'none', letterSpacing: 0, fontSize: 15, fontWeight: esActiva('/area-hermano/cuenta') ? 600 : 500,
@@ -165,6 +174,7 @@ export default function MarcoAreaHermano() {
           onClick={() => { void cerrarSesion('hermanos') }}
           sx={{
             justifyContent: 'flex-start',
+            py: aire(2, 0.75, 6),
             color: 'text.secondary',
             textTransform: 'none', letterSpacing: 0, fontSize: 15, fontWeight: 500,
             // El granate no es color de letra sobre negro (3,1:1): al pasar, blanco.

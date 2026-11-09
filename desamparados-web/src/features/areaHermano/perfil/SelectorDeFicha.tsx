@@ -154,7 +154,8 @@ export default function SelectorDeFicha({ fichas, elegida, onElegir, variante }:
         </Box>
       </>
     )
-    const tarjeta = { display: 'flex', alignItems: 'center', gap: 1.5, width: '100%', px: 1.5, py: 1.25, border: `1px solid ${RAYA}`, borderRadius: 2.5, textAlign: 'left' } as const
+    // Con el alto de la pantalla, como el resto del menú: tiene que caber entero sin desplazarse (MarcoAreaHermano).
+    const tarjeta = { display: 'flex', alignItems: 'center', gap: 1.5, width: '100%', px: 1.5, py: 'clamp(6px, 1.25vh, 10px)', border: `1px solid ${RAYA}`, borderRadius: 2.5, textAlign: 'left' } as const
     if (!varias) return <Box sx={tarjeta}>{contenido}</Box>
     return (
       <>
