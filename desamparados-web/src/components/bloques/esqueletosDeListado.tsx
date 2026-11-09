@@ -1,6 +1,7 @@
 import { Box, Grid } from '@mui/material'
 import { TarjetaNoticiaEsqueleto } from '../TarjetaNoticia'
 import { TarjetaPublicacionEsqueleto } from '../TarjetaPublicacion'
+import { rejillaDeNoticias } from './rejillaDeNoticias'
 
 /*
  * Los esqueletos de los listados largos, aparte de `BloqueListado`: la página
@@ -8,12 +9,6 @@ import { TarjetaPublicacionEsqueleto } from '../TarjetaPublicacion'
  * `BloqueListado` se carga perezoso; importarlo desde allí lo metería en el
  * trozo de todas las páginas.
  */
-
-export const rejillaDeNoticias = (columnas = 3) => ({
-  listStyle: 'none', m: 0, p: 0, display: 'grid',
-  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: `repeat(${columnas}, 1fr)` },
-  gap: { xs: 3, md: 3.25 },
-}) as const
 
 /** El archivo de noticias mientras llega: la destacada a lo ancho y una fila debajo. */
 export function ArchivoDeNoticiasEsqueleto({ columnas = 3 }: { columnas?: number }) {

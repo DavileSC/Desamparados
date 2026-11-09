@@ -99,7 +99,7 @@ async function llamar(claves: ClavesX, metodo: 'GET' | 'POST', ruta: string, cue
   } else if (cuerpo) {
     body = cuerpo.formulario; // fetch pone el Content-Type con su separador.
   }
-  const respuesta = await fetch(url, { method: metodo, headers: cabeceras, body, signal: AbortSignal.timeout(30_000) });
+  const respuesta = await fetch(url, { method: metodo, headers: cabeceras, ...(body !== undefined && { body }), signal: AbortSignal.timeout(30_000) });
   const datos: any = await respuesta.json().catch(() => null);
   if (!respuesta.ok) {
     // X contesta con dos formas de error: la de la v2 (`detail`, `type`) y la antigua (`errors[]`).

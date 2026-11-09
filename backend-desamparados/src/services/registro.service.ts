@@ -151,8 +151,11 @@ export class RegistroService {
    * La cuenta (bloqueada) y sus fichas (inactivas): lo que deja un alta a la
    * espera de Secretaría. Lo usan el alta por la web y la tramitación de una
    * retenida con el DNI ya corregido. Puede lanzar el P2002 del índice único.
+   *
+   * `enviadaEl` es cuándo llegó el formulario: dar la cuenta en él es firmar el
+   * mandato SEPA, y una retenida se tramita días después de enviarse.
    */
-  static async crearCuentaYFichas({ usuario, titular, menores = [], pago, documentos = {} }: Omit<RegisterDto, 'usuario'> & { usuario: Omit<RegisterDto['usuario'], 'password'> }, hashedPassword: string) {
+  static async crearCuentaYFichas({ usuario, titular, menores = [], pago, documentos = {} }: Omit<RegisterDto, 'usuario'> & { usuario: Omit<RegisterDto['usuario'], 'password'> }, hashedPassword: string, enviadaEl: Date = new Date()) {
     const domiciliada = pago?.forma === 'DOMICILIACION';
     // Los apellidos del adulto: por separado si vienen así, y si no, partidos.
     const apellidosDelAdulto = apellidosTrasCambio(usuario)!;
@@ -168,7 +171,7 @@ export class RegistroService {
         formaPagoPref: 'DOMICILIACION' as const,
         iban: pago.iban,
         // Dar la cuenta en el alta es autorizar el adeudo: la fecha del mandato SEPA.
-        fechaMandato: new Date(),
+        fechaMandato: enviadaEl,
         titularidadCuenta: propia
           ? (esElAdulto ? 'PROPIA' as const : titular ? 'FAMILIAR_HERMANO' as const : 'OTRA_PERSONA' as const)
           : pago.titularidad,

@@ -119,7 +119,7 @@ export class AltasRetenidasService {
 
     let creada;
     try {
-      creada = await RegistroService.crearCuentaYFichas(datos, fila.password);
+      creada = await RegistroService.crearCuentaYFichas(datos, fila.password, fila.creadaEl);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new HttpError('Otra alta con ese DNI o ese correo acaba de entrar. Vuelve a cargar las solicitudes.', 409);

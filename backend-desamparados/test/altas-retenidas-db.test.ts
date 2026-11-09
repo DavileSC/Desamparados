@@ -73,7 +73,10 @@ describe('altas retenidas por un DNI ya registrado', () => {
     await RegistroService.registerUser(alta(nuevoCorreo('primero'), dniOcupado, [{ nombre: 'Marta', dni: dniMenorOcupado, fechaNacimiento: '2012-05-01' }]));
 
     const email = nuevoCorreo('segundo');
-    const r = await RegistroService.registerUser(alta(email, dniOcupado, [{ nombre: 'Luis', dni: dniMenorOcupado, fechaNacimiento: '2013-01-01' }]));
+    const r = await RegistroService.registerUser({
+      ...alta(email, dniOcupado, [{ nombre: 'Luis', dni: dniMenorOcupado, fechaNacimiento: '2013-01-01' }]),
+      pago: { forma: 'DOMICILIACION', iban: 'ES9121000418450200051332', titularidad: 'PROPIA' },
+    });
     assert.equal(r.creada, false);
     assert.equal(r.retenida, true);
     assert.equal(await db.user.count({ where: { email } }), 0, 'la cuenta no se crea todavía');
@@ -93,15 +96,21 @@ describe('altas retenidas por un DNI ya registrado', () => {
       (e: Error & { status?: number }) => /Sigue registrado/.test(e.message) && e.message.includes(dniMenorOcupado),
     );
 
+    // Secretaría la tramita días después de recibirla: el mandato SEPA se
+    // firmó al dar la cuenta en el formulario, no al tramitar.
+    const enviadaEl = new Date(Date.now() - 12 * 86_400_000);
+    await db.altaRetenida.update({ where: { id: vista.id }, data: { creadaEl: enviadaEl } });
+
     // Con los dos corregidos, pasa a ser una solicitud normal.
     const dniBueno = nuevoDni();
     await AltasRetenidasService.tramitar(vista.id, { adulto: dniBueno, menores: [{ indice: 0, dni: nuevoDni() }] });
     assert.equal((await retenidasDe([email])).length, 0, 'deja de estar retenida');
-    const cuenta = await db.user.findUnique({ where: { email }, select: { dni: true, active: true, hermanos: { select: { activo: true } } } });
+    const cuenta = await db.user.findUnique({ where: { email }, select: { dni: true, active: true, hermanos: { select: { activo: true, fechaMandato: true } } } });
     assert.ok(cuenta);
     assert.equal(cuenta.dni, dniBueno);
     assert.equal(cuenta.active, false, 'la cuenta nace bloqueada, como cualquier alta');
     assert.deepEqual(cuenta.hermanos.map((h) => h.activo), [false, false]);
+    assert.deepEqual(cuenta.hermanos.map((h) => h.fechaMandato?.getTime()), [enviadaEl.getTime(), enviadaEl.getTime()]);
     const { data } = await SolicitudesService.getSolicitudesPendientes({ limit: '100' });
     assert.ok(data.some((s) => s.email === email), 'y está entre las solicitudes por aprobar');
 

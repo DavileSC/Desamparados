@@ -21,7 +21,8 @@ import type { BloqueListado as Datos, FuenteListado } from '../../lib/api/conten
 import { valorDe } from './presentacion'
 import { BOTON, enlaceConFlecha } from '../estiloDeBoton'
 import AvisoSuave from '../AvisoSuave'
-import { ArchivoDeNoticiasEsqueleto, PublicacionesEsqueleto, rejillaDeNoticias } from './esqueletosDeListado'
+import { ArchivoDeNoticiasEsqueleto, PublicacionesEsqueleto } from './esqueletosDeListado'
+import { rejillaDeNoticias } from './rejillaDeNoticias'
 
 /**
  * Lo que el Grupo Parroquial publica desde otras pantallas del CMS —noticias,

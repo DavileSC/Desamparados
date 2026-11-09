@@ -1,28 +1,14 @@
 import { Box } from '@mui/material'
 import Hueso from '../../../components/esqueleto/Hueso'
 import { CORMORANT } from './letraAlmanaque'
-import { FONDOS, MARCA } from '../../../theme/marca'
+import { CABECERA_SEMANA, GRANATE, GRIS, PAPEL, RAYA, SEMANA, SEMANA_LARGA } from './hojaDelAlmanaque'
 
 /*
- * La hoja del calendario sin el calendario: sus colores y su semana, y el
- * esqueleto. Aparte de `CalendarioDeCultos` porque la página de la Agenda lo
- * enseña también mientras llega su documento (`BloquesEsqueleto`), y el
- * calendario entero solo se descarga con el bloque.
+ * La hoja del calendario sin el calendario, el esqueleto. Aparte de
+ * `CalendarioDeCultos` porque la página de la Agenda lo enseña también
+ * mientras llega su documento (`BloquesEsqueleto`), y el calendario entero
+ * solo se descarga con el bloque.
  */
-
-export const PAPEL = FONDOS.almanaque
-/**
- * El granate del Grupo en la hoja: el principal de la marca, con su suelo de
- * contraste sobre este papel y sobre el rosa, que son más oscuros que el
- * blanco donde lo tiene `MARCA.principal`.
- */
-export const GRANATE = MARCA.principalAlmanaque
-export const RAYA = '#d9cfc1'
-export const GRIS = '#7a6c70'
-export const SEMANA = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom']
-export const SEMANA_LARGA = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
-/** La fila con los nombres de los días, que va dentro de lo medido. */
-export const CABECERA_SEMANA = 32
 
 /**
  * La hoja mientras llegan los actos: el mismo papel, los días de la semana y
