@@ -35,7 +35,7 @@ export const contrasenaNueva = z.string().superRefine((valor, ctx) => {
 /**
  * Contraseña EXISTENTE: solo el acceso. Aquí no se aplica la política a
  * propósito. Quien se registró antes de que subiera el mínimo tiene una
- * contraseña más corta que sigue siendo válida, y exigirle 12 caracteres en el
+ * contraseña más corta que sigue siendo válida, y exigirle el mínimo de hoy en el
  * formulario lo dejaría fuera de su propia cuenta sin explicación.
  */
 export const contrasenaExistente = z.string().min(1, 'Introduce tu contraseña')

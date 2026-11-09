@@ -2,15 +2,20 @@
  * Rechazo de contraseñas evidentes.
  *
  * El validador solo exigía entre 8 y 64 caracteres, así que `12345678` era
- * válida. La longitud protege más que obligar a meter símbolos raros —que la
- * gente resuelve siempre igual, con `Contrasena1!`—, de modo que aquí se sube
- * el mínimo y se descartan además los patrones que un atacante prueba primero.
+ * válida. Obligar a meter símbolos raros no ayuda —la gente lo resuelve
+ * siempre igual, con `Contrasena1!`—, así que aquí se descartan los patrones
+ * que un atacante prueba primero.
+ *
+ * El mínimo llegó a ser 12 y se bajó a 8 por decisión del proyecto
+ * (09-11-2026). Lo evidente lo siguen dejando fuera los patrones de abajo, y
+ * el acceso tiene además bloqueo por intentos fallidos y 2FA obligatorio para
+ * los cargos.
  *
  * No pretende sustituir a una lista de filtraciones tipo HaveIBeenPwned: cubre
  * lo que aparece en los primeros miles de intentos de un ataque por diccionario,
  * sin añadir dependencias ni llamadas de red al registro.
  */
-export const LONGITUD_MINIMA = 12;
+export const LONGITUD_MINIMA = 8;
 const LONGITUD_MAXIMA = 64;
 
 /** Contraseñas y raíces que aparecen en cabeza de cualquier diccionario. */

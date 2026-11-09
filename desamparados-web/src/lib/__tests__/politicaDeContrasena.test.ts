@@ -11,7 +11,7 @@ function motivo(resultado: { success: boolean; error?: { issues: { path: Propert
 
 describe('política de contraseñas en los formularios', () => {
   it('el mínimo que exige el formulario es el del backend, no otro', () => {
-    expect(LONGITUD_MINIMA).toBe(12)
+    expect(LONGITUD_MINIMA).toBe(8)
   })
 
   describe('contraseña nueva (registro y restablecimiento)', () => {
@@ -55,7 +55,7 @@ describe('política de contraseñas en los formularios', () => {
 
   describe('contraseña existente (acceso)', () => {
     it('NO aplica la política: una contraseña anterior al endurecimiento sigue valiendo', () => {
-      // Si el acceso exigiera 12 caracteres, quien se registró antes se quedaría
+      // Si el acceso exigiera el mínimo de hoy, quien se registró antes se quedaría
       // fuera de su propia cuenta sin poder hacer nada.
       const r = loginSchema.safeParse({ email: 'a@b.com', password: 'corta12' })
       expect(r.success).toBe(true)

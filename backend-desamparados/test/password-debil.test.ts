@@ -19,8 +19,14 @@ describe('rechazo de contraseñas débiles', () => {
   });
 
   test('rechaza por debajo de la longitud mínima', () => {
-    assert.match(motivoContrasenaDebil('Abc12345', 'el Grupo Parroquial') ?? '', /al menos 12/);
+    assert.match(motivoContrasenaDebil('Abc1234', 'el Grupo Parroquial') ?? '', /al menos 8/);
     assert.equal(esContrasenaAceptable('a'.repeat(LONGITUD_MINIMA - 1)), false);
+  });
+
+  test('con ocho caracteres sin patrón evidente basta', () => {
+    // Se rompe si el mínimo vuelve a subir sin que lo pida el Grupo.
+    assert.equal(LONGITUD_MINIMA, 8);
+    assert.equal(esContrasenaAceptable('k7Rm2xPq'), true);
   });
 
   test('rechaza el relleno con un solo carácter', () => {

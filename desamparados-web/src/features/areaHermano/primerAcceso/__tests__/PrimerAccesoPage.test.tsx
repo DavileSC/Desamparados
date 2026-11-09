@@ -52,7 +52,7 @@ describe('PrimerAccesoPage', () => {
     renderWithProviders(<PrimerAccesoPage />, { ruta: `/primer-acceso?token=${TOKEN}` })
 
     await screen.findByRole('heading', { name: 'Te damos la bienvenida, Antonio' })
-    expect(screen.getByText(/Al menos 12 caracteres/)).toBeInTheDocument()
+    expect(screen.getByText(/Al menos 8 caracteres/)).toBeInTheDocument()
   })
 
   it('sin enlace pero con la revisión a medias, lleva a la revisión', async () => {
