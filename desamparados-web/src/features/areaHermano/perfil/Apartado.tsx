@@ -97,7 +97,10 @@ export default function Apartado({ titulo, vista, formulario, editando, onEditar
     <TarjetaCristal component="section" aria-labelledby={idTitulo} sx={{
       display: 'flex', flexDirection: 'column', gap: 2,
       // En «Mi perfil», la rejilla elige columnas por el ancho de la tarjeta (`@container`).
-      ...(perfil ? { p: { xs: 2.25, sm: 3 }, pt: { xs: 2, sm: 2.5 }, containerType: 'inline-size' } : { p: { xs: 2.5, md: 3 } }),
+      ...(perfil ? {
+        p: { xs: 2.25, sm: 3 }, pt: { xs: 2, sm: 2.5, md: 'clamp(12px, 2.5vh, 20px)' }, pb: { md: 'clamp(14px, 3vh, 24px)' },
+        gap: { xs: 2, md: 'clamp(10px, 2vh, 16px)' }, containerType: 'inline-size',
+      } : { p: { xs: 2.5, md: 3 } }),
     }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
         <Box sx={{ minWidth: 0 }}>
@@ -167,7 +170,8 @@ export function Rejilla({ children, lista = false }: { children: ReactNode; list
       m: 0, display: 'grid', containerType: 'inline-size', gridAutoFlow: 'row dense',
       ...(perfil ? {
         gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '18px 16px',
-        '@container (min-width: 600px)': { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '20px 32px' },
+        // La separación entre filas, con el alto de la pantalla: en una baja, la ficha cabe sin desplazarse.
+        '@container (min-width: 600px)': { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 'clamp(12px, 2.5vh, 20px) 32px' },
         '@container (min-width: 820px)': { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' },
       } : {
         gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${lista ? 180 : 230}px), 1fr))`,

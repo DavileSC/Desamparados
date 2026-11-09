@@ -29,7 +29,8 @@ export default function Credencial({ ficha }: { ficha: ApiProfile }) {
     <Box sx={{
       position: 'relative', overflow: 'hidden', bgcolor: NEGRO, color: CREMA, borderRadius: 1,
       boxShadow: '0 12px 32px rgba(0,0,0,0.35)',
-      px: { xs: 2.25, sm: 3.5 }, pt: { xs: 2, sm: 2.5 }, pb: { xs: 2.5, sm: 2.75 },
+      // En PC, el relleno, el escudo y el número menguan con el alto de la pantalla: «Mi perfil» cabe sin desplazarse.
+      px: { xs: 2.25, sm: 3.5 }, pt: { xs: 2, sm: 2.5, md: 'clamp(12px, 2.5vh, 20px)' }, pb: { xs: 2.5, sm: 2.75, md: 'clamp(14px, 2.75vh, 22px)' },
       // En el móvil, el nombre no cabe entre el escudo y el número: baja a su fila.
       // Desde la tableta, los tres en una.
       display: 'grid', alignItems: 'center', columnGap: { xs: 2, sm: 3.25 }, rowGap: 1.5,
@@ -38,7 +39,7 @@ export default function Credencial({ ficha }: { ficha: ApiProfile }) {
       // La franja burdeos del pie, como en la papeleta.
       '&::after': { content: '""', position: 'absolute', left: 0, right: 0, bottom: 0, height: 4, bgcolor: BURDEOS },
     }}>
-      <Box component="img" src={site.imagenes.escudoDestacado} alt="" sx={{ gridArea: 'escudo', height: { xs: 52, sm: 70 }, width: 'auto', display: 'block' }} />
+      <Box component="img" src={site.imagenes.escudoDestacado} alt="" sx={{ gridArea: 'escudo', height: { xs: 52, sm: 70, md: 'clamp(52px, 8.75vh, 70px)' }, width: 'auto', display: 'block' }} />
 
       <Box sx={{ gridArea: 'texto', minWidth: 0 }}>
         {/* «Mi perfil» es el título de la pantalla, de antetítulo sobre el nombre. */}
@@ -55,7 +56,7 @@ export default function Credencial({ ficha }: { ficha: ApiProfile }) {
       <Box sx={{ gridArea: 'numero', justifySelf: 'end', textAlign: 'right', borderLeft: { sm: `1px solid ${FILETE}` }, pl: { sm: 3.25 } }}>
         <Typography sx={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: GRIS }}>Hermano n.º</Typography>
         {ficha.numeroHermano
-          ? <Typography sx={{ fontFamily: SERIFA, fontSize: { xs: 40, sm: 52 }, lineHeight: 1, color: ORO, fontVariantNumeric: 'tabular-nums' }}>{ficha.numeroHermano}</Typography>
+          ? <Typography sx={{ fontFamily: SERIFA, fontSize: { xs: 40, sm: 52, md: 'clamp(40px, 6.5vh, 52px)' }, lineHeight: 1, color: ORO, fontVariantNumeric: 'tabular-nums' }}>{ficha.numeroHermano}</Typography>
           : <Typography sx={{ fontFamily: SERIFA, fontSize: 18, mt: 0.5, color: GRIS }}>Pendiente</Typography>}
       </Box>
     </Box>

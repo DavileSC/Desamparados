@@ -260,6 +260,7 @@ describe('PerfilPage: lo que se arregló en la revisión de octubre', () => {
     expect(await screen.findByText('cuenta@ejemplo.test')).toBeInTheDocument()
     expect(screen.getByText('Correo con el que entras')).toBeInTheDocument()
     expect(screen.getByText('Correo de contacto')).toBeInTheDocument()
+    expect(screen.getByText('El correo con el que entras lo cambia Secretaría')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /editar contacto y domicilio/i }))
     expect(screen.getByRole('textbox', { name: /Correo de contacto/ })).toHaveValue('ana@ejemplo.test')
     expect(screen.getByText(/Para cambiarlo, habla con Secretaría/)).toBeInTheDocument()

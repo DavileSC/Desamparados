@@ -140,7 +140,7 @@ export default function PerfilPage() {
                   móvil, tres si son tres y de dos en dos si son cuatro: con tres
                   por fila, la cuarta se quedaba sola. */}
               <Box role="tablist" aria-label="Apartados de la ficha" sx={{
-                mt: 2, display: 'grid', gap: { xs: 0.75, sm: 0 },
+                mt: { xs: 2, md: 'clamp(8px, 2vh, 16px)' }, display: 'grid', gap: { xs: 0.75, sm: 0 },
                 gridTemplateColumns: { xs: `repeat(${pestanas.length === 3 ? 3 : 2}, minmax(0, 1fr))`, sm: `repeat(${pestanas.length}, minmax(0, 1fr))` },
                 borderBottom: { sm: '1px solid rgba(204, 196, 201, 0.16)' },
               }}>
@@ -182,7 +182,7 @@ export default function PerfilPage() {
               {/* `key`: al cambiar de ficha o de pestaña, el apartado empieza de cero
                   (antes, si había algo a medias, se ha preguntado). `tabIndex`: el
                   panel se alcanza con el tabulador, como pide el patrón de pestañas. */}
-              <Box key={`${ficha.id}-${abierta.clave}`} role="tabpanel" tabIndex={0} id={`${base}-panel`} aria-labelledby={`${base}-pestana-${abierta.clave}`} sx={{ mt: 2.25, minWidth: 0, '&:focus-visible': { outline: '2px solid', outlineColor: 'secondary.main', outlineOffset: 4 } }}>
+              <Box key={`${ficha.id}-${abierta.clave}`} role="tabpanel" tabIndex={0} id={`${base}-panel`} aria-labelledby={`${base}-pestana-${abierta.clave}`} sx={{ mt: { xs: 2.25, md: 'clamp(10px, 2.25vh, 18px)' }, minWidth: 0, '&:focus-visible': { outline: '2px solid', outlineColor: 'secondary.main', outlineOffset: 4 } }}>
                 <FormaDeApartados value="perfil">
                   {abierta.clave === 'personales' && <DatosPersonales ficha={ficha} onGuardada={guardada} onSucio={setSucio} />}
                   {abierta.clave === 'contacto' && <Contacto ficha={ficha} onGuardada={guardada} onSucio={setSucio} />}

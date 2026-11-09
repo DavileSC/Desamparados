@@ -312,7 +312,6 @@ export function Contacto({ ficha, onGuardada, revision, onSucio }: PropsApartado
   )
   const v = a.valores
   const localidad = [ficha.codigoPostal, ficha.poblacion].filter(Boolean).join(' ')
-  const notaDeLaCuenta = <Box component="span" sx={{ display: 'block', mt: 0.25, fontSize: 13, fontWeight: 400, color: 'text.secondary' }}>Para cambiarlo, habla con Secretaría.</Box>
 
   return (
     <Apartado
@@ -320,9 +319,12 @@ export function Contacto({ ficha, onGuardada, revision, onSucio }: PropsApartado
       editando={a.editando} onEditar={revision?.sinLapiz ? undefined : a.editar} onCancelar={a.cancelar} onGuardar={() => void a.guardar()}
       tituloOculto={revision?.tituloOculto} refFormulario={a.formulario}
       guardando={a.guardando} error={a.error} hecho={a.hecho}
+      // Bajo el título, como en «Vida de hermano»: debajo del correo alargaba
+      // toda la primera fila y la ficha no cabía sin desplazarse.
+      candado={deLaCuenta ? 'El correo con el que entras lo cambia Secretaría' : undefined}
       vista={
         <Rejilla lista>
-          {deLaCuenta && <Dato etiqueta="Correo con el que entras" valor={<>{correoDeLaCuenta}{notaDeLaCuenta}</>} completo />}
+          {deLaCuenta && <Dato etiqueta="Correo con el que entras" valor={correoDeLaCuenta} completo />}
           <Dato etiqueta="Correo de contacto" valor={ficha.email} />
           <Dato etiqueta="Segundo correo" valor={ficha.email2} />
           <Dato etiqueta="Teléfono móvil" valor={ficha.telefono} />

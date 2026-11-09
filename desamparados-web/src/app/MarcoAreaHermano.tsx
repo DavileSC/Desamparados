@@ -255,8 +255,11 @@ export default function MarcoAreaHermano() {
         sx={{
           '&:focus, & h1[tabindex="-1"]:focus': { outline: 'none' },
           flexGrow: 1,
+          // En PC, el margen de arriba y abajo con el alto de la pantalla, como el
+          // menú: en una baja, el aire es lo primero que sobra para que quepa.
           p: { xs: 3, md: 5 },
-          pt: { xs: 10, md: 5 },
+          pt: { xs: 10, md: 'clamp(16px, 5vh, 40px)' },
+          pb: { md: 'clamp(12px, calc(10vh - 40px), 40px)' },
           width: { md: `calc(100% - ${ANCHO_CAJON}px)` },
           backgroundColor: 'background.default',
         }}
