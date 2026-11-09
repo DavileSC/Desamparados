@@ -6,7 +6,8 @@ import MenuEscritorio from './barra/MenuEscritorio'
 import CajonMovil from './barra/CajonMovil'
 import IconoDelMenu from './barra/IconoDelMenu'
 import { useEnlacesDeRedes } from './barra/redes'
-import { DESKTOP_NAV_MIN, VELO_ARRIBA, VELO_SCROLL, compactMq, desktopMq, socialMq, tinta } from './barra/estilos'
+import { visuallyHidden } from '@mui/utils'
+import { DESKTOP_NAV_MIN, VELO_ARRIBA, VELO_SCROLL, compactMq, desktopMq, estrechoMq, tinta } from './barra/estilos'
 import { site } from '../config/site'
 import { BOTON } from './estiloDeBoton'
 import { useModulos } from '../hooks/useModulos'
@@ -152,15 +153,15 @@ export default function BarraDeNavegacion() {
             flexWrap: 'nowrap',
             alignItems: 'center',
             justifyContent: 'flex-start',
-            gap: { xs: 2, xl: 4 }, // separación logo → menú, reservando espacio para las acciones
+            // Separación logo → menú: con 8px el nombre y «Inicio» se leían pegados.
+            gap: 4,
             // Barra a todo el ancho: logo y menú pegados a la izquierda, acciones a la derecha
             width: '100%',
             minHeight: '72px !important',
-            px: { xs: '40px', xl: '48px' },
-            // Entre 1024 y 1199 el menú entero va al límite: ahí el escudo, los
-            // huecos y los márgenes se encogen para que "Contacto" no llegue a
-            // tocar el botón de acceso.
-            [compactMq]: { gap: 1, px: '20px' },
+            px: '40px',
+            // Los tramos y sus medidas, en barra/estilos.ts.
+            [compactMq]: { gap: 3, px: '20px' },
+            [estrechoMq]: { gap: 2 },
           }}
         >
           <Box
@@ -181,7 +182,9 @@ export default function BarraDeNavegacion() {
             }}
           >
             <Escudo alto={46} altoCompacto={32} />
-            {site.nombreCorto.toUpperCase()}
+            <Box component="span" sx={{ [estrechoMq]: visuallyHidden }}>
+              {site.nombreCorto.toUpperCase()}
+            </Box>
           </Box>
 
           {/* Los desplegables cuelgan por debajo de la barra: nada de `overflow: hidden` por el camino. */}
@@ -191,14 +194,14 @@ export default function BarraDeNavegacion() {
           <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, ml: 'auto', gap: 2, [compactMq]: { gap: 1 } }}>
             <Box
               sx={{
-                display: 'none',
+                display: enlacesDeRedes.length ? 'flex' : 'none',
                 alignItems: 'center',
                 gap: 0.5,
                 pr: 2,
                 borderRight: '1px solid rgba(204, 196, 201, 0.25)',
                 height: 24,
-                [socialMq]: { display: enlacesDeRedes.length ? 'flex' : 'none' },
-                [compactMq]: { display: 'none' },
+                // Iconos juntos y de 28: 40px menos con los cinco perfiles.
+                [compactMq]: { gap: 0, pr: 1.5, '& .MuiIconButton-root': { width: 28, height: 28 } },
               }}
             >
               {enlacesDeRedes.map((red) => (
