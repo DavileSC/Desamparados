@@ -55,7 +55,7 @@ describe('PublicacionesDestacadas', () => {
     expect(enlaces[0]).toHaveTextContent(ANUARIO.titulo)
   })
 
-  it('sin imagen pinta una portada tipográfica con el número del boletín; con imagen, la foto con cabecera de revista', async () => {
+  it('sin imagen pinta una portada tipográfica con el número del boletín; con imagen, la foto con la faja del número', async () => {
     // Se rompe si una publicación sin portada deja un hueco vacío, si se ignora la imagen
     // cuando la hay o si la foto tapa la cabecera y el número y deja de parecer un boletín.
     servir([BOLETIN])
@@ -69,24 +69,34 @@ describe('PublicacionesDestacadas', () => {
     renderWithProviders(<PublicacionesDestacadas />)
     const conFoto = await screen.findByTestId('portada-publicacion')
     expect(conFoto.querySelector('img')).toHaveAttribute('src', '/storage/portada.jpg')
-    expect(within(conFoto).getByText('Boletín')).toBeInTheDocument()
+    expect(within(conFoto).getByText('Boletín informativo')).toBeInTheDocument()
     expect(within(conFoto).getByText(site.tipo)).toBeInTheDocument()
     expect(conFoto).toHaveTextContent('n.º12')
   })
 
-  it('apila detrás del ejemplar las dos publicaciones anteriores, cada una con su cubierta', async () => {
-    // Se rompe si el abanico deja huecos cuando hay pocas publicaciones o si repite la destacada.
-    servir([BOLETIN, ANUARIO, DOSSIER])
+  it('cada anterior va en su fila con el tipo, la fecha y su tapa en pequeño', async () => {
+    // Se rompe si la fila pierde la miniatura (con foto o sin ella) o deja de decir qué es.
+    servir([BOLETIN, { ...ANUARIO, imagenUrl: '/storage/anuario.jpg' }, DOSSIER])
     const { unmount } = renderWithProviders(<PublicacionesDestacadas />)
-    const detras = await screen.findAllByTestId('ejemplar-anterior')
-    expect(detras).toHaveLength(2)
-    expect(detras[0]).toHaveTextContent(/anuario/i)
-    expect(detras[1]).toHaveTextContent(/dossier/i)
+    const otras = await screen.findByRole('list', { name: /otras publicaciones/i })
+    const [anuario, dossier] = within(otras).getAllByRole('link')
+    expect(anuario).toHaveTextContent('Anuario · jun 2026')
+    expect(anuario.querySelector('img')).toHaveAttribute('src', '/storage/anuario.jpg')
+    expect(dossier).toHaveTextContent('Dossier · abr 2026')
+    expect(dossier.querySelector('img')).toBeNull()
     unmount()
 
     servir([BOLETIN])
     renderWithProviders(<PublicacionesDestacadas />)
     await screen.findByTestId('portada-publicacion')
+    expect(screen.queryByRole('list', { name: /otras publicaciones/i })).toBeNull()
+  })
+
+  it('el libro va solo: las anteriores ya no se apilan detrás', async () => {
+    // Se rompe si vuelve el abanico o si el reflejo se cuenta como otra portada.
+    servir([BOLETIN, ANUARIO, DOSSIER])
+    renderWithProviders(<PublicacionesDestacadas />)
+    expect(await screen.findAllByTestId('portada-publicacion')).toHaveLength(1)
     expect(screen.queryAllByTestId('ejemplar-anterior')).toHaveLength(0)
   })
 

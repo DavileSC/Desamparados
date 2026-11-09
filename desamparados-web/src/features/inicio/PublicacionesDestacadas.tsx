@@ -17,7 +17,7 @@ import { GOLD, GRANATE, PAPEL, SERIF, TINTA, ceja } from './estilos'
 import { site } from '../../config/site'
 import { useModulos } from '../../hooks/useModulos'
 import { propsDeFoto } from '../../lib/fotoSubida'
-import { MARCA, componentes } from '../../theme/marca'
+import { MARCA, alfa } from '../../theme/marca'
 
 const CATEGORIAS: Record<Publicacion['categoria'], { nombre: string; corto: string }> = {
   boletin: { nombre: 'Boletín informativo', corto: 'boletín' },
@@ -26,13 +26,13 @@ const CATEGORIAS: Record<Publicacion['categoria'], { nombre: string; corto: stri
   historia: { nombre: 'Historia', corto: 'documento' },
 }
 
-// Un color fijo por tipo de publicación: la cubierta dice qué es antes de leerla.
-// `velo` es el fondo en «r, g, b», para el degradado que va sobre la foto.
-const CUBIERTAS: Record<Publicacion['categoria'], { fondo: string; velo: string; texto: string; cifra: string }> = {
-  boletin: { fondo: GRANATE, velo: componentes(MARCA.principal), texto: MARCA.sobrePrincipal, cifra: MARCA.sobrePrincipal },
-  anuario: { fondo: PAPEL, velo: '247, 243, 236', texto: '#242125', cifra: GRANATE },
-  dossier: { fondo: '#242125', velo: '36, 33, 37', texto: '#e3d8bf', cifra: GOLD },
-  historia: { fondo: PAPEL, velo: '247, 243, 236', texto: '#242125', cifra: GRANATE },
+// Un color fijo por tipo de publicación: la faja dice qué es antes de leerla.
+// `filete` es la raya que separa la faja de la foto.
+const CUBIERTAS: Record<Publicacion['categoria'], { fondo: string; texto: string; cifra: string; filete: string }> = {
+  boletin: { fondo: GRANATE, texto: MARCA.sobrePrincipal, cifra: MARCA.sobrePrincipal, filete: GOLD },
+  anuario: { fondo: PAPEL, texto: '#242125', cifra: GRANATE, filete: GRANATE },
+  dossier: { fondo: '#242125', texto: '#e3d8bf', cifra: GOLD, filete: GOLD },
+  historia: { fondo: PAPEL, texto: '#242125', cifra: GRANATE, filete: GRANATE },
 }
 
 const mes = (iso: string) => new Date(iso).toLocaleDateString('es-ES', { month: 'long' })
@@ -49,138 +49,180 @@ function cifra(publicacion: Publicacion) {
   return String(anio(publicacion.fecha))
 }
 
-const versal = { fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase' } as const
-
 // El antetítulo es el h2 de la sección: `.home-refined h2` (home.css) le pondría 40 px sin el !important.
 const cejaTitulo = { ...ceja, fontSize: '11px !important', fontFamily: 'inherit', lineHeight: 1.5 } as const
 
+const grupoDeLaCubierta = { display: 'block', fontSize: 8, letterSpacing: '0.34em', textTransform: 'uppercase' } as const
+
 /**
- * Tapa del ejemplar. Con la portada subida desde el CMS, cabecera de revista:
- * la foto a sangre y, encima, el nombre del tipo en grande, una línea con el
- * Grupo y la fecha, y el número abajo; el velo del color del tipo deja leerlos
- * y dice qué es. Sola, la foto parecía una foto enmarcada y no un boletín.
- * Sin portada, una cubierta tipográfica del color de su tipo.
+ * Tapa del ejemplar, «faja de color»: arriba el Grupo y el nombre; abajo una
+ * faja del color del tipo con el número y la fecha. Con portada subida desde
+ * el CMS, la foto va limpia, sin velo de color encima: solo una sombra arriba
+ * para leer el nombre. Sin portada, la parte de arriba es del color del tipo.
  */
-function Cubierta({ publicacion, pequena = false }: { publicacion: Publicacion; pequena?: boolean }) {
+function Cubierta({ publicacion }: { publicacion: Publicacion }) {
   const colores = CUBIERTAS[publicacion.categoria]
-  const texto = cifra(publicacion)
-  if (publicacion.imagen) {
-    const velo = (opacidad: number) => `rgba(${colores.velo}, ${opacidad})`
-    return (
-      <Box sx={{ position: 'relative', height: '100%', color: colores.texto }}>
-        <Box component="img" {...propsDeFoto(publicacion.imagen, '(min-width: 900px) 400px, 100vw')} alt="" sx={{ position: 'absolute', inset: 0, display: 'block', width: '100%', height: '100%', objectFit: 'cover' }} />
-        <Box sx={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, ${velo(0.88)} 0%, ${velo(0.4)} 22%, ${velo(0)} 38%, ${velo(0)} 70%, ${velo(0.75)} 100%)` }} />
-        <Box sx={{ position: 'relative', px: pequena ? 1.75 : 2, pt: 1.5 }}>
-          <Box
-            component="span"
-            sx={{ display: 'block', fontFamily: SERIF, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.02em', textTransform: 'uppercase', fontSize: pequena ? 40 : { xs: 34, md: 44 } }}
-          >
-            {CATEGORIAS[publicacion.categoria].nombre.split(' ')[0]}
-          </Box>
-          <Box
-            component="span"
-            sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, mt: 0.75, pt: 0.75, borderTop: '1px solid currentColor', fontSize: pequena ? 9 : { xs: 8, md: 9 }, letterSpacing: pequena ? '0.2em' : { xs: '0.15em', md: '0.2em' }, textTransform: 'uppercase', whiteSpace: 'nowrap' }}
-          >
-            <span>{site.tipo}</span>
-            <span>{mesCorto(publicacion.fecha)} · {anio(publicacion.fecha)}</span>
-          </Box>
-        </Box>
-        <Box
-          component="span"
-          sx={{ position: 'absolute', left: pequena ? 14 : 18, bottom: pequena ? 12 : 16, fontFamily: SERIF, fontWeight: 500, lineHeight: 1, color: colores.cifra, fontSize: pequena ? 28 : { xs: 36, md: 44 } }}
-        >
-          {publicacion.categoria === 'boletin' && <Box component="small" sx={{ fontSize: '0.4em', mr: 0.5, letterSpacing: '0.05em' }}>n.º</Box>}
-          {texto}
-        </Box>
-      </Box>
-    )
-  }
-  const larga = texto.length > 3
+  const nombre = CATEGORIAS[publicacion.categoria].nombre
+  const mesLargo = mes(publicacion.fecha)
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', p: pequena ? 2.25 : { xs: 2.5, md: 3 }, backgroundColor: colores.fondo, color: colores.texto }}>
-      <Box component="span" sx={{ ...versal, fontSize: pequena ? 9 : 11 }}>{CATEGORIAS[publicacion.categoria].nombre}</Box>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', fontFamily: SERIF }}>
+      {publicacion.imagen ? (
+        <Box sx={{ position: 'relative', flex: 1, overflow: 'hidden', color: '#fff' }}>
+          <Box component="img" {...propsDeFoto(publicacion.imagen, '(min-width: 900px) 300px, 240px')} alt="" sx={{ position: 'absolute', inset: 0, display: 'block', width: '100%', height: '100%', objectFit: 'cover' }} />
+          <Box sx={{ position: 'absolute', inset: '0 0 auto 0', height: '42%', background: 'linear-gradient(180deg, rgba(12, 11, 13, 0.72), rgba(12, 11, 13, 0))' }} />
+          <Box sx={{ position: 'relative', px: 2, pt: 1.75, textAlign: 'center' }}>
+            <Box component="span" sx={{ ...grupoDeLaCubierta, opacity: 0.85 }}>{site.tipo}</Box>
+            <Box component="span" sx={{ display: 'block', mt: 0.75, fontSize: { xs: 20, md: 24 }, fontWeight: 300, letterSpacing: '0.04em', lineHeight: 1.05 }}>{nombre}</Box>
+          </Box>
+        </Box>
+      ) : (
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1.25, px: 2, textAlign: 'center', backgroundColor: colores.fondo, color: colores.texto }}>
+          <Box component="span" sx={grupoDeLaCubierta}>{site.tipo}</Box>
+          <Box component="span" sx={{ display: 'block', width: 28, height: '1px', backgroundColor: colores.filete }} />
+          <Box component="span" sx={{ fontSize: { xs: 26, md: 32 }, fontWeight: 300, letterSpacing: '0.04em', lineHeight: 1.05 }}>{nombre}</Box>
+        </Box>
+      )}
       <Box
-        component="span"
-        sx={{ fontFamily: SERIF, lineHeight: 0.9, color: colores.cifra, fontSize: pequena ? 30 : larga ? { xs: 56, md: 64 } : { xs: 96, md: 112 } }}
+        sx={{
+          height: '26%',
+          flexShrink: 0,
+          boxSizing: 'border-box',
+          px: 2,
+          pb: 1.5,
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+          gap: 1,
+          borderTop: `2px solid ${colores.filete}`,
+          backgroundColor: colores.fondo,
+          color: colores.texto,
+        }}
       >
-        {texto}
+        <Box component="span" sx={{ fontSize: { xs: 40, md: 50 }, fontWeight: 200, lineHeight: 0.85, letterSpacing: '-0.02em', color: colores.cifra, whiteSpace: 'nowrap' }}>
+          {publicacion.categoria === 'boletin' && (
+            <Box component="small" sx={{ fontSize: { xs: 12, md: 14 }, fontWeight: 500, letterSpacing: '0.08em', mr: 0.75, verticalAlign: 'top', position: 'relative', top: 4 }}>n.º</Box>
+          )}
+          {cifra(publicacion)}
+        </Box>
+        <Box component="span" sx={{ fontSize: 9, letterSpacing: '0.24em', textTransform: 'uppercase', textAlign: 'right', lineHeight: 1.7 }}>
+          {mesLargo.charAt(0).toUpperCase() + mesLargo.slice(1)}<br />{anio(publicacion.fecha)}
+        </Box>
       </Box>
-      <Box component="span" sx={{ ...versal, fontSize: pequena ? 9 : 11 }}>{mes(publicacion.fecha)} · {anio(publicacion.fecha)}</Box>
     </Box>
   )
 }
 
 // Canto de las hojas: sombras escalonadas de un píxel que imitan el taco de papel.
-const CANTO = '1px 1px 0 #e6dfd2, 2px 2px 0 #cfc6b6, 3px 3px 0 #e6dfd2, 4px 4px 0 #cfc6b6, 5px 5px 0 #e6dfd2, 6px 6px 0 #c4baa8'
+const CANTO = '1px 1px 0 #e6dfd2, 2px 2px 0 #cfc6b6, 3px 3px 0 #e6dfd2, 4px 4px 0 #cfc6b6'
 const CURVA = 'cubic-bezier(.2, .7, .2, 1)'
-const INCLINACION = 'rotateY(-22deg) rotateX(4deg)'
+// En reposo, apenas girado: de frente del todo parecía una foto pegada.
+const REPOSO = 'rotateY(-9deg) rotateX(2deg)'
+const GIRO = `transform .8s ${CURVA}`
 
 const escena = {
   position: 'relative',
-  display: 'block',
-  height: { xs: 330, md: 480 },
-  perspective: '1800px',
-  '& .ejemplar': {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  height: { xs: 400, md: 520 },
+  perspective: '1400px',
+  // Luz de cera detrás del libro: lo separa del fondo sin marco ni tarjeta.
+  '& .halo': {
     position: 'absolute',
-    width: { xs: 208, md: 270 },
+    left: '50%',
+    top: '44%',
+    width: { xs: 380, md: 520 },
+    aspectRatio: '1',
+    transform: 'translate(-50%, -50%)',
+    background: `radial-gradient(circle, ${alfa(GOLD, 0.13)} 0%, ${alfa(GOLD, 0.05)} 35%, ${alfa(GOLD, 0)} 65%)`,
+    pointerEvents: 'none',
+  },
+  '& .libro': {
+    position: 'relative',
+    width: { xs: 220, md: 272 },
     aspectRatio: '3 / 4',
     transformStyle: 'preserve-3d',
-    transition: `transform .6s ${CURVA}`,
+    transform: REPOSO,
+    transition: GIRO,
   },
   '& .hojas': {
     position: 'absolute',
     inset: 0,
     background: 'linear-gradient(90deg, #d9d1c2, #f4efe6 8%, #f7f3ec)',
-    boxShadow: CANTO,
+    boxShadow: `${CANTO}, 0 50px 70px -36px rgba(0, 0, 0, 1)`,
   },
   '& .tapa': {
     position: 'absolute',
     inset: 0,
     overflow: 'hidden',
     transformOrigin: 'left center',
-    transition: `transform .7s ${CURVA}`,
-    // El pliegue del lomo, a la izquierda de la tapa.
-    '&::after': { content: '""', position: 'absolute', inset: 0, boxShadow: 'inset 7px 0 10px -6px rgba(0, 0, 0, 0.55)', pointerEvents: 'none' },
+    transition: GIRO,
+    boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.07)',
+    // El pliegue del lomo y el brillo de la luz, encima de la foto.
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      background: 'linear-gradient(90deg, rgba(0, 0, 0, 0.4) 0, rgba(0, 0, 0, 0) 12px), linear-gradient(115deg, rgba(255, 240, 200, 0.16) 0%, rgba(255, 240, 200, 0) 34%)',
+      pointerEvents: 'none',
+    },
   },
-  '& .ejemplar-1': { left: { xs: '50%', md: 110, lg: 150 }, ml: { xs: '-104px', md: 0 }, top: { xs: 20, md: 34 }, zIndex: 3, transform: `${INCLINACION} rotateZ(1deg)` },
-  // Detrás, en abanico, las dos anteriores. En móvil no caben: solo el ejemplar de delante.
-  '& .ejemplar-2': { display: { xs: 'none', md: 'block' }, left: { md: 36, lg: 56 }, top: 20, zIndex: 2, filter: 'brightness(.7)', transform: `${INCLINACION} rotateZ(-5deg)` },
-  '& .ejemplar-3': { display: { xs: 'none', md: 'block' }, left: -40, top: 10, zIndex: 1, filter: 'brightness(.5)', transform: `${INCLINACION} rotateZ(-10deg)` },
-  // Solo con ratón: la tapa se entreabre y asoma el interior.
+  // El reflejo es el mismo libro volteado bajo el de verdad: así también se abre.
+  // Lleva su propia perspectiva porque la máscara aplana lo que tiene dentro.
+  '& .reflejo': {
+    position: 'relative',
+    width: { xs: 220, md: 272 },
+    height: { xs: 80, md: 120 },
+    mt: '6px',
+    overflow: 'hidden',
+    perspective: '1400px',
+    opacity: 0.22,
+    maskImage: 'linear-gradient(180deg, #000 0%, transparent 80%)',
+    transform: REPOSO,
+    transition: GIRO,
+    '& .libro': { position: 'absolute', top: 0, left: 0, transformOrigin: 'top', transform: 'translateY(100%) scaleY(-1)', transition: 'none' },
+  },
+  // Solo con ratón: el libro se pone de frente y la tapa se abre.
   '@media (hover: hover)': {
-    '&:hover .ejemplar-1': { transform: `rotateY(-14deg) rotateX(3deg) translateY(-8px)` },
-    '&:hover .ejemplar-1 .tapa': { transform: 'rotateY(-58deg)' },
+    '&:hover > .libro, &:hover > .reflejo': { transform: 'none' },
+    '&:hover .tapa': { transform: 'rotateY(-58deg)' },
+  },
+  '@media (prefers-reduced-motion: reduce)': {
+    '& .libro, & .reflejo, & .tapa': { transition: 'none' },
   },
 } as const
 
 // Renglones del sumario que asoma al abrir la tapa: decorado, sin texto que leer.
 const renglones = {
   position: 'absolute',
-  inset: '30px 26px 26px 34px',
+  inset: '34px 28px 28px 38px',
   display: 'flex',
   flexDirection: 'column',
   gap: '12px',
   '& i': { display: 'block', height: 6, backgroundColor: 'rgba(12, 11, 13, 0.1)' },
   '& i:nth-of-type(3n)': { width: '70%' },
+  '& i:first-of-type': { height: 10, width: '55%', mb: '6px', backgroundColor: alfa(GRANATE, 0.55) },
 } as const
 
-/** El boletín como objeto: el último de frente y, detrás, los dos anteriores. */
-function Ejemplares({ destacada, anteriores }: { destacada: Publicacion; anteriores: Publicacion[] }) {
+function Libro({ publicacion, conTestId = false }: { publicacion: Publicacion; conTestId?: boolean }) {
+  return (
+    <Box className="libro">
+      <Box className="hojas">
+        <Box sx={renglones}>{Array.from({ length: 10 }, (_, i) => <i key={i} />)}</Box>
+      </Box>
+      <Box className="tapa" data-testid={conTestId ? 'portada-publicacion' : undefined}><Cubierta publicacion={publicacion} /></Box>
+    </Box>
+  )
+}
+
+/** El último número, solo, con la luz detrás y su reflejo en el suelo. */
+function Ejemplar({ destacada }: { destacada: Publicacion }) {
   const contenido = (
     <>
-      <Box sx={{ position: 'absolute', left: { xs: '15%', md: 40 }, right: { xs: '15%', md: 10 }, bottom: { xs: 6, md: 18 }, height: 40, background: 'radial-gradient(closest-side, rgba(0, 0, 0, 0.65), transparent)', filter: 'blur(4px)' }} />
-      {anteriores.map((publicacion, indice) => (
-        <Box key={publicacion.id} data-testid="ejemplar-anterior" className={`ejemplar ejemplar-${indice + 2}`}>
-          <Box className="hojas" />
-          <Box className="tapa"><Cubierta publicacion={publicacion} pequena /></Box>
-        </Box>
-      ))}
-      <Box className="ejemplar ejemplar-1">
-        <Box className="hojas">
-          <Box sx={renglones}>{Array.from({ length: 9 }, (_, i) => <i key={i} />)}</Box>
-        </Box>
-        <Box className="tapa" data-testid="portada-publicacion"><Cubierta publicacion={destacada} /></Box>
-      </Box>
+      <Box className="halo" />
+      <Libro publicacion={destacada} conTestId />
+      <Box className="reflejo"><Libro publicacion={destacada} /></Box>
     </>
   )
 
@@ -195,11 +237,45 @@ function Ejemplares({ destacada, anteriores }: { destacada: Publicacion; anterio
   )
 }
 
+/**
+ * La tapa en pequeño de las anteriores: la foto y la faja de su color. A este
+ * tamaño las letras no se leen; la faja basta para reconocer el tipo.
+ */
+function Miniatura({ publicacion }: { publicacion: Publicacion }) {
+  const colores = CUBIERTAS[publicacion.categoria]
+  return (
+    <Box
+      component="span"
+      aria-hidden="true"
+      sx={{ display: 'flex', flexDirection: 'column', width: 44, aspectRatio: '3 / 4', overflow: 'hidden', backgroundColor: colores.fondo, boxShadow: '0 6px 14px rgba(0, 0, 0, 0.5)' }}
+    >
+      <Box component="span" sx={{ position: 'relative', flex: 1 }}>
+        {publicacion.imagen && (
+          <Box component="img" {...propsDeFoto(publicacion.imagen, '44px')} alt="" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+        )}
+      </Box>
+      <Box component="span" sx={{ height: '26%', borderTop: `1px solid ${colores.filete}`, backgroundColor: colores.fondo }} />
+    </Box>
+  )
+}
+
 // El texto a la izquierda y el ejemplar a la derecha; en el móvil, el ejemplar
 // arriba. Los comparten el bloque y su esqueleto.
 const rejilla = { display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 380px', lg: '1fr 440px' }, gap: { xs: 4, md: 5, lg: 7 }, alignItems: 'center' } as const
 const columnaDelEjemplar = { position: 'relative', order: { xs: -1, md: 0 }, gridColumn: { md: 2 }, gridRow: { md: 1 }, width: '100%', maxWidth: 440, mx: { xs: 'auto', md: 0 } } as const
 const columnaDelTexto = { gridColumn: { md: 1 }, gridRow: { md: 1 } } as const
+
+// Las anteriores, una por fila y con su tapa en pequeño: ya no están detrás del
+// libro, y la tapa las reconoce antes de leer el título.
+const listaDeOtras = { listStyle: 'none', m: 0, mt: 4.5, p: 0, maxWidth: 540, borderBottom: '1px solid rgba(255, 255, 255, 0.12)' } as const
+const filaDeOtra = {
+  display: 'grid',
+  gridTemplateColumns: '44px minmax(0, 1fr) auto',
+  gap: 2.25,
+  alignItems: 'center',
+  py: 1.5,
+  borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+} as const
 
 const visualmenteOculto = {
   position: 'absolute', width: '1px', height: '1px', margin: '-1px', padding: 0, border: 0,
@@ -216,9 +292,11 @@ function PublicacionesEsqueleto() {
     <Box sx={rejilla}>
       <Box sx={columnaDelEjemplar}>
         <Box sx={escena}>
-          <Box className="ejemplar ejemplar-1">
+          <Box className="libro">
             <Hueso sx={{ position: 'absolute', inset: 0, borderRadius: 0 }} />
           </Box>
+          {/* El hueco del reflejo: sin él, el libro llegaría más abajo y saltaría al cargar. */}
+          <Box className="reflejo" sx={{ opacity: 0 }} />
         </Box>
       </Box>
       <Box sx={columnaDelTexto}>
@@ -229,11 +307,14 @@ function PublicacionesEsqueleto() {
           <Hueso sx={{ width: 200, height: 48, borderRadius: 0 }} />
           <Hueso sx={{ width: 236, height: 48, borderRadius: 0 }} />
         </Box>
-        <Box sx={{ mt: 5, maxWidth: 520, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: { xs: 0, sm: 3 } }}>
+        <Box sx={listaDeOtras}>
           {[0, 1].map((i) => (
-            <Box key={i} sx={{ py: 1.75, boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.14)' }}>
-              <Lineas anchos={['64px']} linea={16.5} grosor={8} />
-              <Box sx={{ mt: 0.75 }}><Lineas anchos={['80%']} linea={22.1} grosor={12} /></Box>
+            <Box key={i} sx={filaDeOtra}>
+              <Hueso sx={{ width: 44, aspectRatio: '3 / 4', borderRadius: 0 }} />
+              <Box>
+                <Lineas anchos={['120px']} linea={16.5} grosor={8} />
+                <Box sx={{ mt: 0.5 }}><Lineas anchos={['80%']} linea={22.1} grosor={12} /></Box>
+              </Box>
             </Box>
           ))}
         </Box>
@@ -300,12 +381,12 @@ export default function PublicacionesDestacadas() {
       <ContenedorDePagina sx={{ position: 'relative', pl: { md: 'max(64px, calc(128px - max(0px, (100vw - 1440px) / 2)))' } }}>
         {destacada ? (
           <Box sx={rejilla}>
-            {/* Los ejemplares son el objeto del bloque: crecen al posarse. En tableta
-                apaisada ya van al lado del texto: encima dejaban media pantalla vacía. */}
+            {/* El ejemplar es el objeto del bloque: crece al posarse. En tableta
+                apaisada ya va al lado del texto: encima dejaba media pantalla vacía. */}
             <Revela efecto="crecer" sx={columnaDelEjemplar}>
               {/* Sobre el ejemplar, que es lo que hace de portada aquí. */}
               {destacada.fijada && <CintaDestacada />}
-              <Ejemplares destacada={destacada} anteriores={otras} />
+              <Ejemplar destacada={destacada} />
             </Revela>
             <Box sx={columnaDelTexto}>
               <Revela orden={1}>
@@ -353,7 +434,7 @@ export default function PublicacionesDestacadas() {
                   <Box
                     component="ul"
                     aria-label="Otras publicaciones"
-                    sx={{ listStyle: 'none', m: 0, mt: 5, p: 0, maxWidth: 520, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: { xs: 0, sm: 3 } }}
+                    sx={listaDeOtras}
                   >
                     {otras.map(publicacion => (
                       <Box component="li" key={publicacion.id}>
@@ -363,21 +444,21 @@ export default function PublicacionesDestacadas() {
                           target="_blank"
                           rel="noopener noreferrer"
                           sx={{
-                            display: 'block',
-                            py: 1.75,
-                            boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.14)',
+                            ...filaDeOtra,
                             textDecoration: 'none',
-                            transition: 'box-shadow .25s ease',
-                            '&:hover': { boxShadow: `inset 0 1px 0 ${GOLD}` },
                             '&:hover .titulo': { color: GOLD },
                           }}
                         >
-                          <Box component="span" sx={{ display: 'block', fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#a79fa4' }}>
-                            {mesCorto(publicacion.fecha)} {anio(publicacion.fecha)}
+                          <Miniatura publicacion={publicacion} />
+                          <Box component="span">
+                            <Box component="span" sx={{ display: 'block', fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#a79fa4' }}>
+                              {CATEGORIAS[publicacion.categoria].nombre.split(' ')[0]} · {mesCorto(publicacion.fecha)} {anio(publicacion.fecha)}
+                            </Box>
+                            <Box component="span" className="titulo" sx={{ display: 'block', mt: 0.5, fontFamily: SERIF, fontSize: 17, lineHeight: 1.3, color: '#f2f0ed', transition: 'color .25s ease' }}>
+                              {publicacion.titulo}
+                            </Box>
                           </Box>
-                          <Box component="span" className="titulo" sx={{ display: 'block', mt: 0.75, fontFamily: SERIF, fontSize: 17, lineHeight: 1.3, color: '#f2f0ed', transition: 'color .25s ease' }}>
-                            {publicacion.titulo}
-                          </Box>
+                          <Box component="span" aria-hidden="true" sx={{ fontSize: 11, letterSpacing: '0.14em', color: '#a79fa4' }}>PDF</Box>
                           <span className="home-visually-hidden"> (PDF, nueva pestaña)</span>
                         </Box>
                       </Box>
