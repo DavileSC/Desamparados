@@ -26,10 +26,9 @@ import {
 import db from '../../config/db.js';
 import { HttpError, NotFoundError } from '../../utils/error.handle.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../auditoria.service.js';
-import { exigirSinReemision, idCategoriaIngresos } from '../recibos/comunes.js';
+import { conceptoDeReemision, exigirSinReemision, idCategoriaIngresos } from '../recibos/comunes.js';
 import { idsReemitidos } from '../../domain/reemisiones.js';
 import { estadosCobrablesCon, MENSAJE_REMESADO_EN_MANO } from '../../domain/recibo-estados.js';
-import { claveConcepto } from '../../domain/datos-procesion.js';
 import { diaMadrid, inicioDiaMadrid } from '../../domain/contabilidad.js';
 import { alturaHombroEnCm, CINGULO_SEGUN_TUNICA, normalizarNumeroPrenda, propuestaDeRopa, type Origen } from '../../domain/mesa-procesion.js';
 import {
@@ -156,16 +155,6 @@ export const pendienteDe = (
   { cobro: salida.cobro, importeCuota: Number(salida.importeCuota) },
 );
 
-/** Un concepto de reemisión libre para ese hermano y año: «Cuota 2025 (reemisión)», «… (reemisión 2)». */
-async function conceptoDeReemision(tx: Tx, hermanoId: number, year: number, concepto: string) {
-  const usados = new Set((await tx.recibo.findMany({ where: { hermanoId, year }, select: { concepto: true } })).map((r) => claveConcepto(r.concepto)));
-  const base = `${concepto.replace(/\s*\(reemisión(?: \d+)?\)$/u, '')} (reemisión)`;
-  if (!usados.has(claveConcepto(base))) return base;
-  for (let n = 2; ; n += 1) {
-    const candidato = base.replace(/\)$/, ` ${n})`);
-    if (!usados.has(claveConcepto(candidato))) return candidato;
-  }
-}
 
 export class ZonasService {
   // =================================================================

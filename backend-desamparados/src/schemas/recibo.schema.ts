@@ -68,6 +68,31 @@ export const marcarPagadoSchema = type({
     }
 });
 
+// Cobrar varios recibos de una vez, en la ventana «Registrar cobro». En mano:
+// lo remesado lo cobra el banco y se confirma desde su remesa. `fecha`, el día
+// en que entró el dinero si no es hoy (no posterior a hoy: lo mira el
+// servicio). La nota, sin HTML: se lee en la ficha del recibo.
+export const cobrarVariosSchema = type({
+    body: {
+        ids: type("(number.integer > 0)[]").narrow((ids) => ids.length >= 1 && ids.length <= 200)
+            .describe("entre 1 y 200 recibos"),
+        metodoPago: type("'EFECTIVO' | 'BIZUM' | 'TRANSFERENCIA' | 'TARJETA'"),
+        "fecha?": type('string').narrow((valor) => esDiaValido(valor)).describe('una fecha AAAA-MM-DD que exista'),
+        "nota?": type("string <= 300").matching(/^[^<>]*$/).describe("una nota de hasta 300 caracteres, sin < ni >"),
+    }
+});
+
+// Dar por perdida una papeleta devuelta: el motivo, si se quiere, sin HTML.
+export const darPorPerdidaSchema = type({
+    params: { id: type("string").matching(/^[1-9]\d{0,9}$/) },
+    body: { "motivo?": type("string <= 300").matching(/^[^<>]*$/).describe("un motivo de hasta 300 caracteres, sin < ni >") },
+});
+
+// El resumen de la entrada de Tesorería: el ejercicio, o el de este año.
+export const panelQuerySchema = type({
+    query: { "year?": type("string").matching(/^\d{4}$/).describe("un año de cuatro cifras") }
+});
+
 // Consultas de los listados. Sin esquema, `req.query` llegaba crudo y un
 // parámetro repetido (`?estado=a&estado=b`) llega en Express 5 como lista: el
 // controlador lo trataba como texto. Declarado aquí, una lista es un 400 con su
@@ -79,6 +104,7 @@ const filtrosRecibosQuery = {
     "tipo?": type("'PAPELETA_SITIO' | 'CUOTA_HERMANO' | 'DONATIVO' | 'OTRO'"),
     "q?": type("string <= 100").describe("un texto de búsqueda de hasta 100 caracteres"),
     "recibo?": type("string").matching(/^[1-9]\d{0,9}$/).describe("el número de un recibo"),
+    "hermano?": type("string").matching(/^[1-9]\d{0,9}$/).describe("el identificador de un hermano"),
 };
 
 export const adminRecibosQuerySchema = type({

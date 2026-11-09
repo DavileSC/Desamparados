@@ -104,6 +104,27 @@ export class ReciboController {
     });
   });
 
+  static cobrarVarios = manejar('Error cobrando los recibos', async (req, res) => {
+    const { cobrados, total } = await ReciboService.cobrarVarios(req.body, AuditoriaService.metaFromReq(req));
+    const importe = total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    res.status(200).json({
+      message: cobrados === 1 ? `Cobrado: ${importe} €.` : `Cobrados ${cobrados} recibos: ${importe} €.`,
+      cobrados, total,
+    });
+  });
+
+  static panel = manejar('Error obteniendo el resumen de Tesorería', async (req, res) => {
+    res.status(200).json(await ReciboService.panel(typeof req.query.year === 'string' ? Number(req.query.year) : undefined));
+  });
+
+  static darPorPerdida = manejar('Error dando la papeleta por perdida', async (req, res) => {
+    res.status(200).json(await ReciboService.darPorPerdida(Number(req.params.id), req.body?.motivo, AuditoriaService.metaFromReq(req)));
+  });
+
+  static historial = manejar('Error obteniendo el historial del recibo', async (req, res) => {
+    res.status(200).json(await ReciboService.historial(Number(req.params.id)));
+  });
+
   static updateDetalles = manejar('Error actualizando recibo', async (req, res) => {
     const id = Number(req.params.id);
     const reciboActualizado = await ReciboService.adminUpdateDetalles(id, req.body, AuditoriaService.metaFromReq(req));

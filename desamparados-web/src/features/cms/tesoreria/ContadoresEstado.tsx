@@ -41,19 +41,26 @@ export default function ContadoresEstado({ resumen, elegido, onElegir }: Props) 
         fondo: tono.fondo,
         cuenta: dato?.cuenta ?? null,
         // Exentos y anulados no suman en ningún total: enseñar su importe invitaría a sumarlo.
-        pie: estado.cuenta === 'nada' ? 'no cuentan' : dato ? euros(dato.total) : '',
+        pie: estado.cuenta === 'nada' ? 'no cuentan'
+          : clave === 'DEVUELTO' && resumen?.devueltosPorResolver && dato && resumen.devueltosPorResolver.cuenta !== dato.cuenta
+            ? `${resumen.devueltosPorResolver.cuenta} por resolver`
+            : dato ? euros(dato.total) : '',
       }
     }),
   ]
 
   return (
-    <Box role="group" aria-label="Recibos por estado" sx={{ containerType: 'inline-size', mb: 2.5 }}>
+    <Box role="group" aria-label="Recibos por estado" sx={{ containerType: 'inline-size', mb: 2 }}>
       <Box
         sx={{
-          display: 'flex', gap: 1.25, overflowX: 'auto', scrollSnapType: 'x proximity', pb: 0.5,
+          display: 'flex', gap: 0.5, overflowX: 'auto', scrollSnapType: 'x proximity',
+          borderBottom: 1, borderColor: 'divider',
           // Sin barra: el contador cortado en el borde ya dice que la fila sigue.
           scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' },
-          [`@container (min-width: ${ANCHO_EN_FILA}px)`]: { display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', overflowX: 'visible', pb: 0 },
+          // En una fila, como pestañas: los cinco que suman, anchos; los que no cuentan, más estrechos.
+          [`@container (min-width: ${ANCHO_EN_FILA}px)`]: {
+            display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr)) repeat(3, minmax(0, 0.75fr))', overflowX: 'visible',
+          },
         }}
       >
         {contadores.map((c) => {
@@ -64,25 +71,23 @@ export default function ContadoresEstado({ resumen, elegido, onElegir }: Props) 
               onClick={() => onElegir(c.clave)}
               aria-pressed={activo}
               sx={{
-                flex: '0 0 140px', scrollSnapAlign: 'start',
-                display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0.75,
-                p: 1.75, borderRadius: 3, textAlign: 'left',
-                border: 1, borderColor: activo ? c.color : 'divider',
-                backgroundColor: activo ? c.fondo : 'background.paper',
-                transition: 'background-color 120ms, border-color 120ms',
+                flex: '0 0 132px', scrollSnapAlign: 'start', minWidth: 0,
+                display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0.25,
+                px: 1.5, pt: 1, pb: 1.25, textAlign: 'left', borderRadius: '6px 6px 0 0',
+                boxShadow: activo ? `inset 0 -2px 0 ${c.color}` : 'none',
+                backgroundColor: activo ? c.fondo : 'transparent',
+                transition: 'background-color 120ms',
                 '&:hover': { backgroundColor: c.fondo },
-                '&.Mui-focusVisible': { outline: '2px solid', outlineColor: c.color, outlineOffset: 2 },
+                '&.Mui-focusVisible': { outline: '2px solid', outlineColor: c.color, outlineOffset: -2 },
               }}
             >
-              <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.875, fontSize: 13, fontWeight: 600, color: c.color }}>
+              <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.875, fontSize: 13, fontWeight: 600, color: c.color, whiteSpace: 'nowrap' }}>
                 <Box component="span" aria-hidden="true" sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: c.color }} />
                 {c.etiqueta}
               </Box>
-              <Typography component="span" sx={{ fontFamily: (theme) => theme.typography.h1.fontFamily, fontSize: 28, lineHeight: 1, color: 'text.primary' }}>
+              <Typography component="span" sx={{ fontSize: 15, fontWeight: 500, color: 'text.primary', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
                 {c.cuenta ?? '–'}
-              </Typography>
-              <Typography component="span" sx={{ fontSize: 12.5, color: 'text.secondary', fontVariantNumeric: 'tabular-nums', minHeight: '1.25em' }}>
-                {c.pie}
+                <Box component="span" sx={{ fontWeight: 400, color: 'text.secondary', fontSize: 13 }}>{c.pie ? ` · ${c.pie}` : ''}</Box>
               </Typography>
             </ButtonBase>
           )

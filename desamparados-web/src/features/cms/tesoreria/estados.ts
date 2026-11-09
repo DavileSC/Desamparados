@@ -107,3 +107,6 @@ export function tonoDeEstado(estado: AdminReceiptStatus): Tono {
 
 /** En el orden de los contadores: primero lo que hay que hacer. */
 export const ORDEN_ESTADOS: AdminReceiptStatus[] = ['PENDIENTE', 'REMESADO', 'DEVUELTO', 'PAGADO', 'REEMBOLSADO', 'EXENTO', 'ANULADO']
+
+/** Una papeleta que el banco devolvió y nadie ha resuelto: la mesa la cobra, o el Hermano Mayor la da por perdida. */
+export const papeletaPorResolver = (r: Pick<AdminReceipt, 'estado' | 'reemitido' | 'tipo'>) => r.estado === 'DEVUELTO' && !r.reemitido && r.tipo === 'PAPELETA_SITIO'

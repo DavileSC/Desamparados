@@ -54,8 +54,8 @@ interface DatosDeRecibo {
 export const esAnioCompleto = (year: string | undefined): year is string => Boolean(year && /^\d{4}$/.test(year))
 
 /** Búsqueda (hermano, número o concepto), filtros y orden del listado de recibos. Vacío = sin filtrar. */
-/** `recibo`: uno concreto por su número, al llegar desde Contabilidad. */
-export type FiltrosRecibos = { q?: string; estado?: AdminReceiptStatus | ''; tipo?: ReceiptType | ''; orden?: string; recibo?: string }
+/** `recibo`: uno concreto por su número, al llegar desde Contabilidad. `hermano`: los de un hermano, por su id. */
+export type FiltrosRecibos = { q?: string; estado?: AdminReceiptStatus | ''; tipo?: ReceiptType | ''; orden?: string; recibo?: string; hermano?: string }
 
 export function recibosDelCms(year: string | undefined, pagina: { pagina: number; porPagina: number }, filtros: FiltrosRecibos = {}) {
   // Un año a medio escribir («20») sería un 400: se pide sin filtro de año.
@@ -63,7 +63,11 @@ export function recibosDelCms(year: string | undefined, pagina: { pagina: number
 }
 
 /** Recibos y euros de cada estado, con la búsqueda, el año y el tipo del listado pero sin su estado. */
-export type ResumenRecibos = { estados: Record<AdminReceiptStatus, { cuenta: number; total: number }> }
+export type ResumenRecibos = {
+  estados: Record<AdminReceiptStatus, { cuenta: number; total: number }>
+  /** Los devueltos que aún piden algo (sin reemitir ni dar por perdidos). Opcional: un backend anterior no lo manda. */
+  devueltosPorResolver?: { cuenta: number; total: number }
+}
 
 export function resumenDeRecibos(year: string | undefined, filtros: Pick<FiltrosRecibos, 'q' | 'tipo' | 'recibo'> = {}) {
   return llamarApi<ResumenRecibos>(`/recibos/admin/resumen?${new URLSearchParams(Object.entries({ ...filtros, year: esAnioCompleto(year) ? year : undefined })
@@ -73,6 +77,73 @@ export function resumenDeRecibos(year: string | undefined, filtros: Pick<Filtros
 export function generarCuotas(payload: { year: number; importe: number; concepto: string }) {
   return llamarApi<{ message: string; omitidos?: number }>('/recibos/admin/generar', { method: 'POST', json: payload })
 }
+
+/** Las formas de cobrar en mano: lo domiciliado lo cobra el banco, con su remesa. */
+export type MetodoEnMano = Exclude<PaymentMethod, 'DOMICILIACION'>
+
+/**
+ * Cobra varios recibos de una vez: todos o ninguno. `fecha` (AAAA-MM-DD), el
+ * día en que entró el dinero si no es hoy; `nota`, lo que convenga recordar
+ * (se lee en la ficha del recibo).
+ */
+export function cobrarRecibos(payload: { ids: number[]; metodoPago: MetodoEnMano; fecha?: string; nota?: string }) {
+  return llamarApi<{ message: string; cobrados: number; total: number }>('/recibos/admin/cobrar', { method: 'POST', json: payload })
+}
+
+/** Un cobro reciente, para la entrada de Tesorería. */
+export interface CobroReciente {
+  id: number
+  year: number
+  concepto: string
+  importe: number
+  fechaPago: string
+  metodoPago: PaymentMethod | null
+  hermano: ReceiptBrother
+}
+
+/** La entrada de Tesorería: cómo va el ejercicio y lo que toca hacer. */
+export interface PanelTesoreria {
+  year: number
+  estados: ResumenRecibos['estados']
+  /** Lo que se pidió cobrar ese año (sin exentos, anulados ni reembolsados). */
+  emitido: { cuenta: number; total: number }
+  /** Lo que se debe, por año, de ese y los anteriores (por cobrar y devuelto sin reemitir). */
+  antiguedad: { year: number; cuenta: number; total: number }[]
+  /** Cómo se cobró lo de ese año, de más a menos. */
+  porMetodo: { metodo: PaymentMethod | null; cuenta: number; total: number }[]
+  ultimosCobros: CobroReciente[]
+  tareas: {
+    /** Remesas que el banco ya cargó y que siguen sin darse por cobradas. */
+    remesasCargadas: { id: number; fechaCobro: string; enElBanco: number; total: number }[]
+    porCobrar: { recibos: number; hermanos: number; total: number }
+    impagos: { hermanos: number; total: number }
+  }
+}
+
+export const panelTesoreria = (year: string) => llamarApi<PanelTesoreria>(`/recibos/admin/panel?${new URLSearchParams({ year }).toString()}`)
+
+/**
+ * Da por perdida una papeleta devuelta que no se va a cobrar. Solo el Hermano
+ * Mayor (y Administración): queda cerrada con una nota de quién lo decidió.
+ */
+export const darPorPerdida = (id: number, motivo?: string) =>
+  llamarApi<{ message: string; reemisionId: number }>(`/recibos/admin/${id}/perdida`, { method: 'POST', json: motivo ? { motivo } : {} })
+
+/** Una línea del historial de un recibo, de la auditoría. */
+export interface LineaHistorial {
+  id: number
+  /** RECIBO_COBRAR, RECIBO_ESTADO… */
+  accion: string
+  fecha: string
+  quien: string | null
+  /** El estado en que lo dejó, si lo cambió. */
+  estado: AdminReceiptStatus | null
+  metodoPago: PaymentMethod | null
+  nota: string | null
+}
+
+export const historialRecibo = (id: number) =>
+  llamarApi<{ observaciones: string | null; historial: LineaHistorial[] }>(`/recibos/admin/${id}/historial`)
 
 export function cobrarRecibo(id: number, metodoPago: PaymentMethod) {
   return llamarApi<{ message: string; reciboId: number; estado: AdminReceiptStatus }>(`/recibos/admin/${id}/pagar`, { method: 'POST', json: { metodoPago } })

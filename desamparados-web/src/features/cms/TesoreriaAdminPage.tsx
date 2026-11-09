@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Autocomplete, Button, CircularProgress, MenuItem, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
+import { Alert, Autocomplete, Box, Button, CircularProgress, Menu, MenuItem, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
 import { useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../altas/auth/store'
 import { useModulos } from '../../hooks/useModulos'
+import { useAhora } from '../../hooks/useAhora'
 import ListaImpagos from './impagos/ListaImpagos'
 import { Helmet } from 'react-helmet-async'
-import AddIcon from '@mui/icons-material/Add'
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
+import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined'
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import {
   crearRecibo,
+  darPorPerdida,
   esAnioCompleto,
   generarCuotas,
   recibosDelCms,
@@ -21,7 +24,6 @@ import {
   type DatosDevolucion,
   type EmittableReceiptType,
   type FiltrosRecibos,
-  type PaymentMethod,
   type ReceiptBrother,
   type ReceiptType,
   type ResumenRecibos,
@@ -35,15 +37,17 @@ import BarraListado, { type Opcion } from './listados/BarraListado'
 import { useFiltrosUrl } from './listados/useFiltrosUrl'
 import ContadoresEstado from './tesoreria/ContadoresEstado'
 import ListaRecibos from './tesoreria/ListaRecibos'
-import { NOMBRE_METODO } from './mesa/formato'
 import DialogoEstado, { type CambioEstado } from './tesoreria/DialogoEstado'
 import IncidenciasDePago from './tesoreria/IncidenciasDePago'
 import Modelo182 from './tesoreria/Modelo182'
 import Remesas from './tesoreria/Remesas'
+import PanelResumen, { type Destino } from './tesoreria/PanelResumen'
+import VentanaCobro from './tesoreria/VentanaCobro'
+import FichaRecibo from './tesoreria/FichaRecibo'
+import { euros } from './contabilidad/formato'
 import { site } from '../../config/site'
 import { ErrorDeApi } from '../../lib/api/cliente'
 
-const methods: PaymentMethod[] = ['EFECTIVO', 'BIZUM', 'TRANSFERENCIA', 'TARJETA', 'DOMICILIACION']
 const statusLabels: Record<AdminReceipt['estado'], string> = { PENDIENTE: 'Pendiente', REMESADO: 'Remesado', PAGADO: 'Pagado', ANULADO: 'Anulado', DEVUELTO: 'Devuelto', EXENTO: 'Exento', REEMBOLSADO: 'Reembolsado' }
 const typeLabels: Record<EmittableReceiptType, string> = { CUOTA_HERMANO: 'Cuota de hermano', DONATIVO: 'Donativo', OTRO: 'Otro' }
 // Para filtrar sí entra la papeleta, aunque no se emita desde aquí.
@@ -87,12 +91,26 @@ interface NuevoRecibo { hermano: ReceiptBrother | null; year: string; concepto: 
 
 export default function TesoreriaAdminPage() {
   const { activo } = useModulos()
+  const anioActual = useAhora().getFullYear()
   const conRemesas = activo('remesas')
   const conModelo182 = activo('modelo-182')
   const [params, setParams] = useSearchParams()
   const vistaPedida = params.get('vista')
-  // Una vista de un módulo apagado (un enlace guardado) cae en Recibos.
-  const vista = vistaPedida === 'impagos' || (vistaPedida === 'remesas' && conRemesas) || (vistaPedida === 'modelo182' && conModelo182) ? vistaPedida : 'recibos'
+  // Sin vista, el resumen, que es la entrada; pero un enlace con filtros de
+  // recibos (desde Contabilidad, o uno guardado) va a los recibos. Una vista de
+  // un módulo apagado cae en Recibos.
+  const conFiltros = ['q', 'estado', 'tipo', 'orden', 'recibo', 'anio', 'pagina'].some((clave) => params.has(clave))
+  const vista = vistaPedida === 'resumen' || vistaPedida === 'impagos' || vistaPedida === 'recibos' || (vistaPedida === 'remesas' && conRemesas) || (vistaPedida === 'modelo182' && conModelo182)
+    ? vistaPedida
+    : vistaPedida === null && !conFiltros ? 'resumen' : 'recibos'
+  // Llegado a los recibos por los filtros, la vista se escribe en la dirección:
+  // si no, al quitar el último filtro (cambiar de año vuelve a la página 1 y
+  // borra «pagina») se saltaría al resumen sin haberlo pedido.
+  useEffect(() => {
+    if (vista === 'recibos' && vistaPedida === null) {
+      setParams((anteriores) => { const siguientes = new URLSearchParams(anteriores); siguientes.set('vista', 'recibos'); return siguientes }, { replace: true })
+    }
+  }, [vista, vistaPedida, setParams])
   // La baja es de Secretaría: aquí solo la dan quienes también gestionan el censo.
   const role = useAuthStore((state) => state.cms?.role ?? 'USER')
   const puedeDarDeBaja = role === 'ADMIN' || role === 'HERMANO_MAYOR'
@@ -114,7 +132,15 @@ export default function TesoreriaAdminPage() {
   const [busqueda, setBusqueda] = useState('')
   const [candidatos, setCandidatos] = useState<ReceiptBrother[]>([])
   const [buscando, setBuscando] = useState(false)
-  const [payment, setPayment] = useState<PaymentMethod>('EFECTIVO')
+  // Los elegidos para cobrar a la vez, con sus datos: siguen elegidos al pasar de página.
+  const [elegidos, setElegidos] = useState<Map<number, AdminReceipt>>(new Map())
+  const [ficha, setFicha] = useState<AdminReceipt | null>(null)
+  const [cobro, setCobro] = useState<{ abierto: boolean; recibos: AdminReceipt[] }>({ abierto: false, recibos: [] })
+  const [menuMas, setMenuMas] = useState<HTMLElement | null>(null)
+  // Dar por perdida una papeleta devuelta: lo decide el Hermano Mayor.
+  const [perdida, setPerdida] = useState<AdminReceipt | null>(null)
+  const [motivoPerdida, setMotivoPerdida] = useState('')
+  const [errorPerdida, setErrorPerdida] = useState<string | null>(null)
   const [cambio, setCambio] = useState<CambioEstado | null>(null)
   // `delDia`: el servidor rechazó el día de la devolución (de mañana, o de antes
   // del cobro); se enseña junto a ese campo, que es lo que hay que cambiar.
@@ -222,17 +248,50 @@ export default function TesoreriaAdminPage() {
     await verAnio(nuevo.year)
   }
 
-  const pay = async (receipt: AdminReceipt) => {
-    setWorking(true); setError(null); setNotice(null)
-    // Un remesado lo cobra el banco: se da por cobrado por domiciliación, no
-    // con el método de la mesa (que por defecto es efectivo).
-    const metodo: PaymentMethod = receipt.estado === 'REMESADO' ? 'DOMICILIACION' : payment
-    try { const resultado = await cobrarRecibo(receipt.id, metodo); setNotice(resultado.message); await cargar() }
+  // Cobrar abre «Registrar cobro», donde se elige cómo se paga y qué día.
+  const abrirCobro = (recibos: AdminReceipt[]) => { setFicha(null); setCobro({ abierto: true, recibos }) }
+  const cobrado = async (mensaje: string) => {
+    setCobro({ abierto: false, recibos: [] }); setElegidos(new Map()); setNotice(mensaje); setError(null)
+    await cargar().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se han podido cargar los recibos.'))
+  }
+  // Un remesado lo cobra el banco: se confirma por domiciliación, sin ventana.
+  const confirmar = async (receipt: AdminReceipt) => {
+    setWorking(true); setError(null); setNotice(null); setFicha(null)
+    try { const resultado = await cobrarRecibo(receipt.id, 'DOMICILIACION'); setNotice(resultado.message); await cargar() }
     catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido cobrar el recibo.') }
     finally { setWorking(false) }
   }
+  const elegir = (recibos: AdminReceipt[], si: boolean) => setElegidos((antes) => {
+    const nuevos = new Map(antes)
+    for (const r of recibos) { if (si) nuevos.set(r.id, r); else nuevos.delete(r.id) }
+    return nuevos
+  })
+  const totalElegido = [...elegidos.values()].reduce((s, r) => s + Number(r.importe), 0)
 
-  const abrirCambio = (recibo: AdminReceipt, destino: AdminReceiptStatus) => { setErrorCambio(null); setCambio({ recibo, destino }) }
+  const cambiarVista = (valor: string, estado?: AdminReceiptStatus) => setParams((anteriores) => {
+    const siguientes = new URLSearchParams(anteriores)
+    // «resumen» va escrito: sin él, los filtros de los recibos que siguen en la
+    // dirección (el estado elegido en una cifra) llevarían otra vez a los recibos.
+    siguientes.set('vista', valor)
+    if (estado) { siguientes.set('estado', estado); siguientes.delete('pagina') }
+    return siguientes
+  })
+  const ir = (destino: Destino) => cambiarVista(destino.vista, destino.vista === 'recibos' ? destino.estado : undefined)
+
+  const abrirPerdida = (recibo: AdminReceipt) => { setFicha(null); setMotivoPerdida(''); setErrorPerdida(null); setPerdida(recibo) }
+  const confirmarPerdida = async () => {
+    if (!perdida) return
+    setWorking(true); setErrorPerdida(null); setNotice(null)
+    try {
+      const r = await darPorPerdida(perdida.id, motivoPerdida.trim() || undefined)
+      setPerdida(null); setNotice(r.message)
+      await cargar()
+    } catch (err: unknown) {
+      setErrorPerdida(err instanceof Error ? err.message : 'No se ha podido dar por perdida.')
+    } finally { setWorking(false) }
+  }
+
+  const abrirCambio = (recibo: AdminReceipt, destino: AdminReceiptStatus) => { setFicha(null); setErrorCambio(null); setCambio({ recibo, destino }) }
   const cambiarEstado = async (devolucion: DatosDevolucion) => {
     if (!cambio) return
     setWorking(true); setErrorCambio(null); setNotice(null)
@@ -249,34 +308,39 @@ export default function TesoreriaAdminPage() {
     } finally { setWorking(false) }
   }
 
+  // El resumen es de un ejercicio: con «todos los años» en los recibos, el de hoy.
+  const anioDelResumen = esAnioCompleto(year) ? year : String(anioActual)
   const cuotasValidas = Boolean(cuotas.year) && Number(cuotas.importe) > 0 && Boolean(cuotas.concepto)
   const importeNuevo = leerImporte(nuevo.importe)
   const nuevoValido = nuevo.hermano !== null && esAnioCompleto(nuevo.year) && nuevo.concepto.trim() !== '' && importeNuevo > 0 && nuevo.tipo !== ''
 
   return <>
     <Helmet><title>{`Tesorería | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
+    {/* Lo que más se hace, a la vista: cobrar. Generar las cuotas, una vez al año, en «Más». */}
     <CabeceraSeccion titulo="Tesorería">
+      <Button onClick={(e) => setMenuMas(e.currentTarget)} endIcon={<KeyboardArrowDownIcon />} aria-haspopup="menu" aria-expanded={menuMas !== null}>Más</Button>
+      <Menu anchorEl={menuMas} open={menuMas !== null} onClose={() => setMenuMas(null)}>
+        <MenuItem onClick={() => { setMenuMas(null); abrirCuotas() }}>Generar cuotas</MenuItem>
+      </Menu>
       <Button variant="outlined" startIcon={<ReceiptLongIcon />} onClick={() => abrirNuevo()}>Nuevo recibo</Button>
-      <Button variant="contained" startIcon={<AddIcon />} onClick={abrirCuotas}>Generar cuotas</Button>
+      <Button variant="contained" startIcon={<PaymentsOutlinedIcon />} onClick={() => abrirCobro([])}>Registrar cobro</Button>
     </CabeceraSeccion>
     <IncidenciasDePago />
-    <Tabs
-      value={vista}
-      onChange={(_, valor) => setParams((anteriores) => {
-        const siguientes = new URLSearchParams(anteriores)
-        if (valor === 'impagos' || valor === 'remesas' || valor === 'modelo182') siguientes.set('vista', valor)
-        else siguientes.delete('vista')
-        return siguientes
-      })}
-      sx={{ mb: 3 }}
-    >
+    <Tabs value={vista} onChange={(_, valor: string) => cambiarVista(valor)} variant="scrollable" allowScrollButtonsMobile sx={{ mb: 3 }}>
+      <Tab value="resumen" label="Resumen" />
       <Tab value="recibos" label="Recibos" />
-      <Tab value="impagos" label="Impagos" />
       {conRemesas && <Tab value="remesas" label="Remesas" />}
+      <Tab value="impagos" label="Impagos" />
       {conModelo182 && <Tab value="modelo182" label="Modelo 182" />}
     </Tabs>
-    {vista === 'impagos' ? <ListaImpagos puedeDarDeBaja={puedeDarDeBaja} /> : vista === 'remesas' ? <Remesas /> : vista === 'modelo182' ? <Modelo182 puedeCambiar={role === 'ADMIN' || role === 'TESORERIA'} /> : <>
-    {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}{notice && <Alert severity="success" sx={{ mb: 3 }}>{notice}</Alert>}
+    {notice && vista !== 'recibos' && <Alert severity="success" sx={{ mb: 3 }} onClose={() => setNotice(null)}>{notice}</Alert>}
+    {vista === 'resumen' ? <>
+      <TextField select size="small" label="Ejercicio" value={anioDelResumen} onChange={(e) => cambiarAnio(e.target.value)} sx={{ mb: 2.5, minWidth: 160 }}>
+        {Array.from({ length: 7 }, (_, i) => String(anioActual + 1 - i)).map((anio) => <MenuItem key={anio} value={anio}>{anio}</MenuItem>)}
+      </TextField>
+      <PanelResumen key={notice ?? ''} year={anioDelResumen} conRemesas={conRemesas} conModelo182={conModelo182} onIr={ir} />
+    </> : vista === 'impagos' ? <ListaImpagos puedeDarDeBaja={puedeDarDeBaja} /> : vista === 'remesas' ? <Remesas /> : vista === 'modelo182' ? <Modelo182 puedeCambiar={role === 'ADMIN' || role === 'TESORERIA'} /> : <>
+    {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}{notice && <Alert severity="success" sx={{ mb: 3 }} onClose={() => setNotice(null)}>{notice}</Alert>}
     <VentanaFormulario
       abierto={generando}
       titulo="Generar cuotas"
@@ -340,11 +404,6 @@ export default function TesoreriaAdminPage() {
     </VentanaFormulario>
     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2, alignItems: { sm: 'center' } }}>
       <Typography variant="h4" sx={{ flexGrow: 1 }}>{esAnioCompleto(year) ? `Recibos del año ${year}` : 'Recibos de todos los años'}</Typography>
-      {/* No es un filtro: es con qué se cobra al pulsar «Cobrar», y así lo dice. */}
-      <TextField size="small" select label="Al pulsar «Cobrar», cobrar en" value={payment} onChange={(event) => setPayment(event.target.value as PaymentMethod)} sx={{ minWidth: { sm: 230 } }}
-        helperText="Los remesados se cobran siempre por domiciliación.">
-        {methods.map((method) => <MenuItem key={method} value={method}>{NOMBRE_METODO[method] ?? method}</MenuItem>)}
-      </TextField>
     </Stack>
     <BarraListado
       valores={filtros}
@@ -378,9 +437,47 @@ export default function TesoreriaAdminPage() {
     <ContadoresEstado resumen={resumen} elegido={filtros.estado as AdminReceiptStatus | ''} onElegir={(estado) => cambiarFiltros({ estado })} />
     {loading ? <CircularProgress aria-label="Cargando recibos" /> : receipts.length === 0
       ? <Alert severity="info">{filtros.q || filtros.estado || filtros.tipo ? 'No hay recibos con esta búsqueda o estos filtros.' : filtros.recibo ? `No existe el recibo #${filtros.recibo}.` : esAnioCompleto(year) ? 'No hay recibos para este año.' : 'No hay recibos.'}</Alert>
-      : <ListaRecibos recibos={receipts} verAnio={!esAnioCompleto(year)} ocupado={working} onCobrar={pay} onConfirmar={pay} onReemitir={abrirReemision} onCambiarEstado={abrirCambio} />}
+      : <>
+        {elegidos.size > 0 && (
+          <Box role="region" aria-label="Recibos elegidos" sx={{ position: 'sticky', top: 8, zIndex: 2, mb: 1.5, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.5, px: 2, py: 1.25, borderRadius: 2, bgcolor: 'background.paper', border: 1, borderColor: 'secondary.main', boxShadow: 6 }}>
+            <Typography sx={{ fontWeight: 600, fontSize: 14.5 }}>
+              {elegidos.size === 1 ? '1 recibo elegido' : `${elegidos.size} recibos elegidos`} · {euros(totalElegido)}
+            </Typography>
+            <Box sx={{ flex: 1 }} />
+            <Button onClick={() => setElegidos(new Map())}>Quitar la selección</Button>
+            <Button variant="contained" startIcon={<PaymentsOutlinedIcon />} disabled={working} onClick={() => abrirCobro([...elegidos.values()])}>
+              Registrar cobro
+            </Button>
+          </Box>
+        )}
+        <ListaRecibos recibos={receipts} verAnio={!esAnioCompleto(year)} ocupado={working} onCobrar={(r) => abrirCobro([r])} onConfirmar={(r) => void confirmar(r)} onReemitir={abrirReemision} onCambiarEstado={abrirCambio}
+          elegidos={new Set(elegidos.keys())} onElegir={elegir} onAbrir={setFicha} onDarPorPerdida={puedeDarDeBaja ? abrirPerdida : undefined} />
+      </>}
     <DialogoEstado cambio={cambio} guardando={working} error={errorCambio?.delDia ? null : errorCambio?.texto ?? null} errorDelDia={errorCambio?.delDia ? errorCambio.texto : null} onConfirmar={(devolucion) => void cambiarEstado(devolucion)} onCancelar={() => setCambio(null)} />
     {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="recibos" />}
     </>}
+    <FichaRecibo recibo={ficha} ocupado={working} onCerrar={() => setFicha(null)} onCobrar={abrirCobro} onConfirmar={(r) => void confirmar(r)}
+      onReemitir={(r) => { setFicha(null); abrirReemision(r) }} onCambiarEstado={abrirCambio} onDarPorPerdida={puedeDarDeBaja ? abrirPerdida : undefined} />
+    <VentanaFormulario
+      abierto={perdida !== null}
+      titulo="Darla por perdida"
+      textoGuardar="Darla por perdida"
+      sucio={Boolean(motivoPerdida.trim())}
+      guardando={working}
+      puedeGuardar
+      error={errorPerdida}
+      onGuardar={confirmarPerdida}
+      onCerrar={() => setPerdida(null)}
+    >
+      {perdida && (
+        <Typography variant="body2" color="text.secondary">
+          {perdida.concepto} de {perdida.hermano.nombre} {perdida.hermano.apellidos}, {euros(Number(perdida.importe))}. El banco la devolvió y no se va a cobrar:
+          deja de pedirse y queda anotado que lo decidió el Hermano Mayor. En Contabilidad no cambia nada, porque el ingreso ya se anuló al devolverse. No se puede deshacer.
+        </Typography>
+      )}
+      <TextField label="Motivo (opcional)" value={motivoPerdida} onChange={(e) => setMotivoPerdida(e.target.value.replace(/[<>]/g, ''))}
+        placeholder="Por ejemplo, se dio de baja" slotProps={{ htmlInput: { maxLength: 300 } }} fullWidth />
+    </VentanaFormulario>
+    <VentanaCobro abierto={cobro.abierto} recibos={cobro.recibos} onCerrar={() => setCobro({ abierto: false, recibos: [] })} onCobrado={(mensaje) => void cobrado(mensaje)} />
   </>
 }

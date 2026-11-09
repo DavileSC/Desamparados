@@ -74,7 +74,7 @@ describe('tareasDelDia', () => {
 
   it('los asuntos con pantalla apuntan a la suya', () => {
     const porClave = Object.fromEntries(tareasDelDia(PANEL).map((t) => [t.clave, t.accion?.href]))
-    expect(porClave['recibos-devueltos']).toBe('/cms/tesoreria')
+    expect(porClave['recibos-devueltos']).toBe('/cms/tesoreria?vista=recibos&estado=DEVUELTO')
     expect(porClave['noticias-borrador']).toBe('/cms/noticias')
     expect(porClave['hermanos-sin-numero']).toBe('/cms/hermanos')
   })
@@ -115,5 +115,23 @@ describe('repartirTareas', () => {
     const { tuyas, deLaJunta } = repartirTareas(tareasDelDia(PANEL), undefined)
     expect(tuyas).toHaveLength(0)
     expect(deLaJunta).toHaveLength(4)
+  })
+
+  it('las papeletas devueltas van aparte y sin urgencia: se cobran en la mesa, no las reemite Tesorería', () => {
+    // Se rompe si las papeletas vuelven a contar como urgentes: Tesorería no
+    // puede hacer nada con ellas y el aviso no se quitaría nunca.
+    const conPapeletas = { ...PANEL, dinero: { ...PANEL.dinero, devueltosPendientes: { total: 10, importe: 330 }, papeletasDevueltas: { total: 8, importe: 240 } } }
+    const tareas = tareasDelDia(conPapeletas)
+    const cuotas = tareas.find((t) => t.clave === 'recibos-devueltos')!
+    const papeletas = tareas.find((t) => t.clave === 'papeletas-devueltas')!
+    expect(cuotas.titulo).toBe('2 recibos devueltos sin reemitir')
+    expect(cuotas.prioridad).toBe('urgente')
+    expect(papeletas.titulo).toBe('8 papeletas devueltas por el banco')
+    expect(papeletas.prioridad).toBe('pendiente')
+    expect(papeletas.accion?.href).toBe('/cms/tesoreria?vista=recibos&estado=DEVUELTO&tipo=PAPELETA_SITIO')
+
+    // Solo papeletas: ni rastro del aviso urgente.
+    const soloPapeletas = { ...PANEL, dinero: { ...PANEL.dinero, devueltosPendientes: { total: 8, importe: 240 }, papeletasDevueltas: { total: 8, importe: 240 } } }
+    expect(tareasDelDia(soloPapeletas).some((t) => t.clave === 'recibos-devueltos')).toBe(false)
   })
 })

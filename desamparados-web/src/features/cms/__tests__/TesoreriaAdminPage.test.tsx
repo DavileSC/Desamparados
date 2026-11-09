@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import TesoreriaAdminPage from '../TesoreriaAdminPage'
+import { useAuthStore } from '../../altas/auth/store'
 
 function responder(total: number) {
   // mockImplementation, no mockResolvedValue: esta pantalla llama a fetch más
@@ -35,6 +36,8 @@ function servidor(recibos: unknown[] = []) {
     if (ruta.includes('/recibos/admin/hermanos')) return json([{ id: 5, nombre: 'Ana', apellidos: 'Pérez Ruiz', numeroHermano: 12 }])
     if (init?.method === 'POST' && /\/recibos\/admin$/.test(ruta)) return json({ message: 'Recibo «Cuota anual (reemisión)» emitido.', reciboId: 90, estado: 'PENDIENTE' }, 201)
     if (init?.method === 'POST' && ruta.endsWith('/pagar')) return json({ message: 'Recibo cobrado correctamente.', reciboId: 1, estado: 'PAGADO' })
+    if (init?.method === 'POST' && ruta.endsWith('/recibos/admin/cobrar')) return json({ message: 'Cobrado: 25,00 €.', cobrados: 1, total: 25 })
+    if (init?.method === 'POST' && ruta.endsWith('/perdida')) return json({ message: 'Papeleta dada por perdida: ya no se pide.', reemisionId: 99 })
     if (init?.method === 'PUT') return json({ message: 'Recibo actualizado. La comisión del banco queda apuntada.', papeletaAnulada: false })
     return json({ data: recibos, meta: { total: recibos.length, page: 1, limit: 20, totalPages: 1 } })
   })
@@ -49,25 +52,30 @@ const llamadas = (simulado: ReturnType<typeof vi.fn>, filtro: (ruta: string, ini
 
 afterEach(() => { vi.unstubAllGlobals() })
 
+/** El listado de recibos: sin vista, la página abre en el resumen. */
+const EN_RECIBOS = { ruta: '/cms/tesoreria?vista=recibos' }
+
 describe('TesoreriaAdminPage', () => {
   it('dice cuántos recibos hay en total, no cuántos se ven', async () => {
     // 1.167 recibos y una pantalla que enseñaba 200 sin decirlo.
     vi.stubGlobal('fetch', responder(1167))
-    renderWithProviders(<TesoreriaAdminPage />)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
     expect(await screen.findByText(/de 1167/i)).toBeInTheDocument()
   })
 
   it('al entrar se ven los recibos; generar cuotas va en una ventana con el año que se está viendo', async () => {
     const user = userEvent.setup({ delay: null })
     vi.stubGlobal('fetch', responder(3))
-    renderWithProviders(<TesoreriaAdminPage />)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
 
     expect(await screen.findByText(/3 resultados/i)).toBeInTheDocument()
     expect(screen.queryByLabelText(/importe/i)).not.toBeInTheDocument()
 
     await user.clear(screen.getByLabelText(/año/i))
     await user.type(screen.getByLabelText(/año/i), '2025')
-    await user.click(screen.getByRole('button', { name: /generar cuotas/i }))
+    // Generar las cuotas, una vez al año, va en «Más»: a la vista, cobrar.
+    await user.click(screen.getByRole('button', { name: /^más$/i }))
+    await user.click(screen.getByRole('menuitem', { name: /generar cuotas/i }))
 
     const ventana = screen.getByRole('dialog', { name: /generar cuotas/i })
     expect(within(ventana).getByLabelText(/año/i)).toHaveValue(2025)
@@ -94,7 +102,7 @@ describe('TesoreriaAdminPage', () => {
     const user = userEvent.setup({ delay: null })
     const fetchSimulado = responder(3)
     vi.stubGlobal('fetch', fetchSimulado)
-    renderWithProviders(<TesoreriaAdminPage />)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
     await screen.findByText(/3 resultados/i)
 
     await user.clear(screen.getByLabelText(/año/i))
@@ -113,7 +121,7 @@ describe('TesoreriaAdminPage', () => {
     const user = userEvent.setup({ delay: null })
     const simulado = servidor()
     vi.stubGlobal('fetch', simulado)
-    renderWithProviders(<TesoreriaAdminPage />)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
 
     await user.click(await screen.findByRole('button', { name: /nuevo recibo/i }))
     const ventana = screen.getByRole('dialog', { name: /nuevo recibo/i })
@@ -146,7 +154,7 @@ describe('TesoreriaAdminPage', () => {
   it('un importe negativo o con tres decimales no deja emitir y dice por qué', async () => {
     const user = userEvent.setup({ delay: null })
     vi.stubGlobal('fetch', servidor())
-    renderWithProviders(<TesoreriaAdminPage />)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
 
     await user.click(await screen.findByRole('button', { name: /nuevo recibo/i }))
     const ventana = screen.getByRole('dialog', { name: /nuevo recibo/i })
@@ -158,11 +166,11 @@ describe('TesoreriaAdminPage', () => {
     expect(within(ventana).getByRole('button', { name: /emitir recibo/i })).toBeDisabled()
   })
 
-  it('cada estado tiene su botón: «Cobrar» el pendiente y «Confirmar» el remesado, que va por domiciliación', async () => {
+  it('«Cobrar» abre la ventana de cobro, donde se elige cómo se paga; «Confirmar» un remesado va por domiciliación', async () => {
     const user = userEvent.setup({ delay: null })
     const simulado = servidor([recibo(1, 'REMESADO', 'Cuota remesada'), recibo(2, 'PAGADO', 'Cuota pagada'), recibo(3, 'PENDIENTE', 'Cuota pendiente')])
     vi.stubGlobal('fetch', simulado)
-    renderWithProviders(<TesoreriaAdminPage />)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
 
     expect(await screen.findByRole('button', { name: /confirmar el cobro de cuota remesada/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /cobrar cuota pendiente/i })).toBeInTheDocument()
@@ -173,13 +181,69 @@ describe('TesoreriaAdminPage', () => {
     const [url, init] = llamadas(simulado, (ruta) => ruta.endsWith('/pagar'))[0]
     expect(String(url)).toContain('/recibos/admin/1/pagar')
     expect(JSON.parse(String((init as RequestInit).body))).toEqual({ metodoPago: 'DOMICILIACION' })
+
+    // El pendiente se cobra en la ventana: con Bizum, hoy y sin nota.
+    await user.click(screen.getByRole('button', { name: /cobrar cuota pendiente/i }))
+    const ventana = await screen.findByRole('dialog', { name: /registrar cobro/i })
+    expect(within(ventana).getByRole('checkbox', { name: /cuota pendiente/i })).toBeChecked()
+    await user.click(within(ventana).getByRole('button', { name: 'Bizum' }))
+    await user.click(within(ventana).getByRole('button', { name: /registrar el cobro · 25,00/i }))
+    await waitFor(() => expect(llamadas(simulado, (ruta) => ruta.endsWith('/recibos/admin/cobrar'))).toHaveLength(1))
+    const [, cobro] = llamadas(simulado, (ruta) => ruta.endsWith('/recibos/admin/cobrar'))[0]
+    expect(JSON.parse(String((cobro as RequestInit).body))).toEqual({ ids: [3], metodoPago: 'BIZUM' })
+    expect(await screen.findByText('Cobrado: 25,00 €.')).toBeInTheDocument()
+  })
+
+  it('se eligen varios pendientes y se cobran de una vez; lo que no está pendiente no se puede elegir', async () => {
+    const user = userEvent.setup({ delay: null })
+    const simulado = servidor([recibo(1, 'PENDIENTE', 'Cuota anual'), recibo(2, 'PENDIENTE', 'Papeleta de sitio'), recibo(4, 'PAGADO', 'Donativo')])
+    vi.stubGlobal('fetch', simulado)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
+
+    await user.click(await screen.findByRole('checkbox', { name: /elegir los 2 pendientes de esta página/i }))
+    expect(screen.queryByRole('checkbox', { name: /elegir donativo/i })).not.toBeInTheDocument()
+    const barra = screen.getByRole('region', { name: /recibos elegidos/i })
+    expect(barra).toHaveTextContent('2 recibos elegidos · 50,00')
+
+    await user.click(within(barra).getByRole('button', { name: /registrar cobro/i }))
+    const ventana = await screen.findByRole('dialog', { name: /registrar cobro/i })
+    await user.type(within(ventana).getByLabelText(/nota/i), 'En la mesa')
+    await user.click(within(ventana).getByRole('button', { name: /registrar 2 cobros · 50,00/i }))
+    await waitFor(() => expect(llamadas(simulado, (ruta) => ruta.endsWith('/recibos/admin/cobrar'))).toHaveLength(1))
+    const [, cobro] = llamadas(simulado, (ruta) => ruta.endsWith('/recibos/admin/cobrar'))[0]
+    expect(JSON.parse(String((cobro as RequestInit).body))).toEqual({ ids: [1, 2], metodoPago: 'EFECTIVO', nota: 'En la mesa' })
+    // Cobrados, la selección se vacía.
+    await waitFor(() => expect(screen.queryByRole('region', { name: /recibos elegidos/i })).not.toBeInTheDocument())
+  })
+
+  it('sin vista, abre en el resumen; un enlace con filtros (desde Contabilidad) va a los recibos', async () => {
+    const panel = {
+      year: 2026, emitido: { cuenta: 10, total: 360 },
+      estados: { PENDIENTE: { cuenta: 2, total: 72 }, REMESADO: { cuenta: 0, total: 0 }, PAGADO: { cuenta: 8, total: 288 }, DEVUELTO: { cuenta: 0, total: 0 }, EXENTO: { cuenta: 0, total: 0 }, ANULADO: { cuenta: 0, total: 0 }, REEMBOLSADO: { cuenta: 0, total: 0 } },
+      antiguedad: [{ year: 2026, cuenta: 2, total: 72 }], porMetodo: [{ metodo: 'EFECTIVO', cuenta: 8, total: 288 }], ultimosCobros: [],
+      tareas: { remesasCargadas: [], porCobrar: { recibos: 2, hermanos: 2, total: 72 }, impagos: { hermanos: 0, total: 0 } },
+    }
+    const user = userEvent.setup({ delay: null })
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => String(url).includes('/panel')
+      ? json(panel)
+      : json({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } })))
+    renderWithProviders(<TesoreriaAdminPage />, { ruta: '/cms/tesoreria' })
+
+    expect(await screen.findByText('2 hermanos tienen recibos pendientes de 2026')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Resumen' })).toHaveAttribute('aria-selected', 'true')
+
+    // Una cifra lleva a sus recibos, y la pestaña Resumen vuelve aunque el estado siga en la dirección.
+    await user.click(screen.getByRole('button', { name: /^pendiente: 72,00/i }))
+    expect(await screen.findByRole('tab', { name: 'Recibos' })).toHaveAttribute('aria-selected', 'true')
+    await user.click(screen.getByRole('tab', { name: 'Resumen' }))
+    expect(await screen.findByRole('tab', { name: 'Resumen' })).toHaveAttribute('aria-selected', 'true')
   })
 
   it('busca por hermano o concepto y filtra por estado, volviendo a la primera página', async () => {
     const user = userEvent.setup({ delay: null })
     const simulado = servidor()
     vi.stubGlobal('fetch', simulado)
-    renderWithProviders(<TesoreriaAdminPage />, { ruta: '/cms/tesoreria?pagina=3' })
+    renderWithProviders(<TesoreriaAdminPage />, { ruta: '/cms/tesoreria?vista=recibos&pagina=3' })
 
     await user.type(await screen.findByRole('textbox', { name: /buscar recibos/i }), 'pérez')
     await waitFor(() => expect(ultimaAlListado(simulado)).toContain('q=p%C3%A9rez'))
@@ -215,7 +279,7 @@ describe('TesoreriaAdminPage', () => {
     const user = userEvent.setup({ delay: null })
     const simulado = servidor()
     vi.stubGlobal('fetch', simulado)
-    renderWithProviders(<TesoreriaAdminPage />)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
     await screen.findByText(`Recibos del año ${new Date().getFullYear()}`)
 
     await user.clear(screen.getByLabelText(/año/i))
@@ -229,7 +293,7 @@ describe('TesoreriaAdminPage', () => {
     vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => String(url).includes('/resumen')
       ? json(resumen)
       : json({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } })))
-    renderWithProviders(<TesoreriaAdminPage />)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
 
     const pendientes = await screen.findByRole('button', { name: /^pendientes/i })
     await waitFor(() => expect(pendientes).toHaveTextContent('120'))
@@ -244,7 +308,7 @@ describe('TesoreriaAdminPage', () => {
     const devuelto = { ...recibo(7, 'DEVUELTO', 'Cuota anual 2026'), importe: '36.00', tipo: 'CUOTA_HERMANO' }
     const papeleta = { ...recibo(8, 'DEVUELTO', 'Papeleta de sitio 2026'), tipo: 'PAPELETA_SITIO' }
     vi.stubGlobal('fetch', servidor([devuelto, papeleta]))
-    renderWithProviders(<TesoreriaAdminPage />)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
 
     await user.click(await screen.findByRole('button', { name: /reemitir cuota anual 2026/i }))
     const ventana = screen.getByRole('dialog', { name: /nuevo recibo/i })
@@ -254,7 +318,7 @@ describe('TesoreriaAdminPage', () => {
     expect(within(ventana).getByRole('button', { name: /emitir recibo/i })).toBeEnabled()
 
     expect(screen.queryByRole('button', { name: /reemitir papeleta/i })).not.toBeInTheDocument()
-    expect(screen.getByText(/se reemite en la mesa de reparto/i)).toBeInTheDocument()
+    expect(screen.getByText(/se cobra en la mesa cuando vuelva el hermano/i)).toBeInTheDocument()
   })
 
   // Sin el enlace, un donativo reemitido no tapaba a su devuelto (seguía
@@ -267,7 +331,7 @@ describe('TesoreriaAdminPage', () => {
     const simulado = vi.fn().mockImplementation((url: string, init?: RequestInit) =>
       init?.method === 'POST' && /\/recibos\/admin$/.test(String(url)) ? respuesta() : base(url, init))
     vi.stubGlobal('fetch', simulado)
-    renderWithProviders(<TesoreriaAdminPage />)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
 
     await user.click(await screen.findByRole('button', { name: /reemitir donativo de la salida/i }))
     const ventana = screen.getByRole('dialog', { name: /nuevo recibo/i })
@@ -291,7 +355,7 @@ describe('TesoreriaAdminPage', () => {
     const user = userEvent.setup({ delay: null })
     const simulado = servidor([recibo(7, 'REMESADO', 'Cuota anual')])
     vi.stubGlobal('fetch', simulado)
-    renderWithProviders(<TesoreriaAdminPage />)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
 
     await user.click(await screen.findByRole('button', { name: 'Más acciones de Cuota anual de Ana Pérez Ruiz' }))
     // Sin cobro no hay nada en Contabilidad que ver.
@@ -321,7 +385,7 @@ describe('TesoreriaAdminPage', () => {
     const user = userEvent.setup({ delay: null })
     const simulado = servidor([recibo(7, 'REMESADO', 'Cuota anual')])
     vi.stubGlobal('fetch', simulado)
-    renderWithProviders(<TesoreriaAdminPage />)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
 
     await user.click(await screen.findByRole('button', { name: 'Más acciones de Cuota anual de Ana Pérez Ruiz' }))
     await user.click(screen.getByRole('menuitem', { name: 'Anular' }))
@@ -339,7 +403,7 @@ describe('TesoreriaAdminPage', () => {
   it('un remesado con remesa no puede volver a pendiente', async () => {
     const user = userEvent.setup({ delay: null })
     vi.stubGlobal('fetch', servidor([recibo(7, 'REMESADO', 'Cuota anual')]))
-    renderWithProviders(<TesoreriaAdminPage />)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
     await user.click(await screen.findByRole('button', { name: 'Más acciones de Cuota anual de Ana Pérez Ruiz' }))
     expect(screen.getByRole('menuitem', { name: 'Anular' })).toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Volver a pendiente' })).not.toBeInTheDocument()
@@ -350,7 +414,7 @@ describe('TesoreriaAdminPage', () => {
     const user = userEvent.setup({ delay: null })
     const simulado = servidor([{ ...recibo(7, 'REMESADO', 'Cuota anual'), remesaId: null }])
     vi.stubGlobal('fetch', simulado)
-    renderWithProviders(<TesoreriaAdminPage />)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
 
     await user.click(await screen.findByRole('button', { name: 'Más acciones de Cuota anual de Ana Pérez Ruiz' }))
     await user.click(screen.getByRole('menuitem', { name: 'Anular' }))
@@ -377,7 +441,7 @@ describe('TesoreriaAdminPage', () => {
     const simulado = vi.fn().mockImplementation((url: string, init?: RequestInit) =>
       init?.method === 'PUT' ? json({ message: 'El día de la devolución no puede ser anterior al del cobro (08/01/2026).' }, 400) : base(url, init))
     vi.stubGlobal('fetch', simulado)
-    renderWithProviders(<TesoreriaAdminPage />)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
 
     await user.click(await screen.findByRole('button', { name: 'Más acciones de Cuota anual de Ana Pérez Ruiz' }))
     await user.click(screen.getByRole('menuitem', { name: 'Devuelto por el banco' }))
@@ -398,7 +462,7 @@ describe('TesoreriaAdminPage', () => {
   it('un cobrado se puede reembolsar avisando del gasto, y lleva a sus apuntes de Contabilidad', async () => {
     const user = userEvent.setup({ delay: null })
     vi.stubGlobal('fetch', servidor([{ ...recibo(8, 'PAGADO', 'Donativo'), fechaPago: '2026-02-01T10:00:00.000Z', metodoPago: 'EFECTIVO' }]))
-    renderWithProviders(<TesoreriaAdminPage />)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
 
     await user.click(await screen.findByRole('button', { name: 'Más acciones de Donativo de Ana Pérez Ruiz' }))
     expect(screen.getByRole('menuitem', { name: /ver en contabilidad/i })).toHaveAttribute('href', '/cms/contabilidad?recibo=8')
@@ -414,7 +478,7 @@ describe('TesoreriaAdminPage', () => {
   it('un pendiente se puede eximir o anular, no enviar al banco a mano; uno anulado no ofrece nada', async () => {
     const user = userEvent.setup({ delay: null })
     vi.stubGlobal('fetch', servidor([recibo(9, 'PENDIENTE', 'Cuota anual'), recibo(10, 'ANULADO', 'Cuota vieja')]))
-    renderWithProviders(<TesoreriaAdminPage />)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
 
     await user.click(await screen.findByRole('button', { name: 'Más acciones de Cuota anual de Ana Pérez Ruiz' }))
     expect(screen.getAllByRole('menuitem').map((m) => m.textContent)).toEqual(['Eximir de pago', 'Anular'])
@@ -437,16 +501,16 @@ describe('TesoreriaAdminPage', () => {
 
   it('un devuelto ya reemitido no pide reemitirse otra vez', async () => {
     vi.stubGlobal('fetch', servidor([{ ...recibo(11, 'DEVUELTO', 'Cuota vieja'), tipo: 'CUOTA_HERMANO', reemitido: true }, { ...recibo(12, 'DEVUELTO', 'Cuota nueva'), tipo: 'CUOTA_HERMANO' }]))
-    renderWithProviders(<TesoreriaAdminPage />)
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
 
-    expect(await screen.findByText('Devuelto · ya reemitido')).toBeInTheDocument()
+    expect(await screen.findByText('Devuelto · ya reemitido o dado por perdido')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Reemitir Cuota vieja de Ana Pérez Ruiz' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Reemitir Cuota nueva de Ana Pérez Ruiz' })).toBeInTheDocument()
   })
 
   it('con Remesas y Modelo 182 apagados, esas pestañas no están', async () => {
     vi.stubGlobal('fetch', responder(0))
-    renderWithProviders(<TesoreriaAdminPage />, { modulos: [] })
+    renderWithProviders(<TesoreriaAdminPage />, { ...EN_RECIBOS, modulos: [] })
 
     await screen.findByRole('tab', { name: 'Recibos' })
     expect(screen.queryByRole('tab', { name: 'Remesas' })).not.toBeInTheDocument()
@@ -455,9 +519,39 @@ describe('TesoreriaAdminPage', () => {
 
   it('con solo Remesas encendido, está esa pestaña y no Modelo 182', async () => {
     vi.stubGlobal('fetch', responder(0))
-    renderWithProviders(<TesoreriaAdminPage />, { modulos: ['remesas'] })
+    renderWithProviders(<TesoreriaAdminPage />, { ...EN_RECIBOS, modulos: ['remesas'] })
 
     expect(await screen.findByRole('tab', { name: 'Remesas' })).toBeInTheDocument()
     expect(screen.queryByRole('tab', { name: 'Modelo 182' })).not.toBeInTheDocument()
+  })
+
+  it('una papeleta devuelta solo la da por perdida el Hermano Mayor, con su motivo', async () => {
+    const user = userEvent.setup({ delay: null })
+    const papeleta = { ...recibo(9, 'DEVUELTO', 'Papeleta de sitio 2026'), tipo: 'PAPELETA_SITIO' }
+    const simulado = servidor([papeleta])
+    vi.stubGlobal('fetch', simulado)
+
+    // Tesorería no la ve: no es suya la decisión.
+    useAuthStore.setState({ status: 'listo', cms: { id: 1, email: 'teso@ejemplo.es', role: 'TESORERIA', perfiles: [], origen: 'cms' }, hermano: null })
+    const { unmount } = renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
+    expect(await screen.findByText('Devuelto: se cobra en la mesa cuando vuelva el hermano')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /más acciones de papeleta de sitio 2026/i }))
+    expect(screen.queryByRole('menuitem', { name: /darla por perdida/i })).not.toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    unmount()
+
+    useAuthStore.setState({ status: 'listo', cms: { id: 2, email: 'hm@ejemplo.es', role: 'HERMANO_MAYOR', perfiles: [], origen: 'cms' }, hermano: null })
+    renderWithProviders(<TesoreriaAdminPage />, EN_RECIBOS)
+    await user.click(await screen.findByRole('button', { name: /más acciones de papeleta de sitio 2026/i }))
+    await user.click(screen.getByRole('menuitem', { name: /darla por perdida/i }))
+    const ventana = await screen.findByRole('dialog', { name: /darla por perdida/i })
+    await user.type(within(ventana).getByLabelText(/motivo/i), 'Se dio de baja')
+    await user.click(within(ventana).getByRole('button', { name: /^darla por perdida$/i }))
+    await waitFor(() => expect(llamadas(simulado, (ruta) => ruta.endsWith('/perdida'))).toHaveLength(1))
+    const [url, init] = llamadas(simulado, (ruta) => ruta.endsWith('/perdida'))[0]
+    expect(String(url)).toContain('/recibos/admin/9/perdida')
+    expect(JSON.parse(String((init as RequestInit).body))).toEqual({ motivo: 'Se dio de baja' })
+    expect(await screen.findByText('Papeleta dada por perdida: ya no se pide.')).toBeInTheDocument()
+    useAuthStore.setState({ cms: null })
   })
 })

@@ -14,7 +14,10 @@ import {
   adminRecibosQuerySchema,
   adminResumenQuerySchema,
   buscarHermanosQuerySchema,
+  cobrarVariosSchema,
+  darPorPerdidaSchema,
   impagosQuerySchema,
+  panelQuerySchema,
   emitirReciboSchema,
   generarCuotasSchema,
   marcarPagadoSchema,
@@ -64,6 +67,12 @@ reciboRoutes.get('/admin', checkRole(ROLES_TESORERIA), validate(adminRecibosQuer
 // Los contadores por estado de encima del listado, con sus mismos filtros.
 reciboRoutes.get('/admin/resumen', checkRole(ROLES_TESORERIA), validate(adminResumenQuerySchema), ReciboController.getResumenAdmin);
 
+// La entrada de Tesorería: cómo va el ejercicio y lo que toca hacer.
+reciboRoutes.get('/admin/panel', checkRole(ROLES_TESORERIA), validate(panelQuerySchema), ReciboController.panel);
+
+// Cobrar varios de una vez (o uno), con la forma de pago, el día y una nota.
+reciboRoutes.post('/admin/cobrar', checkRole(ROLES_TESORERIA), validate(cobrarVariosSchema), ReciboController.cobrarVarios);
+
 // Quién debe cuotas. Lo consulta Tesorería, y también Secretaría, que es quien
 // da las bajas por impago y no entra en el resto de Tesorería.
 reciboRoutes.get('/admin/impagos',
@@ -100,6 +109,13 @@ reciboRoutes.post('/admin/pagos-en-linea/incidencias/:id/resolver', checkRole(RO
 // `/admin/:id`, que se tragaría «remesas» y «modelo-182» como un id.
 reciboRoutes.use('/admin/modelo-182', conModulo('modelo-182'), modelo182Routes);
 reciboRoutes.use('/admin/remesas', conModulo('remesas'), remesasRoutes);
+
+// Dar por perdida una papeleta devuelta que no se va a cobrar: lo decide el
+// Hermano Mayor (y Administración, que lo ve todo), no Tesorería.
+reciboRoutes.post('/admin/:id/perdida', checkRole([Role.ADMIN, Role.HERMANO_MAYOR]), validate(darPorPerdidaSchema), ReciboController.darPorPerdida);
+
+// Lo que se ha hecho con un recibo (de la auditoría), para su ficha.
+reciboRoutes.get('/admin/:id/historial', checkRole(ROLES_TESORERIA), validateId, ReciboController.historial);
 
 reciboRoutes.post('/admin/:id/pagar',
   checkRole(ROLES_TESORERIA),

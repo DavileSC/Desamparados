@@ -11,7 +11,7 @@
 import db from '../../config/db';
 import { Cingulo, EstadoCita, EstadoPago, EstadoSolicitud, Prisma, MetodoPago, TipoRecibo, TipoTransaccion } from '@prisma/client';
 import { HttpError } from '../../utils/error.handle';
-import type { DatosEvento } from '../../domain/datos-procesion.js';
+import { claveConcepto, type DatosEvento } from '../../domain/datos-procesion.js';
 import { anioDeLaSalida, diaMadrid, fechaDeSalida } from '../../domain/fecha-salida.js';
 import { reglaDe, type SalidaConActo } from '../procesion/salidas.service.js';
 import { palabrasDeBusqueda } from '../../domain/busqueda-texto.js';
@@ -49,6 +49,8 @@ export interface ConsultaRecibos {
   orden?: string;
   /** Un recibo concreto, por su número: el enlace desde Contabilidad. */
   recibo?: string;
+  /** Los de un hermano, por su id: lo que tiene pendiente al ir a cobrarle. */
+  hermano?: string;
 }
 
 /**
@@ -79,6 +81,7 @@ export function whereRecibosAdmin(query: ConsultaRecibos, year?: number, estado?
     ...(estado ? { estado } : {}),
     ...(query.tipo ? { tipo: query.tipo } : {}),
     ...(query.recibo ? { id: Number(query.recibo) } : {}),
+    ...(query.hermano ? { hermanoId: Number(query.hermano) } : {}),
     ...whereBusquedaRecibo(query.q)
   };
 }
@@ -352,4 +355,15 @@ export async function devueltosPendientes(where: Prisma.ReciboWhereInput = {}): 
     total: pendientes.length,
     importe: Math.round(pendientes.reduce((s, d) => s + Number(d.importe) * 100, 0)) / 100,
   };
+}
+
+/** Un concepto de reemisión libre para ese hermano y año: «Cuota 2025 (reemisión)», «… (reemisión 2)». */
+export async function conceptoDeReemision(tx: Tx, hermanoId: number, year: number, concepto: string) {
+  const usados = new Set((await tx.recibo.findMany({ where: { hermanoId, year }, select: { concepto: true } })).map((r) => claveConcepto(r.concepto)));
+  const base = `${concepto.replace(/\s*\(reemisión(?: \d+)?\)$/u, '')} (reemisión)`;
+  if (!usados.has(claveConcepto(base))) return base;
+  for (let n = 2; ; n += 1) {
+    const candidato = base.replace(/\)$/, ` ${n})`);
+    if (!usados.has(claveConcepto(candidato))) return candidato;
+  }
 }

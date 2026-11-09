@@ -19,9 +19,10 @@ import { diaMadrid, instanteDelApunte } from '../domain/contabilidad.js';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { agruparImpagos } from '../domain/impagos.js';
 import { diaDeHoy } from '../domain/fechas-hermano.js';
+import { notaDePerdon } from '../domain/salidas.js';
 import { ORDENES_RECIBOS, ordenDe } from '../domain/ordenacion.js';
 import {
-  ESTADOS_CUOTA_VIVA, MENSAJE_ESTADO_CAMBIADO, apuntarComisionEnTransaccion, devolverCobroEnTransaccion, fotoRecibo,
+  ESTADOS_CUOTA_VIVA, MENSAJE_ESTADO_CAMBIADO, apuntarComisionEnTransaccion, conceptoDeReemision, devolverCobroEnTransaccion, devueltosPendientes, fotoRecibo,
   idCategoriaComisiones, idCategoriaDevoluciones, idCategoriaIngresos, exigirSinReemision, reemitidosDe, retirarPapeletaEnTransaccion,
   whereRecibosAdmin, type ConsultaRecibos,
 } from './recibos/comunes.js';
@@ -68,19 +69,23 @@ export class ReciboService {
    * adivinar los que faltan.
    */
   static async getResumenAdmin(query: ConsultaRecibos = {}, year?: number) {
-    const grupos = await db.recibo.groupBy({
-      by: ['estado'],
-      where: whereRecibosAdmin(query, year),
-      _count: { _all: true },
-      _sum: { importe: true }
-    });
+    const [grupos, devueltosPorResolver] = await Promise.all([
+      db.recibo.groupBy({
+        by: ['estado'],
+        where: whereRecibosAdmin(query, year),
+        _count: { _all: true },
+        _sum: { importe: true }
+      }),
+      // Los devueltos que aún piden algo: un devuelto reemitido ya no se debe.
+      devueltosPendientes(whereRecibosAdmin(query, year)),
+    ]);
     const estados = Object.fromEntries(
       Object.values(EstadoPago).map((e) => [e, { cuenta: 0, total: 0 }])
     ) as Record<EstadoPago, { cuenta: number; total: number }>;
     for (const g of grupos) {
       estados[g.estado] = { cuenta: g._count._all, total: Number(g._sum.importe ?? 0) };
     }
-    return { estados };
+    return { estados, devueltosPorResolver: { cuenta: devueltosPorResolver.total, total: devueltosPorResolver.importe } };
   }
 
   /**
@@ -90,26 +95,149 @@ export class ReciboService {
    */
   static async impagos(query: { incluirAnioActual?: string; minimo?: string; page?: unknown; limit?: unknown }) {
     const anioActual = Number(diaDeHoy().slice(0, 4));
-    const leidos = await db.recibo.findMany({
-      where: {
-        tipo: TipoRecibo.CUOTA_HERMANO,
-        estado: { in: [EstadoPago.PENDIENTE, EstadoPago.DEVUELTO] },
-        hermano: { activo: true },
-        ...(query.incluirAnioActual === 'true' ? {} : { year: { lt: anioActual } }),
-      },
-      select: {
-        id: true, year: true, estado: true, importe: true,
-        hermano: { select: { id: true, nombre: true, apellidos: true, numeroHermano: true } },
-      },
-    });
-    // Una cuota devuelta y ya reemitida no se debe dos veces: cuenta su reemisión.
-    const reemitidas = await reemitidosDe(leidos.filter((r) => r.estado === EstadoPago.DEVUELTO));
-    const recibos = leidos.filter((r) => !reemitidas.has(r.id));
-    const filas = agruparImpagos(recibos, Number(query.minimo ?? 1));
+    const filas = await filasDeImpagos(query.incluirAnioActual === 'true', Number(query.minimo ?? 1));
     const paginacion = sanearPaginacion(query);
     return {
       ...respuestaPaginada(filas.slice(paginacion.skip, paginacion.skip + paginacion.take), filas.length, paginacion),
       anioActual,
+    };
+  }
+
+  /**
+   * La entrada de Tesorería: cómo va el ejercicio y lo que toca hacer. Todo en
+   * una petición, para que la pantalla no pinte a trozos.
+   *
+   * - `emitido`: lo que se pidió cobrar ese año; exentos, anulados y
+   *   reembolsados no se deben, así que no cuentan.
+   * - `antiguedad`: lo que se debe (por cobrar y devuelto sin reemitir) de ese
+   *   año y de los anteriores, año a año: la deuda vieja es la que se pierde.
+   * - `porMetodo`: cómo se cobró lo de ese año.
+   * - `tareas`: las remesas que el banco ya cargó y nadie ha dado por
+   *   cobradas, lo que queda por cobrar en mano y los hermanos con cuotas de
+   *   años anteriores sin pagar (los impagos).
+   */
+  static async panel(year: number = Number(diaDeHoy().slice(0, 4))) {
+    const hoy = diaDeHoy();
+    const [{ estados }, debidos, metodos, ultimos, remesas, impagados] = await Promise.all([
+      ReciboService.getResumenAdmin({}, year),
+      db.recibo.findMany({
+        where: { year: { lte: year }, estado: { in: [EstadoPago.PENDIENTE, EstadoPago.DEVUELTO] } },
+        select: { id: true, year: true, estado: true, importe: true, hermanoId: true },
+      }),
+      db.recibo.groupBy({
+        by: ['metodoPago'], where: { year, estado: EstadoPago.PAGADO }, _count: { _all: true }, _sum: { importe: true },
+      }),
+      db.recibo.findMany({
+        where: { estado: EstadoPago.PAGADO, fechaPago: { not: null } },
+        orderBy: [{ fechaPago: 'desc' }, { id: 'desc' }],
+        take: 5,
+        select: {
+          id: true, year: true, concepto: true, importe: true, fechaPago: true, metodoPago: true,
+          hermano: { select: { id: true, nombre: true, apellidos: true, numeroHermano: true } },
+        },
+      }),
+      db.remesa.findMany({
+        where: { estado: 'ENVIADA', fechaCobro: { lte: new Date(`${hoy}T00:00:00Z`) } },
+        orderBy: { fechaCobro: 'asc' },
+        select: { id: true, fechaCobro: true, recibos: { where: { estado: EstadoPago.REMESADO }, select: { importe: true } } },
+      }),
+      filasDeImpagos(false, 1),
+    ]);
+
+    // Un devuelto ya reemitido no se debe dos veces: cuenta su reemisión.
+    const reemitidos = await reemitidosDe(debidos.filter((r) => r.estado === EstadoPago.DEVUELTO));
+    const deuda = debidos.filter((r) => !reemitidos.has(r.id));
+    const porAnio = new Map<number, { cuenta: number; total: number }>();
+    for (const r of deuda) {
+      const fila = porAnio.get(r.year) ?? { cuenta: 0, total: 0 };
+      fila.cuenta += 1; fila.total += Number(r.importe);
+      porAnio.set(r.year, fila);
+    }
+    const pendientes = deuda.filter((r) => r.year === year && r.estado === EstadoPago.PENDIENTE);
+    const centimos = (n: number) => Math.round(n * 100) / 100;
+
+    const cuentan = [EstadoPago.PENDIENTE, EstadoPago.REMESADO, EstadoPago.PAGADO, EstadoPago.DEVUELTO] as const;
+    return {
+      year,
+      estados,
+      emitido: {
+        cuenta: cuentan.reduce((suma, e) => suma + estados[e].cuenta, 0),
+        total: centimos(cuentan.reduce((suma, e) => suma + estados[e].total, 0)),
+      },
+      antiguedad: [...porAnio.entries()].sort(([a], [b]) => b - a).map(([anio, f]) => ({ year: anio, cuenta: f.cuenta, total: centimos(f.total) })),
+      porMetodo: metodos
+        .map((m) => ({ metodo: m.metodoPago, cuenta: m._count._all, total: Number(m._sum.importe ?? 0) }))
+        .sort((a, b) => b.total - a.total),
+      ultimosCobros: ultimos.map((r) => ({ ...r, importe: Number(r.importe) })),
+      tareas: {
+        remesasCargadas: remesas
+          .filter((r) => r.recibos.length > 0)
+          .map((r) => ({ id: r.id, fechaCobro: diaMadrid(r.fechaCobro), enElBanco: r.recibos.length, total: centimos(r.recibos.reduce((s2, x) => s2 + Number(x.importe), 0)) })),
+        porCobrar: { recibos: pendientes.length, hermanos: new Set(pendientes.map((r) => r.hermanoId)).size, total: centimos(pendientes.reduce((s2, r) => s2 + Number(r.importe), 0)) },
+        impagos: { hermanos: impagados.length, total: centimos(impagados.reduce((s2, f) => s2 + f.total, 0)) },
+      },
+    };
+  }
+
+  /**
+   * Dar por perdida una papeleta de sitio que el banco devolvió y que no se va
+   * a cobrar (el hermano se dio de baja, o no va a volver a la mesa). Tesorería
+   * no puede reemitir una papeleta, y un devuelto es final: sin esto se quedaba
+   * pidiendo algo para siempre. Lo decide el Hermano Mayor, como el perdón de
+   * las cuotas, y queda igual: una reemisión que nace exenta, con la nota de
+   * quién lo decidió. En Contabilidad no hay nada que apuntar: al devolverse,
+   * el ingreso ya se anuló.
+   */
+  static async darPorPerdida(reciboId: number, motivo: string | undefined, meta?: MetaDeAuditoria) {
+    const nota = notaDePerdon(motivo);
+    const reemision = await db.$transaction(async (tx) => {
+      const r = await tx.recibo.findUnique({ where: { id: reciboId } });
+      if (!r) throw new NotFoundError('Recibo no encontrado.');
+      if (r.tipo !== TipoRecibo.PAPELETA_SITIO) throw new HttpError('Solo se da por perdida una papeleta de sitio: una cuota se perdona, y lo demás se reemite.', 409);
+      if (r.estado !== EstadoPago.DEVUELTO) throw new HttpError('Solo se da por perdida una papeleta que el banco devolvió.', 409);
+      await exigirSinReemision(tx, r);
+      return tx.recibo.create({
+        data: {
+          hermanoId: r.hermanoId, year: r.year, tipo: r.tipo, importe: r.importe, estado: EstadoPago.EXENTO, reemisionDeId: r.id,
+          concepto: await conceptoDeReemision(tx, r.hermanoId, r.year, r.concepto), observaciones: nota,
+        },
+      });
+    });
+    await AuditoriaService.log(ACCIONES_AUDITORIA.RECIBO_PERDONAR, meta ?? {}, 'recibo', reciboId, {
+      despues: { reemision: reemision.id, concepto: reemision.concepto, estado: reemision.estado, motivo: motivo?.trim() || null },
+    });
+    return { message: 'Papeleta dada por perdida: ya no se pide.', reemisionId: reemision.id };
+  }
+
+  /**
+   * Lo que se ha hecho con un recibo, de la auditoría: cobrarlo, cambiarle el
+   * estado, remesarlo… Con quién lo hizo, que es lo que se pregunta cuando un
+   * cobro no cuadra. La emisión no siempre deja línea propia (la generación de
+   * cuotas apunta una por tanda): la pantalla la toma de la fecha del recibo.
+   */
+  static async historial(reciboId: number) {
+    const recibo = await db.recibo.findUnique({ where: { id: reciboId }, select: { id: true, observaciones: true } });
+    if (!recibo) throw new NotFoundError('Recibo no encontrado.');
+    const lineas = await db.auditLog.findMany({
+      where: { entityType: 'recibo', entityId: String(reciboId) },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: 50,
+      select: { id: true, action: true, createdAt: true, detalles: true, user: { select: { nombre: true, apellidos: true } } },
+    });
+    return {
+      observaciones: recibo.observaciones,
+      historial: lineas.map((l) => {
+        const detalles = (l.detalles ?? {}) as { despues?: { estado?: string; metodoPago?: string | null }; nota?: string };
+        return {
+          id: l.id,
+          accion: l.action,
+          fecha: l.createdAt,
+          quien: l.user ? `${l.user.nombre} ${l.user.apellidos}`.trim() : null,
+          estado: detalles.despues?.estado ?? null,
+          metodoPago: detalles.despues?.metodoPago ?? null,
+          nota: typeof detalles.nota === 'string' ? detalles.nota : null,
+        };
+      }),
     };
   }
 
@@ -305,9 +433,9 @@ export class ReciboService {
   //  4. GESTIÓN INDIVIDUAL (ADMIN/TESORERO)
   // =================================================================
 
-  // Cobrar y emitir papeleta. `fechaCargo` es el día en que entró el dinero si
-  // no es ahora (una remesa que el banco cargó antes del clic): el asiento va a
-  // ese día, que es el que cuadra con el extracto.
+  // Cobrar un recibo. `fechaCargo` es el día en que entró el dinero si no es
+  // ahora (una remesa que el banco cargó antes del clic): el asiento va a ese
+  // día, que es el que cuadra con el extracto.
   static async adminMarcarComoPagado(reciboId: number, metodoPago?: MetodoPago, meta?: MetaDeAuditoria, fechaCargo?: Date) {
     // Antes de abrir la transacción: ver idCategoriaDeRecibos. La categoría
     // depende del tipo del recibo, que no cambia nunca: leerlo aquí fuera es seguro.
@@ -315,68 +443,10 @@ export class ReciboService {
     if (!previo) throw new NotFoundError('Recibo no encontrado.');
     const categoriaIngresosId = await idCategoriaIngresos(previo.tipo);
 
-    const { recibo, antes } = await transactionWithRetry(async (tx) => {
-      const actual = await tx.recibo.findUnique({ where: { id: reciboId } });
-      if (!actual) throw new NotFoundError('Recibo no encontrado.');
-      if (!puedeCobrarse(actual.estado)) {
-        const motivos: Partial<Record<EstadoPago, string>> = {
-          [EstadoPago.PAGADO]: 'Este recibo ya estaba pagado.',
-          [EstadoPago.ANULADO]: 'No se puede cobrar un recibo anulado.',
-          [EstadoPago.DEVUELTO]: 'Este recibo fue devuelto: emite un recibo nuevo para volver a cobrarlo.',
-          [EstadoPago.REEMBOLSADO]: 'Este recibo se reembolsó: no se vuelve a cobrar.',
-          [EstadoPago.EXENTO]: 'No se puede cobrar un recibo exento.'
-        };
-        throw new HttpError(motivos[actual.estado] ?? 'Este recibo no se puede cobrar.', 409);
-      }
-
-      // Un remesado lo cobra el banco, y solo por domiciliación (ver estadosCobrablesCon).
-      if (actual.estado === EstadoPago.REMESADO && !estadosCobrablesCon(metodoPago).includes(EstadoPago.REMESADO)) {
-        throw new HttpError(`Este recibo ${MENSAJE_REMESADO_EN_MANO}`, 409);
-      }
-      const metodo = metodoPago ?? (actual.estado === EstadoPago.REMESADO ? MetodoPago.DOMICILIACION : undefined);
-
-      // El cambio condicionado evita que dos cobros concurrentes envíen dos
-      // emails o apunten dos ingresos para el mismo recibo, y que se cobre en
-      // mano lo que se remesó mientras tanto.
-      const result = await tx.recibo.updateMany({
-        where: { id: reciboId, estado: { in: estadosCobrablesCon(metodo) } },
-        data: {
-          estado: EstadoPago.PAGADO,
-          fechaPago: fechaCargo ?? new Date(),
-          ...(metodo ? { metodoPago: metodo } : {})
-        }
-      });
-      if (result.count !== 1) {
-        throw new HttpError('El recibo ya no está pendiente de cobro.', 409);
-      }
-
-      const updated = await tx.recibo.findUnique({
-        where: { id: reciboId },
-        include: {
-          hermano: {
-            include: {
-              user: { select: { email: true, nombre: true } }
-            }
-          }
-        }
-      });
-      if (!updated) throw new NotFoundError('Recibo no encontrado.');
-
-      await tx.transaccion.create({
-        data: {
-          tipo: TipoTransaccion.INGRESO,
-          categoriaId: categoriaIngresosId,
-          concepto: updated.concepto,
-          importe: updated.importe,
-          fecha: updated.fechaPago ?? new Date(),
-          metodoPago: updated.metodoPago,
-          hermanoId: updated.hermanoId,
-          reciboId: updated.id
-        }
-      });
-
-      return { recibo: updated, antes: actual };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    const { recibo, antes } = await transactionWithRetry(
+      (tx) => cobrarEnTransaccion(tx, reciboId, { metodoPago, fechaCargo, categoriaIngresosId }),
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
 
     await AuditoriaService.log(ACCIONES_AUDITORIA.RECIBO_COBRAR, meta ?? {}, 'recibo', reciboId, {
       antes: fotoRecibo(antes),
@@ -384,6 +454,61 @@ export class ReciboService {
     });
 
     return recibo;
+  }
+
+  /**
+   * Cobrar varios recibos de una vez (la ventana «Registrar cobro»): todos o
+   * ninguno, en una transacción. Si uno ya no se puede cobrar (otra persona lo
+   * cobró, o se remesó entretanto), no se cobra ninguno y se dice cuál: medio
+   * cobro dejaría la caja sin cuadrar con lo que se tiene en la mano. Cada
+   * recibo lleva su asiento y su línea en la auditoría, como cobrado de uno en uno.
+   */
+  static async cobrarVarios(
+    { ids, metodoPago, fecha, nota }: { ids: number[]; metodoPago: MetodoPago; fecha?: string; nota?: string },
+    meta?: MetaDeAuditoria,
+  ) {
+    const unicos = [...new Set(ids)];
+    if (fecha !== undefined && fecha > diaDeHoy()) throw new HttpError('El día del cobro no puede ser posterior a hoy.');
+    const fechaCargo = fecha !== undefined ? instanteDelApunte(fecha) : undefined;
+    const notaLimpia = nota?.trim() || undefined;
+
+    const previos = await db.recibo.findMany({
+      where: { id: { in: unicos } },
+      select: { id: true, tipo: true, concepto: true, hermano: { select: { nombre: true, apellidos: true } } },
+    });
+    if (previos.length !== unicos.length) throw new NotFoundError('Alguno de los recibos ya no existe: vuelve a cargar la lista.');
+    // Las categorías, antes de abrir la transacción (ver idCategoriaDeRecibos): una por tipo.
+    const categorias = new Map<TipoRecibo, number>();
+    for (const tipo of new Set(previos.map((r) => r.tipo))) categorias.set(tipo, await idCategoriaIngresos(tipo));
+    const porId = new Map(previos.map((r) => [r.id, r]));
+
+    const cobrados = await transactionWithRetry(async (tx) => {
+      const hechos: Awaited<ReturnType<typeof cobrarEnTransaccion>>[] = [];
+      for (const id of unicos) {
+        const previo = porId.get(id)!;
+        try {
+          hechos.push(await cobrarEnTransaccion(tx, id, { metodoPago, fechaCargo, categoriaIngresosId: categorias.get(previo.tipo)!, nota: notaLimpia }));
+        } catch (error) {
+          // Que se sepa cuál: en una lista de veinte, «ya estaba pagado» no dice nada.
+          if (error instanceof HttpError) {
+            throw new HttpError(`${previo.concepto} de ${previo.hermano.nombre} ${previo.hermano.apellidos}: ${error.message} No se ha cobrado ninguno.`, error.status);
+          }
+          throw error;
+        }
+      }
+      return hechos;
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+    for (const { recibo, antes } of cobrados) {
+      await AuditoriaService.log(ACCIONES_AUDITORIA.RECIBO_COBRAR, meta ?? {}, 'recibo', recibo.id, {
+        antes: fotoRecibo(antes),
+        despues: fotoRecibo(recibo),
+        ...(notaLimpia ? { nota: notaLimpia } : {}),
+      });
+    }
+
+    const total = cobrados.reduce((suma, { recibo }) => suma + Number(recibo.importe), 0);
+    return { cobrados: cobrados.length, total: Math.round(total * 100) / 100 };
   }
 
   // Cambiar el estado de un recibo y los datos de su papeleta (puesto, tramo)
@@ -528,4 +653,93 @@ export class ReciboService {
       papeletaAnulada: resultado.papeletaAnulada
     };
   }
+}
+
+/**
+ * Cobra un recibo dentro de la transacción que se le pasa: el estado, el día,
+ * la forma de pago y su asiento de ingreso. Lo comparten el cobro de uno y el
+ * de varios, para que los dos hagan exactamente lo mismo. La nota del cobro,
+ * si la hay, se suma a las observaciones del recibo: no pisa lo que ya dijeran.
+ */
+async function cobrarEnTransaccion(
+  tx: Prisma.TransactionClient,
+  reciboId: number,
+  { metodoPago, fechaCargo, categoriaIngresosId, nota }: { metodoPago?: MetodoPago; fechaCargo?: Date; categoriaIngresosId: number; nota?: string },
+) {
+  const actual = await tx.recibo.findUnique({ where: { id: reciboId } });
+  if (!actual) throw new NotFoundError('Recibo no encontrado.');
+  if (!puedeCobrarse(actual.estado)) {
+    const motivos: Partial<Record<EstadoPago, string>> = {
+      [EstadoPago.PAGADO]: 'Este recibo ya estaba pagado.',
+      [EstadoPago.ANULADO]: 'No se puede cobrar un recibo anulado.',
+      [EstadoPago.DEVUELTO]: 'Este recibo fue devuelto: emite un recibo nuevo para volver a cobrarlo.',
+      [EstadoPago.REEMBOLSADO]: 'Este recibo se reembolsó: no se vuelve a cobrar.',
+      [EstadoPago.EXENTO]: 'No se puede cobrar un recibo exento.'
+    };
+    throw new HttpError(motivos[actual.estado] ?? 'Este recibo no se puede cobrar.', 409);
+  }
+
+  // Un remesado lo cobra el banco, y solo por domiciliación (ver estadosCobrablesCon).
+  if (actual.estado === EstadoPago.REMESADO && !estadosCobrablesCon(metodoPago).includes(EstadoPago.REMESADO)) {
+    throw new HttpError(`Este recibo ${MENSAJE_REMESADO_EN_MANO}`, 409);
+  }
+  const metodo = metodoPago ?? (actual.estado === EstadoPago.REMESADO ? MetodoPago.DOMICILIACION : undefined);
+  const observaciones = nota ? (actual.observaciones ? `${actual.observaciones}\nAl cobrar: ${nota}` : `Al cobrar: ${nota}`) : undefined;
+
+  // El cambio condicionado evita que dos cobros concurrentes apunten dos
+  // ingresos para el mismo recibo, y que se cobre en mano lo que se remesó
+  // mientras tanto.
+  const result = await tx.recibo.updateMany({
+    where: { id: reciboId, estado: { in: estadosCobrablesCon(metodo) } },
+    data: {
+      estado: EstadoPago.PAGADO,
+      fechaPago: fechaCargo ?? new Date(),
+      ...(metodo ? { metodoPago: metodo } : {}),
+      ...(observaciones ? { observaciones } : {}),
+    }
+  });
+  if (result.count !== 1) {
+    throw new HttpError('El recibo ya no está pendiente de cobro.', 409);
+  }
+
+  const updated = await tx.recibo.findUnique({ where: { id: reciboId } });
+  if (!updated) throw new NotFoundError('Recibo no encontrado.');
+
+  await tx.transaccion.create({
+    data: {
+      tipo: TipoTransaccion.INGRESO,
+      categoriaId: categoriaIngresosId,
+      concepto: updated.concepto,
+      importe: updated.importe,
+      fecha: updated.fechaPago ?? new Date(),
+      metodoPago: updated.metodoPago,
+      hermanoId: updated.hermanoId,
+      reciboId: updated.id
+    }
+  });
+
+  return { recibo: updated, antes: actual };
+}
+
+/**
+ * Hermanos activos que deben cuotas (ver domain/impagos.ts), sin paginar: lo
+ * comparten el listado de impagos y el resumen de la entrada. Una cuota
+ * devuelta y ya reemitida no se debe dos veces: cuenta su reemisión.
+ */
+async function filasDeImpagos(incluirAnioActual: boolean, minimo: number) {
+  const anioActual = Number(diaDeHoy().slice(0, 4));
+  const leidos = await db.recibo.findMany({
+    where: {
+      tipo: TipoRecibo.CUOTA_HERMANO,
+      estado: { in: [EstadoPago.PENDIENTE, EstadoPago.DEVUELTO] },
+      hermano: { activo: true },
+      ...(incluirAnioActual ? {} : { year: { lt: anioActual } }),
+    },
+    select: {
+      id: true, year: true, estado: true, importe: true,
+      hermano: { select: { id: true, nombre: true, apellidos: true, numeroHermano: true } },
+    },
+  });
+  const reemitidas = await reemitidosDe(leidos.filter((r) => r.estado === EstadoPago.DEVUELTO));
+  return agruparImpagos(leidos.filter((r) => !reemitidas.has(r.id)), minimo);
 }

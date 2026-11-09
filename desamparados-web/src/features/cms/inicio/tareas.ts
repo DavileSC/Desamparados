@@ -92,8 +92,24 @@ const ORDEN: Record<Prioridad, number> = { urgente: 0, pendiente: 1, programado:
 export function tareasDelDia(panel: PanelResponse, hoy: Date = new Date(), activos: ReadonlySet<string> = new Set(CLAVES_MODULO)): Tarea[] {
   const tareas: Tarea[] = []
 
-  // Los ya reemitidos no piden nada: su recibo nuevo sigue su curso.
-  const devueltos = panel.dinero.devueltosPendientes?.total ?? 0
+  // Los ya reemitidos no piden nada: su recibo nuevo sigue su curso. Las
+  // papeletas van aparte: Tesorería no las reemite, se cobran en la mesa
+  // cuando el hermano vuelve, y no es urgente lo que no está en su mano.
+  const papeletas = panel.dinero.papeletasDevueltas?.total ?? 0
+  const devueltos = (panel.dinero.devueltosPendientes?.total ?? 0) - papeletas
+  if (papeletas > 0) {
+    tareas.push({
+      clave: 'papeletas-devueltas',
+      prioridad: 'pendiente',
+      etiqueta: ETIQUETA.pendiente,
+      titulo: `${contar(papeletas, 'papeleta devuelta', 'papeletas devueltas')} por el banco`,
+      detalle: 'Se cobran en la mesa cuando vuelva el hermano; si no va a volver, el Hermano Mayor puede darla por perdida',
+      cargo: NOMBRE_CARGO.TESORERIA,
+      roles: TESORERIA,
+      accion: { texto: 'Ver', href: '/cms/tesoreria?vista=recibos&estado=DEVUELTO&tipo=PAPELETA_SITIO' },
+      modulo: 'nucleo',
+    })
+  }
   if (devueltos > 0) {
     tareas.push({
       clave: 'recibos-devueltos',
@@ -103,7 +119,8 @@ export function tareasDelDia(panel: PanelResponse, hoy: Date = new Date(), activ
       detalle: `Tesorería · ejercicio ${panel.ejercicio.anio}`,
       cargo: NOMBRE_CARGO.TESORERIA,
       roles: TESORERIA,
-      accion: { texto: 'Revisar', href: '/cms/tesoreria' },
+      // Directo a los devueltos: la entrada de Tesorería es el resumen.
+      accion: { texto: 'Revisar', href: '/cms/tesoreria?vista=recibos&estado=DEVUELTO' },
       modulo: 'nucleo',
     })
   }

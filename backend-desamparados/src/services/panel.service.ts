@@ -1,4 +1,4 @@
-import { EstadoPago, TipoTransaccion, type TipoEvento } from '@prisma/client';
+import { EstadoPago, TipoRecibo, TipoTransaccion, type TipoEvento } from '@prisma/client';
 import db from '../config/db.js';
 import { serieCensoMensual, claveMes, whereAltasAprobadas, type MovimientoMensual } from '../domain/panel-censo.js';
 import { diaMadrid, inicioDiaMadrid, unAnioAntes } from '../domain/contabilidad.js';
@@ -48,6 +48,8 @@ interface PanelResponse {
     porEstado: { estado: EstadoPago; total: number; importe: number }[];
     /** Los devueltos del ejercicio que aún no se han reemitido: lo que de verdad queda por cobrar y reemitir. */
     devueltosPendientes: { total: number; importe: number };
+    /** De esos, las papeletas: no las reemite Tesorería, se cobran en la mesa cuando vuelve el hermano. */
+    papeletasDevueltas: { total: number; importe: number };
     /**
      * Lo que sigue sin cobrarse de ejercicios anteriores (pendiente, en el banco
      * o devuelto sin reemitir). La cifra del Inicio es la del ejercicio; esto es
@@ -294,8 +296,9 @@ export class PanelService {
     ]);
 
     const nombreCategoria = new Map(categorias.map((c) => [c.id, c.nombre]));
-    const [devueltosDelEjercicio, devueltosAnteriores, vivosAnteriores] = await Promise.all([
+    const [devueltosDelEjercicio, papeletasDevueltas, devueltosAnteriores, vivosAnteriores] = await Promise.all([
       devueltosPendientes({ year: anio }),
+      devueltosPendientes({ year: anio, tipo: TipoRecibo.PAPELETA_SITIO }),
       devueltosPendientes({ year: { lt: anio } }),
       db.recibo.aggregate({
         where: { year: { lt: anio }, estado: { in: [EstadoPago.PENDIENTE, EstadoPago.REMESADO] } },
@@ -378,6 +381,7 @@ export class PanelService {
           importe: euros2(Number(r._sum.importe ?? 0)),
         })),
         devueltosPendientes: devueltosDelEjercicio,
+        papeletasDevueltas,
         anterioresPorCobrar: {
           total: vivosAnteriores._count._all + devueltosAnteriores.total,
           importe: euros2(Number(vivosAnteriores._sum.importe ?? 0) + devueltosAnteriores.importe),
