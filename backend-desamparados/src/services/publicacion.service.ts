@@ -8,6 +8,10 @@ import { esImagenPropia, esPdfPropio, rutaAlEditar } from '../utils/rutas-propia
 import { condicionBusqueda } from '../domain/busqueda-texto.js';
 import { fechaMasReciente, marcaDestacada } from '../domain/destacada-portada.js';
 import { PDF_DE_RELLENO, type EstadoPublicacion } from '../schemas/publicacion.schema.js';
+import { leerTintaDePortada } from '../utils/leer-tinta-de-portada.js';
+
+/** La tinta para guardar: sin foto (o ilegible), NULL en la columna, no el JSON null. */
+const tintaParaGuardar = async (imagenUrl: string | null | undefined) => (await leerTintaDePortada(imagenUrl)) ?? Prisma.DbNull;
 
 /** Los valores crudos de la consulta: quien decide qué es válido es sanearPaginacion. */
 interface ConsultaPaginada {
@@ -46,10 +50,20 @@ export function condicionEstadoPublicacion(estado: EstadoPublicacion | undefined
 }
 
 export class PublicacionService {
-  static deLaPortada() {
+  static async deLaPortada() {
     // Mismo orden que el listado del CMS, destacada y desempate incluidos: la
     // raya de «hasta aquí sale en la portada» tiene que coincidir con lo que sale.
-    return db.publicacion.findMany({ where: { visible: true }, orderBy: ORDEN_PORTADA, take: PUBLICACIONES_EN_PORTADA });
+    const publicaciones = await db.publicacion.findMany({ where: { visible: true }, orderBy: ORDEN_PORTADA, take: PUBLICACIONES_EN_PORTADA });
+    // Las portadas subidas antes de calcular la tinta se miden la primera vez
+    // que salen aquí y se guardan: así no hace falta un paso al desplegar. Si
+    // la foto no se puede leer se queda en NULL y la web usa la letra de siempre.
+    return Promise.all(publicaciones.map(async (publicacion) => {
+      if (!publicacion.imagenUrl || publicacion.tintaPortada !== null) return publicacion;
+      const tintaPortada = await leerTintaDePortada(publicacion.imagenUrl);
+      if (!tintaPortada) return publicacion;
+      await db.publicacion.update({ where: { id: publicacion.id }, data: { tintaPortada } });
+      return { ...publicacion, tintaPortada };
+    }));
   }
 
   static async listadoPublico(category: TipoPublicacion | undefined, consulta: ConsultaPaginada) {
@@ -144,9 +158,14 @@ export class PublicacionService {
     return db.publicacion.findUnique({ where: { id } });
   }
 
-  static crear(data: CrearPublicacionDto) {
+  static async crear(data: CrearPublicacionDto) {
     return db.publicacion.create({
-      data: { ...data, imagenUrl: data.imagenUrl || null, fecha: data.fecha ? new Date(data.fecha) : undefined },
+      data: {
+        ...data,
+        imagenUrl: data.imagenUrl || null,
+        tintaPortada: await tintaParaGuardar(data.imagenUrl),
+        fecha: data.fecha ? new Date(data.fecha) : undefined,
+      },
     });
   }
 
@@ -162,21 +181,26 @@ export class PublicacionService {
       data: { fijada: false },
     });
 
+    // Las dos rutas se validan contra lo guardado: el formulario reenvía la
+    // ficha entera, y una publicación con un PDF de antes de la validación
+    // (una URL tecleada en el antiguo campo de texto) no podía volver a
+    // guardarse por un campo que nadie había tocado. Si cambian, tienen que
+    // ser rutas propias; '' en la portada es «sin portada».
+    const imagenUrl = rutaAlEditar(data.imagenUrl, current.imagenUrl, {
+      esValida: esImagenPropia,
+      mensaje: 'La portada de la publicación no es una imagen del propio sitio: vuelve a subirla con «Cambiar foto».',
+    });
+    // Undefined es «la portada no cambia»: su tinta tampoco.
+    const tintaPortada = imagenUrl === undefined ? undefined : await tintaParaGuardar(imagenUrl);
+
     const guardar = db.publicacion.update({
       where: { id },
       data: {
         ...data,
         // Después del spread: la marca la decide `marcaDestacada`, no el cuerpo.
         fijada: marca.fijada,
-        // Las dos rutas se validan contra lo guardado: el formulario reenvía la
-        // ficha entera, y una publicación con un PDF de antes de la validación
-        // (una URL tecleada en el antiguo campo de texto) no podía volver a
-        // guardarse por un campo que nadie había tocado. Si cambian, tienen que
-        // ser rutas propias; '' en la portada es «sin portada».
-        imagenUrl: rutaAlEditar(data.imagenUrl, current.imagenUrl, {
-          esValida: esImagenPropia,
-          mensaje: 'La portada de la publicación no es una imagen del propio sitio: vuelve a subirla con «Cambiar foto».',
-        }),
+        imagenUrl,
+        tintaPortada,
         archivoUrl: rutaAlEditar(data.archivoUrl, current.archivoUrl, {
           esValida: esPdfPropio,
           siFalta: 'Falta el PDF de la publicación: súbelo con «Subir PDF» antes de guardar.',

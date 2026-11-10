@@ -4,7 +4,9 @@ import { Link } from 'react-router-dom'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
 import SeccionAnimada, { Revela } from '../../components/SeccionAnimada'
 import { publicacionesDePortada } from '../../lib/api/publicaciones'
-import type { Publicacion } from '../../types'
+import type { Publicacion, TintaDePortada, TintaDeZona } from '../../types'
+import TINTAS from '../../../../shared/tinta-de-portada.json'
+import { CORMORANT } from '../actualidad/agenda/letraAlmanaque'
 import { useDatosDePortada } from './useDatosDePortada'
 import { usePortadaEnCarga, useTextosPortada } from './useContenidoPortada'
 import TextoDePortada from './TextoDePortada'
@@ -13,11 +15,11 @@ import CintaDestacada from './CintaDestacada'
 import EnCarga from '../../components/esqueleto/EnCarga'
 import { estadoDeConsulta } from '../../components/esqueleto/esperaDeCarga'
 import Hueso, { Lineas } from '../../components/esqueleto/Hueso'
-import { GOLD, GRANATE, PAPEL, SERIF, TINTA, ceja } from './estilos'
+import { GOLD, GRANATE, SERIF, TINTA, ceja } from './estilos'
 import { site } from '../../config/site'
 import { useModulos } from '../../hooks/useModulos'
 import { propsDeFoto } from '../../lib/fotoSubida'
-import { MARCA, alfa } from '../../theme/marca'
+import { alfa } from '../../theme/marca'
 
 const CATEGORIAS: Record<Publicacion['categoria'], { nombre: string; corto: string }> = {
   boletin: { nombre: 'Boletín informativo', corto: 'boletín' },
@@ -26,87 +28,91 @@ const CATEGORIAS: Record<Publicacion['categoria'], { nombre: string; corto: stri
   historia: { nombre: 'Historia', corto: 'documento' },
 }
 
-// Un color fijo por tipo de publicación: la faja dice qué es antes de leerla.
-// `filete` es la raya que separa la faja de la foto.
-const CUBIERTAS: Record<Publicacion['categoria'], { fondo: string; texto: string; cifra: string; filete: string }> = {
-  boletin: { fondo: GRANATE, texto: MARCA.sobrePrincipal, cifra: MARCA.sobrePrincipal, filete: GOLD },
-  anuario: { fondo: PAPEL, texto: '#242125', cifra: GRANATE, filete: GRANATE },
-  dossier: { fondo: '#242125', texto: '#e3d8bf', cifra: GOLD, filete: GOLD },
-  historia: { fondo: PAPEL, texto: '#242125', cifra: GRANATE, filete: GRANATE },
-}
+// Las de la cubierta: las mismas con que la API mide el contraste al guardar.
+const LETRA: Record<TintaDeZona['letra'], string> = { clara: TINTAS.letraClara, oscura: TINTAS.letraOscura }
+const VELO: Record<TintaDeZona['letra'], string> = { clara: TINTAS.veloOscuro, oscura: TINTAS.veloClaro }
+// Con foto pero sin tinta calculada (no se pudo leer): letra clara con un velo
+// que se lee sobre casi todo, como la sombra que llevaba la tapa antes.
+const TINTA_DE_SIEMPRE: TintaDePortada = { arriba: { letra: 'clara', velo: 0.5 }, abajo: { letra: 'clara', velo: 0.5 } }
+const SIN_FOTO: TintaDePortada = { arriba: { letra: 'oscura', velo: 0 }, abajo: { letra: 'oscura', velo: 0 } }
+// El papel de la tapa sin foto: crema, ni el blanco de la web ni un color por tipo.
+const PAPEL_DE_TAPA = TINTAS.veloClaro
 
 const mes = (iso: string) => new Date(iso).toLocaleDateString('es-ES', { month: 'long' })
 // Tres letras siempre («jun», no «jun.»): la abreviatura de cada motor varía.
 const mesCorto = (iso: string) => mes(iso).slice(0, 3)
 const anio = (iso: string) => new Date(iso).getFullYear()
 
-/** La cifra grande de la cubierta: el número del boletín («n.º 12»), el curso de un anuario («25·26») o, si no, el año. */
-function cifra(publicacion: Publicacion) {
+/** Lo que identifica el ejemplar al pie: el número del boletín («N.º 12»), el curso de un anuario («2025 – 2026») o, si no, el año. */
+function referencia(publicacion: Publicacion) {
   const numero = publicacion.titulo.match(/n\.?\s*º\s*(\d+)/i)
-  if (numero) return numero[1]
+  if (numero) return `N.º ${numero[1]}`
   const curso = publicacion.titulo.match(/(\d{4})\s*[-–/]\s*(\d{4})/)
-  if (curso) return `${curso[1].slice(2)}·${curso[2].slice(2)}`
+  if (curso) return `${curso[1]} – ${curso[2]}`
   return String(anio(publicacion.fecha))
 }
 
 // El antetítulo es el h2 de la sección: `.home-refined h2` (home.css) le pondría 40 px sin el !important.
 const cejaTitulo = { ...ceja, fontSize: '11px !important', fontFamily: 'inherit', lineHeight: 1.5 } as const
 
-const grupoDeLaCubierta = { display: 'block', fontSize: 8, letterSpacing: '0.34em', textTransform: 'uppercase' } as const
+const versalitas = { fontFamily: SERIF, fontWeight: 500, textTransform: 'uppercase' } as const
 
 /**
- * Tapa del ejemplar, «faja de color»: arriba el Grupo y el nombre; abajo una
- * faja del color del tipo con el número y la fecha. Con portada subida desde
- * el CMS, la foto va limpia, sin velo de color encima: solo una sombra arriba
- * para leer el nombre. Sin portada, la parte de arriba es del color del tipo.
+ * Velo bajo el texto de una zona: lleno donde va la letra y se apaga hacia la
+ * foto. `hacia` es el borde de la tapa del que sale.
+ */
+function velo({ letra, velo: opacidad }: TintaDeZona, hacia: 'arriba' | 'abajo') {
+  if (opacidad <= 0) return 'none'
+  const lleno = alfa(VELO[letra], opacidad)
+  const nada = alfa(VELO[letra], 0)
+  return hacia === 'arriba'
+    ? `linear-gradient(180deg, ${lleno} 0, ${lleno} 20%, ${nada} 36%)`
+    : `linear-gradient(0deg, ${lleno} 0, ${lleno} 12%, ${nada} 26%)`
+}
+
+/**
+ * Tapa del ejemplar, «foto callada»: la foto entera manda y el texto va
+ * pequeño en dos sitios, el nombre arriba y número y fecha abajo. La letra de
+ * cada sitio (clara u oscura) y el velo justo para leerla los calcula la API
+ * con la foto (`tintaPortada`), así una foto limpia queda sin sombra. Sin
+ * portada, papel crema con la letra oscura.
  */
 function Cubierta({ publicacion }: { publicacion: Publicacion }) {
-  const colores = CUBIERTAS[publicacion.categoria]
-  const nombre = CATEGORIAS[publicacion.categoria].nombre
+  const tinta = publicacion.imagen ? (publicacion.tintaPortada ?? TINTA_DE_SIEMPRE) : SIN_FOTO
   const mesLargo = mes(publicacion.fecha)
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', fontFamily: SERIF }}>
-      {publicacion.imagen ? (
-        <Box sx={{ position: 'relative', flex: 1, overflow: 'hidden', color: '#fff' }}>
-          <Box component="img" {...propsDeFoto(publicacion.imagen, '(min-width: 900px) 300px, 240px')} alt="" sx={{ position: 'absolute', inset: 0, display: 'block', width: '100%', height: '100%', objectFit: 'cover' }} />
-          <Box sx={{ position: 'absolute', inset: '0 0 auto 0', height: '42%', background: 'linear-gradient(180deg, rgba(12, 11, 13, 0.72), rgba(12, 11, 13, 0))' }} />
-          <Box sx={{ position: 'relative', px: 2, pt: 1.75, textAlign: 'center' }}>
-            <Box component="span" sx={{ ...grupoDeLaCubierta, opacity: 0.85 }}>{site.tipo}</Box>
-            <Box component="span" sx={{ display: 'block', mt: 0.75, fontSize: { xs: 20, md: 24 }, fontWeight: 300, letterSpacing: '0.04em', lineHeight: 1.05 }}>{nombre}</Box>
-          </Box>
-        </Box>
-      ) : (
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1.25, px: 2, textAlign: 'center', backgroundColor: colores.fondo, color: colores.texto }}>
-          <Box component="span" sx={grupoDeLaCubierta}>{site.tipo}</Box>
-          <Box component="span" sx={{ display: 'block', width: 28, height: '1px', backgroundColor: colores.filete }} />
-          <Box component="span" sx={{ fontSize: { xs: 26, md: 32 }, fontWeight: 300, letterSpacing: '0.04em', lineHeight: 1.05 }}>{nombre}</Box>
-        </Box>
+    <Box sx={{ position: 'relative', height: '100%', overflow: 'hidden', backgroundColor: publicacion.imagen ? TINTA : PAPEL_DE_TAPA }}>
+      {publicacion.imagen && (
+        <Box component="img" {...propsDeFoto(publicacion.imagen, '(min-width: 900px) 300px, 240px')} alt="" sx={{ position: 'absolute', inset: 0, display: 'block', width: '100%', height: '100%', objectFit: 'cover' }} />
       )}
+      <Box sx={{ position: 'absolute', inset: 0, background: velo(tinta.arriba, 'arriba') }} />
+      <Box sx={{ position: 'absolute', inset: 0, background: velo(tinta.abajo, 'abajo') }} />
+      <Box sx={{ position: 'absolute', left: { xs: 16, md: 18 }, top: { xs: 16, md: 18 }, color: LETRA[tinta.arriba.letra] }}>
+        <Box component="span" sx={{ display: 'block', fontFamily: CORMORANT, fontStyle: 'italic', fontWeight: 500, fontSize: { xs: 27, md: 32 }, lineHeight: 1 }}>
+          {CATEGORIAS[publicacion.categoria].nombre.split(' ')[0]}
+        </Box>
+        <Box component="span" sx={{ ...versalitas, display: 'block', mt: 0.75, fontSize: { xs: 7.5, md: 8.5 }, letterSpacing: '0.3em' }}>{site.tipo}</Box>
+      </Box>
       <Box
         sx={{
-          height: '26%',
-          flexShrink: 0,
-          boxSizing: 'border-box',
-          px: 2,
-          pb: 1.5,
+          ...versalitas,
+          position: 'absolute',
+          left: { xs: 16, md: 18 },
+          right: { xs: 16, md: 18 },
+          bottom: { xs: 13, md: 15 },
           display: 'flex',
-          alignItems: 'flex-end',
           justifyContent: 'space-between',
           gap: 1,
-          borderTop: `2px solid ${colores.filete}`,
-          backgroundColor: colores.fondo,
-          color: colores.texto,
+          pt: 0.75,
+          borderTop: '1px solid currentColor',
+          fontSize: { xs: 8, md: 9 },
+          letterSpacing: '0.2em',
+          whiteSpace: 'nowrap',
+          color: LETRA[tinta.abajo.letra],
         }}
       >
-        <Box component="span" sx={{ fontSize: { xs: 40, md: 50 }, fontWeight: 200, lineHeight: 0.85, letterSpacing: '-0.02em', color: colores.cifra, whiteSpace: 'nowrap' }}>
-          {publicacion.categoria === 'boletin' && (
-            <Box component="small" sx={{ fontSize: { xs: 12, md: 14 }, fontWeight: 500, letterSpacing: '0.08em', mr: 0.75, verticalAlign: 'top', position: 'relative', top: 4 }}>n.º</Box>
-          )}
-          {cifra(publicacion)}
-        </Box>
-        <Box component="span" sx={{ fontSize: 9, letterSpacing: '0.24em', textTransform: 'uppercase', textAlign: 'right', lineHeight: 1.7 }}>
-          {mesLargo.charAt(0).toUpperCase() + mesLargo.slice(1)}<br />{anio(publicacion.fecha)}
-        </Box>
+        <span>{referencia(publicacion)}</span>
+        <span>{mesLargo.charAt(0).toUpperCase() + mesLargo.slice(1)} {anio(publicacion.fecha)}</span>
       </Box>
     </Box>
   )
@@ -238,23 +244,19 @@ function Ejemplar({ destacada }: { destacada: Publicacion }) {
 }
 
 /**
- * La tapa en pequeño de las anteriores: la foto y la faja de su color. A este
- * tamaño las letras no se leen; la faja basta para reconocer el tipo.
+ * La tapa en pequeño de las anteriores: solo la foto, o el papel si no tiene.
+ * A este tamaño las letras no se leen; el tipo ya lo dice la fila.
  */
 function Miniatura({ publicacion }: { publicacion: Publicacion }) {
-  const colores = CUBIERTAS[publicacion.categoria]
   return (
     <Box
       component="span"
       aria-hidden="true"
-      sx={{ display: 'flex', flexDirection: 'column', width: 44, aspectRatio: '3 / 4', overflow: 'hidden', backgroundColor: colores.fondo, boxShadow: '0 6px 14px rgba(0, 0, 0, 0.5)' }}
+      sx={{ position: 'relative', display: 'block', width: 44, aspectRatio: '3 / 4', overflow: 'hidden', backgroundColor: publicacion.imagen ? TINTA : PAPEL_DE_TAPA, boxShadow: '0 6px 14px rgba(0, 0, 0, 0.5)' }}
     >
-      <Box component="span" sx={{ position: 'relative', flex: 1 }}>
-        {publicacion.imagen && (
-          <Box component="img" {...propsDeFoto(publicacion.imagen, '44px')} alt="" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-        )}
-      </Box>
-      <Box component="span" sx={{ height: '26%', borderTop: `1px solid ${colores.filete}`, backgroundColor: colores.fondo }} />
+      {publicacion.imagen && (
+        <Box component="img" {...propsDeFoto(publicacion.imagen, '44px')} alt="" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+      )}
     </Box>
   )
 }

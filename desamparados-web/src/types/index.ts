@@ -39,4 +39,18 @@ export interface Publicacion {
   categoria: 'boletin' | 'dossier' | 'anuario' | 'historia'
   /** Destacada a mano en el CMS: en la portada va primera y con cinta. */
   fijada?: boolean
+  /** Letra y velo de la cubierta según la foto; sin ella, la letra de siempre. */
+  tintaPortada?: TintaDePortada
+}
+
+/** Una zona de la cubierta con texto: qué letra lleva y cuánto velo debajo (0 a 0,8). */
+export interface TintaDeZona {
+  letra: 'clara' | 'oscura'
+  velo: number
+}
+
+/** La calcula la API al guardar la portada (`domain/tinta-de-portada.ts`). */
+export interface TintaDePortada {
+  arriba: TintaDeZona
+  abajo: TintaDeZona
 }

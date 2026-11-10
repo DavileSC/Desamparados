@@ -1,0 +1,7 @@
+{
+  "$comentario": "Colores de la cubierta «Foto callada» de las publicaciones. La API mide con ellos el contraste al guardar la portada y la web pinta con ellos: si cambian en un lado sin el otro, el 4,5:1 calculado deja de ser cierto.",
+  "letraClara": "#ffffff",
+  "letraOscura": "#1f1c1f",
+  "veloOscuro": "#0a090a",
+  "veloClaro": "#f4efe6"
+}

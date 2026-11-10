@@ -5,6 +5,7 @@ import PublicacionesDestacadas from '../PublicacionesDestacadas'
 import { textosDePrueba } from './ayudas'
 import type { TextosPortada } from '../../../lib/api/portada'
 import { site } from '../../../config/site'
+import TINTAS from '../../../../../shared/tinta-de-portada.json'
 
 afterEach(() => { vi.unstubAllGlobals() })
 
@@ -55,13 +56,13 @@ describe('PublicacionesDestacadas', () => {
     expect(enlaces[0]).toHaveTextContent(ANUARIO.titulo)
   })
 
-  it('sin imagen pinta una portada tipográfica con el número del boletín; con imagen, la foto con la faja del número', async () => {
+  it('sin imagen pinta la tapa de papel con el número del boletín; con imagen, la foto con el nombre y el número encima', async () => {
     // Se rompe si una publicación sin portada deja un hueco vacío, si se ignora la imagen
-    // cuando la hay o si la foto tapa la cabecera y el número y deja de parecer un boletín.
+    // cuando la hay o si la tapa pierde el nombre o el número y deja de parecer un boletín.
     servir([BOLETIN])
     const { unmount } = renderWithProviders(<PublicacionesDestacadas />)
     const portada = await screen.findByTestId('portada-publicacion')
-    expect(within(portada).getByText('12')).toBeInTheDocument()
+    expect(within(portada).getByText('N.º 12')).toBeInTheDocument()
     expect(portada.querySelector('img')).toBeNull()
     unmount()
 
@@ -69,9 +70,20 @@ describe('PublicacionesDestacadas', () => {
     renderWithProviders(<PublicacionesDestacadas />)
     const conFoto = await screen.findByTestId('portada-publicacion')
     expect(conFoto.querySelector('img')).toHaveAttribute('src', '/storage/portada.jpg')
-    expect(within(conFoto).getByText('Boletín informativo')).toBeInTheDocument()
+    expect(within(conFoto).getByText('Boletín')).toBeInTheDocument()
     expect(within(conFoto).getByText(site.tipo)).toBeInTheDocument()
-    expect(conFoto).toHaveTextContent('n.º12')
+    expect(within(conFoto).getByText('N.º 12')).toBeInTheDocument()
+  })
+
+  it('la letra de cada zona de la tapa sale de la tinta calculada con la foto', async () => {
+    // Se rompe si la tapa ignora `tintaPortada` y pinta siempre letra blanca:
+    // sobre un cielo claro, el nombre dejaría de leerse.
+    const tintaPortada = { arriba: { letra: 'oscura', velo: 0 }, abajo: { letra: 'clara', velo: 0.3 } }
+    servir([{ ...BOLETIN, imagenUrl: '/storage/portada.jpg', tintaPortada }])
+    renderWithProviders(<PublicacionesDestacadas />)
+    const tapa = await screen.findByTestId('portada-publicacion')
+    expect(within(tapa).getByText('Boletín').parentElement).toHaveStyle({ color: TINTAS.letraOscura })
+    expect(within(tapa).getByText('N.º 12').parentElement).toHaveStyle({ color: TINTAS.letraClara })
   })
 
   it('cada anterior va en su fila con el tipo, la fecha y su tapa en pequeño', async () => {
@@ -104,7 +116,7 @@ describe('PublicacionesDestacadas', () => {
     servir([ANUARIO])
     renderWithProviders(<PublicacionesDestacadas />)
     const portada = await screen.findByTestId('portada-publicacion')
-    expect(within(portada).getByText('25·26')).toBeInTheDocument()
+    expect(within(portada).getByText('2025 – 2026')).toBeInTheDocument()
   })
 
   it('enseña el botón del archivo y la marca de agua que vienen del CMS', async () => {

@@ -906,6 +906,10 @@ model Publicacion {
   /// La destacada de la portada, igual que en Noticia: una sola, publicada, y
   /// ocupa el puesto grande del bloque de Publicaciones.
   fijada      Boolean         @default(false)
+  /// Letra y velo de la cubierta según la foto, arriba y abajo
+  /// (domain/tinta-de-portada.ts). Se calcula al guardar la portada; null sin
+  /// foto o en las de antes, que la portada rellena al servirlas.
+  tintaPortada Json?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 

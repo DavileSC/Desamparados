@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query'
-import type { Publicacion } from '../../types'
+import type { Publicacion, TintaDePortada } from '../../types'
 import { llamarApi } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
 
@@ -22,6 +22,8 @@ export interface PublicacionDeLaApi {
   visible: boolean
   /** La destacada de la portada: ocupa el puesto grande y lleva la cinta. */
   fijada: boolean
+  /** Null sin portada, o si la foto no se pudo leer. */
+  tintaPortada?: TintaDePortada | null
   updatedAt?: string
 }
 
@@ -35,6 +37,7 @@ function aPublicacion(publicacion: PublicacionDeLaApi): Publicacion {
     fecha: publicacion.fecha,
     categoria: publicacion.categoria,
     fijada: publicacion.fijada,
+    tintaPortada: publicacion.tintaPortada ?? undefined,
   }
 }
 
