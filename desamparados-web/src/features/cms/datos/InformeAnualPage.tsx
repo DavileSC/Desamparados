@@ -5,7 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../altas/auth/store'
 import {
-  guardarEnDisco, guardarInformeAnual, traerInformeAnual, traerInformeAnualPdf,
+  guardarEnDisco, guardarInformeAnual, traerInformeAnual, traerInformeAnualPdf, traerInformeAnualPptx,
   type CampoInforme, type InformeAnualResponse, type TextosInforme,
 } from '../../../lib/api/datos'
 import { FILETE, FONDO_PIEZA, ORO, ROSA_URGENTE, SERIF, VERSALITAS } from '../inicio/estiloRetablo'
@@ -82,7 +82,9 @@ const palabras = (t: string | null) => (t?.trim() ? t.trim().split(/\s+/).length
  * Informe sale solo de las cifras del año. Se guarda solo mientras se escribe.
  *
  * El definitivo espera a la presentación y al epílogo; el borrador sale
- * siempre, con lo que falta a la vista.
+ * siempre, con lo que falta a la vista. La presentación en PowerPoint (para
+ * proyectarla en una tele) también sale siempre: lo que falte se ve en su
+ * diapositiva, y se repasa antes de presentarla.
  */
 export default function InformeAnualPage() {
   const { anio: anioRuta } = useParams()
@@ -161,6 +163,13 @@ export default function InformeAnualPage() {
     },
   })
 
+  const pptx = useMutation({
+    mutationFn: async () => {
+      await volcar(anio)
+      guardarEnDisco(await traerInformeAnualPptx(anio), `informe-anual-${anio}.pptx`)
+    },
+  })
+
   if (isPending || ((!textos || cargado !== anio) && !isError)) return <CircularProgress aria-label="Cargando el Informe anual" />
   if (isError || !data || !textos) return <Alert severity="error">No se ha podido cargar el Informe anual. Inténtalo de nuevo en unos minutos.</Alert>
 
@@ -210,6 +219,9 @@ export default function InformeAnualPage() {
             {anios.map((a) => <MenuItem key={a} value={a}>{a}{a === actual ? ' (en marcha)' : ''}</MenuItem>)}
           </TextField>
           <Button variant="outlined" disabled={pdf.isPending} onClick={() => pdf.mutate(true)}>Ver borrador</Button>
+          <Button variant="outlined" disabled={pptx.isPending} onClick={() => pptx.mutate()} startIcon={pptx.isPending ? <CircularProgress size={14} /> : undefined}>
+            Presentación · PowerPoint
+          </Button>
           <Box component="span" title={avisoFalta ? `${avisoFalta}: mientras, «Ver borrador».` : undefined}>
             <Button variant="contained" disabled={faltan.length > 0 || pdf.isPending} onClick={() => pdf.mutate(false)} startIcon={pdf.isPending ? <CircularProgress size={14} /> : undefined}>
               Generar PDF
@@ -219,6 +231,7 @@ export default function InformeAnualPage() {
       </Box>
 
       {pdf.isError && <Alert severity="error" onClose={() => pdf.reset()}>{pdf.error.message}</Alert>}
+      {pptx.isError && <Alert severity="error" onClose={() => pptx.reset()}>{pptx.error.message}</Alert>}
 
       <Box sx={{ flex: { md: '1 1 0 !important' }, minHeight: 0, display: 'grid', gap: 1.75, gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(260px, 360px) minmax(0, 1fr)' }, gridTemplateRows: { md: 'minmax(0, 1fr)' } }}>
         <Box component="nav" aria-label="Capítulos del Informe anual" sx={{ minHeight: 0, overflowY: 'auto', scrollbarWidth: 'thin', display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', gap: '1px', p: 1, borderRadius: 2.5, border: `1px solid ${FILETE}` }}>

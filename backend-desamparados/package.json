@@ -54,6 +54,7 @@
     "nodemailer": "^10.0.13",
     "otpauth": "^9.5.0",
     "pdfkit": "^0.17.2",
+    "pptxgenjs": "^4.0.1",
     "qrcode": "^1.5.4",
     "sanitize-html": "^2.18.1",
     "sharp": "^0.35.4",
@@ -73,6 +74,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/sanitize-html": "^2.16.1",
     "@types/web-push": "^3.6.4",
+    "jszip": "^3.10.2",
     "prisma": "^7.10.0",
     "typescript": "~6.0.3"
   },
@@ -80,6 +82,7 @@
     "deepmerge-ts": "^8.0.2",
     "mariadb": "^3.5.3",
     "mysql2": "^3.24.2",
-    "uuid": "^11.1.1"
+    "uuid": "^11.1.1",
+    "image-size": "^2.1.0"
   }
 }

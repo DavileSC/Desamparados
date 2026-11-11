@@ -105,6 +105,9 @@ export const guardarInformeAnual = (anio: number, cambios: Partial<TextosInforme
 export const traerInformeAnualPdf = (anio: number, borrador: boolean) =>
   traerArchivo(`/datos/informe-anual/${anio}/pdf${borrador ? '?borrador=1' : ''}`)
 
+/** El Informe anual en PowerPoint, para proyectarlo. Sale siempre, falte o no algún texto. */
+export const traerInformeAnualPptx = (anio: number) => traerArchivo(`/datos/informe-anual/${anio}/pptx`)
+
 /** Descarga un fichero ya traído, con el nombre que propuso el servidor. */
 export function guardarEnDisco({ blob, nombre }: { blob: Blob; nombre: string | null }, porDefecto: string) {
   const url = URL.createObjectURL(blob)

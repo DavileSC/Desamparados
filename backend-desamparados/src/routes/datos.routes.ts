@@ -26,5 +26,6 @@ datosRoutes.use('/informe-anual', conModulo('informe-anual'));
 datosRoutes.get('/informe-anual/:anio', checkRole(ROLES_INFORME_ANUAL), validate(anioInformeSchema), DatosController.leerInformeAnual);
 datosRoutes.put('/informe-anual/:anio', checkRole(ROLES_INFORME_ANUAL), validate(guardarInformeAnualSchema), DatosController.guardarInformeAnual);
 datosRoutes.get('/informe-anual/:anio/pdf', checkRole(ROLES_INFORME_ANUAL), validate(anioInformeSchema), DatosController.informeAnualPdf);
+datosRoutes.get('/informe-anual/:anio/pptx', checkRole(ROLES_INFORME_ANUAL), validate(anioInformeSchema), DatosController.informeAnualPptx);
 
 export { datosRoutes };

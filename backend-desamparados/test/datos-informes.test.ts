@@ -12,13 +12,15 @@ import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { anioDeHoy, leerPeriodo, periodoAnterior, periodoDe, periodosDisponibles } from '../src/domain/periodo-datos.js';
-import { areasDe, etiquetasDeMeses, valorEscrito, vistazo } from '../src/domain/datos-areas.js';
+import { areasActivas, areasDe, etiquetasDeMeses, valorEscrito, vistazo } from '../src/domain/datos-areas.js';
 import { laCorporacion } from '../src/domain/articulos.js';
 import { puedeEscribir } from '../src/services/informe-anual.service.js';
 import { capituloDeSalidas, informeAnual, informeDeArea } from '../src/services/informes/informes.js';
 import { entradilla, enTexto } from '../src/domain/entradillas.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 import { HOY, crudos } from './fixtures/crudos-informes.js';
+import JSZip from 'jszip';
+import { fraseDestacada, presentacionAnual } from '../src/services/informes/presentacion.js';
 
 /** Un año sin datos reales: la prueba escribe su Informe anual y lo borra al acabar. */
 const ANIO_DE_PRUEBA = 2001;
@@ -249,6 +251,59 @@ describe('los PDF', () => {
   });
 });
 
+describe('la presentación en PowerPoint', () => {
+  const p = periodoDe(2025, HOY);
+  const SIN_TEXTOS = { presentacion: null, firmaPresentacion: null, lugarFecha: null, epilogo: null, firmaEpilogo: null, notaPatrimonio: null, fechaCabildo: null };
+
+  /** Las diapositivas y sus notas, en orden, leídas del .pptx. */
+  async function abrir(pptx: Buffer) {
+    const zip = await JSZip.loadAsync(pptx);
+    const numero = (ruta: string) => Number(ruta.match(/(\d+)\.xml$/)![1]);
+    const leer = (prefijo: string) => Promise.all(Object.keys(zip.files).filter((f) => new RegExp(`^ppt/${prefijo}\\d+\\.xml$`).test(f))
+      .sort((a, b) => numero(a) - numero(b)).map((f) => zip.file(f)!.async('string')));
+    const textoDe = (xml: string) => [...xml.matchAll(/<a:t>([^<]*)<\/a:t>/g)].map((m) => m[1]).join(' ');
+    return { diapositivas: (await leer('slides/slide')).map(textoDe), notas: (await leer('notesSlides/notesSlide')).map(textoDe), graficas: Object.keys(zip.files).filter((f) => /^ppt\/charts\/chart\d+\.xml$/.test(f)).length };
+  }
+
+  test('de una carta se deja en pantalla la primera frase que cabe, y la carta entera va a las notas', async () => {
+    assert.equal(fraseDestacada('Queridos hermanos: gracias. Ha sido un gran año.\n\nOtro párrafo.', 40), 'Queridos hermanos: gracias.');
+    assert.equal(fraseDestacada('Una sola frase muy larga que no cabe entera en la pantalla de la tele', 30), 'Una sola frase muy larga que…');
+    assert.equal(fraseDestacada('   '), null);
+    assert.equal(fraseDestacada(null), null);
+
+    const carta = 'Queridos hermanos: gracias por este año.\n\nY por todo lo demás.';
+    const { diapositivas, notas } = await abrir(await presentacionAnual(p, areasDe(crudos(), p, HOY), crudos(), { ...SIN_TEXTOS, presentacion: carta }, { hoy: HOY }));
+    assert.match(diapositivas[1], /Queridos hermanos: gracias por este año\./);
+    assert.doesNotMatch(diapositivas[1], /todo lo demás/);
+    assert.match(notas[1], /Y por todo lo demás\./);
+  });
+
+  test('portada, presentación, vistazo, seis capítulos y epílogo, con lo que falta a la vista', async () => {
+    const pptx = await presentacionAnual(p, areasDe(crudos(), p, HOY), crudos(), { ...SIN_TEXTOS, notaPatrimonio: 'Estreno de la candelería.' }, { hoy: HOY });
+    const { diapositivas, notas, graficas } = await abrir(pptx);
+    assert.equal(diapositivas.length, 10);
+    assert.match(diapositivas[0], /INFORME ANUAL/);
+    assert.match(diapositivas[1], /Falta la carta del Hermano Mayor/);
+    assert.match(diapositivas[2], /El año de un vistazo/);
+    assert.match(diapositivas[3], /Capítulo III/i);
+    assert.match(diapositivas[9], /Falta el epílogo del Secretario/);
+    // La entradilla de cada capítulo va en sus notas, y la nota de patrimonio con la suya.
+    const entradillaDeProcesion = enTexto(entradilla('procesion', crudos(), p, HOY));
+    assert.ok(notas[5].includes(entradillaDeProcesion.slice(0, 40)), notas[5]);
+    assert.ok(notas.some((n) => n.includes('Estreno de la candelería.')));
+    assert.ok(graficas >= 5, `${graficas} gráficas de PowerPoint`);
+  });
+
+  test('sin Agenda, Procesión ni Inventario, sus capítulos no salen y el resto se numera como en el PDF', async () => {
+    const areas = areasActivas(areasDe(crudos(), p, HOY), new Set());
+    const { diapositivas } = await abrir(await presentacionAnual(p, areas, crudos(), SIN_TEXTOS, { hoy: HOY }));
+    assert.equal(diapositivas.length, 7);
+    assert.match(diapositivas[3], /Hermanos/);
+    assert.match(diapositivas[3], /Capítulo III/i);
+    assert.ok(!diapositivas.some((d) => /Patrimonio|Cultos y actos/.test(d)));
+  });
+});
+
 describe('la API', () => {
   test('Datos e informes: el Hermano Mayor sí, Secretaría no', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
@@ -300,6 +355,12 @@ describe('la API', () => {
     const definitiva = await pedir(`/informe-anual/${ANIO_DE_PRUEBA}/pdf`, hm);
     assert.equal(definitiva.status, 200);
     assert.match(definitiva.headers.get('content-disposition') ?? '', /attachment; filename="informe-anual-2001\.pdf"/);
+
+    const presentacion = await pedir(`/informe-anual/${ANIO_DE_PRUEBA}/pptx`, hm);
+    assert.equal(presentacion.status, 200);
+    assert.equal(presentacion.headers.get('content-type'), 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
+    assert.match(presentacion.headers.get('content-disposition') ?? '', /attachment; filename="informe-anual-2001\.pptx"/);
+    assert.equal((await pedir(`/informe-anual/${ANIO_DE_PRUEBA}/pptx`, tesoreria)).status, 403);
 
     assert.equal((await pedir(`/informe-anual/${ANIO_DE_PRUEBA}`, hm, 'PUT', { epilogo: '<script>' })).status, 400);
     assert.equal((await pedir('/informe-anual/2999', hm)).status, 400, 'un año que no ha empezado');

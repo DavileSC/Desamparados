@@ -3,6 +3,7 @@ import { DatosService } from '../services/datos.service.js';
 import { InformeAnualService, leerAnio } from '../services/informe-anual.service.js';
 import { AuditoriaService } from '../services/auditoria.service.js';
 import { informeAnual, informeDeArea } from '../services/informes/informes.js';
+import { presentacionAnual } from '../services/informes/presentacion.js';
 import { leerPeriodo, periodoDe } from '../domain/periodo-datos.js';
 import { areasActivas, areasDe, type ClaveArea } from '../domain/datos-areas.js';
 import { ModulosService } from '../services/modulos.service.js';
@@ -10,15 +11,21 @@ import { HttpError, NotFoundError } from '../utils/error.handle.js';
 import { manejar } from '../utils/manejar.js';
 
 /** «Informe de hermanos 2026» → informe-de-hermanos-2026.pdf */
-const nombreDeArchivo = (texto: string) =>
-  `${texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}.pdf`;
+const nombreDeArchivo = (texto: string, extension = 'pdf') =>
+  `${texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}.${extension}`;
+
+const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 
 function enviarPdf(res: Response, pdf: Buffer, titulo: string, enLinea = false) {
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `${enLinea ? 'inline' : 'attachment'}; filename="${nombreDeArchivo(titulo)}"`);
+  enviarArchivo(res, pdf, 'application/pdf', nombreDeArchivo(titulo), enLinea);
+}
+
+function enviarArchivo(res: Response, archivo: Buffer, tipo: string, nombre: string, enLinea = false) {
+  res.setHeader('Content-Type', tipo);
+  res.setHeader('Content-Disposition', `${enLinea ? 'inline' : 'attachment'}; filename="${nombre}"`);
   // Son cifras de la junta: que no se queden en ninguna caché compartida.
   res.setHeader('Cache-Control', 'private, no-store');
-  res.status(200).send(pdf);
+  res.status(200).send(archivo);
 }
 
 export class DatosController {
@@ -63,5 +70,20 @@ export class DatosController {
     const crudos = await DatosService.crudos(periodo, hoy);
     const pdf = await informeAnual(periodo, areasActivas(areasDe(crudos, periodo, hoy), await ModulosService.activos()), crudos, informe.textos, { borrador, hoy });
     enviarPdf(res, pdf, `Informe anual ${anio}${borrador ? ' borrador' : ''}`, borrador);
+  });
+
+  /**
+   * El Informe anual en PowerPoint, para proyectarlo. Sale siempre: lo que
+   * falta por escribir se ve en su diapositiva, y quien lo vaya a presentar lo
+   * repasa antes en el portátil.
+   */
+  static informeAnualPptx = manejar('Error generando la presentación del Informe anual', async (req, res) => {
+    const hoy = new Date();
+    const anio = leerAnio(String(req.params.anio), hoy);
+    const informe = await InformeAnualService.leer(anio, hoy);
+    const periodo = periodoDe(anio, hoy);
+    const crudos = await DatosService.crudos(periodo, hoy);
+    const pptx = await presentacionAnual(periodo, areasActivas(areasDe(crudos, periodo, hoy), await ModulosService.activos()), crudos, informe.textos, { hoy });
+    enviarArchivo(res, pptx, PPTX, nombreDeArchivo(`Informe anual ${anio}`, 'pptx'));
   });
 }

@@ -100,3 +100,25 @@ describe('el Informe anual', () => {
     expect(within(nav).getByText('Patrimonio')).toBeInTheDocument()
   })
 })
+
+describe('la presentación en PowerPoint', () => {
+  it('se descarga aunque falten la carta y el epílogo', async () => {
+    const fetch = vi.fn(async (url: string) =>
+      url.endsWith('/pptx')
+        ? new Response(new Blob(['pptx']), { status: 200, headers: { 'Content-Disposition': 'attachment; filename="informe-anual-2025.pptx"' } })
+        : json(informe()))
+    vi.stubGlobal('fetch', fetch)
+    const crear = vi.fn(() => 'blob:presentacion')
+    vi.stubGlobal('URL', Object.assign(Object.create(URL), { createObjectURL: crear, revokeObjectURL: vi.fn() }))
+    const usuario = userEvent.setup()
+    pintar()
+
+    const boton = await screen.findByRole('button', { name: 'Presentación · PowerPoint' })
+    expect(screen.getByRole('button', { name: 'Generar PDF' })).toBeDisabled()
+    expect(boton).toBeEnabled()
+    await usuario.click(boton)
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringMatching(/\/datos\/informe-anual\/2025\/pptx$/), expect.anything()))
+    await waitFor(() => expect(crear).toHaveBeenCalled())
+  })
+})

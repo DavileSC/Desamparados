@@ -112,7 +112,7 @@ const CUANTAS = ['', 'una', 'dos', 'tres', 'cuatro', 'cinco', 'seis'];
 const TITULO_MAXIMO = 40;
 
 /** Las salidas que ese año tuvieron papeletas; si aún no hay ninguna (enero), las activas. */
-function salidasDelAnio(crudos: DatosCrudos) {
+export function salidasDelAnio(crudos: DatosCrudos) {
   const conPapeletas = crudos.procesion.porSalida.filter((s) => s.papeletas > 0);
   return conPapeletas.length ? conPapeletas : crudos.procesion.porSalida;
 }
