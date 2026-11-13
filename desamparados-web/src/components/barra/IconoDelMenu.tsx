@@ -4,7 +4,9 @@ import { m, useReducedMotion } from 'framer-motion'
 const CURVA = [0.22, 1, 0.36, 1] as const
 
 const ARRIBA = { cerrado: { top: 0, rotate: 0 }, abierto: { top: 4.25, rotate: 45 } }
-const ABAJO = { cerrado: { top: 8.5, rotate: 0 }, abierto: { top: 4.25, rotate: -45 } }
+// La de abajo, corta y dorada como el filete de la barra; al cruzarse en la X
+// se alarga hasta el ancho de la otra.
+const ABAJO = { cerrado: { top: 8.5, rotate: 0, left: 8 }, abierto: { top: 4.25, rotate: -45, left: 0 } }
 
 /**
  * Las dos rayas del botón del menú del móvil, que se cruzan en una X al abrirlo.
@@ -21,7 +23,7 @@ export default function IconoDelMenu({ abierto, desdeCerradas = false }: { abier
   return (
     <Box aria-hidden sx={{ position: 'relative', width: 22, height: 10 }}>
       <Box component={m.span} variants={ARRIBA} initial={inicial} animate={estado} transition={transition} sx={raya} />
-      <Box component={m.span} variants={ABAJO} initial={inicial} animate={estado} transition={transition} sx={raya} />
+      <Box component={m.span} variants={ABAJO} initial={inicial} animate={estado} transition={transition} sx={{ ...raya, left: 8, bgcolor: 'secondary.main' }} />
     </Box>
   )
 }

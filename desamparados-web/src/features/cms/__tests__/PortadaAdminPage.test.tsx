@@ -297,7 +297,7 @@ describe('PortadaAdminPage', () => {
     montar()
     await screen.findByDisplayValue(TITULO)
 
-    expect(screen.getByText(/el texto pequeño en versalitas, sobre el título grande/i)).toBeInTheDocument()
+    expect(screen.getByText(/lo leen los lectores de pantalla y los buscadores/i)).toBeInTheDocument()
     const fotoDelSabado = screen.getByText(/ocupa el fondo del bloque a todo lo ancho/i)
     // El servidor borra la foto anterior al guardar (contenido.service.ts), igual
     // que con las de la cabecera: si no se avisa, se pierde sin saber por qué.

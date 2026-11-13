@@ -1,5 +1,6 @@
 import MetaDePagina from '../../../components/MetaDePagina'
 import { Box, Typography } from '@mui/material'
+import { bajoLaBarra } from '../../../components/barra/estilos'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
@@ -26,8 +27,8 @@ import { historia } from '../../../../../shared/contenido-por-defecto.json'
 import { deLaCorporacion } from '../../../domain/articulos'
 import { site } from '../../../config/site'
 
-// Mismo umbral que el navbar (`DESKTOP_NAV_MIN`): desde ahí la barra es fija de
-// 72 px y se pone encima de la página, así que la cabecera la deja pasar.
+// Mismo umbral que el navbar (`DESKTOP_NAV_MIN`): desde ahí la barra es fija
+// (`ALTO_BARRA_ESCRITORIO`) y se pone encima de la página, así que la cabecera la deja pasar.
 const ESCRITORIO = '@media (min-width:1024px)'
 
 /** La cronología va en tinta translúcida: sigue siendo un bloque y deja pasar el velo. */
@@ -36,7 +37,7 @@ const FILETE = 'rgba(204, 196, 201, 0.22)'
 const FILETE_LEVE = 'rgba(204, 196, 201, 0.1)'
 
 /** La cabecera: la comparten la página y su esqueleto. */
-const cabeceraSx = { pt: { xs: 8, md: 14 }, pb: { xs: 7, md: 12 }, [ESCRITORIO]: { pt: 'calc(72px + 96px)' } } as const
+const cabeceraSx = { pt: { xs: 8, md: 14 }, pb: { xs: 7, md: 12 }, [ESCRITORIO]: { pt: bajoLaBarra(96) } } as const
 const cabeceraRejilla = {
   display: 'grid',
   gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) 380px' },

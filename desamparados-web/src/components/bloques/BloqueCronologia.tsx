@@ -1,4 +1,5 @@
 import { Box, Typography, useMediaQuery } from '@mui/material'
+import { bajoLaBarra, desktopMq } from '../barra/estilos'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { m, useInView, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion'
 import { useModoEdicion } from './modoEdicion'
@@ -227,11 +228,12 @@ function HitoDeLaLinea({ hito, id, primero, ultimo, vivo }: HitoDeLaLineaProps) 
         pb: ultimo ? 0 : HUECO,
         // El año queda justo bajo la barra fija al ajustarse (y al saltar desde el índice).
         scrollMarginTop: { xs: 80, md: 104 },
+        [desktopMq]: { scrollMarginTop: bajoLaBarra(32) },
       }}
       id={id}
     >
       {/* En escritorio el periodo se queda a la vista mientras se lee su relato. */}
-      <Box sx={{ gridArea: 'periodo', textAlign: { md: 'right' }, pt: { md: '6px' }, alignSelf: 'start', position: { md: 'sticky' }, top: { md: 112 } }}>
+      <Box sx={{ gridArea: 'periodo', textAlign: { md: 'right' }, pt: { md: '6px' }, alignSelf: 'start', position: { md: 'sticky' }, top: { md: 112 }, [desktopMq]: { top: bajoLaBarra(40) } }}>
         <Typography
           component="span"
           sx={{

@@ -1008,3 +1008,35 @@ Trampas:
   ajeno. Si hay que avisar, lo hace Secretaría en persona.
 - **Caducan a los 60 días** (`DIAS_DE_RETENCION`): las borra el barrido de cada
   hora de `index.ts`, con sus documentos.
+
+## 17. La barra de escritorio: dos pisos y un cristal que no se anida
+
+Desde el 13-11-2026 la barra de escritorio va en dos pisos (redes, escudo con
+el nombre corto y la localidad, y acceso; debajo, el menú) y mide `ALTO_BARRA_ESCRITORIO` (116 px,
+en `components/barra/estilos.ts`). Va fija y encima de la página, así que
+quien empieza bajo ella deja su hueco con `bajoLaBarra(aire)`: las cabeceras,
+el hero, las páginas sin cabecera, los `scroll-margin` de las anclas y lo que
+va pegado (`sticky`). Una página nueva que empiece arriba usa lo mismo; un
+número a mano se queda corto en cuanto la barra cambie. La excepción es
+`features/inicio/home.css`, que no puede importar: lleva 140 escrito y su
+comentario.
+
+Trampas:
+
+- **Un `backdrop-filter` dentro de otro no desenfoca la página.** El que lo
+  lleva hace de «raíz» para los de dentro, que solo ven lo que hay en él. Por
+  eso el velo de la barra (el que se oscurece al bajar) es una caja aparte,
+  hermana del contenido, y no el estilo del `AppBar`: si no, la hoja de
+  cristal del menú enseñaría la barra desenfocada en vez de la foto. Tampoco
+  sirve envolver la hoja en algo con `filter`, `opacity` menor que 1,
+  `mask` o `clip-path`.
+- **El cristal depende del desenfoque.** Con más de ~10 px la foto de detrás
+  se vuelve una mancha y la transparencia parece solo un cambio de tono: así
+  se eligieron 3 px (`VIDRIO`). Sobre una foto clara (el encaje de la saya)
+  la hoja toma algo de su color; se probó casi negra (88 %, 12 px) y se
+  prefirió así.
+- **Las pruebas del servidor escriben en la base local.** `npm test` usa la
+  misma `desamparados_db` que la web en marcha: `contenido-api.test.ts` guarda
+  la portada y luego la devuelve a como la leyó. Si se pasan con un campo
+  retirado en el código, lo que devuelve ya no lo lleva (pasó el 13-11-2026
+  con el antetítulo del hero, que se quedó en «Bienvenidos»).

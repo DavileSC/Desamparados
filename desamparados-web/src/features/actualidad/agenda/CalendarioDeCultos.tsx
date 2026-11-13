@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Box, ButtonBase, ClickAwayListener, Dialog, Popper, Typography, useMediaQuery } from '@mui/material'
+import { bajoLaBarra, desktopMq } from '../../../components/barra/estilos'
 import { keyframes, useTheme } from '@mui/material/styles'
 import { useReducedMotion } from 'framer-motion'
 import type { ApiEvent } from '../../../lib/api/agenda'
@@ -162,6 +163,7 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
     textAlign: 'left', overflow: 'hidden', color: TINTA,
     // Al seguir a la ventana de un acto, que la barra fija de la web no lo tape.
     scrollMarginBlock: '96px 240px',
+    [desktopMq]: { scrollMarginBlock: `${bajoLaBarra(24)} 240px` },
   } as const
   const foco = { '&.Mui-focusVisible': { outline: `2px solid ${GRANATE}`, outlineOffset: -2 } } as const
 

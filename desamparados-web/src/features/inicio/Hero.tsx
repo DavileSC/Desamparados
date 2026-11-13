@@ -1,6 +1,8 @@
 import { useContext, useEffect, useRef, useState, type MouseEvent } from 'react'
 import CuentaAtrasDeSalida from './CuentaAtrasDeSalida'
 import { Box, Typography } from '@mui/material'
+import { visuallyHidden } from '@mui/utils'
+import { ALTO_BARRA_ESCRITORIO, desktopMq } from '../../components/barra/estilos'
 import { m, useMotionValue, useReducedMotion, useSpring } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
@@ -263,8 +265,9 @@ export default function Hero() {
             // En el móvil, abajo a la derecha: arriba va el título, y los dos
             // botones dejan libre ese rincón. En escritorio, arriba a la
             // derecha (abajo a la izquierda va la cuenta atrás), por debajo
-            // de la barra fija, que tapa los primeros 72 px.
+            // de la barra fija, que en escritorio tapa `ALTO_BARRA_ESCRITORIO`.
             top: { xs: 'auto', md: 96 },
+            [desktopMq]: { top: ALTO_BARRA_ESCRITORIO + 24 },
             bottom: { xs: 24, md: 'auto' },
             right: { xs: 12, md: 28 },
             // Discreto a la vista (el círculo de antes pesaba demasiado), pero
@@ -319,34 +322,25 @@ export default function Hero() {
         }}
       >
         {/* Los textos entran en cascada nada más montarse (no al entrar en vista:
-            el hero ya está a la vista), con el título asomando por su cortina.
+            el hero ya está a la vista), uno tras otro.
             En dos grupos: por debajo del PC, uno va arriba y el otro al pie. */}
         <Box sx={GRUPO}>
+          {/* Sin título a la vista desde el 13-11-2026: el nombre ya lo dice la
+              barra, y la foto se queda libre. Sigue ahí para el lector de
+              pantalla y los buscadores: es el único h1 de la portada. */}
+          <Typography id="hero-title" variant="h1" component={enVistaPrevia ? 'p' : 'h1'} sx={visuallyHidden}>
+            <TextoDePortada>{textos.hero.titulo}</TextoDePortada>
+          </Typography>
+        </Box>
+        <Box sx={GRUPO}>
+          {/* El antetítulo, ahora encima del párrafo: sin título a la vista, es lo
+              primero que se lee del hero. */}
           <Revela alMontar retraso={RETRASO_TEXTOS_S}>
-            <Typography variant="overline" sx={{ color: '#ded3bd', letterSpacing: '0.14em', fontSize: { xs: 11, md: 12 }, mb: 2 }}>
+            <Typography variant="overline" sx={{ display: 'block', color: '#ded3bd', letterSpacing: '0.14em', fontSize: { xs: 11, md: 12 }, mb: 1.5 }}>
               <TextoDePortada anchos={['14em']}>{textos.hero.ceja}</TextoDePortada>
             </Typography>
           </Revela>
-          <Revela alMontar efecto="cortina" retraso={RETRASO_TEXTOS_S} orden={1}>
-            <Typography
-              id="hero-title"
-              variant="h1"
-              component={enVistaPrevia ? 'p' : 'h1'}
-              sx={{
-                color: 'text.primary',
-                mb: { xs: 0, md: 2.5 },
-                fontSize: { xs: '38px', sm: '50px', md: '64px' },
-                maxWidth: '780px',
-                textWrap: 'balance',
-                textShadow: '0 2px 24px rgba(0,0,0,.2)',
-              }}
-            >
-              <TextoDePortada anchos={['9em']}>{textos.hero.titulo}</TextoDePortada>
-            </Typography>
-          </Revela>
-        </Box>
-        <Box sx={GRUPO}>
-          <Revela alMontar retraso={RETRASO_TEXTOS_S} orden={2}>
+          <Revela alMontar retraso={RETRASO_TEXTOS_S} orden={1}>
             <Typography
               variant="body1"
               sx={{
@@ -362,7 +356,7 @@ export default function Hero() {
               <TextoDePortada anchos={['26em', '18em']}>{textos.hero.parrafo}</TextoDePortada>
             </Typography>
           </Revela>
-          <Revela alMontar retraso={RETRASO_TEXTOS_S} orden={3}>
+          <Revela alMontar retraso={RETRASO_TEXTOS_S} orden={2}>
             {/* Con vídeo o fotos que rotan, el rincón de la derecha es de su botón de pausa. */}
             <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: { xs: 'flex-start', md: 'flex-end' }, alignItems: 'center', gap: { xs: 1.5, md: 3 }, pr: { xs: conVideo || rotan ? 5 : 0, md: 0 } }}>
               <Boton component={Link} to="/historia" sx={{ px: { xs: 2.5, md: 3.5 }, fontSize: { xs: 14, md: 15 } }}>

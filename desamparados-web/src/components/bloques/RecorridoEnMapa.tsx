@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Box, IconButton, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material'
+import { bajoLaBarra, desktopMq } from '../barra/estilos'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import PauseIcon from '@mui/icons-material/Pause'
 import ReplayIcon from '@mui/icons-material/Replay'
@@ -411,7 +412,7 @@ export default function RecorridoEnMapa({ bloque, enUso = 'habitual', onSinMapa 
   }
 
   return (
-    <Box ref={bloqueRef} sx={{ maxWidth: anchoMaximo(bloque, '1200px'), mx: 'auto', scrollMarginTop: { xs: 72, md: 96 } }}>
+    <Box ref={bloqueRef} sx={{ maxWidth: anchoMaximo(bloque, '1200px'), mx: 'auto', scrollMarginTop: { xs: 72, md: 96 }, [desktopMq]: { scrollMarginTop: bajoLaBarra(24) } }}>
       <Typography sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5, color: '#e3d8bf', fontSize: 14 }}>
         <PlayArrowIcon sx={{ fontSize: 20, color: GOLD }} aria-hidden="true" />
         {enCalle

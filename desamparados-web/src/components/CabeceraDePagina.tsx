@@ -1,4 +1,5 @@
 import { Box, Typography } from '@mui/material'
+import { bajoLaBarra, desktopMq } from './barra/estilos'
 import { propsDeFoto } from '../lib/fotoSubida'
 
 interface CabeceraDePaginaProps {
@@ -20,6 +21,7 @@ export default function CabeceraDePagina({ title, subtitle, image, imageAlt }: C
         // Arriba, lo de siempre: en escritorio la barra de navegación es fija y va
         // encima. Abajo, poco: el contenido que sigue ya trae su aire (espaciado.ts).
         pt: { xs: 10, md: 14 },
+        [desktopMq]: { pt: bajoLaBarra(40) },
         pb: { xs: 5, md: 7 },
         backgroundColor: image ? 'transparent' : 'background.paper',
         overflow: 'hidden',

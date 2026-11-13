@@ -3,6 +3,7 @@ import MetaDePagina from '../../../components/MetaDePagina'
 import FichaDeNoticia from '../../../components/FichaDeNoticia'
 import { Link, useParams } from 'react-router-dom'
 import { Box, Typography } from '@mui/material'
+import { bajoLaBarra, desktopMq } from '../../../components/barra/estilos'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ContenedorDePagina from '../../../components/ContenedorDePagina'
 import SeccionAnimada from '../../../components/SeccionAnimada'
@@ -17,7 +18,7 @@ import { enlaceConFlecha } from '../../../components/estiloDeBoton'
 import { propsDeFoto } from '../../../lib/fotoSubida'
 
 // La cabecera y el cuerpo de la ficha: los comparten la ficha y su esqueleto.
-const cabeceraSx = { position: 'relative', pt: { xs: 10, md: 14 }, pb: { xs: 4, md: 5 }, mb: { xs: 3, md: 4 }, backgroundColor: 'background.paper', overflow: 'hidden' } as const
+const cabeceraSx = { position: 'relative', pt: { xs: 10, md: 14 }, [desktopMq]: { pt: bajoLaBarra(40) }, pb: { xs: 4, md: 5 }, mb: { xs: 3, md: 4 }, backgroundColor: 'background.paper', overflow: 'hidden' } as const
 const columna = { maxWidth: '900px !important' } as const
 
 export default function NoticiaDetallePage() {

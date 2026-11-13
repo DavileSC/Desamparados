@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { Box } from '@mui/material'
+import { bajoLaBarra, desktopMq } from '../barra/estilos'
 import TituloDeSeccion from '../TituloDeSeccion'
 import Hueso from '../esqueleto/Hueso'
 import { componenteDeBloque, pintaSuTitulo } from './registro'
@@ -91,7 +92,7 @@ function BloqueDePagina({ bloque, indice = 0, primero = true, pegado = false }: 
   const centrado = valorDe(bloque, 'alineacionTitulo') === 'centro'
 
   return (
-    <Box id={ancla || undefined} sx={{ mt: primero || pegado ? 0 : espacio, scrollMarginTop: 96 }}>
+    <Box id={ancla || undefined} sx={{ mt: primero || pegado ? 0 : espacio, scrollMarginTop: 96, [desktopMq]: { scrollMarginTop: bajoLaBarra(24) } }}>
       <MarcoEditable bloque={bloque} indice={indice}>
         {siDe(bloque, 'separador') && (
           <Box aria-hidden sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifyContent: 'center', mb: { xs: 4, md: 6 } }}>

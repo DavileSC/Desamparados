@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { Alert, Box, Typography } from '@mui/material'
+import { bajoLaBarra, desktopMq } from '../../components/barra/estilos'
 import { Link, useSearchParams } from 'react-router-dom'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
 import Boton from '../../components/Boton'
@@ -31,7 +32,7 @@ export default function BajaBoletinPage() {
         <title>{`Baja del boletín | ${site.nombreCorto}`}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
-      <Box component="section" sx={{ py: { xs: 12, md: 18 }, textAlign: 'center' }}>
+      <Box component="section" sx={{ py: { xs: 12, md: 18 }, [desktopMq]: { pt: bajoLaBarra(72) }, textAlign: 'center' }}>
         <ContenedorDePagina>
           <Typography variant="h2" component="h1" sx={{ fontSize: { xs: '32px', md: '44px' }, mb: 2 }}>
             Baja del boletín

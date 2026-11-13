@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Alert, Box, Drawer, IconButton, Typography } from '@mui/material'
+import { bajoLaBarra, desktopMq } from '../../components/barra/estilos'
 import { keyframes } from '@mui/material/styles'
 import { useReducedMotion } from 'framer-motion'
 import CloseIcon from '@mui/icons-material/Close'
@@ -177,7 +178,7 @@ export default function TiendaPage() {
     <ContenedorDePagina>
       {/* Arriba, el hueco de la barra de navegación, que en escritorio va fija
           encima; abajo, el de la cesta que flota, para que no tape lo último. */}
-      <Box sx={{ pt: { xs: 10, md: 14 }, pb: hayCesta ? 13 : { xs: 6, md: 8 } }}>
+      <Box sx={{ pt: { xs: 10, md: 14 }, [desktopMq]: { pt: bajoLaBarra(40) }, pb: hayCesta ? 13 : { xs: 6, md: 8 } }}>
         {!id && (
           <Box sx={{ mb: { xs: 1.5, md: 3.5 } }}>
             <Typography component="p" sx={{ fontSize: 11, letterSpacing: '0.28em', textTransform: 'uppercase', color: MARCA.acentoArena, fontWeight: 600 }}>

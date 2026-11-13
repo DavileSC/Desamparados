@@ -157,13 +157,11 @@ describe('BarraDeNavegacion en escritorio', () => {
     expect(within(navEscritorio()).getByRole('link', { name: 'Contacto', hidden: true })).not.toHaveAttribute('aria-haspopup')
   })
 
-  it('marca con un chevron solo las secciones que despliegan', () => {
+  it('arriba, el nombre corto y la localidad, que lleva a la portada', () => {
     renderWithProviders(<BarraDeNavegacion />)
-    const nav = navEscritorio()
-    const corporacion = within(nav).getByRole('button', { name: 'Corporación', hidden: true })
-    const contacto = within(nav).getByRole('link', { name: 'Contacto', hidden: true })
-    expect(within(corporacion).getByTestId('ExpandMoreIcon')).toBeInTheDocument()
-    expect(within(contacto).queryByTestId('ExpandMoreIcon')).not.toBeInTheDocument()
+    const nombre = [DATOS.identidad.nombreCorto, DATOS.identidad.localidad].filter(Boolean).join(' ')
+    const marca = screen.getByRole('link', { name: nombre, hidden: true })
+    expect(marca).toHaveAttribute('href', '/')
   })
 })
 

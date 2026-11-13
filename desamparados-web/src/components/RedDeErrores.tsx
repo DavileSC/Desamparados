@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { Box, Button, Typography } from '@mui/material'
+import { bajoLaBarra, desktopMq } from './barra/estilos'
 import ContenedorDePagina from './ContenedorDePagina'
 import { BOTON } from './estiloDeBoton'
 
@@ -51,7 +52,7 @@ export function AvisoDeError() {
     <Box
       component="main"
       role="alert"
-      sx={{ py: { xs: 10, md: 16 }, minHeight: '60vh', display: 'flex', alignItems: 'center' }}
+      sx={{ py: { xs: 10, md: 16 }, [desktopMq]: { pt: bajoLaBarra(56) }, minHeight: '60vh', display: 'flex', alignItems: 'center' }}
     >
       <ContenedorDePagina>
         <Box sx={{ maxWidth: 560, mx: 'auto', textAlign: 'center' }}>

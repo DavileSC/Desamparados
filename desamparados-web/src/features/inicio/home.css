@@ -2,6 +2,8 @@
 /* Los colores de marca, de las variables que cuelga en :root el tema público
    (theme/marca.ts, VARIABLES_MARCA): una hoja .css no puede importar MARCA. */
 .home-refined section { scroll-margin-top: 96px; }
+/* En escritorio, bajo la barra fija de dos pisos: ALTO_BARRA_ESCRITORIO (116) + 24. */
+@media (min-width: 1024px) { .home-refined section { scroll-margin-top: 140px; } }
 .home-refined a:focus-visible,
 .home-refined button:focus-visible { outline: 2px solid var(--marca-acento); outline-offset: 5px; }
 /* Sobre el papel de la tarjeta de la agenda el dorado no se ve: el foco pasa a granate. */

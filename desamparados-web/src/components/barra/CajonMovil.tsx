@@ -12,19 +12,18 @@
  */
 import { Fragment, useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Box, Collapse, IconButton, List, ListItem, ListItemButton, Modal, Toolbar, useTheme } from '@mui/material'
+import { Box, Collapse, IconButton, List, ListItem, ListItemButton, Modal, Toolbar } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { AnimatePresence, MotionConfig, m, useIsPresent, type Variants } from 'framer-motion'
-import EscudoDelGrupo from '../EscudoDelGrupo'
 import IconoDelMenu from './IconoDelMenu'
+import { FileteMovil, MarcaMovil } from './MarcaDeLaBarra'
 import { useEnlacesDeRedes } from './redes'
 import { esActiva, seccionActiva, tinta } from './estilos'
 import type { EntradaMenu } from '../../config/navegacion'
 import { useMenuPublico } from '../../hooks/useMenuPublico'
 import { useModulos } from '../../hooks/useModulos'
 import { useNombreEnMenu } from '../../hooks/useNombresEnMenu'
-import { site } from '../../config/site'
 import { GOLD, GRANATE, TINTA } from '../../features/inicio/estilos'
 // La serif de la agenda: importarla de ahí trae también sus ficheros de letra.
 import { CORMORANT } from '../../features/actualidad/agenda/letraAlmanaque'
@@ -120,7 +119,6 @@ function EnlaceCajon({ entrada, nivel, alNavegar }: { entrada: EntradaMenu; nive
 
 /** Lo que entra y sale: se monta en cada apertura, así calcula de nuevo qué sección desplegar. */
 function Panel({ alCerrar }: { alCerrar: () => void }) {
-  const theme = useTheme()
   const location = useLocation()
   const menu = useMenuPublico()
   const enlacesDeRedes = useEnlacesDeRedes()
@@ -154,32 +152,13 @@ function Panel({ alCerrar }: { alCerrar: () => void }) {
     >
       {/* Calca la barra del móvil, que queda debajo: el visitante no nota el cambio y ve las rayas cruzarse.
           Opaca: con el velo de la barra se transparentaban sus rayas junto a la X. */}
-      <Box
-        sx={{ backgroundColor: tinta(1), borderBottom: '1px solid rgba(204, 196, 201, 0.2)', flexShrink: 0 }}
-      >
-        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: '20px !important', md: '64px !important' } }}>
-          <Box
-            component={Link}
-            to="/"
-            onClick={alCerrar}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.25,
-              minWidth: 0,
-              fontFamily: theme.typography.h1.fontFamily,
-              fontSize: '24px',
-              lineHeight: 1,
-              color: 'text.primary',
-              textDecoration: 'none',
-            }}
-          >
-            <EscudoDelGrupo alto={36} />
-            {site.nombreCorto.toUpperCase()}
-          </Box>
-          <IconButton edge="end" aria-label="Cerrar menú" onClick={alCerrar} sx={{ color: 'text.primary', width: 48, height: 48 }}>
+      <Box sx={{ backgroundColor: tinta(1), flexShrink: 0 }}>
+        <Toolbar sx={{ position: 'relative', justifyContent: 'space-between', gap: 1, px: { xs: '20px !important', md: '64px !important' } }}>
+          <MarcaMovil alPulsar={alCerrar} />
+          <IconButton edge="end" aria-label="Cerrar menú" onClick={alCerrar} sx={{ color: 'text.primary', width: 48, height: 48, flexShrink: 0 }}>
             <IconoDelMenu abierto={presente} desdeCerradas />
           </IconButton>
+          <FileteMovil />
         </Toolbar>
       </Box>
 

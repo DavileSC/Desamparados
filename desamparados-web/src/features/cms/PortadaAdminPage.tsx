@@ -77,14 +77,14 @@ export default function PortadaAdminPage() {
             valor={textos.hero.ceja}
             onCambio={(ceja) => cambiarHero({ ceja })}
             maxLength={60}
-            ayuda="El texto pequeño en versalitas, sobre el título grande."
+            ayuda="El texto pequeño en versalitas, encima del párrafo."
           />
           <CampoTexto
             etiqueta="Título"
             valor={textos.hero.titulo}
             onCambio={(titulo) => cambiarHero({ titulo })}
             maxLength={120}
-            ayuda="El titular grande de la primera pantalla."
+            ayuda="No se ve en la página: lo leen los lectores de pantalla y los buscadores, que lo toman como título de la portada."
           />
           <CampoTexto
             etiqueta="Texto"

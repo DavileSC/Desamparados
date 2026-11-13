@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Box, Typography } from '@mui/material'
+import { bajoLaBarra, desktopMq } from '../../components/barra/estilos'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -74,7 +75,7 @@ export default function NoEncontradaPage() {
       {/* Una SPA no puede devolver un 404 HTTP: al menos evitamos que se indexe, y sin canonical a la dirección rota. */}
       <MetaDePagina titulo="Página no encontrada" sinIndexar />
 
-      <Box component="section" sx={{ py: { xs: 4, md: 10 }, minHeight: { md: 'calc(100svh - 72px)' }, display: 'flex', alignItems: 'center' }}>
+      <Box component="section" sx={{ py: { xs: 4, md: 10 }, minHeight: { md: 'calc(100svh - 72px)' }, [desktopMq]: { pt: bajoLaBarra(8), minHeight: '100svh' }, display: 'flex', alignItems: 'center' }}>
         <ContenedorDePagina>
           <Box sx={{
             display: 'grid', alignItems: 'center',

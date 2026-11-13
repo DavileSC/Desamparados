@@ -6,6 +6,7 @@ import {
   Alert, Box, Checkbox, FormControl, FormControlLabel, FormHelperText, FormLabel, Grid, MenuItem, Radio, RadioGroup,
   TextField, Typography,
 } from '@mui/material'
+import { bajoLaBarra } from '../../../components/barra/estilos'
 import { ThemeProvider } from '@mui/material/styles'
 import MetaDePagina from '../../../components/MetaDePagina'
 import { Link, useBlocker, useSearchParams } from 'react-router-dom'
@@ -41,7 +42,7 @@ import { useModulos } from '../../../hooks/useModulos'
 import { useNombreEnMenu } from '../../../hooks/useNombresEnMenu'
 
 // Mismo umbral que el navbar (`DESKTOP_NAV_MIN`): por debajo la barra va en
-// flujo y mide 56 px en móvil y 64 en tableta; desde ahí es fija de 72 px y se
+// flujo y mide 56 px en móvil y 64 en tableta; desde ahí es fija (`ALTO_BARRA_ESCRITORIO`) y se
 // pone encima de la página, así que la sección la deja pasar con su relleno.
 const ESCRITORIO = '@media (min-width:1024px)'
 
@@ -270,7 +271,7 @@ export default function HazteHermanoPage() {
           alignContent: 'center',
           minHeight: { xs: 'calc(100svh - 56px)', sm: 'calc(100svh - 64px)' },
           py: { xs: 4, md: 5 },
-          [ESCRITORIO]: { minHeight: '100svh', pt: 'calc(72px + 40px)' },
+          [ESCRITORIO]: { minHeight: '100svh', pt: bajoLaBarra(40) },
           '& a:focus-visible, & button:focus-visible': { outline: `2px solid ${GOLD}`, outlineOffset: 4 },
         }}
       >

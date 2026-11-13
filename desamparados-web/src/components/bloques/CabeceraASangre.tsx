@@ -8,10 +8,11 @@ import Hueso, { Lineas } from '../esqueleto/Hueso'
 import { caerALaOriginal, srcsetDeSubida } from '../../lib/fotoSubida'
 import { MARCA } from '../../theme/marca'
 import { useFotoQueFalla } from '../../hooks/useFotoQueFalla'
+import { bajoLaBarra } from '../barra/estilos'
 
 /** Fondo de la página: la foto se funde a él por abajo. */
 const FONDO = '#121113'
-/** En escritorio la barra es fija, de 72 px, y va encima de la foto. */
+/** En escritorio la barra es fija (`ALTO_BARRA_ESCRITORIO`) y va encima de la foto. */
 const ESCRITORIO = '@media (min-width:1024px)'
 
 /**
@@ -28,7 +29,7 @@ const bandaSx = {
   minHeight: { xs: 440, sm: 500 },
   [ESCRITORIO]: { minHeight: 'clamp(540px, 74svh, 720px)' },
 } as const
-const textoSx = { width: '100%', pt: 12, pb: { xs: 4, md: 6 }, [ESCRITORIO]: { pt: 'calc(72px + 72px)', pb: 7 } } as const
+const textoSx = { width: '100%', pt: 12, pb: { xs: 4, md: 6 }, [ESCRITORIO]: { pt: bajoLaBarra(72), pb: 7 } } as const
 const cejaSx = { ...estiloCeja, color: GOLD, m: 0, mb: { xs: 1.5, md: 2 }, fontSize: { xs: 11, md: 12 }, fontWeight: 600, textShadow: '0 1px 10px rgba(0,0,0,0.9)' } as const
 const TITULO = 'clamp(38px, 10.5vw, 60px)'
 const TITULO_ESCRITORIO = 'clamp(64px, 7.2vw, 112px)'
