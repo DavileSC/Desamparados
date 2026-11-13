@@ -1,6 +1,6 @@
 ---
 name: git
-description: Convenciones Git del proyecto Desamparados: commits en español, qué nunca se sube y cómo se trabaja con main y GitHub. Usar al preparar un commit, una rama, un push o un Pull Request.
+description: "Convenciones Git del proyecto Desamparados: commits en español, qué nunca se sube y cómo se trabaja con main y GitHub. Usar al preparar un commit, una rama, un push o un Pull Request."
 ---
 
 # Git

@@ -1,6 +1,6 @@
 ---
 name: testing
-description: Cómo se prueba el proyecto: node:test en el backend, Vitest + Testing Library en la web y el navegador para los flujos completos. Usar al escribir o arreglar pruebas, al investigar un fallo del CI o al comprobar que un cambio funciona de verdad.
+description: "Cómo se prueba el proyecto: node:test en el backend, Vitest + Testing Library en la web y el navegador para los flujos completos. Usar al escribir o arreglar pruebas, al investigar un fallo del CI o al comprobar que un cambio funciona de verdad."
 ---
 
 # Pruebas
