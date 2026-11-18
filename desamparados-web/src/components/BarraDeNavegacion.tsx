@@ -18,7 +18,8 @@ import { useNombreEnMenu } from '../hooks/useNombresEnMenu'
  *
  * En escritorio va en dos pisos (13-11-2026, elegida en maqueta): arriba las
  * redes, el escudo con el nombre de la titular y el acceso; abajo, el menú,
- * bajo un filete dorado.
+ * bajo un filete burdeos. Desde el 18-11-2026, fina (82 px): redes, escudo y
+ * botón más pequeños, con el mismo orden y la misma transparencia.
  */
 
 export default function BarraDeNavegacion() {
@@ -152,13 +153,14 @@ export default function BarraDeNavegacion() {
                   rel="noopener noreferrer"
                   aria-label={red.label}
                   sx={{
-                    width: 38,
-                    height: 38,
+                    // 30 px que pulsar en una franja de 48: por encima de los 24 de WCAG 2.5.8.
+                    width: 30,
+                    height: 30,
                     p: 0,
                     color: 'text.primary',
-                    '& .MuiSvgIcon-root': { fontSize: 20 },
+                    '& .MuiSvgIcon-root': { fontSize: 17 },
                     '&:hover': { color: 'secondary.main' },
-                    [estrechoMq]: { width: 34, height: 34, '& .MuiSvgIcon-root': { fontSize: 19 } },
+                    [estrechoMq]: { width: 28, height: 28, '& .MuiSvgIcon-root': { fontSize: 16 } },
                   }}
                 >
                   {red.icon}
@@ -177,13 +179,14 @@ export default function BarraDeNavegacion() {
                   disableElevation
                   sx={{
                     ...BOTON.principal,
-                    px: 2.5,
-                    minHeight: 42,
-                    height: 42,
+                    // Mini: cabe en la franja fina con aire arriba y abajo.
+                    px: 1.75,
+                    minHeight: 30,
+                    height: 30,
                     flexShrink: 0,
-                    fontSize: '15px',
+                    fontSize: '13px',
                     whiteSpace: 'nowrap',
-                    [compactMq]: { px: 2, minHeight: 40, height: 40, fontSize: '14px' },
+                    [compactMq]: { px: 1.5, fontSize: '12.5px' },
                   }}
                 >
                   {nombreDelAcceso}

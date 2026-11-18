@@ -9,7 +9,9 @@ import { aplanarMenu, type EntradaMenu } from '../../config/navegacion'
 export const DESKTOP_NAV_MIN = 1024
 export const desktopMq = `@media (min-width:${DESKTOP_NAV_MIN}px)`
 // La barra de escritorio va en dos pisos (13-11-2026): arriba, las redes, el
-// escudo con el nombre de la titular y el acceso; abajo, el menú. Lo que cede
+// escudo con el nombre de la titular y el acceso; abajo, el menú. Desde el
+// 18-11-2026, en fino (forma C de su maqueta): 48 + 34 px en vez de 76 + 40,
+// para que lo de debajo (el carrusel de noticias de la portada) gane alto. Lo que cede
 // al estrecharse es el tamaño de la letra y del escudo, por tramos; el alto,
 // nunca, porque las páginas dejan su hueco con `ALTO_BARRA_ESCRITORIO`.
 // Medido con los cinco perfiles y el menú de pruebas: en estrecho, a 1024 px,
@@ -26,9 +28,9 @@ export const VELO_ARRIBA = 0.72
 export const VELO_SCROLL = 0.86
 
 /** El piso de arriba de la barra de escritorio: redes, escudo y nombre, acceso. */
-export const ALTO_FRANJA = 76
-/** El piso del menú, bajo un filete dorado. */
-export const ALTO_MENU = 40
+export const ALTO_FRANJA = 48
+/** El piso del menú, bajo un filete burdeos. */
+export const ALTO_MENU = 34
 /**
  * Lo que tapa la barra fija de escritorio: el hueco que deja arriba quien
  * empieza bajo ella (las cabeceras a sangre, el hero, las páginas sin cabecera).

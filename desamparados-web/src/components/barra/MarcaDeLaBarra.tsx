@@ -36,20 +36,20 @@ export function MarcaEscritorio() {
       }}
     >
       <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1.75, minWidth: 0 }}>
-        <EscudoDelGrupo alto={42} sx={{ [compactMq]: { height: 38 }, [estrechoMq]: { height: 34 } }} />
+        <EscudoDelGrupo alto={32} sx={{ [compactMq]: { height: 30 }, [estrechoMq]: { height: 28 } }} />
         <Box
           component="span"
           sx={{
             fontFamily: CORMORANT,
             fontWeight: 600,
-            fontSize: 28,
+            fontSize: 22,
             lineHeight: 1,
             // Un nombre largo de otra corporación puede no caber en una línea:
-            // pasa a dos, equilibradas (con 76 px de franja, justas).
+            // pasa a dos, equilibradas (con 48 px de franja y 18 px de letra, justas).
             textWrap: 'balance',
             textAlign: 'center',
-            [compactMq]: { fontSize: 25 },
-            [estrechoMq]: { fontSize: 22 },
+            [compactMq]: { fontSize: 21 },
+            [estrechoMq]: { fontSize: 19 },
           }}
         >
           {NOMBRE_DE_LA_BARRA}

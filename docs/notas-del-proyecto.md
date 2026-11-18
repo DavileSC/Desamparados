@@ -1012,14 +1012,14 @@ Trampas:
 ## 17. La barra de escritorio: dos pisos y un cristal que no se anida
 
 Desde el 13-11-2026 la barra de escritorio va en dos pisos (redes, escudo con
-el nombre corto y la localidad, y acceso; debajo, el menú) y mide `ALTO_BARRA_ESCRITORIO` (116 px,
+el nombre corto y la localidad, y acceso; debajo, el menú) y mide `ALTO_BARRA_ESCRITORIO` (82 px desde el 18-11-2026, antes 116;
 en `components/barra/estilos.ts`). Va fija y encima de la página, así que
 quien empieza bajo ella deja su hueco con `bajoLaBarra(aire)`: las cabeceras,
 el hero, las páginas sin cabecera, los `scroll-margin` de las anclas y lo que
 va pegado (`sticky`). Una página nueva que empiece arriba usa lo mismo; un
 número a mano se queda corto en cuanto la barra cambie. La excepción es
-`features/inicio/home.css`, que no puede importar: lleva 140 escrito y su
-comentario.
+`features/inicio/home.css`, que no puede importar: lleva 106 (82 + 24) escrito
+y su comentario; si la barra cambia de alto, cambiarlo a mano.
 
 Trampas:
 
@@ -1040,3 +1040,4 @@ Trampas:
   la portada y luego la devuelve a como la leyó. Si se pasan con un campo
   retirado en el código, lo que devuelve ya no lo lleva (pasó el 13-11-2026
   con el antetítulo del hero, que se quedó en «Bienvenidos»).
+
