@@ -8,7 +8,7 @@ import { BOTON, VELO_SOBRE_GRANATE } from '../../components/estiloDeBoton'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import NorthEastIcon from '@mui/icons-material/NorthEast'
 import { useContacto } from '../../hooks/useContacto'
-import { GOLD, GRANATE, SERIF, TINTA } from './estilos'
+import { GOLD, GRANATE, SERIF, TINTA, aPantalla } from './estilos'
 import { useTextosPortada, TEXTOS_POR_DEFECTO } from './useContenidoPortada'
 import TextoDePortada from './TextoDePortada'
 import type { TextosPortada } from '../../lib/api/portada'
@@ -69,6 +69,10 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
         flexDirection: 'column',
         alignItems: 'flex-start',
         p: { xs: '30px 24px 26px', md: '40px 38px' },
+        // En un móvil bajo, más prieta: la sección entera tiene que caber en la pantalla.
+        '@media (max-width: 599.95px) and (max-height: 760px)': { p: '22px 20px 20px' },
+        // En un portátil bajo, también: la sección es una pantalla y tiene que caber.
+        '@media (min-width: 900px) and (max-height: 820px)': { p: 'clamp(20px, 4svh, 40px) clamp(24px, 3vw, 38px)' },
         backgroundColor: GRANATE,
         ...VELO_SOBRE_GRANATE,
         color: '#fff',
@@ -101,14 +105,14 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
       <Typography
         component="span"
         id={`${id}-titulo`}
-        sx={{ position: 'relative', display: 'block', maxWidth: 320, fontFamily: SERIF, fontSize: { xs: 30, md: 40 }, lineHeight: 1.1, letterSpacing: '-0.015em' }}
+        sx={{ position: 'relative', display: 'block', maxWidth: 320, fontFamily: SERIF, fontSize: { xs: 30, md: 40 }, lineHeight: 1.1, letterSpacing: '-0.015em', '@media (max-width: 599.95px) and (max-height: 760px)': { fontSize: 26 } }}
       >
         <TextoDePortada anchos={['8em', '6em']}>{placa.titulo}</TextoDePortada>
       </Typography>
       <Typography
         component="span"
         id={`${id}-texto`}
-        sx={{ position: 'relative', display: 'block', maxWidth: 320, mt: { xs: 1.75, md: 2.5 }, mb: { xs: 3, md: 4 }, fontSize: { xs: 14, md: 15 }, lineHeight: 1.7, color: MARCA.sobrePrincipalTexto }}
+        sx={{ position: 'relative', display: 'block', maxWidth: 320, mt: { xs: 1.75, md: 2.5 }, mb: { xs: 3, md: 4 }, fontSize: { xs: 14, md: 15 }, lineHeight: 1.7, color: MARCA.sobrePrincipalTexto, '@media (max-width: 599.95px) and (max-height: 760px)': { mt: 1, mb: 2, lineHeight: 1.55 } }}
       >
         <TextoDePortada anchos={['20em', '18em', '9em']}>{placa.texto}</TextoDePortada>
       </Typography>
@@ -123,6 +127,7 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
           // A lo ancho solo en el móvil: en tableta la placa es ancha y el botón quedaba como una franja.
           alignSelf: { xs: 'stretch', sm: 'flex-start' },
           px: 2.75,
+          '@media (max-width: 599.95px) and (max-height: 760px)': { minHeight: 44 },
           '& svg': { fontSize: 18, color: 'currentColor', transition: 'transform .25s ease' },
         }}
       >
@@ -155,8 +160,13 @@ function Tesela({ icon, title, description, href, ancha }: TeselaProps) {
         flexDirection: ancha ? 'row' : 'column',
         alignItems: ancha ? 'center' : 'stretch',
         gap: ancha ? { xs: 1.75, md: 2.5 } : 0,
-        minHeight: ancha ? 0 : { xs: 140, md: 158 },
-        p: ancha ? { xs: '20px 16px', md: '24px 26px' } : { xs: '18px 16px 16px', md: '26px 26px 24px' },
+        // En el móvil, del alto de su texto: con los 140 px de antes, la sección
+        // no cabía en la pantalla.
+        minHeight: ancha ? 0 : { xs: 0, sm: 140, md: 158 },
+        // En un portátil bajo, del alto de su texto y con el relleno por el alto
+        // de la pantalla: con 158 px, la tercera fila se salía por abajo.
+        '@media (min-width: 900px) and (max-height: 820px)': ancha ? {} : { minHeight: 0, p: 'clamp(12px, 2.6svh, 26px) 24px' },
+        p: ancha ? { xs: '20px 16px', md: '24px 26px' } : { xs: '14px 14px 14px', sm: '18px 16px 16px', md: '26px 26px 24px' },
         backgroundColor: FONDO_TESELA,
         color: 'inherit',
         textDecoration: 'none',
@@ -174,7 +184,7 @@ function Tesela({ icon, title, description, href, ancha }: TeselaProps) {
         // El texto va justo debajo del icono, no empujado al fondo: así todos los
         // títulos de una fila quedan a la misma altura, sea cual sea el largo de
         // su descripción (con el texto abajo, «Historia» y «Boletines» no casaban).
-        sx={{ display: 'flex', color: GOLD, fontSize: { xs: 26, md: 30 }, ...(ancha ? {} : { pb: { xs: 2.25, md: 3.5 } }) }}
+        sx={{ display: 'flex', color: GOLD, fontSize: { xs: 24, sm: 26, md: 30 }, ...(ancha ? {} : { pb: { xs: 1.25, sm: 2.25, md: 3.5 }, '@media (min-width: 900px) and (max-height: 820px)': { pb: 'clamp(8px, 2svh, 28px)' } }) }}
       >
         {icon}
       </Box>
@@ -186,7 +196,7 @@ function Tesela({ icon, title, description, href, ancha }: TeselaProps) {
         >
           {title}
         </Typography>
-        <Typography component="span" sx={{ display: 'block', fontSize: { xs: 13, md: 14 }, lineHeight: 1.45, color: 'rgba(228, 226, 223, 0.72)' }}>
+        <Typography component="span" sx={{ display: 'block', fontSize: { xs: 13, md: 14 }, lineHeight: 1.45, color: 'rgba(228, 226, 223, 0.72)', '@media (max-width: 599.95px) and (max-height: 700px)': { display: 'none' } }}>
           {description}
         </Typography>
       </Box>
@@ -252,7 +262,7 @@ export default function AccesosRapidos() {
     <SeccionAnimada
       cascada
       aria-labelledby="quick-access-title"
-      sx={{ py: { xs: 7, md: 11 }, backgroundColor: TINTA }}
+      sx={{ ...aPantalla, backgroundColor: TINTA }}
     >
       <ContenedorDePagina>
         <Typography id="quick-access-title" component="h2" className="home-visually-hidden">
@@ -271,6 +281,7 @@ export default function AccesosRapidos() {
             // El ancho de las demás secciones de la portada, sin tope propio: con él
             // quedaba metida y descuadrada respecto a Noticias y Agenda.
             gap: { xs: 1.25, md: 1.75 },
+            '@media (max-width: 599.95px) and (max-height: 700px)': { gap: 1 },
           }}
         >
           {/* La placa se descubre de izquierda a derecha; las teselas van creciendo detrás. */}

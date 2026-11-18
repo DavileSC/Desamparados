@@ -73,6 +73,18 @@ describe('AgendaYDirecto', () => {
   })
 
   it('despliega el próximo acto y, al pulsar un día, abre el suyo', async () => {
+    // En una tableta, para que quepan los dos actos en la lista: en el móvil
+    // solo va el próximo, y al pulsar otro día la lista pasa a ese.
+    vi.stubGlobal('matchMedia', (consulta: string) => ({
+      matches: consulta.includes('min-width: 600px'),
+      media: consulta,
+      onchange: null,
+      addListener() {},
+      removeListener() {},
+      addEventListener() {},
+      removeEventListener() {},
+      dispatchEvent: () => false,
+    }))
     servirEventos([APERTURA, TRIDUO])
     renderWithProviders(<AgendaYDirecto />)
 
@@ -90,6 +102,21 @@ describe('AgendaYDirecto', () => {
     expect(screen.getByText('Rosario y eucaristía.')).toBeInTheDocument()
     expect(screen.queryByText('Acción de gracias.')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /21 de octubre/ })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('en el móvil la lista lleva solo el próximo acto, y al pulsar otro día pasa a ese', async () => {
+    // Se rompe si en el móvil vuelven las cinco filas (la sección no cabría en
+    // la pantalla) o si el acto del día pulsado no aparece.
+    servirEventos([APERTURA, TRIDUO])
+    renderWithProviders(<AgendaYDirecto />)
+
+    expect(await screen.findByRole('button', { name: /eucaristía de apertura/i })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.queryByRole('button', { name: /solemne triduo/i })).toBeNull()
+
+    await userEvent.click(screen.getByRole('button', { name: /21 de octubre/ }))
+
+    expect(screen.getByRole('button', { name: /solemne triduo/i })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.queryByRole('button', { name: /eucaristía de apertura/i })).toBeNull()
   })
 
   it('al cambiar de mes pide a la API la ventana de ese mes y el siguiente', async () => {

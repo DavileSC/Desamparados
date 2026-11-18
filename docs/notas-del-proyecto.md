@@ -1041,3 +1041,23 @@ Trampas:
   retirado en el código, lo que devuelve ya no lo lleva (pasó el 13-11-2026
   con el antetítulo del hero, que se quedó en «Bienvenidos»).
 
+## 18. Cada sección de la portada mide una pantalla
+
+Desde el 18-11-2026, las secciones de la portada (salvo el hero, que ya
+ocupa la pantalla) miden lo que queda bajo la barra fija y centran su
+contenido: `aPantalla` en `features/inicio/estilos.ts` (y la escena de la
+procesión, en `home.css`). Lo de dentro que se mide por el alto se cuenta
+contra el hueco útil, no contra la pantalla: `porElHueco()` y `HUECO`.
+
+Trampas:
+
+- **La barra no mide lo mismo en todas partes:** 56 en el móvil, 64 en la
+  tableta (el `Toolbar` de MUI crece desde `sm`) y `ALTO_BARRA_ESCRITORIO`
+  desde 1024. Contarla mal deja la sección 8 px más alta que la pantalla.
+- **Medirlo con el ratón no basta.** El calendario agranda los días con el
+  dedo (`TACTIL`, `pointer: coarse`): en Playwright, un contexto con
+  `hasTouch` e `isMobile`, o el móvil sale más bajo de lo que es.
+- **Medir el contenido no basta:** hay que medir la sección entera con su
+  relleno, puesta justo bajo la barra. Así se coló la primera vez.
+- Una sección nueva de la portada usa `aPantalla` y se comprueba de 360×640
+  a 1920×1080, pasando por un portátil bajo (1280×560).

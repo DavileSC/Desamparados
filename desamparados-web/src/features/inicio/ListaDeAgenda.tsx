@@ -10,13 +10,19 @@ import { diaDelCalendario, fechaEnMadrid, horaEnMadrid } from '../../lib/horaDeM
 /**
  * Cuántos actos caben en portada, según el alto de la pantalla: cuatro en un
  * portátil bajo (la tarjeta entera tiene que verse sin bajar), cinco en uno
- * normal y seis en un monitor alto. En el móvil la tarjeta va apilada y no
- * cabe de todos modos: cinco, como siempre. El resto, en la agenda completa.
+ * normal y seis en un monitor alto. En el móvil la tarjeta va apilada, con el
+ * calendario encima: para que la sección entera quepa en la pantalla, solo el
+ * próximo acto (dos en un móvil de 1000 px o más; cada fila suma unos 75). Los
+ * demás se ven marcados en el calendario. En la tableta, cinco. El resto, en la
+ * agenda completa.
  */
 function useFilasQueCaben(): number {
   const escritorio = useMediaQuery('(min-width: 900px)')
+  const tableta = useMediaQuery('(min-width: 600px)')
+  const movilMuyAlto = useMediaQuery('(min-height: 1000px)')
   const alta = useMediaQuery(CONSULTA_ALTA)
   const muyAlta = useMediaQuery(CONSULTA_MUY_ALTA)
+  if (!tableta) return movilMuyAlto ? 2 : 1
   if (!escritorio) return 5
   return muyAlta ? 6 : alta ? 5 : 4
 }
@@ -123,7 +129,7 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
       {abierto && evento.description && (
         <Typography
           id={panelId}
-          sx={{ pl: { xs: 'calc(16px + 56px + 14px)', sm: 'calc(24px + 60px + 18px)' }, pr: { xs: 2, sm: 3 }, pb: 1.75, mt: -0.5, fontSize: 13.5, lineHeight: 1.55, color: '#4a454a' }}
+          sx={{ pl: { xs: 'calc(16px + 56px + 14px)', sm: 'calc(24px + 60px + 18px)' }, pr: { xs: 2, sm: 3 }, pb: 1.75, mt: -0.5, fontSize: 13.5, lineHeight: 1.55, color: '#4a454a', '@media (max-width: 599.95px) and (max-height: 700px)': { display: 'none' } }}
         >
           {evento.description}
         </Typography>

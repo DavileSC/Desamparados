@@ -25,7 +25,7 @@ interface MiniCalendarioProps {
 const navSx = {
   width: 36,
   height: 36,
-  [TACTIL]: { width: 44, height: 44 },
+  [TACTIL]: { width: 44, height: 'clamp(32px, 4.6svh, 44px)' },
   color: '#7b6f5e',
   '&:hover': { backgroundColor: alpha(GRANATE, 0.08), color: GRANATE },
   '&.Mui-disabled': { color: 'rgba(27, 28, 26, 0.22)' },
@@ -45,7 +45,7 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
   return (
     // Prieto en un portátil bajo, para que la tarjeta entera quepa; con aire en
     // una pantalla alta (ver PANTALLA_ALTA).
-    <Box sx={{ p: { xs: 2.25, md: 2.5 }, [PANTALLA_ALTA]: { p: 3 }, color: TEXTO }}>
+    <Box sx={{ p: { xs: 2.25, md: 2.5 }, [PANTALLA_ALTA]: { p: 3 }, '@media (max-width: 599.95px) and (max-height: 700px)': { p: 1.5 }, color: TEXTO }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, [PANTALLA_ALTA]: { mb: 1.75 } }}>
         <IconButton aria-label="Mes anterior" disabled={!puedeRetroceder} onClick={() => onCambiarMes(-1)} sx={navSx}>
           <ChevronLeftIcon fontSize="small" />
@@ -73,8 +73,10 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
             width: 31,
             height: 31,
             [PANTALLA_ALTA]: { width: 36, height: 36 },
-            // Con el dedo, todo el ancho de la casilla (hasta 44) y 44 de alto.
-            [TACTIL]: { width: '100%', maxWidth: 44, height: 44 },
+            // Con el dedo, todo el ancho de la casilla (hasta 44) y hasta 44 de alto,
+            // según el alto de la pantalla: en un móvil bajo, con 44 la agenda no
+            // cabía entera. Nunca menos de 32, por encima de los 24 de WCAG 2.5.8.
+            [TACTIL]: { width: '100%', maxWidth: 44, height: 'clamp(32px, 4.6svh, 44px)' },
             mx: 'auto',
             borderRadius: '50%',
             display: 'grid',
@@ -135,8 +137,10 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
         })}
       </Box>
 
-      {/* La leyenda guarda su línea aunque el mes no tenga actos: así el calendario no cambia de alto. */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '10px 16px', minHeight: 30, mt: 1.5, pt: 1.5, [PANTALLA_ALTA]: { mt: 2, pt: 2 }, boxShadow: '0 -1px 0 rgba(27, 28, 26, 0.08)' }}>
+      {/* La leyenda guarda su línea aunque el mes no tenga actos: así el calendario no cambia de alto.
+          En un móvil que no sea muy alto se quita: la sección entera tiene que caber en la
+          pantalla, y el tipo de cada acto ya lo dice su etiqueta en la lista. */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '10px 16px', minHeight: 30, mt: 1.5, pt: 1.5, [PANTALLA_ALTA]: { mt: 2, pt: 2 }, boxShadow: '0 -1px 0 rgba(27, 28, 26, 0.08)', '@media (max-width: 599.95px) and (max-height: 860px)': { display: 'none' } }}>
         {leyenda.map(tipo => (
           <Box key={tipo} component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, fontSize: 12, lineHeight: '18px', color: '#6a6258' }}>
             <Box component="span" aria-hidden="true" sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: TIPOS[tipo].color }} />

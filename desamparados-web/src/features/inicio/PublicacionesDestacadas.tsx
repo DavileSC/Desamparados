@@ -15,11 +15,20 @@ import CintaDestacada from './CintaDestacada'
 import EnCarga from '../../components/esqueleto/EnCarga'
 import { estadoDeConsulta } from '../../components/esqueleto/esperaDeCarga'
 import Hueso, { Lineas } from '../../components/esqueleto/Hueso'
-import { GOLD, GRANATE, SERIF, TINTA, ceja } from './estilos'
+import { GOLD, GRANATE, HUECO, SERIF, TINTA, aPantalla, ceja } from './estilos'
 import { site } from '../../config/site'
 import { useModulos } from '../../hooks/useModulos'
 import { propsDeFoto } from '../../lib/fotoSubida'
 import { alfa } from '../../theme/marca'
+import { desktopMq } from '../../components/barra/estilos'
+
+// Lo que mide la escena del libro a dos columnas: el hueco útil de la sección
+// (la pantalla bajo la barra menos su relleno), con tope en 520. El libro y su
+// reflejo se reparten ese alto (0,69 + 0,2 de él), así nunca se cortan abajo.
+const UTIL_TABLETA = `min(520px, calc${HUECO.md})`
+const UTIL_ESCRITORIO = `min(520px, calc${HUECO.escritorio})`
+const anchoDelLibro = (util: string) => `clamp(150px, calc(${util} * 0.52), 272px)`
+const altoDelReflejo = (util: string) => `clamp(40px, calc(${util} * 0.2), 120px)`
 
 const CATEGORIAS: Record<Publicacion['categoria'], { nombre: string; corto: string }> = {
   boletin: { nombre: 'Boletín informativo', corto: 'boletín' },
@@ -87,25 +96,25 @@ function Cubierta({ publicacion }: { publicacion: Publicacion }) {
       )}
       <Box sx={{ position: 'absolute', inset: 0, background: velo(tinta.arriba, 'arriba') }} />
       <Box sx={{ position: 'absolute', inset: 0, background: velo(tinta.abajo, 'abajo') }} />
-      <Box sx={{ position: 'absolute', left: { xs: 16, md: 18 }, top: { xs: 16, md: 18 }, color: LETRA[tinta.arriba.letra] }}>
-        <Box component="span" sx={{ display: 'block', fontFamily: CORMORANT, fontStyle: 'italic', fontWeight: 500, fontSize: { xs: 27, md: 32 }, lineHeight: 1 }}>
+      <Box sx={{ position: 'absolute', left: '7cqw', top: '7cqw', color: LETRA[tinta.arriba.letra] }}>
+        <Box component="span" sx={{ display: 'block', fontFamily: CORMORANT, fontStyle: 'italic', fontWeight: 500, fontSize: '12cqw', lineHeight: 1 }}>
           {CATEGORIAS[publicacion.categoria].nombre.split(' ')[0]}
         </Box>
-        <Box component="span" sx={{ ...versalitas, display: 'block', mt: 0.75, fontSize: { xs: 7.5, md: 8.5 }, letterSpacing: '0.3em' }}>{site.tipo}</Box>
+        <Box component="span" sx={{ ...versalitas, display: 'block', mt: '2.6cqw', fontSize: '3.3cqw', letterSpacing: '0.3em' }}>{site.tipo}</Box>
       </Box>
       <Box
         sx={{
           ...versalitas,
           position: 'absolute',
-          left: { xs: 16, md: 18 },
-          right: { xs: 16, md: 18 },
-          bottom: { xs: 13, md: 15 },
+          left: '7cqw',
+          right: '7cqw',
+          bottom: '5.6cqw',
           display: 'flex',
           justifyContent: 'space-between',
           gap: 1,
-          pt: 0.75,
+          pt: '2.6cqw',
           borderTop: '1px solid currentColor',
-          fontSize: { xs: 8, md: 9 },
+          fontSize: '3.5cqw',
           letterSpacing: '0.2em',
           whiteSpace: 'nowrap',
           color: LETRA[tinta.abajo.letra],
@@ -131,14 +140,18 @@ const escena = {
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  height: { xs: 400, md: 520 },
+  // Por el alto de la pantalla, para que la sección entera quepa bajo la barra:
+  // en un portátil bajo o en un móvil el libro encoge (su tapa, en cqw, con él).
+  height: { xs: 'clamp(170px, 28svh, 400px)', md: UTIL_TABLETA },
+  [desktopMq]: { height: UTIL_ESCRITORIO },
   perspective: '1400px',
   // Luz de cera detrás del libro: lo separa del fondo sin marco ni tarjeta.
   '& .halo': {
     position: 'absolute',
     left: '50%',
     top: '44%',
-    width: { xs: 380, md: 520 },
+    width: { xs: 'clamp(240px, 46svh, 380px)', md: UTIL_TABLETA },
+    [desktopMq]: { width: UTIL_ESCRITORIO },
     aspectRatio: '1',
     transform: 'translate(-50%, -50%)',
     background: `radial-gradient(circle, ${alfa(GOLD, 0.13)} 0%, ${alfa(GOLD, 0.05)} 35%, ${alfa(GOLD, 0)} 65%)`,
@@ -146,7 +159,8 @@ const escena = {
   },
   '& .libro': {
     position: 'relative',
-    width: { xs: 220, md: 272 },
+    width: { xs: 'clamp(110px, 16svh, 220px)', md: anchoDelLibro(UTIL_TABLETA) },
+    [desktopMq]: { width: anchoDelLibro(UTIL_ESCRITORIO) },
     aspectRatio: '3 / 4',
     transformStyle: 'preserve-3d',
     transform: REPOSO,
@@ -162,6 +176,8 @@ const escena = {
     position: 'absolute',
     inset: 0,
     overflow: 'hidden',
+    // La letra de la tapa se mide en cqw: crece y encoge con el libro.
+    containerType: 'inline-size',
     transformOrigin: 'left center',
     transition: GIRO,
     boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.07)',
@@ -178,8 +194,9 @@ const escena = {
   // Lleva su propia perspectiva porque la máscara aplana lo que tiene dentro.
   '& .reflejo': {
     position: 'relative',
-    width: { xs: 220, md: 272 },
-    height: { xs: 80, md: 120 },
+    width: { xs: 'clamp(110px, 16svh, 220px)', md: anchoDelLibro(UTIL_TABLETA) },
+    height: { xs: 'clamp(28px, 5svh, 80px)', md: altoDelReflejo(UTIL_TABLETA) },
+    [desktopMq]: { width: anchoDelLibro(UTIL_ESCRITORIO), height: altoDelReflejo(UTIL_ESCRITORIO) },
     mt: '6px',
     overflow: 'hidden',
     perspective: '1400px',
@@ -263,19 +280,20 @@ function Miniatura({ publicacion }: { publicacion: Publicacion }) {
 
 // El texto a la izquierda y el ejemplar a la derecha; en el móvil, el ejemplar
 // arriba. Los comparten el bloque y su esqueleto.
-const rejilla = { display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 380px', lg: '1fr 440px' }, gap: { xs: 4, md: 5, lg: 7 }, alignItems: 'center' } as const
+const rejilla = { display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 380px', lg: '1fr 440px' }, gap: { xs: 2.5, md: 5, lg: 7 }, alignItems: 'center' } as const
 const columnaDelEjemplar = { position: 'relative', order: { xs: -1, md: 0 }, gridColumn: { md: 2 }, gridRow: { md: 1 }, width: '100%', maxWidth: 440, mx: { xs: 'auto', md: 0 } } as const
 const columnaDelTexto = { gridColumn: { md: 1 }, gridRow: { md: 1 } } as const
 
 // Las anteriores, una por fila y con su tapa en pequeño: ya no están detrás del
 // libro, y la tapa las reconoce antes de leer el título.
-const listaDeOtras = { listStyle: 'none', m: 0, mt: 4.5, p: 0, maxWidth: 540, borderBottom: '1px solid rgba(255, 255, 255, 0.12)' } as const
+const listaDeOtras = { listStyle: 'none', m: 0, mt: { xs: 3, md: 4.5 }, '@media (max-height: 760px)': { mt: 2 }, p: 0, maxWidth: 540, borderBottom: '1px solid rgba(255, 255, 255, 0.12)' } as const
 const filaDeOtra = {
   display: 'grid',
   gridTemplateColumns: '44px minmax(0, 1fr) auto',
   gap: 2.25,
   alignItems: 'center',
   py: 1.5,
+  '@media (max-height: 760px)': { py: 1 },
   borderTop: '1px solid rgba(255, 255, 255, 0.12)',
 } as const
 
@@ -352,7 +370,7 @@ export default function PublicacionesDestacadas() {
         position: 'relative',
         overflow: 'hidden',
         '@supports (overflow: clip)': { overflow: 'clip' },
-        py: { xs: 8, md: 11 },
+        ...aPantalla,
         backgroundColor: TINTA,
       }}
     >
@@ -397,19 +415,19 @@ export default function PublicacionesDestacadas() {
                 </Typography>
               </Revela>
               <Revela efecto="cortina" orden={2}>
-                <Typography variant="h3" component="h3" sx={{ fontFamily: SERIF, fontSize: { xs: 34, md: 44, lg: 52 }, lineHeight: 1.06, letterSpacing: '-0.015em', color: '#fff', textWrap: 'balance' }}>
+                <Typography variant="h3" component="h3" sx={{ fontFamily: SERIF, fontSize: { xs: 'clamp(26px, 4.2svh, 34px)', md: 'clamp(34px, 5.4svh, 44px)', lg: 'clamp(36px, 6svh, 52px)' }, lineHeight: 1.06, letterSpacing: '-0.015em', color: '#fff', textWrap: 'balance' }}>
                   {destacada.titulo}
                 </Typography>
               </Revela>
               <Revela orden={3}>
                 {destacada.descripcion && (
-                  <Typography sx={{ mt: 2.5, maxWidth: 470, fontSize: 16, lineHeight: 1.7, color: '#d9d5d0' }}>
+                  <Typography sx={{ mt: 2.5, maxWidth: 470, fontSize: 16, lineHeight: 1.7, color: '#d9d5d0', '@media (max-height: 700px)': { mt: 1.5, fontSize: 15, lineHeight: 1.55 }, '@media (max-width: 899.95px) and (max-height: 860px)': { display: 'none' } }}>
                     {destacada.descripcion}
                   </Typography>
                 )}
                 {/* Apilados, a lo ancho: dos anchos distintos uno encima del otro parecían descolocados.
                     Pasa en el móvil y en la columna estrecha de la tableta apaisada. */}
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 3.75, '& > a': { flex: { xs: '1 1 100%', sm: '0 0 auto', md: '1 1 100%', lg: '0 0 auto' } } }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 1, sm: 1.5 }, mt: { xs: 2.5, md: 3.75 }, '@media (max-height: 700px)': { mt: 2 }, '& > a': { minHeight: { xs: 44, sm: 48 }, flex: { xs: '1 1 100%', sm: '0 0 auto', md: '1 1 100%', lg: '0 0 auto' } } }}>
                   {destacada.archivoUrl && (
                     <Box
                       component="a"

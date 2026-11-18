@@ -17,8 +17,9 @@
   isolation: isolate;
   display: flex;
   align-items: center;
-  min-height: 560px;
-  min-height: clamp(560px, 78svh, 900px);
+  /* Una pantalla, como las demás secciones de la portada: lo que queda bajo la
+     barra fija (82 px). El texto se encoge con el alto (ver más abajo). */
+  min-height: calc(100svh - 82px);
   /* Bloque de foto a sangre con bordes rectos: `clip` recorta el parallax sin crear un contenedor con scroll. */
   overflow: hidden;
   overflow: clip;
@@ -32,13 +33,13 @@
   z-index: -1;
   background: linear-gradient(90deg, rgba(7,6,8,.88), rgba(7,6,8,.55) 50%, rgba(7,6,8,.15));
 }
-.procession-scene-content { width: min(1072px, calc(100% - 128px)); margin-inline: auto; padding-block: 110px; }
+.procession-scene-content { width: min(1072px, calc(100% - 128px)); margin-inline: auto; padding-block: clamp(32px, 9svh, 110px); }
 .procession-scene-eyebrow { display: block; color: #e3d8bf; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 24px; }
-.home-refined .procession-scene h2 { font-weight: 400; font-size: clamp(36px, 4.4vw, 64px); line-height: 1.18; letter-spacing: -.025em; margin: 0; max-width: 760px; }
+.home-refined .procession-scene h2 { font-weight: 400; font-size: clamp(30px, min(4.4vw, 7svh), 64px); line-height: 1.18; letter-spacing: -.025em; margin: 0; max-width: 760px; }
 .procession-scene-content p { max-width: 470px; color: #e4e2df; font-size: 17px; line-height: 1.75; margin: 24px 0 26px; }
 /* El párrafo que se enciende: más grande y más fino, que es la frase que se lee al pasar. */
 /* La sombra deja leer sobre la foto también las palabras que aún no se han encendido. */
-.procession-scene-content .procession-scene-parrafo { max-width: 26ch; font-size: clamp(22px, 2.4vw, 30px); font-weight: 300; line-height: 1.5; margin: 32px 0 30px; text-shadow: 0 1px 2px rgba(7,6,8,.7), 0 2px 18px rgba(7,6,8,.65); }
+.procession-scene-content .procession-scene-parrafo { max-width: 26ch; font-size: clamp(19px, min(2.4vw, 3.6svh), 30px); font-weight: 300; line-height: 1.5; margin: clamp(16px, 3.4svh, 32px) 0 clamp(14px, 3svh, 30px); text-shadow: 0 1px 2px rgba(7,6,8,.7), 0 2px 18px rgba(7,6,8,.65); }
 /* Enlace esmalte (components/esmalte.ts): en minúsculas, sin subrayado, con la flecha dorada. */
 .procession-scene-link { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; color: #fff; font-size: 16px; font-weight: 600; transition: color .25s ease; }
 .procession-scene-link svg { color: var(--marca-acento); transition: transform .25s ease; }
@@ -46,12 +47,13 @@
 .procession-scene-link:hover { color: var(--marca-acento); }
 @media (prefers-reduced-motion: reduce) { .procession-scene-link:hover svg { transform: none; } }
 @media (max-width: 600px) {
-  .procession-scene { min-height: 580px; }
+  /* En el móvil, la barra mide 56. */
+  .procession-scene { min-height: calc(100svh - 56px); }
   .procession-scene-image { inset: -28px 0; }
   .procession-scene-image img { object-position: 53% center; }
-  .procession-scene-content { width: calc(100% - 40px); padding-block: 100px; }
+  .procession-scene-content { width: calc(100% - 40px); padding-block: clamp(28px, 9svh, 100px); }
   .procession-scene-content p { font-size: 15px; }
-  .procession-scene-content .procession-scene-parrafo { font-size: 21px; }
+  .procession-scene-content .procession-scene-parrafo { font-size: clamp(18px, 3.2svh, 21px); }
   .procession-scene-eyebrow { font-size: 11px; margin-bottom: 20px; }
   .procession-scene-shade { background: linear-gradient(180deg, rgba(7,6,8,.5), rgba(7,6,8,.82)); }
 }

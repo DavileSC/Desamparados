@@ -14,7 +14,7 @@ import ListaDeAgenda, { ListaDeAgendaEsqueleto } from './ListaDeAgenda'
 import EnCarga from '../../components/esqueleto/EnCarga'
 import { inicioDeMes, nombreDelMes, sumarMeses } from './agenda'
 import { comienzoEnMadrid, diaDelCalendario, hoyDelCalendario } from '../../lib/horaDeMadrid'
-import { PAPEL, SERIF, TACTIL, TINTA, enlaceBloque } from './estilos'
+import { PAPEL, SERIF, TACTIL, TINTA, aPantalla, enlaceBloque } from './estilos'
 import { propsDeFoto } from '../../lib/fotoSubida'
 import { useModulos } from '../../hooks/useModulos'
 
@@ -26,28 +26,39 @@ const ACTOS_POR_VENTANA = 100
  * ancho y solo la recalcula si cambia el ancho (girar el móvil, redimensionar). El alto mínimo se
  * escribe en el propio elemento para poder medir su altura natural cuando cambia el ancho.
  */
-function AlturaSostenida({ children, className, sx }: { children: ReactNode; className?: string; sx?: SxProps<Theme> }) {
+function AlturaSostenida({ children, className, sx, cargando }: { children: ReactNode; className?: string; sx?: SxProps<Theme>; cargando: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
+  const maximo = useRef(0)
 
   useEffect(() => {
     const el = ref.current
     if (!el || typeof ResizeObserver === 'undefined') return
     let ancho = -1
-    let maximo = 0
     const observador = new ResizeObserver(([entrada]) => {
       const { width } = entrada.contentRect
       if (width !== ancho) {
         ancho = width
         el.style.minHeight = ''
-        maximo = el.offsetHeight
+        maximo.current = el.offsetHeight
       } else {
-        maximo = Math.max(maximo, el.offsetHeight)
+        maximo.current = Math.max(maximo.current, el.offsetHeight)
       }
-      el.style.minHeight = `${maximo}px`
+      el.style.minHeight = `${maximo.current}px`
     })
     observador.observe(el)
     return () => observador.disconnect()
   }, [])
+
+  // Al llegar los actos se vuelve a medir desde cero: el esqueleto de carga es
+  // más alto que una lista corta, y en el móvil la tarjeta se quedaba con un
+  // hueco vacío de 300 px debajo del último acto.
+  useEffect(() => {
+    const el = ref.current
+    if (!el || cargando) return
+    el.style.minHeight = ''
+    maximo.current = el.offsetHeight
+    el.style.minHeight = `${maximo.current}px`
+  }, [cargando])
 
   return <Box ref={ref} className={className} sx={sx}>{children}</Box>
 }
@@ -131,7 +142,7 @@ export default function AgendaYDirecto() {
         // con `hidden`, un scrollIntoView dentro la desplazaba y asomaba una franja de foto.
         overflow: 'hidden',
         '@supports (overflow: clip)': { overflow: 'clip' },
-        py: { xs: 8, md: 13 },
+        ...aPantalla,
         backgroundColor: TINTA,
       }}
     >
@@ -176,7 +187,7 @@ export default function AgendaYDirecto() {
         {/* Texto y tarjeta, lado a lado solo desde 1200 px: entre 900 y 1200 el
             texto (300 px) y el calendario (280) dejaban a la lista unos 150 px, y
             cada título salía palabra por palabra. Ahí, el texto va encima. */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '300px 1fr' }, gap: { xs: 4, lg: 7 }, alignItems: 'start' }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '300px 1fr' }, gap: { xs: 2.5, sm: 4, lg: 7 }, alignItems: 'start', '@media (max-width: 599.95px) and (max-height: 700px)': { gap: 1.5 } }}>
           <Box>
             <Revela efecto="cortina">
               <Typography id="agenda-title" variant="h2" component="h2" sx={{ fontFamily: SERIF, color: '#fff', m: 0 }}>
@@ -184,7 +195,7 @@ export default function AgendaYDirecto() {
               </Typography>
             </Revela>
             <Revela orden={1}>
-              <Typography sx={{ mt: 2.75, mb: 3.5, maxWidth: 420, fontSize: 15, lineHeight: 1.7, color: '#e4e2df' }}>
+              <Typography sx={{ mt: { xs: 1.5, md: 2.75 }, mb: { xs: 1.5, md: 3.5 }, maxWidth: 420, fontSize: 15, lineHeight: 1.7, color: '#e4e2df', '@media (max-width: 599.95px)': { fontSize: 14, lineHeight: 1.55 }, '@media (max-width: 599.95px) and (max-height: 700px)': { display: 'none' } }}>
                 <TextoDePortada anchos={['26em', '22em', '12em']}>{textos.agenda.parrafo}</TextoDePortada>
               </Typography>
               <Box component={Link} to="/agenda" sx={enlaceBloque}>
@@ -196,6 +207,7 @@ export default function AgendaYDirecto() {
           {/* La tarjeta de papel es el objeto del bloque: crece al posarse. */}
           <Revela efecto="crecer" orden={2}>
             <AlturaSostenida
+              cargando={listaCargando}
               className="home-papel"
               sx={{
                 display: 'grid',
