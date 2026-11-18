@@ -1,6 +1,7 @@
 import { enlaceConFlecha } from '../../components/estiloDeBoton'
 import { designTokens } from '../../theme'
 import { MARCA } from '../../theme/marca'
+import { ALTO_BARRA_ESCRITORIO, desktopMq } from '../../components/barra/estilos'
 /**
  * Colores y estilos compartidos por los bloques de la portada: el ritmo es
  * hero → oscuro → foto a sangre → oscuro → foto a sangre → oscuro, con fotos
@@ -30,6 +31,54 @@ export const PANTALLA_ALTA = `@media ${CONSULTA_ALTA}`
  * tarjeta de la agenda tiene que caber entera.
  */
 export const TACTIL = '@media (pointer: coarse)'
+
+/**
+ * Cada sección de la portada mide una pantalla: el alto que queda bajo la
+ * barra fija, con su contenido centrado. Así, al bajar, cada una se ve entera y
+ * cuadrada, en cualquier pantalla. El relleno de arriba y abajo va por el alto:
+ * con los 88 a 104 px de antes, en un portátil bajo el contenido se salía por
+ * abajo. La barra mide 56 en el móvil, 64 en la tableta (la del móvil, con el
+ * Toolbar de MUI desde sm) y ALTO_BARRA_ESCRITORIO desde 1024.
+ */
+const RELLENO_MOVIL = 'clamp(12px, 2.5svh, 40px)'
+const RELLENO = 'clamp(16px, 4.5svh, 72px)'
+const PANTALLAS = {
+  xs: { barra: 56, relleno: RELLENO_MOVIL },
+  sm: { barra: 64, relleno: RELLENO_MOVIL },
+  md: { barra: 64, relleno: RELLENO },
+  escritorio: { barra: ALTO_BARRA_ESCRITORIO, relleno: RELLENO },
+} as const
+const util = ({ barra, relleno }: { barra: number; relleno: string }) => `(100svh - ${barra}px - 2 * ${relleno})`
+
+export const aPantalla = {
+  minHeight: { xs: `calc(100svh - ${PANTALLAS.xs.barra}px)`, sm: `calc(100svh - ${PANTALLAS.sm.barra}px)` },
+  [desktopMq]: { minHeight: `calc(100svh - ${ALTO_BARRA_ESCRITORIO}px)` },
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  py: { xs: RELLENO_MOVIL, md: RELLENO },
+} as const
+
+/**
+ * Una medida por el hueco útil de una sección a pantalla (su alto menos el
+ * relleno), en cada tipo de pantalla: `porElHueco('height', u => `min(520px, calc${u})`)`.
+ * Lo de dentro que se mide por el alto (el bloque de noticias, el libro de las
+ * publicaciones) se cuenta contra esto, no contra la pantalla entera.
+ */
+/** El hueco útil de cada tipo de pantalla, entre paréntesis para usarlo en un `calc`. */
+export const HUECO = {
+  xs: util(PANTALLAS.xs),
+  sm: util(PANTALLAS.sm),
+  md: util(PANTALLAS.md),
+  escritorio: util(PANTALLAS.escritorio),
+} as const
+
+export function porElHueco(propiedad: string, medida: (hueco: string) => string) {
+  return {
+    [propiedad]: { xs: medida(util(PANTALLAS.xs)), sm: medida(util(PANTALLAS.sm)), md: medida(util(PANTALLAS.md)) },
+    [desktopMq]: { [propiedad]: medida(util(PANTALLAS.escritorio)) },
+  }
+}
 
 /** Antetítulo en versalitas espaciadas, sobre fondo oscuro o foto. */
 export const ceja = {

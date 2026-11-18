@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Box, Typography } from '@mui/material'
+import { Box, Typography, type SxProps, type Theme } from '@mui/material'
 import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { GOLD, GRANATE, PANTALLA_ALTA, SERIF } from '../features/inicio/estilos'
@@ -43,6 +43,36 @@ const TONOS_PLACA = [
   { tono: 'tinta', fondo: 'radial-gradient(120% 90% at 30% 20%, #2a2620, #0d0c0e 60%)' },
   { tono: 'piedra', fondo: 'radial-gradient(120% 90% at 30% 20%, #3a353a, #1c1a1e 65%)' },
 ] as const
+
+/**
+ * La placa de una noticia sin foto: el escudo velado sobre uno de los tonos.
+ * La comparten la tarjeta y el carrusel de la portada, para que una noticia
+ * sin foto se vea igual en los dos sitios.
+ */
+export function PlacaDeNoticia({ indice = 0, ancho = '34%', sx }: {
+  indice?: number
+  ancho?: string
+  /** Dónde va el escudo, si no al centro: en el carrusel, apartado del texto. */
+  sx?: SxProps<Theme>
+}) {
+  const tono = TONOS_PLACA[indice % TONOS_PLACA.length]
+  return (
+    <Box
+      data-testid="placa-noticia"
+      data-tono={tono.tono}
+      aria-hidden="true"
+      sx={[{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', background: tono.fondo }, ...(Array.isArray(sx) ? sx : [sx])]}
+    >
+      <Box
+        component="img"
+        src={RUTA_ESCUDO}
+        alt=""
+        className="noticia-foto"
+        sx={{ width: ancho, maxWidth: 220, opacity: 0.16, filter: 'grayscale(1) brightness(1.6)' }}
+      />
+    </Box>
+  )
+}
 
 /** La tarjeta: una columna y, la destacada, dos desde sm. La comparten la tarjeta y su esqueleto. */
 const tarjetaSx = (destacada: boolean) => ({
@@ -90,7 +120,6 @@ const cuerpoSx = (destacada: boolean) => ({
  * pesaban más que todo lo demás de la portada.
  */
 export default function TarjetaNoticia({ noticia, indice = 0, destacada = false, volver }: TarjetaNoticiaProps) {
-  const tono = TONOS_PLACA[indice % TONOS_PLACA.length]
   // Si el fichero de la foto ya no está en el servidor, la placa y no el icono
   // de imagen rota. Se guarda qué dirección falló: si la noticia cambia de foto,
   // la nueva se vuelve a intentar.
@@ -130,20 +159,7 @@ export default function TarjetaNoticia({ noticia, indice = 0, destacada = false,
         ) : (
           // Sin foto (o con una que no carga), una placa velada con el escudo: la
           // tarjeta nunca queda con un hueco, y no parece que falte algo.
-          <Box
-            data-testid="placa-noticia"
-            data-tono={tono.tono}
-            aria-hidden="true"
-            sx={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', background: tono.fondo }}
-          >
-            <Box
-              component="img"
-              src={RUTA_ESCUDO}
-              alt=""
-              className="noticia-foto"
-              sx={{ width: destacada ? '26%' : '34%', maxWidth: 220, opacity: 0.16, filter: 'grayscale(1) brightness(1.6)' }}
-            />
-          </Box>
+          <PlacaDeNoticia indice={indice} ancho={destacada ? '26%' : '34%'} />
         )}
       </Box>
 

@@ -41,19 +41,33 @@ describe('NoticiasDestacadas', () => {
     expect(await screen.findByRole('link', { name: /apertura del curso/i })).toBeInTheDocument()
   })
 
-  it('pinta cada noticia como una tarjeta enlazada a su ficha, con fecha, título y extracto', async () => {
+  it('cada noticia es un enlace a su ficha, con fecha y título', async () => {
     servir([APERTURA, TRIDUO, CAMPANA])
     renderWithProviders(<NoticiasDestacadas />)
 
-    const tarjeta = await screen.findByRole('link', { name: /apertura del curso/i })
-    expect(tarjeta).toHaveAttribute('href', '/noticias/apertura-curso')
-    expect(within(tarjeta).getByRole('heading', { level: 3 })).toHaveTextContent(APERTURA.titulo)
-    expect(within(tarjeta).getByText(APERTURA.extracto)).toBeInTheDocument()
+    const enlace = await screen.findByRole('link', { name: /apertura del curso/i })
+    expect(enlace).toHaveAttribute('href', '/noticias/apertura-curso')
+    expect(within(enlace).getByRole('heading', { level: 3 })).toHaveTextContent(APERTURA.titulo)
     // La fecha va en un <time> legible por máquinas; el texto visible es corto («7 sep 2026»).
-    const fecha = tarjeta.querySelector('time')
+    const fecha = enlace.querySelector('time')
     expect(fecha).toHaveAttribute('datetime', APERTURA.fecha)
     expect(fecha).toHaveTextContent(/7\s*sep\s*2026/i)
+    expect(screen.getByRole('link', { name: /solemne triduo/i })).toHaveAttribute('href', '/noticias/solemne-triduo')
     expect(screen.getByRole('heading', { level: 2, name: /últimas noticias/i })).toBeInTheDocument()
+  })
+
+  it('la primera es la grande y solo ella lleva el extracto', async () => {
+    // Se rompe si la grande deja de ser la primera (la destacada o la más reciente)
+    // o si las pequeñas cargan con un extracto que no les cabe.
+    servir([APERTURA, TRIDUO, CAMPANA])
+    renderWithProviders(<NoticiasDestacadas />)
+
+    const grande = await screen.findByRole('link', { name: /apertura del curso/i })
+    expect(grande).toHaveAttribute('data-grande', 'true')
+    expect(within(grande).getByText(APERTURA.extracto)).toBeInTheDocument()
+    const pequena = screen.getByRole('link', { name: /solemne triduo/i })
+    expect(pequena).not.toHaveAttribute('data-grande')
+    expect(within(pequena).queryByText(TRIDUO.extracto)).toBeNull()
   })
 
   it('usa la foto de la noticia y, si no la tiene, una placa con el escudo', async () => {
@@ -64,12 +78,11 @@ describe('NoticiasDestacadas', () => {
     const conFoto = await screen.findByRole('link', { name: /apertura del curso/i })
     expect(conFoto.querySelector('img')).toHaveAttribute('src', '/storage/apertura.jpg')
     const sinFoto = screen.getByRole('link', { name: /solemne triduo/i })
-    // La única imagen es el escudo de la placa, no una foto.
     expect(within(sinFoto).getByTestId('placa-noticia').querySelector('img')).toHaveAttribute('src', INSTALACION.marca.imagenes.escudo)
     expect(sinFoto.querySelectorAll('img')).toHaveLength(1)
   })
 
-  it('enseña como mucho tres noticias y enlaza al archivo completo', async () => {
+  it('enseña como mucho tres noticias, sin pase ni pausa, y enlaza al archivo completo', async () => {
     servir([APERTURA, TRIDUO, CAMPANA, CABILDO])
     renderWithProviders(<NoticiasDestacadas />)
 
@@ -77,6 +90,8 @@ describe('NoticiasDestacadas', () => {
     const lista = screen.getByRole('list', { name: /últimas noticias/i })
     expect(within(lista).getAllByRole('listitem')).toHaveLength(3)
     expect(screen.queryByRole('link', { name: /cabildo general/i })).toBeNull()
+    // Fijas: nada que se mueva solo, nada que parar.
+    expect(screen.queryByRole('button', { name: /pausar/i })).toBeNull()
     expect(screen.getByRole('link', { name: /ver todas/i })).toHaveAttribute('href', '/noticias')
   })
 
@@ -102,7 +117,6 @@ describe('NoticiasDestacadas', () => {
   })
 
   it('alterna el tono de las placas para que varias noticias sin foto no formen un bloque del mismo color', async () => {
-    // Se rompe si todas las placas vuelven a salir del mismo color: tres seguidas pesan como un solo bloque.
     servir([TRIDUO, CAMPANA, CABILDO])
     renderWithProviders(<NoticiasDestacadas />)
 
