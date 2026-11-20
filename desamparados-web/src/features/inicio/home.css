@@ -4,6 +4,10 @@
 .home-refined section { scroll-margin-top: 96px; }
 /* En escritorio, bajo la barra fija de dos pisos: ALTO_BARRA_ESCRITORIO (82) + 24. */
 @media (min-width: 1024px) { .home-refined section { scroll-margin-top: 106px; } }
+/* La unidad de k() (estilos.ts): 1 px en 1280 × 680, en proporción al ancho o
+   al alto, el que menos dé. El tope de abajo deja caber la agenda en un portátil
+   de 1366 × 600; el de arriba, que en un 4K a 100 % no salgan letras de cartel. */
+@media (min-width: 1024px) { .home-refined { --escala-portada: clamp(0.85px, min(0.078125vw, 0.14706svh), 1.6px); } }
 .home-refined a:focus-visible,
 .home-refined button:focus-visible { outline: 2px solid var(--marca-acento); outline-offset: 5px; }
 /* Sobre el papel de la tarjeta de la agenda el dorado no se ve: el foco pasa a granate. */

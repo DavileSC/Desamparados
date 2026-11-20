@@ -42,22 +42,51 @@ export const TACTIL = '@media (pointer: coarse)'
  */
 const RELLENO_MOVIL = 'clamp(12px, 2.5svh, 40px)'
 const RELLENO = 'clamp(16px, 4.5svh, 72px)'
+/**
+ * En escritorio, los márgenes van en proporción a la pantalla: el 7 % del alto
+ * arriba y abajo y el 5 % del ancho a los lados (ver contenedorDePortada). Con
+ * medidas fijas y la página topada a 1440 px, un portátil dejaba 64 px a los
+ * lados y un monitor de 1920, 300: la misma portada parecía otra.
+ */
+const RELLENO_ESCRITORIO = '7svh'
 const PANTALLAS = {
   xs: { barra: 56, relleno: RELLENO_MOVIL },
   sm: { barra: 64, relleno: RELLENO_MOVIL },
   md: { barra: 64, relleno: RELLENO },
-  escritorio: { barra: ALTO_BARRA_ESCRITORIO, relleno: RELLENO },
+  escritorio: { barra: ALTO_BARRA_ESCRITORIO, relleno: RELLENO_ESCRITORIO },
 } as const
 const util = ({ barra, relleno }: { barra: number; relleno: string }) => `(100svh - ${barra}px - 2 * ${relleno})`
 
 export const aPantalla = {
   minHeight: { xs: `calc(100svh - ${PANTALLAS.xs.barra}px)`, sm: `calc(100svh - ${PANTALLAS.sm.barra}px)` },
-  [desktopMq]: { minHeight: `calc(100svh - ${ALTO_BARRA_ESCRITORIO}px)` },
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',
   py: { xs: RELLENO_MOVIL, md: RELLENO },
+  // Después de `py`: en escritorio manda el relleno proporcional.
+  [desktopMq]: { minHeight: `calc(100svh - ${ALTO_BARRA_ESCRITORIO}px)`, py: RELLENO_ESCRITORIO },
 } as const
+
+/** El sx de ContenedorDePagina en las secciones de la portada: sin tope de ancho y con el 5 % a cada lado. */
+export const contenedorDePortada = { [desktopMq]: { maxWidth: 'none', px: '5vw' } } as const
+
+/**
+ * La escala de la portada en escritorio. `k(31)` mide 31 px en la pantalla de
+ * referencia (1280 × 680 de navegador: un portátil de 14" con Windows al 150 %)
+ * y crece o mengua con la pantalla, por el ancho y por el alto, el que menos dé:
+ * en un monitor de 1920 × 912, ×1,34. Así la agenda y los accesos se ven igual
+ * en los dos, en vez de quedarse pequeños en el grande. La variable la cuelga
+ * home.css; fuera de escritorio vale 1 px y todo mide lo de siempre.
+ */
+export const k = (px: number) => `calc(${px} * var(--escala-portada, 1px))`
+
+/**
+ * Desde aquí la tarjeta de la agenda va con el texto al lado, mide siempre lo
+ * mismo y la lista corre por dentro. Por debajo, el texto va encima y la
+ * tarjeta toma el alto de sus filas: con un alto fijo no cabría en la pantalla.
+ */
+export const AGENDA_LADO_A_LADO = '@media (min-width: 1200px)'
+export const CONSULTA_AGENDA_LADO_A_LADO = '(min-width: 1200px)'
 
 /**
  * Una medida por el hueco útil de una sección a pantalla (su alto menos el

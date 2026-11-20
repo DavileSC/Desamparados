@@ -4,7 +4,8 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import type { ApiEvent, EventoCalendario } from '../../lib/api/agenda'
 import { TIPOS, cubreElDia, diasDeLaRejilla, inicioDelDia, nombreDelMes } from './agenda'
-import { GRANATE, PANTALLA_ALTA, TACTIL } from './estilos'
+import { GRANATE, PANTALLA_ALTA, TACTIL, k } from './estilos'
+import { desktopMq } from '../../components/barra/estilos'
 import { CORMORANT } from '../actualidad/agenda/letraAlmanaque'
 
 const DIAS_SEMANA = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
@@ -22,9 +23,12 @@ interface MiniCalendarioProps {
   onElegir: (evento: EventoCalendario) => void
 }
 
+// En escritorio, todo a la escala de la portada (k): va después de PANTALLA_ALTA, que
+// ahí ya no hace falta, y antes de TACTIL, que con el dedo manda el tamaño mínimo.
 const navSx = {
   width: 36,
   height: 36,
+  [desktopMq]: { width: k(36), height: k(36), '& svg': { fontSize: k(20) } },
   [TACTIL]: { width: 44, height: 'clamp(32px, 4.6svh, 44px)' },
   color: '#7b6f5e',
   '&:hover': { backgroundColor: alpha(GRANATE, 0.08), color: GRANATE },
@@ -45,24 +49,24 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
   return (
     // Prieto en un portátil bajo, para que la tarjeta entera quepa; con aire en
     // una pantalla alta (ver PANTALLA_ALTA).
-    <Box sx={{ p: { xs: 2.25, md: 2.5 }, [PANTALLA_ALTA]: { p: 3 }, '@media (max-width: 599.95px) and (max-height: 700px)': { p: 1.5 }, color: TEXTO }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, [PANTALLA_ALTA]: { mb: 1.75 } }}>
+    <Box sx={{ p: { xs: 2.25, md: 2.5 }, [PANTALLA_ALTA]: { p: 3 }, '@media (max-width: 599.95px) and (max-height: 700px)': { p: 1.5 }, [desktopMq]: { p: k(20) }, color: TEXTO }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, [PANTALLA_ALTA]: { mb: 1.75 }, [desktopMq]: { mb: k(8) } }}>
         <IconButton aria-label="Mes anterior" disabled={!puedeRetroceder} onClick={() => onCambiarMes(-1)} sx={navSx}>
           <ChevronLeftIcon fontSize="small" />
         </IconButton>
         {/* Como la hoja de la Agenda: el mes en letra de almanaque y granate, el año en cursiva. */}
-        <Typography aria-live="polite" aria-label={nombreDelMes(mes, true)} sx={{ fontFamily: CORMORANT, fontWeight: 500, fontSize: 25, lineHeight: 1, color: GRANATE }}>
+        <Typography aria-live="polite" aria-label={nombreDelMes(mes, true)} sx={{ fontFamily: CORMORANT, fontWeight: 500, fontSize: 25, [desktopMq]: { fontSize: k(25) }, lineHeight: 1, color: GRANATE }}>
           <span aria-hidden>{nombreDelMes(mes, false)}</span>
-          <Box component="span" aria-hidden sx={{ fontStyle: 'italic', fontWeight: 400, fontSize: 17, color: '#7a6c70', ml: 0.75 }}>{mes.getFullYear()}</Box>
+          <Box component="span" aria-hidden sx={{ fontStyle: 'italic', fontWeight: 400, fontSize: 17, color: '#7a6c70', ml: 0.75, [desktopMq]: { fontSize: k(17), ml: k(6) } }}>{mes.getFullYear()}</Box>
         </Typography>
         <IconButton aria-label="Mes siguiente" onClick={() => onCambiarMes(1)} sx={navSx}>
           <ChevronRightIcon fontSize="small" />
         </IconButton>
       </Box>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', rowGap: 0.25, [PANTALLA_ALTA]: { rowGap: 0.5 }, textAlign: 'center' }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', rowGap: 0.25, [PANTALLA_ALTA]: { rowGap: 0.5 }, [desktopMq]: { rowGap: k(2) }, textAlign: 'center' }}>
         {DIAS_SEMANA.map(letra => (
-          <Box key={letra} aria-hidden="true" sx={{ fontSize: 11, letterSpacing: '0.12em', color: TENUE, pb: 0.75 }}>
+          <Box key={letra} aria-hidden="true" sx={{ fontSize: 11, letterSpacing: '0.12em', color: TENUE, pb: 0.75, [desktopMq]: { fontSize: k(11), pb: k(6) } }}>
             {letra}
           </Box>
         ))}
@@ -73,6 +77,7 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
             width: 31,
             height: 31,
             [PANTALLA_ALTA]: { width: 36, height: 36 },
+            [desktopMq]: { width: k(31), height: k(31), fontSize: k(17) },
             // Con el dedo, todo el ancho de la casilla (hasta 44) y hasta 44 de alto,
             // según el alto de la pantalla: en un móvil bajo, con 44 la agenda no
             // cabía entera. Nunca menos de 32, por encima de los 24 de WCAG 2.5.8.
@@ -125,6 +130,7 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
                   left: 'calc(50% - 2px)',
                   width: 4,
                   height: 4,
+                  [desktopMq]: { bottom: k(3), left: `calc(50% - ${k(2)})`, width: k(4), height: k(4) },
                   borderRadius: '50%',
                   backgroundColor: elegido ? '#fff' : TIPOS[actos[0].type].color,
                 },
@@ -140,10 +146,10 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
       {/* La leyenda guarda su línea aunque el mes no tenga actos: así el calendario no cambia de alto.
           En un móvil que no sea muy alto se quita: la sección entera tiene que caber en la
           pantalla, y el tipo de cada acto ya lo dice su etiqueta en la lista. */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '10px 16px', minHeight: 30, mt: 1.5, pt: 1.5, [PANTALLA_ALTA]: { mt: 2, pt: 2 }, boxShadow: '0 -1px 0 rgba(27, 28, 26, 0.08)', '@media (max-width: 599.95px) and (max-height: 860px)': { display: 'none' } }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '10px 16px', minHeight: 30, mt: 1.5, pt: 1.5, [PANTALLA_ALTA]: { mt: 2, pt: 2 }, [desktopMq]: { minHeight: k(30), mt: k(12), pt: k(12), gap: `${k(10)} ${k(16)}` }, boxShadow: '0 -1px 0 rgba(27, 28, 26, 0.08)', '@media (max-width: 599.95px) and (max-height: 860px)': { display: 'none' } }}>
         {leyenda.map(tipo => (
-          <Box key={tipo} component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, fontSize: 12, lineHeight: '18px', color: '#6a6258' }}>
-            <Box component="span" aria-hidden="true" sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: TIPOS[tipo].color }} />
+          <Box key={tipo} component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, fontSize: 12, lineHeight: '18px', color: '#6a6258', [desktopMq]: { fontSize: k(12), lineHeight: 1.5, gap: k(6) } }}>
+            <Box component="span" aria-hidden="true" sx={{ width: 8, height: 8, [desktopMq]: { width: k(8), height: k(8) }, borderRadius: '50%', backgroundColor: TIPOS[tipo].color }} />
             {TIPOS[tipo].nombre}
           </Box>
         ))}

@@ -15,7 +15,7 @@ import { useDatosDePortada } from './useDatosDePortada'
 import { useTextosPortada } from './useContenidoPortada'
 import TextoDePortada from './TextoDePortada'
 import AvisosDeInicio from './AvisosDeInicio'
-import { GOLD, aPantalla, enlaceBloque, porElHueco } from './estilos'
+import { GOLD, aPantalla, contenedorDePortada, enlaceBloque, porElHueco } from './estilos'
 import { CORMORANT } from '../actualidad/agenda/letraAlmanaque'
 import { useModulos } from '../../hooks/useModulos'
 import type { Noticia } from '../../types'
@@ -84,7 +84,7 @@ export default function NoticiasDestacadas() {
 
   return (
     <SeccionAnimada cascada id="actualidad" aria-labelledby="actualidad-titulo" sx={{ ...aPantalla, backgroundColor: '#121113' }}>
-      <ContenedorDePagina>
+      <ContenedorDePagina sx={contenedorDePortada}>
         {/* Sin título a la vista: las noticias hablan por sí solas y el alto que
             ocupaba es para ellas. Queda para el lector de pantalla, que nombra
             la sección con él (y sigue siendo editable en el CMS). */}

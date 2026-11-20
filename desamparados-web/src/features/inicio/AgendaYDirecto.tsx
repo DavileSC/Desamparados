@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Box, Typography, type SxProps, type Theme } from '@mui/material'
+import { Box, Typography, useMediaQuery, type SxProps, type Theme } from '@mui/material'
 import { Link } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
@@ -14,7 +14,8 @@ import ListaDeAgenda, { ListaDeAgendaEsqueleto } from './ListaDeAgenda'
 import EnCarga from '../../components/esqueleto/EnCarga'
 import { inicioDeMes, nombreDelMes, sumarMeses } from './agenda'
 import { comienzoEnMadrid, diaDelCalendario, hoyDelCalendario } from '../../lib/horaDeMadrid'
-import { PAPEL, SERIF, TACTIL, TINTA, aPantalla, enlaceBloque } from './estilos'
+import { AGENDA_LADO_A_LADO, CONSULTA_AGENDA_LADO_A_LADO, PAPEL, SERIF, TACTIL, TINTA, aPantalla, contenedorDePortada, enlaceBloque, k } from './estilos'
+import { desktopMq } from '../../components/barra/estilos'
 import { propsDeFoto } from '../../lib/fotoSubida'
 import { useModulos } from '../../hooks/useModulos'
 
@@ -25,14 +26,18 @@ const ACTOS_POR_VENTANA = 100
  * Al cambiar de mes la tarjeta no cambia de alto: guarda la mayor altura que ha tenido con este
  * ancho y solo la recalcula si cambia el ancho (girar el móvil, redimensionar). El alto mínimo se
  * escribe en el propio elemento para poder medir su altura natural cuando cambia el ancho.
+ * Con el texto al lado (AGENDA_LADO_A_LADO) no hace nada: ahí la tarjeta tiene alto fijo y la
+ * lista corre por dentro, y un alto mínimo guardado la dejaba grande al volver a un mes corto.
  */
-function AlturaSostenida({ children, className, sx, cargando }: { children: ReactNode; className?: string; sx?: SxProps<Theme>; cargando: boolean }) {
+function AlturaSostenida({ children, className, sx, cargando, activa }: { children: ReactNode; className?: string; sx?: SxProps<Theme>; cargando: boolean; activa: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
   const maximo = useRef(0)
 
   useEffect(() => {
     const el = ref.current
-    if (!el || typeof ResizeObserver === 'undefined') return
+    if (!el) return
+    if (!activa) { el.style.minHeight = ''; return }
+    if (typeof ResizeObserver === 'undefined') return
     let ancho = -1
     const observador = new ResizeObserver(([entrada]) => {
       const { width } = entrada.contentRect
@@ -47,24 +52,25 @@ function AlturaSostenida({ children, className, sx, cargando }: { children: Reac
     })
     observador.observe(el)
     return () => observador.disconnect()
-  }, [])
+  }, [activa])
 
   // Al llegar los actos se vuelve a medir desde cero: el esqueleto de carga es
   // más alto que una lista corta, y en el móvil la tarjeta se quedaba con un
   // hueco vacío de 300 px debajo del último acto.
   useEffect(() => {
     const el = ref.current
-    if (!el || cargando) return
+    if (!el || cargando || !activa) return
     el.style.minHeight = ''
     maximo.current = el.offsetHeight
     el.style.minHeight = `${maximo.current}px`
-  }, [cargando])
+  }, [cargando, activa])
 
   return <Box ref={ref} className={className} sx={sx}>{children}</Box>
 }
 
 export default function AgendaYDirecto() {
   const textos = useTextosPortada()
+  const ladoALado = useMediaQuery(CONSULTA_AGENDA_LADO_A_LADO)
   const { activos, activo } = useModulos()
   // La sección es la agenda: sin ella no se pinta ni se pide nada.
   // La lista llega en milisegundos y en esta instalación todo está encendido: mejor un
@@ -183,22 +189,22 @@ export default function AgendaYDirecto() {
           },
         }}
       />
-      <ContenedorDePagina>
+      <ContenedorDePagina sx={contenedorDePortada}>
         {/* Texto y tarjeta, lado a lado solo desde 1200 px: entre 900 y 1200 el
             texto (300 px) y el calendario (280) dejaban a la lista unos 150 px, y
             cada título salía palabra por palabra. Ahí, el texto va encima. */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '300px 1fr' }, gap: { xs: 2.5, sm: 4, lg: 7 }, alignItems: 'start', '@media (max-width: 599.95px) and (max-height: 700px)': { gap: 1.5 } }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '300px 1fr' }, gap: { xs: 2.5, sm: 4, lg: 7 }, alignItems: 'start', '@media (max-width: 599.95px) and (max-height: 700px)': { gap: 1.5 }, [AGENDA_LADO_A_LADO]: { gridTemplateColumns: `${k(300)} 1fr`, gap: k(56) } }}>
           <Box>
             <Revela efecto="cortina">
-              <Typography id="agenda-title" variant="h2" component="h2" sx={{ fontFamily: SERIF, color: '#fff', m: 0 }}>
+              <Typography id="agenda-title" variant="h2" component="h2" sx={{ fontFamily: SERIF, color: '#fff', m: 0, [desktopMq]: { '&&': { fontSize: k(40) } } }}>
                 <TextoDePortada anchos={['7em']}>{textos.agenda.titulo}</TextoDePortada>
               </Typography>
             </Revela>
             <Revela orden={1}>
-              <Typography sx={{ mt: { xs: 1.5, md: 2.75 }, mb: { xs: 1.5, md: 3.5 }, maxWidth: 420, fontSize: 15, lineHeight: 1.7, color: '#e4e2df', '@media (max-width: 599.95px)': { fontSize: 14, lineHeight: 1.55 }, '@media (max-width: 599.95px) and (max-height: 700px)': { display: 'none' } }}>
+              <Typography sx={{ mt: { xs: 1.5, md: 2.75 }, mb: { xs: 1.5, md: 3.5 }, maxWidth: 420, fontSize: 15, lineHeight: 1.7, color: '#e4e2df', '@media (max-width: 599.95px)': { fontSize: 14, lineHeight: 1.55 }, '@media (max-width: 599.95px) and (max-height: 700px)': { display: 'none' }, [desktopMq]: { mt: k(22), mb: k(28), maxWidth: k(420), fontSize: k(15) } }}>
                 <TextoDePortada anchos={['26em', '22em', '12em']}>{textos.agenda.parrafo}</TextoDePortada>
               </Typography>
-              <Box component={Link} to="/agenda" sx={enlaceBloque}>
+              <Box component={Link} to="/agenda" sx={{ ...enlaceBloque, [desktopMq]: { fontSize: k(15), '& svg': { fontSize: k(18) } } }}>
                 <TextoDePortada anchos={['9em']}>{textos.agenda.enlace}</TextoDePortada> <ArrowForwardIcon />
               </Box>
             </Revela>
@@ -208,10 +214,13 @@ export default function AgendaYDirecto() {
           <Revela efecto="crecer" orden={2}>
             <AlturaSostenida
               cargando={listaCargando}
+              activa={!ladoALado}
               className="home-papel"
               sx={{
                 display: 'grid',
                 gridTemplateColumns: { xs: '1fr', sm: '280px 1fr' },
+                // Siempre del mismo alto, a la escala de la pantalla: lo que no cabe, corre por dentro de la lista.
+                [AGENDA_LADO_A_LADO]: { gridTemplateColumns: `${k(280)} 1fr`, height: k(470) },
                 // En la tableta, el calendario más ancho para que cada día mida 44 px.
                 [TACTIL]: { gridTemplateColumns: { xs: '1fr', sm: '340px 1fr' } },
                 gridTemplateRows: { xs: 'auto 1fr', sm: '1fr' },
@@ -231,11 +240,11 @@ export default function AgendaYDirecto() {
                   onElegir={elegir}
                 />
               </Box>
-              <Box sx={{ minWidth: 0, opacity: otroMesLlegando ? 0.6 : 1, transition: 'opacity .2s ease' }}>
+              <Box sx={{ minWidth: 0, opacity: otroMesLlegando ? 0.6 : 1, transition: 'opacity .2s ease', [AGENDA_LADO_A_LADO]: { display: 'flex', flexDirection: 'column', minHeight: 0 } }}>
                 {listaCargando || listaFallo ? (
                   <EnCarga papel estado={listaFallo ? 'error' : 'cargando'} que="la agenda" alReintentar={reintentar} esqueleto={<ListaDeAgendaEsqueleto />} />
                 ) : eventos.length === 0 ? (
-                  <Box sx={{ p: { xs: 2, sm: 3 } }}>
+                  <Box sx={{ p: { xs: 2, sm: 3 }, [desktopMq]: { p: k(24) } }}>
                     <AvisosDeInicio
                       claro
                       mensaje={`No hay actos publicados para ${nombreDelMes(mes, false).toLowerCase()} ni ${nombreDelMes(sumarMeses(mes, 1), false).toLowerCase()}. Publicaremos aquí los nuevos encuentros.`}

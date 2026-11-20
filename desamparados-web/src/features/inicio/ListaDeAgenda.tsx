@@ -1,8 +1,10 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Box, Typography, useMediaQuery } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import type { EventoCalendario } from '../../lib/api/agenda'
 import { SERIF, TIPOS, nombreDelMes } from './agenda'
-import { CONSULTA_ALTA, CONSULTA_MUY_ALTA, GRANATE, PANTALLA_ALTA } from './estilos'
+import { AGENDA_LADO_A_LADO, CONSULTA_AGENDA_LADO_A_LADO, CONSULTA_ALTA, CONSULTA_MUY_ALTA, GRANATE, PANTALLA_ALTA, k } from './estilos'
+import { desktopMq } from '../../components/barra/estilos'
 import { CORMORANT } from '../actualidad/agenda/letraAlmanaque'
 import Hueso, { Lineas } from '../../components/esqueleto/Hueso'
 import { diaDelCalendario, fechaEnMadrid, horaEnMadrid } from '../../lib/horaDeMadrid'
@@ -14,14 +16,17 @@ import { diaDelCalendario, fechaEnMadrid, horaEnMadrid } from '../../lib/horaDeM
  * calendario encima: para que la sección entera quepa en la pantalla, solo el
  * próximo acto (dos en un móvil de 1000 px o más; cada fila suma unos 75). Los
  * demás se ven marcados en el calendario. En la tableta, cinco. El resto, en la
- * agenda completa.
+ * agenda completa. Con el texto al lado (AGENDA_LADO_A_LADO) van todos: la
+ * tarjeta tiene alto fijo y la lista corre por dentro.
  */
 function useFilasQueCaben(): number {
+  const ladoALado = useMediaQuery(CONSULTA_AGENDA_LADO_A_LADO)
   const escritorio = useMediaQuery('(min-width: 900px)')
   const tableta = useMediaQuery('(min-width: 600px)')
   const movilMuyAlto = useMediaQuery('(min-height: 1000px)')
   const alta = useMediaQuery(CONSULTA_ALTA)
   const muyAlta = useMediaQuery(CONSULTA_MUY_ALTA)
+  if (ladoALado) return Infinity
   if (!tableta) return movilMuyAlto ? 2 : 1
   if (!escritorio) return 5
   return muyAlta ? 6 : alta ? 5 : 4
@@ -48,8 +53,10 @@ const filaSx = {
   px: { xs: 2, sm: 3 },
   py: 1.4,
   [PANTALLA_ALTA]: { py: 2 },
+  // En escritorio, a la escala de la portada (k): después de PANTALLA_ALTA, que ahí sobra.
+  [desktopMq]: { gridTemplateColumns: `${k(60)} 1fr auto`, columnGap: k(18), rowGap: k(8), px: k(24), py: k(11.2) },
 } as const
-const mesSx = { px: { xs: 2, sm: 3 }, pt: 1.5, pb: 0.25, [PANTALLA_ALTA]: { pt: 2, pb: 0.5 } } as const
+const mesSx = { px: { xs: 2, sm: 3 }, pt: 1.5, pb: 0.25, [PANTALLA_ALTA]: { pt: 2, pb: 0.5 }, [desktopMq]: { px: k(24), pt: k(12), pb: k(2) } } as const
 
 // El día y la hora, los de Madrid: a la que hay que estar, se mire desde donde se mire.
 const hora = (fecha: Date) => horaEnMadrid(fecha)
@@ -65,6 +72,7 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
   return (
     <Box
       component="li"
+      data-acto={evento.id}
       sx={{
         backgroundColor: abierto ? '#efe8dc' : 'transparent',
         transition: 'background-color .3s ease',
@@ -92,18 +100,18 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
         }}
       >
         <Box component="span" sx={{ textAlign: 'center' }}>
-          <Box component="span" sx={{ display: 'block', fontFamily: CORMORANT, fontWeight: 500, fontVariantNumeric: 'lining-nums', fontSize: fin ? { xs: 21, sm: 24 } : 31, lineHeight: 1, whiteSpace: 'nowrap', color: GRANATE, [PANTALLA_ALTA]: { fontSize: fin ? 24 : 34 } }}>
+          <Box component="span" sx={{ display: 'block', fontFamily: CORMORANT, fontWeight: 500, fontVariantNumeric: 'lining-nums', fontSize: fin ? { xs: 21, sm: 24 } : 31, lineHeight: 1, whiteSpace: 'nowrap', color: GRANATE, [PANTALLA_ALTA]: { fontSize: fin ? 24 : 34 }, [desktopMq]: { fontSize: k(fin ? 24 : 31) } }}>
             {fin ? `${inicio.getDate()}–${fin.getDate()}` : inicio.getDate()}
           </Box>
-          <Box component="span" sx={{ display: 'block', mt: 0.5, fontSize: 11, letterSpacing: fin ? '0.06em' : '0.16em', whiteSpace: 'nowrap', textTransform: 'uppercase', color: TENUE }}>
+          <Box component="span" sx={{ display: 'block', mt: 0.5, fontSize: 11, [desktopMq]: { mt: k(4), fontSize: k(11) }, letterSpacing: fin ? '0.06em' : '0.16em', whiteSpace: 'nowrap', textTransform: 'uppercase', color: TENUE }}>
             {fin ? `${diaSemana(evento.start)}–${diaSemana(evento.end!)}` : diaSemana(evento.start)}
           </Box>
         </Box>
         <Box component="span" sx={{ minWidth: 0 }}>
-          <Box component="span" className="agenda-titulo" sx={{ display: 'block', fontFamily: SERIF, fontSize: { xs: 16, md: 17 }, lineHeight: 1.3, color: TEXTO, mb: 0.5, transition: 'color .3s ease' }}>
+          <Box component="span" className="agenda-titulo" sx={{ display: 'block', fontFamily: SERIF, fontSize: { xs: 16, md: 17 }, lineHeight: 1.3, color: TEXTO, mb: 0.5, transition: 'color .3s ease', [desktopMq]: { fontSize: k(17), mb: k(4) } }}>
             {evento.title}
           </Box>
-          <Box component="span" sx={{ display: 'block', fontSize: 13, lineHeight: 1.45, color: '#6a6258' }}>
+          <Box component="span" sx={{ display: 'block', fontSize: 13, [desktopMq]: { fontSize: k(13) }, lineHeight: 1.45, color: '#6a6258' }}>
             {[evento.sinHora ? null : hora(evento.start), evento.location].filter(Boolean).join(' · ')}
           </Box>
         </Box>
@@ -121,6 +129,7 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
             textTransform: 'uppercase',
             color: tipo.color,
             backgroundColor: alpha(tipo.color, 0.1),
+            [desktopMq]: { px: k(8), py: k(3), fontSize: k(11) },
           }}
         >
           {tipo.nombre}
@@ -129,7 +138,7 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
       {abierto && evento.description && (
         <Typography
           id={panelId}
-          sx={{ pl: { xs: 'calc(16px + 56px + 14px)', sm: 'calc(24px + 60px + 18px)' }, pr: { xs: 2, sm: 3 }, pb: 1.75, mt: -0.5, fontSize: 13.5, lineHeight: 1.55, color: '#4a454a', '@media (max-width: 599.95px) and (max-height: 700px)': { display: 'none' } }}
+          sx={{ pl: { xs: 'calc(16px + 56px + 14px)', sm: 'calc(24px + 60px + 18px)' }, pr: { xs: 2, sm: 3 }, pb: 1.75, mt: -0.5, fontSize: 13.5, lineHeight: 1.55, color: '#4a454a', '@media (max-width: 599.95px) and (max-height: 700px)': { display: 'none' }, [desktopMq]: { pl: k(24 + 60 + 18), pr: k(24), pb: k(14), mt: k(-4), fontSize: k(13.5) } }}
         >
           {evento.description}
         </Typography>
@@ -139,8 +148,49 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
 }
 
 /** La lista de la tarjeta de papel, agrupada por meses; el acto abierto enseña su descripción. */
+/**
+ * Con el texto al lado, la lista corre por dentro de la tarjeta. Si hay más
+ * abajo, el pie se difumina para que se note; al llegar al final, se quita.
+ * El acto que se abre desde el calendario se trae a la vista moviendo solo la
+ * lista: con scrollIntoView se movía también la página.
+ */
+function useListaQueCorre(abiertoId: string | null, eventos: EventoCalendario[]) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [quedaMas, setQuedaMas] = useState(false)
+  const medir = useCallback(() => {
+    const el = ref.current
+    if (el) setQuedaMas(el.scrollTop + el.clientHeight < el.scrollHeight - 1)
+  }, [])
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    medir()
+    if (typeof ResizeObserver === 'undefined') return
+    const observador = new ResizeObserver(medir)
+    observador.observe(el)
+    return () => observador.disconnect()
+  }, [medir, eventos])
+
+  useEffect(() => {
+    const el = ref.current
+    const fila = abiertoId ? el?.querySelector<HTMLElement>(`[data-acto="${CSS.escape(abiertoId)}"]`) : null
+    if (!el || !fila) return
+    const arriba = fila.offsetTop
+    const abajo = arriba + fila.offsetHeight
+    if (arriba < el.scrollTop) el.scrollTop = arriba
+    else if (abajo > el.scrollTop + el.clientHeight) el.scrollTop = abajo - el.clientHeight
+  }, [abiertoId, eventos])
+
+  return { ref, quedaMas, medir }
+}
+
+/** El pie difuminado de la lista que corre. */
+const DIFUMINADO = 'linear-gradient(#000 calc(100% - 32px), transparent)'
+
 export default function ListaDeAgenda({ eventos, abiertoId, hoy, onAlternar }: ListaDeAgendaProps) {
   const MAX_FILAS = useFilasQueCaben()
+  const { ref, quedaMas, medir } = useListaQueCorre(abiertoId, eventos)
   // Si el acto abierto desde el calendario cae más allá de la quinta fila, la lista corre hasta él.
   const indice = eventos.findIndex(e => e.id === abiertoId)
   const desde = indice < MAX_FILAS ? 0 : indice - MAX_FILAS + 1
@@ -154,10 +204,26 @@ export default function ListaDeAgenda({ eventos, abiertoId, hoy, onAlternar }: L
   }
 
   return (
-    <Box sx={{ py: 1 }}>
+    <Box
+      ref={ref}
+      onScroll={medir}
+      sx={{
+        py: 1,
+        [desktopMq]: { py: k(8) },
+        [AGENDA_LADO_A_LADO]: {
+          position: 'relative',
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          scrollbarWidth: 'thin',
+          scrollbarColor: '#cfc6b8 transparent',
+          ...(quedaMas ? { maskImage: DIFUMINADO, WebkitMaskImage: DIFUMINADO } : {}),
+        },
+      }}
+    >
       {grupos.map((grupo, i) => (
         <Box key={grupo.clave} sx={{ boxShadow: i ? FILETE : 'none' }}>
-          <Typography component="h3" sx={{ ...mesSx, fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#7b6f5e' }}>
+          <Typography component="h3" sx={{ ...mesSx, fontSize: 11, [desktopMq]: { ...mesSx[desktopMq], fontSize: k(11) }, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#7b6f5e' }}>
             {grupo.titulo}
           </Typography>
           <Box component="ul" role="list" sx={{ listStyle: 'none', m: 0, p: 0 }}>
@@ -176,7 +242,8 @@ export default function ListaDeAgenda({ eventos, abiertoId, hoy, onAlternar }: L
  * día, el título, la hora y la etiqueta en huesos del tamaño de los de verdad.
  */
 export function ListaDeAgendaEsqueleto() {
-  const filas = useFilasQueCaben()
+  // Con la lista entera (lado a lado), las que llenan la tarjeta.
+  const filas = Math.min(useFilasQueCaben(), 5)
   return (
     <Box sx={{ py: 1 }}>
       <Box sx={mesSx}><Lineas papel anchos={['84px']} linea={16.5} grosor={8} /></Box>

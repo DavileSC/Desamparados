@@ -104,6 +104,28 @@ describe('AgendaYDirecto', () => {
     expect(screen.getByRole('button', { name: /21 de octubre/ })).toHaveAttribute('aria-pressed', 'true')
   })
 
+  it('con el texto al lado, la lista lleva todos los actos de la ventana y corre por dentro', async () => {
+    // Se rompe si vuelve el tope de cuatro a seis filas en escritorio: la tarjeta
+    // tiene alto fijo y lo que no cabe se ve bajando la lista, no se esconde.
+    vi.stubGlobal('matchMedia', (consulta: string) => ({
+      matches: /min-width: (600|900|1200)px/.test(consulta),
+      media: consulta,
+      onchange: null,
+      addListener() {},
+      removeListener() {},
+      addEventListener() {},
+      removeEventListener() {},
+      dispatchEvent: () => false,
+    }))
+    const siete = Array.from({ length: 7 }, (_, i) =>
+      evento({ id: 10 + i, title: `Acto número ${i + 1}`, startDate: `2026-10-${String(10 + i * 2).padStart(2, '0')}T12:00:00.000Z` }))
+    servirEventos(siete)
+    renderWithProviders(<AgendaYDirecto />)
+
+    expect(await screen.findByRole('button', { name: /acto número 1 /i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /acto número 7 /i })).toBeInTheDocument()
+  })
+
   it('en el móvil la lista lleva solo el próximo acto, y al pulsar otro día pasa a ese', async () => {
     // Se rompe si en el móvil vuelven las cinco filas (la sección no cabría en
     // la pantalla) o si el acto del día pulsado no aparece.

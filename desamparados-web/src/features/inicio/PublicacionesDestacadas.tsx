@@ -15,7 +15,7 @@ import CintaDestacada from './CintaDestacada'
 import EnCarga from '../../components/esqueleto/EnCarga'
 import { estadoDeConsulta } from '../../components/esqueleto/esperaDeCarga'
 import Hueso, { Lineas } from '../../components/esqueleto/Hueso'
-import { GOLD, GRANATE, HUECO, SERIF, TINTA, aPantalla, ceja } from './estilos'
+import { GOLD, GRANATE, HUECO, SERIF, TINTA, aPantalla, ceja, contenedorDePortada, k } from './estilos'
 import { site } from '../../config/site'
 import { useModulos } from '../../hooks/useModulos'
 import { propsDeFoto } from '../../lib/fotoSubida'
@@ -380,15 +380,17 @@ export default function PublicacionesDestacadas() {
           display: { xs: 'none', md: 'grid' },
           placeItems: 'center',
           position: 'absolute',
-          left: 26,
+          left: 32,
           top: 0,
           bottom: 0,
           writingMode: 'vertical-rl',
           transform: 'rotate(180deg)',
-          fontWeight: 700,
-          fontSize: 50,
-          letterSpacing: '0.3em',
-          color: 'rgba(255, 255, 255, 0.05)',
+          // Más pequeña y más clara: a 50 px y con un 5 % de blanco no se leía.
+          fontWeight: 600,
+          fontSize: 34,
+          letterSpacing: '0.34em',
+          color: 'rgba(255, 255, 255, 0.16)',
+          [desktopMq]: { left: k(32), fontSize: k(34) },
           pointerEvents: 'none',
           userSelect: 'none',
         }}
@@ -397,8 +399,9 @@ export default function PublicacionesDestacadas() {
         {!enCarga && textos.publicaciones.marcaDeAgua}
       </Box>
       {/* El texto empieza donde acaba la marca de agua: con la página a 1440 px o menos,
-          los 64 px de margen la dejarían debajo del título. */}
-      <ContenedorDePagina sx={{ position: 'relative', pl: { md: 'max(64px, calc(128px - max(0px, (100vw - 1440px) / 2)))' } }}>
+          los 64 px de margen la dejarían debajo del título. En escritorio, el 5 % a
+          cada lado como las demás secciones, salvo que la marca pida más a la izquierda. */}
+      <ContenedorDePagina sx={{ position: 'relative', pl: { md: 'max(64px, calc(128px - max(0px, (100vw - 1440px) / 2)))' }, [desktopMq]: { ...contenedorDePortada[desktopMq], pl: 'max(5vw, 104px)' } }}>
         {destacada ? (
           <Box sx={rejilla}>
             {/* El ejemplar es el objeto del bloque: crece al posarse. En tableta

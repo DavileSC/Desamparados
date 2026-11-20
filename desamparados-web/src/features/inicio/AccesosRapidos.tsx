@@ -8,7 +8,8 @@ import { BOTON, VELO_SOBRE_GRANATE } from '../../components/estiloDeBoton'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import NorthEastIcon from '@mui/icons-material/NorthEast'
 import { useContacto } from '../../hooks/useContacto'
-import { GOLD, GRANATE, SERIF, TINTA, aPantalla } from './estilos'
+import { GOLD, GRANATE, SERIF, TINTA, aPantalla, contenedorDePortada, k } from './estilos'
+import { desktopMq } from '../../components/barra/estilos'
 import { useTextosPortada, TEXTOS_POR_DEFECTO } from './useContenidoPortada'
 import TextoDePortada from './TextoDePortada'
 import type { TextosPortada } from '../../lib/api/portada'
@@ -73,6 +74,8 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
         '@media (max-width: 599.95px) and (max-height: 760px)': { p: '22px 20px 20px' },
         // En un portátil bajo, también: la sección es una pantalla y tiene que caber.
         '@media (min-width: 900px) and (max-height: 820px)': { p: 'clamp(20px, 4svh, 40px) clamp(24px, 3vw, 38px)' },
+        // En escritorio, a la escala de la portada (k), que ya cuenta con el alto: después del portátil bajo.
+        [desktopMq]: { p: `${k(40)} ${k(38)}` },
         backgroundColor: GRANATE,
         ...VELO_SOBRE_GRANATE,
         color: '#fff',
@@ -94,6 +97,7 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
           bottom: { xs: -80, md: -110 },
           fontFamily: SERIF,
           fontSize: { xs: 280, md: 400 },
+          [desktopMq]: { right: k(-30), bottom: k(-110), fontSize: k(400) },
           lineHeight: 1,
           color: 'rgba(255, 255, 255, 0.06)',
           pointerEvents: 'none',
@@ -105,14 +109,14 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
       <Typography
         component="span"
         id={`${id}-titulo`}
-        sx={{ position: 'relative', display: 'block', maxWidth: 320, fontFamily: SERIF, fontSize: { xs: 30, md: 40 }, lineHeight: 1.1, letterSpacing: '-0.015em', '@media (max-width: 599.95px) and (max-height: 760px)': { fontSize: 26 } }}
+        sx={{ position: 'relative', display: 'block', maxWidth: 320, fontFamily: SERIF, fontSize: { xs: 30, md: 40 }, lineHeight: 1.1, letterSpacing: '-0.015em', '@media (max-width: 599.95px) and (max-height: 760px)': { fontSize: 26 }, [desktopMq]: { maxWidth: k(320), fontSize: k(40) } }}
       >
         <TextoDePortada anchos={['8em', '6em']}>{placa.titulo}</TextoDePortada>
       </Typography>
       <Typography
         component="span"
         id={`${id}-texto`}
-        sx={{ position: 'relative', display: 'block', maxWidth: 320, mt: { xs: 1.75, md: 2.5 }, mb: { xs: 3, md: 4 }, fontSize: { xs: 14, md: 15 }, lineHeight: 1.7, color: MARCA.sobrePrincipalTexto, '@media (max-width: 599.95px) and (max-height: 760px)': { mt: 1, mb: 2, lineHeight: 1.55 } }}
+        sx={{ position: 'relative', display: 'block', maxWidth: 320, mt: { xs: 1.75, md: 2.5 }, mb: { xs: 3, md: 4 }, fontSize: { xs: 14, md: 15 }, lineHeight: 1.7, color: MARCA.sobrePrincipalTexto, '@media (max-width: 599.95px) and (max-height: 760px)': { mt: 1, mb: 2, lineHeight: 1.55 }, [desktopMq]: { maxWidth: k(320), mt: k(20), mb: k(32), fontSize: k(15) } }}
       >
         <TextoDePortada anchos={['20em', '18em', '9em']}>{placa.texto}</TextoDePortada>
       </Typography>
@@ -129,6 +133,7 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
           px: 2.75,
           '@media (max-width: 599.95px) and (max-height: 760px)': { minHeight: 44 },
           '& svg': { fontSize: 18, color: 'currentColor', transition: 'transform .25s ease' },
+          [desktopMq]: { minHeight: k(48), px: k(22), fontSize: k(15), gap: k(10) },
         }}
       >
         <TextoDePortada anchos={['9em']}>{placa.boton}</TextoDePortada>
@@ -167,6 +172,8 @@ function Tesela({ icon, title, description, href, ancha }: TeselaProps) {
         // de la pantalla: con 158 px, la tercera fila se salía por abajo.
         '@media (min-width: 900px) and (max-height: 820px)': ancha ? {} : { minHeight: 0, p: 'clamp(12px, 2.6svh, 26px) 24px' },
         p: ancha ? { xs: '20px 16px', md: '24px 26px' } : { xs: '14px 14px 14px', sm: '18px 16px 16px', md: '26px 26px 24px' },
+        // En escritorio, a la escala de la portada (k); el alto lo da la fila del mosaico.
+        [desktopMq]: { minHeight: 0, gap: ancha ? k(20) : 0, p: ancha ? `${k(24)} ${k(26)}` : `${k(26)} ${k(26)} ${k(24)}` },
         backgroundColor: FONDO_TESELA,
         color: 'inherit',
         textDecoration: 'none',
@@ -184,7 +191,7 @@ function Tesela({ icon, title, description, href, ancha }: TeselaProps) {
         // El texto va justo debajo del icono, no empujado al fondo: así todos los
         // títulos de una fila quedan a la misma altura, sea cual sea el largo de
         // su descripción (con el texto abajo, «Historia» y «Boletines» no casaban).
-        sx={{ display: 'flex', color: GOLD, fontSize: { xs: 24, sm: 26, md: 30 }, ...(ancha ? {} : { pb: { xs: 1.25, sm: 2.25, md: 3.5 }, '@media (min-width: 900px) and (max-height: 820px)': { pb: 'clamp(8px, 2svh, 28px)' } }) }}
+        sx={{ display: 'flex', color: GOLD, fontSize: { xs: 24, sm: 26, md: 30 }, ...(ancha ? {} : { pb: { xs: 1.25, sm: 2.25, md: 3.5 }, '@media (min-width: 900px) and (max-height: 820px)': { pb: 'clamp(8px, 2svh, 28px)' } }), [desktopMq]: { fontSize: k(30), ...(ancha ? {} : { pb: k(22) }) } }}
       >
         {icon}
       </Box>
@@ -192,11 +199,11 @@ function Tesela({ icon, title, description, href, ancha }: TeselaProps) {
         <Typography
           component="span"
           className="tesela-titulo"
-          sx={{ display: 'block', fontFamily: SERIF, fontSize: { xs: 18, md: 22 }, lineHeight: 1.2, color: '#fff', mb: 0.75, transition: 'color .3s ease' }}
+          sx={{ display: 'block', fontFamily: SERIF, fontSize: { xs: 18, md: 22 }, lineHeight: 1.2, color: '#fff', mb: 0.75, transition: 'color .3s ease', [desktopMq]: { fontSize: k(22), mb: k(6) } }}
         >
           {title}
         </Typography>
-        <Typography component="span" sx={{ display: 'block', fontSize: { xs: 13, md: 14 }, lineHeight: 1.45, color: 'rgba(228, 226, 223, 0.72)', '@media (max-width: 599.95px) and (max-height: 700px)': { display: 'none' } }}>
+        <Typography component="span" sx={{ display: 'block', fontSize: { xs: 13, md: 14 }, [desktopMq]: { fontSize: k(14) }, lineHeight: 1.45, color: 'rgba(228, 226, 223, 0.72)', '@media (max-width: 599.95px) and (max-height: 700px)': { display: 'none' } }}>
           {description}
         </Typography>
       </Box>
@@ -206,7 +213,7 @@ function Tesela({ icon, title, description, href, ancha }: TeselaProps) {
           component="span"
           aria-hidden="true"
           className="tesela-cta"
-          sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, color: '#fff', fontSize: 15, fontWeight: 600, whiteSpace: 'nowrap', transition: 'color .3s ease', '& svg': { fontSize: 18, color: GOLD, transition: 'transform .25s ease' } }}
+          sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, color: '#fff', fontSize: 15, fontWeight: 600, whiteSpace: 'nowrap', transition: 'color .3s ease', '& svg': { fontSize: 18, color: GOLD, transition: 'transform .25s ease' }, [desktopMq]: { fontSize: k(15), gap: k(8), '& svg': { fontSize: k(18) } } }}
         >
           Escríbenos <ArrowForwardIcon />
         </Box>
@@ -220,6 +227,7 @@ function Tesela({ icon, title, description, href, ancha }: TeselaProps) {
             top: { xs: 16, md: 24 },
             right: { xs: 14, md: 22 },
             fontSize: { xs: 16, md: 20 },
+            [desktopMq]: { top: k(24), right: k(22), fontSize: k(20) },
             color: 'rgba(255, 255, 255, 0.35)',
             transition: 'color .3s ease, transform .3s ease',
           }}
@@ -264,7 +272,7 @@ export default function AccesosRapidos() {
       aria-labelledby="quick-access-title"
       sx={{ ...aPantalla, backgroundColor: TINTA }}
     >
-      <ContenedorDePagina>
+      <ContenedorDePagina sx={contenedorDePortada}>
         <Typography id="quick-access-title" component="h2" className="home-visually-hidden">
           Accesos directos
         </Typography>
@@ -282,6 +290,9 @@ export default function AccesosRapidos() {
             // quedaba metida y descuadrada respecto a Noticias y Agenda.
             gap: { xs: 1.25, md: 1.75 },
             '@media (max-width: 599.95px) and (max-height: 700px)': { gap: 1 },
+            // Filas a la escala de la portada: 157 en la pantalla de referencia, más si el texto lo pide.
+            // Con el icono a 22 del título caben tres en el portátil; con 28, la sección se pasaba 7 px.
+            [desktopMq]: { gap: k(14), gridAutoRows: `minmax(${k(157)}, auto)` },
           }}
         >
           {/* La placa se descubre de izquierda a derecha; las teselas van creciendo detrás. */}
