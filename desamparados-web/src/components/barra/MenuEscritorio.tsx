@@ -3,9 +3,10 @@
  * sección y, en las que tienen subpáginas, una hoja de cristal oscuro que se
  * abre al pasar el ratón o al llegar con el teclado. El título de esas
  * secciones no lleva a ninguna página (para eso están las subpáginas de
- * dentro): pulsarlo solo abre o cierra la hoja.
+ * dentro): pulsarlo solo abre o cierra la hoja. Dentro, las páginas con
+ * subpáginas propias las llevan plegadas, con su flecha.
  */
-import { useState, useRef, type FocusEvent, type KeyboardEvent } from 'react'
+import { useId, useState, useRef, type FocusEvent, type KeyboardEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Box, Button } from '@mui/material'
 import { ALTO_MENU, VIDRIO, compactMq, esActiva, estrechoMq, seccionActiva } from './estilos'
@@ -26,15 +27,29 @@ const cristal = {
   WebkitBackdropFilter: VIDRIO.filtro,
 } as const
 
+/** La flecha de los grupos plegables: hueco de 24 px, el mínimo de WCAG 2.5.8. */
+const HUECO_FLECHA = 24
+
+/** Si la página que se ve es la de esta entrada o una de las suyas: su grupo sale abierto. */
+const contieneLaActual = (pathname: string, entrada: EntradaMenu) =>
+  esActiva(pathname, entrada.href, entrada.exacta) || (entrada.hijos ?? []).some((n) => esActiva(pathname, n.href, n.exacta))
+
 /**
  * Una página de la hoja, centrada; las suyas de dentro, debajo y en pequeño.
  * Entre página y página, un filete: así quedan igual de separadas tengan o no
  * subpáginas, y las de dentro se leen como suyas.
+ *
+ * Las de dentro van plegadas (forma F de su maqueta, 21-11-2026): el nombre
+ * sigue llevando a su página y una flecha aparte las abre. En reposo la flecha
+ * es blanca y tenue para no cargar la hoja; se enciende en oro al pasar por la
+ * página, al llegar con el teclado o abierta.
  */
-function PaginaDeLaHoja({ entrada }: { entrada: EntradaMenu }) {
+function PaginaDeLaHoja({ entrada, desplegada, alAlternar }: { entrada: EntradaMenu; desplegada: boolean; alAlternar: () => void }) {
   const location = useLocation()
   const activa = esActiva(location.pathname, entrada.href, entrada.exacta)
   const nietos = entrada.hijos ?? []
+  const idNietos = useId()
+  const plegable = nietos.length > 0
   return (
     <Box
       component="li"
@@ -43,47 +58,108 @@ function PaginaDeLaHoja({ entrada }: { entrada: EntradaMenu }) {
         borderTop: '1px solid rgba(255, 255, 255, 0.08)',
         '&:first-of-type': { borderTop: 'none', pt: 0 },
         '&:last-of-type': { pb: 0 },
+        '&:hover .flecha-del-grupo': { color: 'secondary.main' },
       }}
     >
-      <Box
-        component={Link}
-        to={entrada.href}
-        aria-current={activa ? 'page' : undefined}
-        sx={{
-          fontFamily: CORMORANT,
-          // A la escala del menú (versalitas de 12): con 22 la hoja abultaba más
-          // que la barra entera.
-          fontSize: 18,
-          fontWeight: 600,
-          lineHeight: 1.15,
-          color: activa ? 'secondary.main' : 'text.primary',
-          textDecoration: 'none',
-          '&:hover': { color: 'secondary.main' },
-          '&:focus-visible': FOCO,
-        }}
-      >
-        {entrada.label}
-      </Box>
-      {nietos.length > 0 && (
+      {/* Con flecha, un hueco igual a la izquierda: el nombre sigue centrado bajo la de la sección. */}
+      <Box sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', pl: plegable ? `${HUECO_FLECHA}px` : 0 }}>
         <Box
-          component="ul"
+          component={Link}
+          to={entrada.href}
+          aria-current={activa ? 'page' : undefined}
           sx={{
-            listStyle: 'none',
-            m: 0,
-            mt: 0.5,
-            p: 0,
-            display: 'flex',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-            columnGap: 1.5,
-            rowGap: 0.25,
+            fontFamily: CORMORANT,
+            // A la escala del menú (versalitas de 12): con 22 la hoja abultaba más
+            // que la barra entera.
+            fontSize: 18,
+            fontWeight: 600,
+            lineHeight: 1.15,
+            color: activa ? 'secondary.main' : 'text.primary',
+            textDecoration: 'none',
+            '&:hover': { color: 'secondary.main' },
+            '&:focus-visible': FOCO,
           }}
         >
-          {nietos.map((nieto) => (
-            <Box component="li" key={nieto.href}>
-              <SubpaginaDeLaHoja entrada={nieto} />
+          {entrada.label}
+        </Box>
+        {plegable && (
+          <Box
+            component="button"
+            type="button"
+            className="flecha-del-grupo"
+            onClick={alAlternar}
+            aria-expanded={desplegada}
+            aria-controls={idNietos}
+            aria-label={`Páginas de ${entrada.label}`}
+            sx={{
+              width: HUECO_FLECHA,
+              height: HUECO_FLECHA,
+              p: 0,
+              border: 0,
+              bgcolor: 'transparent',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: desplegada ? 'secondary.main' : 'rgba(255, 255, 255, 0.32)',
+              transition: 'color 0.2s',
+              '&:focus-visible': { ...FOCO, color: 'secondary.main' },
+            }}
+          >
+            <Box
+              component="svg"
+              viewBox="0 0 10 6"
+              aria-hidden
+              sx={{
+                width: 9,
+                height: 6,
+                display: 'block',
+                transform: desplegada ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.22s ease',
+                '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+              }}
+            >
+              <path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.6" />
             </Box>
-          ))}
+          </Box>
+        )}
+      </Box>
+      {plegable && (
+        // Plegada sigue montada (la rejilla anima de 0 a su alto), pero `inert`:
+        // el tabulador y el lector de pantalla se la saltan.
+        <Box
+          id={idNietos}
+          inert={!desplegada}
+          sx={{
+            display: 'grid',
+            gridTemplateRows: desplegada ? '1fr' : '0fr',
+            transition: 'grid-template-rows 0.22s ease',
+            '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+          }}
+        >
+          <Box sx={{ overflow: 'hidden', minHeight: 0 }}>
+            <Box
+              component="ul"
+              sx={{
+                listStyle: 'none',
+                m: 0,
+                pt: 0.5,
+                px: 0,
+                pb: 0,
+                display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                columnGap: 1.5,
+                rowGap: 0.25,
+              }}
+            >
+              {nietos.map((nieto) => (
+                <Box component="li" key={nieto.href}>
+                  <SubpaginaDeLaHoja entrada={nieto} />
+                </Box>
+              ))}
+            </Box>
+          </Box>
         </Box>
       )}
     </Box>
@@ -121,6 +197,12 @@ function SubpaginaDeLaHoja({ entrada }: { entrada: EntradaMenu }) {
  * cierre.
  */
 function Hoja({ hijos }: { hijos: EntradaMenu[] }) {
+  const location = useLocation()
+  // Un grupo abierto cada vez: la hoja no crece sin fin. La hoja se monta al
+  // abrirse, así que cada vez sale abierto el de la página que se ve, si lo hay.
+  const [grupoAbierto, setGrupoAbierto] = useState<string | null>(
+    () => hijos.find((h) => h.hijos?.length && contieneLaActual(location.pathname, h))?.href ?? null,
+  )
   return (
     // El título acaba en el espaciado de su última letra: sin restarlo, la
     // flecha caía un poco a la derecha de la palabra.
@@ -149,7 +231,12 @@ function Hoja({ hijos }: { hijos: EntradaMenu[] }) {
         }}
       >
         {hijos.map((hijo) => (
-          <PaginaDeLaHoja key={hijo.href} entrada={hijo} />
+          <PaginaDeLaHoja
+            key={hijo.href}
+            entrada={hijo}
+            desplegada={grupoAbierto === hijo.href}
+            alAlternar={() => setGrupoAbierto((actual) => (actual === hijo.href ? null : hijo.href))}
+          />
         ))}
       </Box>
     </Box>

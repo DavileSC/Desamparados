@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest'
-import { act, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../test/test-utils'
 import BarraDeNavegacion from '../BarraDeNavegacion'
@@ -87,6 +87,29 @@ describe('BarraDeNavegacion en escritorio', () => {
       '/historia/organos-de-gobierno',
     )
     expect(screen.getByRole('link', { name: 'Enseres', hidden: true })).toHaveAttribute('href', '/sabado-de-pasion/enseres')
+  })
+
+  it('en la hoja, las subpáginas de una página van plegadas y su flecha las abre de una en una', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<BarraDeNavegacion />, { modulos: TODOS_CON_PAGINAS_PROPIAS })
+    await user.hover(within(navEscritorio()).getByRole('button', { name: 'Corporación', hidden: true }))
+    // Con fireEvent y no con user.click: en jsdom, mover el ratón de user-event a
+    // cualquier cosa de la hoja dispara el mouseleave de la sección y la cierra.
+    const historia = screen.getByRole('button', { name: 'Páginas de Historia', hidden: true })
+    const sabado = screen.getByRole('button', { name: 'Páginas de Sábado de Pasión', hidden: true })
+    expect(historia).toHaveAttribute('aria-expanded', 'false')
+    // Plegadas siguen en la página, pero inertes: el tabulador no entra en ellas.
+    expect(screen.getByRole('link', { name: 'Órganos de Gobierno', hidden: true }).closest('[inert]')).not.toBeNull()
+
+    fireEvent.click(historia)
+    expect(historia).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('link', { name: 'Órganos de Gobierno', hidden: true }).closest('[inert]')).toBeNull()
+
+    fireEvent.click(sabado)
+    expect(historia).toHaveAttribute('aria-expanded', 'false')
+    expect(sabado).toHaveAttribute('aria-expanded', 'true')
+    // El nombre sigue llevando a su página.
+    expect(screen.getByRole('link', { name: 'Sábado de Pasión', hidden: true })).toHaveAttribute('href', '/sabado-de-pasion')
   })
 
   it('con un nombre puesto en el CMS, la página sale con él; sin él, con el de siempre', async () => {
@@ -181,15 +204,32 @@ describe('BarraDeNavegacion en móvil', () => {
     expect(within(cajon).queryByRole('link', { name: 'Historia' })).not.toBeInTheDocument()
   })
 
-  it('al desplegar Corporación aparecen sus subpáginas, con los subniveles incluidos', async () => {
+  it('al desplegar Corporación aparecen sus subpáginas, con los subniveles plegados tras su flecha', async () => {
     const user = userEvent.setup()
     renderWithProviders(<BarraDeNavegacion />)
     await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
     await user.click(screen.getByRole('button', { name: 'Corporación' }))
 
     expect(screen.getByRole('link', { name: 'Historia' })).toHaveAttribute('href', '/historia')
-    expect(screen.getByRole('link', { name: 'Órganos de Gobierno' })).toHaveAttribute('href', '/historia/organos-de-gobierno')
     expect(screen.getByRole('button', { name: 'Corporación' })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.queryByRole('link', { name: 'Órganos de Gobierno' })).not.toBeInTheDocument()
+
+    const flecha = screen.getByRole('button', { name: 'Páginas de Historia' })
+    await user.click(flecha)
+    expect(flecha).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('link', { name: 'Órganos de Gobierno' })).toHaveAttribute('href', '/historia/organos-de-gobierno')
+  })
+
+  it('en el cajón, un grupo de subpáginas abierto cada vez', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<BarraDeNavegacion />, { modulos: TODOS_CON_PAGINAS_PROPIAS })
+    await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
+    await user.click(screen.getByRole('button', { name: 'Corporación' }))
+    await user.click(screen.getByRole('button', { name: 'Páginas de Historia' }))
+    await user.click(screen.getByRole('button', { name: 'Páginas de Sábado de Pasión' }))
+
+    expect(screen.getByRole('button', { name: 'Páginas de Historia' })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('link', { name: 'Recorrido' })).toHaveAttribute('href', '/sabado-de-pasion/recorrido')
   })
 
   it('el botón del acceso y los títulos de sección llevan también el nombre del CMS', async () => {

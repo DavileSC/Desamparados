@@ -1035,6 +1035,13 @@ Trampas:
   se eligieron 3 px (`VIDRIO`). Sobre una foto clara (el encaje de la saya)
   la hoja toma algo de su color; se probó casi negra (88 %, 12 px) y se
   prefirió así.
+- **En las pruebas, no se mueve el ratón dentro de la hoja.** Con jsdom, un
+  `user.hover` o `user.click` sobre cualquier cosa de la hoja dispara el
+  `mouseleave` de la sección y la cierra (pasaba ya antes de los grupos
+  plegables, 21-11-2026). Para pulsar dentro, `fireEvent.click`. Las subpáginas
+  de cada página de la hoja van plegadas y siguen montadas con `inert`: se
+  buscan con `hidden: true` y se mira si cuelgan de un `[inert]`. Sin
+  `visibility: hidden`, que deja a los enlaces sin nombre accesible.
 - **Las pruebas del servidor escriben en la base local.** `npm test` usa la
   misma `desamparados_db` que la web en marcha: `contenido-api.test.ts` guarda
   la portada y luego la devuelve a como la leyó. Si se pasan con un campo

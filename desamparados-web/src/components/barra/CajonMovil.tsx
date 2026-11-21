@@ -10,7 +10,7 @@
  * Se gobierna solo: quien lo usa le dice si está abierto y cómo cerrarlo, y el
  * resto —qué secciones están desplegadas— se queda aquí dentro.
  */
-import { Fragment, useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Box, Collapse, IconButton, List, ListItem, ListItemButton, Modal, Toolbar } from '@mui/material'
 import { alpha } from '@mui/material/styles'
@@ -28,6 +28,7 @@ import { GOLD, GRANATE, TINTA } from '../../features/inicio/estilos'
 // La serif de la agenda: importarla de ahí trae también sus ficheros de letra.
 import { CORMORANT } from '../../features/actualidad/agenda/letraAlmanaque'
 import { MARCA } from '../../theme/marca'
+import { designTokens } from '../../theme'
 import { useTextosPortada } from '../../features/inicio/useContenidoPortada'
 
 /** La curva de las capas: arranca y frena con suavidad, como una cortina. */
@@ -94,7 +95,13 @@ const pie: Variants = {
 }
 
 /** Subpágina dentro del cajón móvil; `nivel` 1 son hijas de la sección y 2 sus nietas. */
-function EnlaceCajon({ entrada, nivel, alNavegar }: { entrada: EntradaMenu; nivel: 1 | 2; alNavegar: () => void }) {
+function EnlaceCajon({ entrada, nivel, alNavegar, ajustado = false }: {
+  entrada: EntradaMenu
+  nivel: 1 | 2
+  alNavegar: () => void
+  /** A lo que mide su nombre, para que la flecha de su grupo vaya pegada a él. */
+  ajustado?: boolean
+}) {
   const location = useLocation()
   const activa = esActiva(location.pathname, entrada.href, entrada.exacta)
   return (
@@ -103,6 +110,7 @@ function EnlaceCajon({ entrada, nivel, alNavegar }: { entrada: EntradaMenu; nive
       to={entrada.href}
       onClick={alNavegar}
       sx={{
+        ...(ajustado && { flex: '0 1 auto', pr: 0 }),
         pl: nivel === 1 ? 0.25 : 2.25,
         py: 0.75,
         color: activa ? GOLD : 'text.secondary',
@@ -114,6 +122,54 @@ function EnlaceCajon({ entrada, nivel, alNavegar }: { entrada: EntradaMenu; nive
     >
       {entrada.label}
     </ListItemButton>
+  )
+}
+
+/**
+ * Una subpágina con las suyas dentro, plegadas (forma M1 de su maqueta,
+ * 21-11-2026): el nombre lleva a su página y la flecha de al lado las abre.
+ * Es la misma flecha de las secciones, en pequeño, y siempre a la vista: en
+ * el móvil no hay ratón que la encienda, como la tenue de escritorio. Se ve
+ * de 18 px, pero el dedo tiene 44.
+ */
+function GrupoCajon({ entrada, desplegado, alAlternar, alNavegar }: {
+  entrada: EntradaMenu
+  desplegado: boolean
+  alAlternar: () => void
+  alNavegar: () => void
+}) {
+  const idNietos = useId()
+  return (
+    <>
+      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <EnlaceCajon entrada={entrada} nivel={1} alNavegar={alNavegar} ajustado />
+        <IconButton
+          onClick={alAlternar}
+          aria-expanded={desplegado}
+          aria-controls={idNietos}
+          aria-label={`Páginas de ${entrada.label}`}
+          sx={{
+            width: 44,
+            height: 44,
+            // Sin agrandar la fila: los 44 px desbordan por arriba y por abajo.
+            my: -0.75,
+            color: desplegado ? GOLD : alpha(designTokens.colors.surfaceVariant, 0.62),
+            '&:hover': { backgroundColor: 'transparent' },
+          }}
+        >
+          <ExpandMoreIcon
+            sx={{ fontSize: 18, transition: 'transform 0.3s ease', transform: desplegado ? 'rotate(180deg)' : 'none' }}
+          />
+        </IconButton>
+      </Box>
+      <Collapse in={desplegado} unmountOnExit>
+        <Box id={idNietos}>
+          {entrada.hijos?.map((nieto) => (
+            <EnlaceCajon key={nieto.href} entrada={nieto} nivel={2} alNavegar={alNavegar} />
+          ))}
+        </Box>
+      </Collapse>
+    </>
   )
 }
 
@@ -141,6 +197,12 @@ function Panel({ alCerrar }: { alCerrar: () => void }) {
     return seccionActual ? { [seccionActual.href]: true } : {}
   })
   const alternarSeccion = (href: string) => setSeccionesAbiertas((prev) => ({ ...prev, [href]: !prev[href] }))
+  // De los grupos de subpáginas, uno abierto cada vez; de salida, el de la página que se ve.
+  const [grupoAbierto, setGrupoAbierto] = useState<string | null>(() =>
+    menu
+      .flatMap((s) => s.hijos ?? [])
+      .find((h) => h.hijos?.length && [h, ...(h.hijos ?? [])].some((x) => esActiva(location.pathname, x.href, x.exacta)))?.href ?? null,
+  )
 
   return (
     <Box
@@ -227,13 +289,16 @@ function Panel({ alCerrar }: { alCerrar: () => void }) {
                     {hijos.length > 0 && (
                       <Collapse in={abierta} unmountOnExit>
                         <List disablePadding sx={{ pb: 1.5, pt: 0.25 }}>
-                          {hijos.map((hijo) => (
-                            <Fragment key={hijo.href}>
-                              <EnlaceCajon entrada={hijo} nivel={1} alNavegar={alCerrar} />
-                              {hijo.hijos?.map((nieto) => (
-                                <EnlaceCajon key={nieto.href} entrada={nieto} nivel={2} alNavegar={alCerrar} />
-                              ))}
-                            </Fragment>
+                          {hijos.map((hijo) => hijo.hijos?.length ? (
+                            <GrupoCajon
+                              key={hijo.href}
+                              entrada={hijo}
+                              desplegado={grupoAbierto === hijo.href}
+                              alAlternar={() => setGrupoAbierto((actual) => (actual === hijo.href ? null : hijo.href))}
+                              alNavegar={alCerrar}
+                            />
+                          ) : (
+                            <EnlaceCajon key={hijo.href} entrada={hijo} nivel={1} alNavegar={alCerrar} />
                           ))}
                         </List>
                       </Collapse>
