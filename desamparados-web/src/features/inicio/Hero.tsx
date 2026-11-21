@@ -2,7 +2,6 @@ import { useContext, useEffect, useRef, useState, type MouseEvent } from 'react'
 import CuentaAtrasDeSalida from './CuentaAtrasDeSalida'
 import { Box, Typography } from '@mui/material'
 import { visuallyHidden } from '@mui/utils'
-import { ALTO_BARRA_ESCRITORIO, desktopMq } from '../../components/barra/estilos'
 import { m, useMotionValue, useReducedMotion, useSpring } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
@@ -263,13 +262,14 @@ export default function Hero() {
             position: 'absolute',
             zIndex: 3,
             // En el móvil, abajo a la derecha: arriba va el título, y los dos
-            // botones dejan libre ese rincón. En escritorio, arriba a la
-            // derecha (abajo a la izquierda va la cuenta atrás), por debajo
-            // de la barra fija, que en escritorio tapa `ALTO_BARRA_ESCRITORIO`.
-            top: { xs: 'auto', md: 96 },
-            [desktopMq]: { top: ALTO_BARRA_ESCRITORIO + 24 },
-            bottom: { xs: 24, md: 'auto' },
-            right: { xs: 12, md: 28 },
+            // botones dejan libre ese rincón. Desde la tableta, abajo a la
+            // izquierda (lo pidió así el 21-11-2026), en el margen del escudo
+            // de la barra y por debajo de la cuenta atrás, que asienta a 64 px.
+            bottom: { xs: 24, md: 18 },
+            right: { xs: 12, md: 'auto' },
+            left: { xs: 'auto', md: '40px', xl: '48px' },
+            // El icono tiene su aire: se corre a la izquierda para que alinee con la cuenta.
+            ml: { md: -0.75 },
             // Discreto a la vista (el círculo de antes pesaba demasiado), pero
             // con 32 px que pulsar: por encima de los 24 que pide WCAG 2.5.8.
             display: 'inline-flex',

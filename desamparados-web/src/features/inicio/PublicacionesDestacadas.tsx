@@ -400,8 +400,10 @@ export default function PublicacionesDestacadas() {
       </Box>
       {/* El texto empieza donde acaba la marca de agua: con la página a 1440 px o menos,
           los 64 px de margen la dejarían debajo del título. En escritorio, el 5 % a
-          cada lado como las demás secciones, salvo que la marca pida más a la izquierda. */}
-      <ContenedorDePagina sx={{ position: 'relative', pl: { md: 'max(64px, calc(128px - max(0px, (100vw - 1440px) / 2)))' }, [desktopMq]: { ...contenedorDePortada[desktopMq], pl: 'max(5vw, 104px)' } }}>
+          cada lado como las demás secciones, salvo que la marca pida más a la izquierda.
+          Ese hueco va en k() como la marca: en px fijos, en un monitor grande la
+          marca crecía y se quedaba pegada al texto. */}
+      <ContenedorDePagina sx={{ position: 'relative', pl: { md: 'max(64px, calc(128px - max(0px, (100vw - 1440px) / 2)))' }, [desktopMq]: { ...contenedorDePortada[desktopMq], pl: `max(5vw, ${k(104)})` } }}>
         {destacada ? (
           <Box sx={rejilla}>
             {/* El ejemplar es el objeto del bloque: crece al posarse. En tableta
