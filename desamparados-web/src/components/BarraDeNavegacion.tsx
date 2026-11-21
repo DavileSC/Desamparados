@@ -6,7 +6,7 @@ import CajonMovil from './barra/CajonMovil'
 import IconoDelMenu from './barra/IconoDelMenu'
 import { useEnlacesDeRedes } from './barra/redes'
 import { FileteMovil, MarcaEscritorio, MarcaMovil } from './barra/MarcaDeLaBarra'
-import { ALTO_FRANJA, DESKTOP_NAV_MIN, VELO_ARRIBA, VELO_SCROLL, compactMq, desktopMq, estrechoMq, tinta } from './barra/estilos'
+import { ALTO_BARRA_ESCRITORIO, ALTO_FRANJA, ALTO_VELO, COLA_AL_BAJAR, DESKTOP_NAV_MIN, VELO_ARRIBA, VELO_SCROLL, compactMq, desktopMq, estrechoMq, tinta } from './barra/estilos'
 import { BOTON } from './estiloDeBoton'
 import { useModulos } from '../hooks/useModulos'
 import { useNombreEnMenu } from '../hooks/useNombresEnMenu'
@@ -21,6 +21,55 @@ import { useNombreEnMenu } from '../hooks/useNombresEnMenu'
  * bajo un filete burdeos. Desde el 18-11-2026, fina (82 px): redes, escudo y
  * botón más pequeños, con el mismo orden y la misma transparencia.
  */
+
+/**
+ * Las capas del desenfoque progresivo, de abajo arriba: hasta qué punto del
+ * velo llegan enteras, dónde se acaban y cuánto desenfocan (en px, antes de
+ * multiplicar por `--velo-desenfoque`, que sube al bajar por la página).
+ */
+const CAPAS_DEL_VELO = [
+  { entera: 60, hasta: 100, desenfoque: 1 },
+  { entera: 45, hasta: 80, desenfoque: 3 },
+  { entera: 30, hasta: 62, desenfoque: 7 },
+  { entera: 0, hasta: 46, desenfoque: 12 },
+] as const
+
+/** Lo que asoma la cola por debajo de la barra, entera. */
+const COLA = ALTO_VELO - ALTO_BARRA_ESCRITORIO
+
+// `--velo-cola` (de 0 a 1) estira la cola: entera con una foto bajo la barra
+// (fotoBajoLaBarra.ts); si no, sale al bajar, con `--velo-cola-scroll`.
+const velo = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  height: `calc(${ALTO_BARRA_ESCRITORIO}px + ${COLA}px * var(--velo-cola))`,
+  // Lo que asoma por debajo de la barra no tapa los clics de la página.
+  pointerEvents: 'none',
+  '--velo-tinta': VELO_ARRIBA,
+  '--velo-desenfoque': 1,
+  '--velo-cola': 'var(--velo-cola-scroll, 0)',
+  'html[data-foto-bajo-la-barra] &': { '--velo-cola': 1 },
+} as const
+
+function capaDelVelo({ entera, hasta, desenfoque }: (typeof CAPAS_DEL_VELO)[number]) {
+  const filtro = `blur(calc(${desenfoque}px * var(--velo-desenfoque)))${desenfoque === 12 ? ' saturate(110%)' : ''}`
+  const mascara = `linear-gradient(to bottom, #000 ${entera}%, transparent ${hasta}%)`
+  return { position: 'absolute', inset: 0, backdropFilter: filtro, WebkitBackdropFilter: filtro, maskImage: mascara, WebkitMaskImage: mascara } as const
+}
+
+// Encima de las capas, no en el velo: si la pintara el velo, las capas la
+// desenfocarían con la foto. Hasta el pie del menú, al menos VELO_ARRIBA.
+const tintaDelVelo = {
+  position: 'absolute',
+  inset: 0,
+  background: `linear-gradient(to bottom,
+    rgb(7 6 8 / calc(var(--velo-tinta) + 0.08)) 0,
+    rgb(7 6 8 / var(--velo-tinta)) ${ALTO_BARRA_ESCRITORIO}px,
+    rgb(7 6 8 / calc(var(--velo-tinta) * 0.44)) calc(${ALTO_BARRA_ESCRITORIO}px + ${Math.round(COLA / 2)}px * var(--velo-cola)),
+    rgb(7 6 8 / 0) 100%)`,
+} as const
 
 export default function BarraDeNavegacion() {
   const isMobile = useMediaQuery(`(max-width:${DESKTOP_NAV_MIN - 1}px)`)
@@ -39,13 +88,16 @@ export default function BarraDeNavegacion() {
     let actual = 0
     let fotograma = 0
 
+    // Dos variables y no los estilos de cada capa: la tinta y las cuatro capas
+    // del desenfoque las leen en su CSS.
     const pintar = (progreso: number) => {
       const velo = veloRef.current
       if (!velo) return
-      const filtro = `blur(${10 + progreso * 14}px) saturate(${110 + progreso * 40}%)`
-      velo.style.backgroundColor = tinta(VELO_ARRIBA + (VELO_SCROLL - VELO_ARRIBA) * progreso)
-      velo.style.backdropFilter = filtro
-      velo.style.setProperty('-webkit-backdrop-filter', filtro)
+      velo.style.setProperty('--velo-tinta', (VELO_ARRIBA + (VELO_SCROLL - VELO_ARRIBA) * progreso).toFixed(3))
+      velo.style.setProperty('--velo-desenfoque', (1 + progreso * 1.4).toFixed(3))
+      // Hecha ya a media subida del velo (60 px), cuando el texto empieza a pasar
+      // por debajo; y solo en parte, que entera emborronaría lo alto de cada sección.
+      velo.style.setProperty('--velo-cola-scroll', (Math.min(progreso * 2, 1) * COLA_AL_BAJAR).toFixed(3))
     }
 
     const acercar = () => {
@@ -117,21 +169,17 @@ export default function BarraDeNavegacion() {
         {/* El velo va aparte, por detrás, y no en la barra misma: un desenfoque
             del fondo hace de «raíz» para los de dentro, y la hoja de cristal del
             menú desenfocaría solo la barra en vez de la foto de la página.
-            Banda de tinta casi opaca desde el primer píxel y con corte limpio:
-            las fotos del hero las cambia el cliente y no se puede contar con que
-            sean oscuras. Lo de arriba del todo; al desplazar, el efecto lo
-            sobrescribe en línea. */}
-        <Box
-          ref={veloRef}
-          aria-hidden
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            backgroundColor: tinta(VELO_ARRIBA),
-            backdropFilter: 'blur(10px) saturate(110%)',
-            WebkitBackdropFilter: 'blur(10px) saturate(110%)',
-          }}
-        />
+            Desde el 21-11-2026 no acaba en una línea (forma B de su maqueta):
+            cuatro capas de desenfoque, cada una más corta y más fuerte, hacen
+            que la foto se vaya enfocando según baja, y la tinta se apaga a la
+            vez. Detrás del texto de la barra la tinta no baja de VELO_ARRIBA:
+            las fotos del hero las cambia el cliente y pueden ser claras. */}
+        <Box ref={veloRef} aria-hidden sx={velo}>
+          {CAPAS_DEL_VELO.map((capa) => (
+            <Box key={capa.desenfoque} sx={capaDelVelo(capa)} />
+          ))}
+          <Box sx={tintaDelVelo} />
+        </Box>
         <Box sx={{ position: 'relative' }}>
           <Box
             sx={{

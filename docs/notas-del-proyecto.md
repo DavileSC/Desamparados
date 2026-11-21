@@ -1035,6 +1035,16 @@ Trampas:
   se eligieron 3 px (`VIDRIO`). Sobre una foto clara (el encaje de la saya)
   la hoja toma algo de su color; se probó casi negra (88 %, 12 px) y se
   prefirió así.
+- **El velo pasa de la barra, pero solo difumina.** Desde el 21-11-2026 acaba
+  en un desenfoque progresivo (cuatro capas y la tinta apagándose) que asoma
+  por debajo de los 82 px: `ALTO_VELO` (180) no cuenta para
+  `ALTO_BARRA_ESCRITORIO` y no tapa clics. La cola entera solo sale de entrada
+  si la página pone una foto bajo la barra (`useFotoBajoLaBarra()`, en el hero
+  y en `CabeceraASangre`); si no, en reposo emborronaría el título (la Agenda)
+  y sale al bajar, a la mitad (`COLA_AL_BAJAR`). Lo que se queda bajo la barra
+  al bajar (destino de un ancla, lo pegado con `sticky`) va con
+  `bajoElVelo(aire)`, no con `bajoLaBarra`. Una cabecera nueva con foto a
+  sangre llama al hook, o su foto se verá cortada en seco.
 - **En las pruebas, no se mueve el ratón dentro de la hoja.** Con jsdom, un
   `user.hover` o `user.click` sobre cualquier cosa de la hoja dispara el
   `mouseleave` de la sección y la cierra (pasaba ya antes de los grupos

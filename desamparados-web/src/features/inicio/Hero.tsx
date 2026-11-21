@@ -8,6 +8,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import PauseRoundedIcon from '@mui/icons-material/PauseRounded'
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded'
 import { ahorraDatos } from '../../lib/videoPropio'
+import { useFotoBajoLaBarra } from '../../components/barra/fotoBajoLaBarra'
 import { enlaceConFlecha } from '../../components/estiloDeBoton'
 import Boton from '../../components/Boton'
 import { Revela } from '../../components/SeccionAnimada'
@@ -30,6 +31,7 @@ const RETRASO_TEXTOS_S = 0.25
 
 export default function Hero() {
   const reduceMotion = useReducedMotion()
+  useFotoBajoLaBarra()
 
   // Los textos, por el hook que comparten los otros cinco bloques y no por una
   // copia de su expresión: el único test de «la API falla y salen los textos de
