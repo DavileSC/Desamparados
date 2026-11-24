@@ -24,6 +24,9 @@ npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prism
    Las carpetas siguen una fecha correlativa **posterior a la última
    existente** (un día más), no la fecha real: así el orden no se rompe.
 2. Encabezar el SQL con un comentario de qué hace y por qué.
+   Y **corregir a mano los nombres de tabla de los `ALTER`**: en Windows
+   salen en minúsculas (`noticia`) y en Linux (CI y servidor) la tabla es
+   `Noticia`; la migración falla allí (1146). Ver notas del proyecto, §3.
 3. `npx prisma migrate deploy` para aplicarla en local.
 4. Anotar la migración: hay que aplicarla al desplegar.
 
