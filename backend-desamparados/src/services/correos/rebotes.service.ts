@@ -1,6 +1,6 @@
 /**
- * Las direcciones a las que no llegan los correos, según los avisos del
- * servicio de envío (`domain/avisos-de-envio.ts`).
+ * Las direcciones a las que no llegan los correos, según los rebotes que
+ * llegan al buzón que envía (`correos/buzon-de-rebotes.ts`).
  *
  * Se apuntan por dirección: el censo señala las fichas que la usan, la cola no
  * gasta cupo en ellas y el último envío que les salió pasa a «Rebotó». Al
@@ -15,7 +15,7 @@ import type { AvisoDeEnvio } from '../../domain/avisos-de-envio.js';
 // Ciclo con cola.ts (que pregunta aquí si una dirección rebota): solo se usan dentro de funciones.
 import { retirarBoletinesPendientes } from './cola.js';
 
-/** Cuánto atrás se busca el envío del que avisa: Brevo avisa en minutos, a veces en horas. */
+/** Cuánto atrás se busca el envío del que avisa: el rebote llega en minutos, a veces en días (el servidor reintenta). */
 const VENTANA_MS = 7 * 24 * 3600 * 1000;
 
 export interface Rebote { motivo: MotivoRebote; detalle: string | null; desde: Date }
@@ -56,10 +56,9 @@ export class RebotesService {
   }
 
   /**
-   * El último envío de la cola a esa dirección deja de contar como enviado. El
-   * aviso de Brevo no trae nada nuestro con que reconocerlo, y el más reciente
-   * es casi siempre el que rebotó; los correos sueltos (un alta, una
-   * contraseña) no se guardan, así que de esos solo queda la marca.
+   * El último envío de la cola a esa dirección deja de contar como enviado: es
+   * casi siempre el que rebotó. Los correos sueltos (un alta, una contraseña)
+   * no se guardan, así que de esos solo queda la marca.
    */
   private static async marcarUltimoEnvio(email: string, ahora: Date): Promise<void> {
     const donde = { estado: EstadoEnvio.ENVIADO, enviadoEl: { gte: new Date(ahora.getTime() - VENTANA_MS) } };

@@ -76,9 +76,9 @@ function transporte(): TransporteDeCorreo {
 type Entorno = Readonly<Record<string, string | undefined>>;
 
 /**
- * Por qué servidor sale el correo. Sin EMAIL_SMTP_HOST, Gmail, como siempre.
- * Con él, un servicio de envío (Brevo): Gmail deja unos 500 al día y saca los
- * correos con la dirección de la cuenta de Gmail, no con la del dominio.
+ * Por qué servidor sale el correo. Con EMAIL_SMTP_HOST, el del buzón del
+ * dominio (OVH: ssl0.ovh.net, 465). Sin él, Gmail, que saca los correos con la
+ * dirección de la cuenta de Gmail y no con la del dominio.
  */
 export function opcionesDelServidor(entorno: Entorno) {
   const auth = { user: entorno.EMAIL_USER, pass: entorno.EMAIL_PASS };
@@ -91,9 +91,9 @@ export function opcionesDelServidor(entorno: Entorno) {
 }
 
 /**
- * La dirección que ve quien recibe el correo. En Gmail es la misma cuenta que
- * entra (EMAIL_USER); en un servicio de envío, el usuario de entrada no es una
- * dirección de nadie, y el remitente va aparte en EMAIL_FROM (noreply@…).
+ * La dirección que ve quien recibe el correo: la cuenta que entra (EMAIL_USER),
+ * que en Gmail y en OVH es la del buzón. EMAIL_FROM, si está, manda: un
+ * servicio de envío entra con un usuario que no es la dirección de nadie.
  */
 export function direccionDeEnvio(entorno: Entorno = process.env): string | undefined {
   return entorno.EMAIL_FROM?.trim() || entorno.EMAIL_USER;
@@ -111,9 +111,10 @@ export function nombreDelRemitente(entorno: Entorno = process.env): string {
 /**
  * Cuenta de envío propia del formulario de contacto (CONTACT_EMAIL_USER y
  * CONTACT_EMAIL_PASS). El formulario es público: un spam repartido entre
- * muchas IP podía agotar la cuota diaria de la cuenta de Gmail y dejar sin
- * salir los correos de recuperación de contraseña, que usan EMAIL_*. Sin esas
- * dos variables se sigue usando EMAIL_* como hasta ahora.
+ * muchas IP podía agotar el cupo de la cuenta que envía y dejar sin salir los
+ * correos de recuperación de contraseña, que usan EMAIL_*. Sale por el mismo
+ * servidor que ellos (EMAIL_SMTP_HOST, o Gmail). Sin esas dos variables se
+ * sigue usando EMAIL_* como hasta ahora.
  *
  * Se resuelve en el primer envío y no al importar: `undefined` = sin mirar
  * todavía, `null` = no configurada.
@@ -125,7 +126,7 @@ export function cuentaDeContacto() {
   const usuario = process.env.CONTACT_EMAIL_USER;
   const pass = process.env.CONTACT_EMAIL_PASS;
   if (usuario && pass) {
-    cuentaGuardada = { transporter: nodemailer.createTransport({ service: 'gmail', auth: { user: usuario, pass } }), usuario };
+    cuentaGuardada = { transporter: nodemailer.createTransport(opcionesDelServidor({ ...process.env, EMAIL_USER: usuario, EMAIL_PASS: pass })), usuario };
   } else {
     if (usuario || pass) console.warn('[Email] CONTACT_EMAIL_USER y CONTACT_EMAIL_PASS van juntas y falta una: el contacto sale por la cuenta de EMAIL_USER.');
     cuentaGuardada = null;
@@ -240,7 +241,7 @@ export async function enviarCorreo(
       ...(replyTo || process.env.CONTACT_EMAIL_TO ? { replyTo: replyTo || process.env.CONTACT_EMAIL_TO } : {}),
     });
     console.log(`✅ Email enviado con éxito a: ${enmascararEmail(to)}`);
-    // Los de la cuenta de contacto salen por otro servicio, y los de la cola
+    // Los de la cuenta de contacto salen por otra cuenta, y los de la cola
     // ya los cuenta ella: los demás gastan del mismo tope diario (ver `enviadosHoy`).
     if (!desdeLaCola && !cuenta) await contarSuelto();
     return true;

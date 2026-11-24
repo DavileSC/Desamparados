@@ -148,7 +148,7 @@ function transporteFalso() {
 }
 
 describe('EmailService', () => {
-  const entorno = { EMAIL_USER: process.env.EMAIL_USER, EMAIL_FROM: process.env.EMAIL_FROM, EMAIL_FROM_NAME: process.env.EMAIL_FROM_NAME, CONTACT_EMAIL_USER: process.env.CONTACT_EMAIL_USER, CONTACT_EMAIL_PASS: process.env.CONTACT_EMAIL_PASS, CONTACT_EMAIL_TO: process.env.CONTACT_EMAIL_TO };
+  const entorno = { EMAIL_USER: process.env.EMAIL_USER, EMAIL_SMTP_HOST: process.env.EMAIL_SMTP_HOST, EMAIL_SMTP_PORT: process.env.EMAIL_SMTP_PORT, EMAIL_FROM: process.env.EMAIL_FROM, EMAIL_FROM_NAME: process.env.EMAIL_FROM_NAME, CONTACT_EMAIL_USER: process.env.CONTACT_EMAIL_USER, CONTACT_EMAIL_PASS: process.env.CONTACT_EMAIL_PASS, CONTACT_EMAIL_TO: process.env.CONTACT_EMAIL_TO };
 
   afterEach(() => {
     ponerTransporte(undefined);
@@ -172,10 +172,10 @@ describe('EmailService', () => {
     assert.doesNotMatch(registro.html, /O'Brien <b>/);
   });
 
-  test('con un servicio de envío, el remitente es EMAIL_FROM y no el usuario de entrada, y se responde a Secretaría', async () => {
+  test('con EMAIL_FROM, el remitente es ella y no el usuario de entrada, y se responde a Secretaría', async () => {
     const general = transporteFalso();
     ponerTransporte(general);
-    process.env.EMAIL_USER = '9a1b2c001@smtp-brevo.com';
+    process.env.EMAIL_USER = '9a1b2c001@smtp.ejemplo.test';
     process.env.EMAIL_FROM = 'noreply@example.es';
     process.env.CONTACT_EMAIL_TO = 'secretaria@example.es';
     delete process.env.EMAIL_FROM_NAME;
@@ -187,12 +187,21 @@ describe('EmailService', () => {
     assert.equal(general.enviados[0].replyTo, 'secretaria@example.es');
   });
 
-  test('el servidor de envío: Gmail sin EMAIL_SMTP_HOST, y con él, TLS obligatorio en el 587', () => {
+  test('el servidor de envío: Gmail sin EMAIL_SMTP_HOST; con él, SSL en el 465 (OVH) y TLS obligatorio en el 587', () => {
     assert.deepEqual(opcionesDelServidor({ EMAIL_USER: 'a@gmail.com', EMAIL_PASS: 'x' }), { service: 'gmail', auth: { user: 'a@gmail.com', pass: 'x' } });
-    assert.deepEqual(opcionesDelServidor({ EMAIL_SMTP_HOST: 'smtp-relay.brevo.com', EMAIL_USER: 'u', EMAIL_PASS: 'p' }), {
-      host: 'smtp-relay.brevo.com', port: 587, secure: false, requireTLS: true, auth: { user: 'u', pass: 'p' },
+    assert.deepEqual(opcionesDelServidor({ EMAIL_SMTP_HOST: 'ssl0.ovh.net', EMAIL_SMTP_PORT: '465', EMAIL_USER: 'noreply@example.es', EMAIL_PASS: 'p' }), {
+      host: 'ssl0.ovh.net', port: 465, secure: true, requireTLS: false, auth: { user: 'noreply@example.es', pass: 'p' },
     });
-    assert.partialDeepStrictEqual(opcionesDelServidor({ EMAIL_SMTP_HOST: 'smtp.x.es', EMAIL_SMTP_PORT: '465' }), { port: 465, secure: true, requireTLS: false });
+    assert.partialDeepStrictEqual(opcionesDelServidor({ EMAIL_SMTP_HOST: 'smtp.x.es' }), { port: 587, secure: false, requireTLS: true });
+  });
+
+  test('con OVH, el remitente es el propio buzón: no hace falta EMAIL_FROM', async () => {
+    const general = transporteFalso();
+    ponerTransporte(general);
+    process.env.EMAIL_USER = 'noreply@example.es';
+    delete process.env.EMAIL_FROM;
+    await EmailService.enviarConfirmacionRegistro('hermano@example.es', 'Ana');
+    assert.match(general.enviados[0].from, /<noreply@example\.es>$/);
   });
 
   test('las indicaciones de la salida conservan sus saltos de línea en los correos', async () => {
@@ -284,6 +293,7 @@ describe('EmailService', () => {
     ponerTransporte(general);
     const crear = mock.method(nodemailer, 'createTransport', () => contacto);
     process.env.EMAIL_USER = 'secretaria@example.es';
+    delete process.env.EMAIL_SMTP_HOST;
     process.env.CONTACT_EMAIL_USER = 'contacto@example.es';
     process.env.CONTACT_EMAIL_PASS = 'clave-de-aplicacion';
     process.env.CONTACT_EMAIL_TO = 'buzon@example.es';
@@ -298,6 +308,19 @@ describe('EmailService', () => {
     assert.equal(correo.replyTo, valido.email);
     assert.match(correo.html, /No indicado/);
     assert.deepEqual(crear.mock.calls[0].arguments[0], { service: 'gmail', auth: { user: 'contacto@example.es', pass: 'clave-de-aplicacion' } });
+  });
+
+  test('la cuenta del contacto sale por el mismo servidor que las demás (OVH)', async () => {
+    const contacto = transporteFalso();
+    ponerTransporte(transporteFalso());
+    const crear = mock.method(nodemailer, 'createTransport', () => contacto);
+    process.env.EMAIL_SMTP_HOST = 'ssl0.ovh.net';
+    process.env.EMAIL_SMTP_PORT = '465';
+    process.env.CONTACT_EMAIL_USER = 'contacto@example.es';
+    process.env.CONTACT_EMAIL_PASS = 'clave';
+
+    assert.equal(await EmailService.enviarContacto({ ...valido, telefono: '' }), true);
+    assert.partialDeepStrictEqual(crear.mock.calls[0].arguments[0], { host: 'ssl0.ovh.net', port: 465, secure: true, auth: { user: 'contacto@example.es', pass: 'clave' } });
   });
 
   test('sin cuenta propia (o a medias), el contacto sale por EMAIL_USER como antes', async () => {

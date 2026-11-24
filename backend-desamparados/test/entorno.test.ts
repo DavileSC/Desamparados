@@ -73,12 +73,22 @@ describe('validarEntorno', () => {
     assert.ok(!validarEntorno({ COMUNICADOS_PAUSA_MS: '0' }).errores.some((e) => /COMUNICADOS_PAUSA_MS/.test(e)));
   });
 
-  test('con un servicio de envío (EMAIL_SMTP_HOST) hace falta el remitente aparte', () => {
-    const brevo = { ...PRODUCCION_COMPLETA, EMAIL_SMTP_HOST: 'smtp-relay.brevo.com', EMAIL_USER: '9a1b2c001@smtp-brevo.com' };
-    assert.ok(validarEntorno(brevo).errores.some((e) => /hace falta EMAIL_FROM/.test(e)));
-    assert.deepEqual(validarEntorno({ ...brevo, EMAIL_FROM: 'noreply@ejemplo.org', EMAIL_SMTP_PORT: '587' }).errores, []);
-    assert.ok(validarEntorno({ ...brevo, EMAIL_FROM: '"Secretaría" <noreply@ejemplo.org>' }).errores.some((e) => /EMAIL_FROM=.*solo una dirección/.test(e)));
-    assert.ok(validarEntorno({ ...brevo, EMAIL_FROM: 'noreply@ejemplo.org', EMAIL_SMTP_PORT: 'tls' }).errores.some((e) => /EMAIL_SMTP_PORT/.test(e)));
+  test('con EMAIL_SMTP_HOST y un usuario que no es una dirección, hace falta el remitente aparte', () => {
+    const maquina = { ...PRODUCCION_COMPLETA, EMAIL_SMTP_HOST: 'smtp.ejemplo.test', EMAIL_USER: '9a1b2c001' };
+    assert.ok(validarEntorno(maquina).errores.some((e) => /hace falta EMAIL_FROM/.test(e)));
+    assert.deepEqual(validarEntorno({ ...maquina, EMAIL_FROM: 'noreply@ejemplo.org', EMAIL_SMTP_PORT: '587' }).errores, []);
+    assert.ok(validarEntorno({ ...maquina, EMAIL_FROM: '"Secretaría" <noreply@ejemplo.org>' }).errores.some((e) => /EMAIL_FROM=.*solo una dirección/.test(e)));
+    assert.ok(validarEntorno({ ...maquina, EMAIL_FROM: 'noreply@ejemplo.org', EMAIL_SMTP_PORT: 'tls' }).errores.some((e) => /EMAIL_SMTP_PORT/.test(e)));
+  });
+
+  test('OVH: el buzón es el remitente, y los rebotes se leen por IMAP del mismo servidor', () => {
+    const ovh = { ...PRODUCCION_COMPLETA, EMAIL_SMTP_HOST: 'ssl0.ovh.net', EMAIL_SMTP_PORT: '465', EMAIL_USER: 'noreply@ejemplo.org', EMAIL_IMAP_HOST: 'ssl0.ovh.net', EMAIL_IMAP_PORT: '993', CORREOS_MASIVOS_POR_HORA: '150' };
+    assert.deepEqual(validarEntorno(ovh).errores, []);
+    assert.ok(validarEntorno({ ...ovh, EMAIL_IMAP_PORT: 'ssl' }).errores.some((e) => /EMAIL_IMAP_PORT/.test(e)));
+    assert.ok(validarEntorno({ ...ovh, CORREOS_MASIVOS_POR_HORA: '0' }).errores.some((e) => /CORREOS_MASIVOS_POR_HORA/.test(e)));
+    // Sin servidor propio, EMAIL_USER es una cuenta de Gmail: no es el buzón de los rebotes.
+    const { EMAIL_SMTP_HOST: _fuera, ...sinSmtp } = ovh;
+    assert.ok(validarEntorno(sinSmtp).errores.some((e) => /EMAIL_IMAP_HOST va con EMAIL_SMTP_HOST/.test(e)));
   });
 
   test('en producción CLAMAV_REQUIRED=false no vale', () => {

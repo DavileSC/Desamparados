@@ -276,7 +276,7 @@ export class ComunicadosService {
   static async bajaDelBoletin(token: string) {
     const email = emailDeToken(token, secreto());
     if (!email) throw new HttpError('El enlace de baja no es válido. Cópialo entero del correo, o date de baja desde tu área de hermanos.');
-    // Las mismas fichas que da de baja el aviso de Brevo (`RebotesService`),
+    // Las mismas fichas que da de baja una queja (`RebotesService`),
     // también las que guardan el correo en blanco y usan el de su cuenta.
     const r = await db.hermano.updateMany({
       where: { boletin: true, OR: [{ email }, { email: null, user: { email } }, { email: '', user: { email } }] },

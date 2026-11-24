@@ -436,7 +436,7 @@ describe('HermanosAdminPage', () => {
     }))
     renderWithProviders(<HermanosAdminPage />, { ruta: '/cms/hermanos?ficha=5' })
 
-    expect(await screen.findByText(/a rocio@ejemplo\.invalido no le llegan nuestros correos desde el 12\/10\/2026: el buzón no existe/i)).toBeInTheDocument()
+    expect(await screen.findByText(/a rocio@ejemplo\.invalido no le llegan nuestros correos desde el 12\/10\/2026: el buzón no admite correo/i)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Volver a escribirle' }))
     await waitFor(() => expect(screen.queryByText(/no le llegan nuestros correos/i)).not.toBeInTheDocument())
     expect(borrados).toEqual([expect.stringMatching(/\/hermanos\/admin\/5\/correo-rebota$/)])

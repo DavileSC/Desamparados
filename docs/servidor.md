@@ -822,6 +822,51 @@ apagar el módulo, para que la web deje de avisar). La base de GoAccess no va
 en las copias de seguridad: si se pierde, el histórico vuelve a empezar desde
 lo que quede en los registros.
 
+## Correo del dominio
+
+Dos buzones Zimbra Starter en OVH: **`noreply@`**, por el que sale todo el
+correo de la web y al que llegan los rebotes, y **`secretaria@`**, el de las
+personas (el «Responder a» de todos los correos y el destino del formulario de
+contacto). Se leen en el webmail de OVH (Zimbra) o en el móvil por IMAP. El
+dominio está en **IONOS**: los registros se ponen allí, no en OVH. Antes
+(hasta el 24-11-2026) el correo salía por Brevo y Mailjet, y IONOS reenviaba
+`info@` y `secretaria@` a dos cuentas de Gmail.
+
+**1. En OVH** (Web Cloud → Correos → el servicio Zimbra):
+
+- Crear las dos cuentas con contraseña larga. La de `noreply@` va al `.env`.
+- `info@`, si se quiere conservar: una redirección a `secretaria@`.
+- Pestaña del dominio, **DKIM**: activarlo. Como el DNS no está en OVH, da
+  los registros (dos CNAME de selector) para copiarlos en IONOS.
+
+**2. En IONOS** (Dominios → el dominio → DNS). Antes de tocar nada, una
+captura de la zona entera, por si hay que volver.
+
+| Qué | Hacer |
+|---|---|
+| MX de IONOS (`mx00`/`mx01.ionos.es`) | Quitarlos y poner `mx1.mail.ovh.net` (prioridad 1), `mx2.mail.ovh.net` (5) y `mx3.mail.ovh.net` (100). Si IONOS no deja, desactivar antes su correo / los reenvíos de `info@` y `secretaria@` |
+| SPF (TXT del dominio raíz) | Uno solo: `v=spf1 include:mx.ovh.com ~all` |
+| DKIM | Los CNAME que da OVH |
+| Brevo | Quitar `brevo-code` (TXT), `brevo1._domainkey`, `brevo2._domainkey`, `img.info` y `r.info`. Si están en el grupo «Third Party Service», desactivar el grupo entero |
+| Mailjet | Quitar el TXT de Mailjet y `mailjet._domainkey` |
+| DMARC (`_dmarc`) | `v=DMARC1; p=none; rua=mailto:secretaria@DOMINIO`: los informes, a nuestro buzón en vez de a Brevo |
+
+Los cambios tardan de minutos a unas horas. Mientras, el correo puede llegar
+aún a IONOS.
+
+**3. En la web** (`.env` de `pruebas`), las variables de «Correo (OVH) y
+rebotes» en `docs/despliegue.md`, y recrear la API.
+
+**4. Comprobarlo:**
+
+- Desde un Gmail, escribir a `noreply@` y a `secretaria@`: llegan al webmail.
+- Desde la web, «¿Olvidaste la contraseña?» con una cuenta propia: el correo
+  llega a la bandeja de entrada (no a spam) y, en Gmail, «Mostrar original»
+  dice `SPF: PASS`, `DKIM: PASS` y `DMARC: PASS`.
+- Un rebote, como dice `docs/despliegue.md`.
+- Después, borrar las cuentas de Brevo y Mailjet; los Gmail de `info` y
+  `secretaria` quedan sin uso.
+
 ## El día de la presentación
 
 Se prepara **antes**, con la web cerrada, para que ese día baste con pulsar
@@ -848,8 +893,8 @@ Grupo en lugar del personal y las claves de Redsys del banco.
 enseña «Próximamente». El 4 y el 6 se dejan para cuando se cargue la base
 buena: con `FRONTEND_URL` en `www`, los enlaces de los correos mandados desde
 `pruebas` llevarían al dominio principal, donde un hermano de prueba sin
-sesión del CMS vería «Próximamente», y con los dos webhooks de Brevo cada
-aviso llegaría dos veces.
+sesión del CMS vería «Próximamente», y si las dos instalaciones leyeran el
+buzón `noreply@`, cada rebote lo apuntaría solo una de ellas.
 
 Quien abrió el dominio antes del cambio puede seguir viendo la página de
 mantenimiento guardada en su navegador: se va recargando sin caché
@@ -911,8 +956,9 @@ curl -s https://www.desamparadosmalaga.com/sitemap.xml | grep -c '<url>'  # 0 mi
 - Entrando al CMS en `www.desamparadosmalaga.com/cms`: la web entera con el
   aviso abajo a la izquierda.
 
-**6. El segundo webhook de Brevo** con la URL del dominio, como dice la fila
-«Lo que queda a mano al instalar la web real» de la hoja de ruta.
+**6. Los rebotes, a la web real:** quitar `EMAIL_IMAP_HOST` del `.env` de
+`pruebas`, ponerlo en el de la web real y recrear las dos API («Correo (OVH) y
+rebotes» en `docs/despliegue.md`).
 
 **El día:** CMS → Sistema → «Abrir la web» → «Abrir la web». El sitemap se
 llena solo; en Google Search Console se puede mandar

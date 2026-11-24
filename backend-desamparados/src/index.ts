@@ -143,6 +143,9 @@ void import('./services/comunicados.service.js')
   .then(() => import('./services/correos/cola.js'))
   .then(({ arrancarCola }) => arrancarCola());
 
+// Los rebotes llegan al buzón que envía: se leen cada cuarto de hora (con EMAIL_IMAP_HOST).
+void import('./services/correos/buzon-de-rebotes.js').then(({ arrancarBuzonDeRebotes }) => arrancarBuzonDeRebotes());
+
 // La víspera de cada día de reparto, el recordatorio de la cita a quien la tiene.
 void import('./services/procesion/recordatorio-citas.service.js').then(({ arrancarRecordatorios }) => arrancarRecordatorios());
 

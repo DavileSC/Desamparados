@@ -2,13 +2,13 @@
  * La cola de los envíos a muchos: los comunicados y el aviso de apertura de
  * papeletas (traspaso-2026-10-14 §5).
  *
- * El servicio de envío gratis deja un número de correos al día (Brevo, 300), y
- * un envío a todos los hermanos no cabe en uno. Aquí sale todo de uno en uno:
- * primero lo que va al móvil (no gasta correo y no tiene tope), y después los
- * correos, mientras quede cupo. Lo que no cabe espera al día siguiente sin que
- * nadie tenga que hacer nada. Los correos sueltos (un alta, una contraseña) no
- * pasan por aquí: salen siempre al momento, y por eso el tope por defecto
- * (250) deja margen.
+ * El servidor de correo (OVH) corta a quien pasa de unos 200 correos a la
+ * hora por cuenta, y un envío a todos los hermanos no cabe en una. Aquí sale
+ * todo de uno en uno: primero lo que va al móvil (no gasta correo y no tiene
+ * tope), y después los correos, mientras quede cupo en la hora y en el día. Lo
+ * que no cabe espera a la hora o al día siguiente sin que nadie tenga que hacer
+ * nada. Los correos sueltos (un alta, una contraseña) no pasan por aquí: salen
+ * siempre al momento, y por eso el tope por hora (150) deja margen.
  */
 import { EstadoComunicado, EstadoEnvio, Prisma, TipoComunicado } from '@prisma/client';
 import db from '../../config/db';
@@ -26,12 +26,22 @@ import { RebotesService } from './rebotes.service.js';
  */
 const enPruebas = () => process.env.NODE_TEST_CONTEXT !== undefined;
 
-/** Cuántos correos de la cola al día. El arranque valida CORREOS_MASIVOS_POR_DIA. */
-export function topeDiario(): number {
-  if (enPruebas() && process.env.CORREOS_MASIVOS_POR_DIA === undefined) return Number.MAX_SAFE_INTEGER;
-  const valor = Number(process.env.CORREOS_MASIVOS_POR_DIA ?? 250);
-  return Number.isInteger(valor) && valor > 0 ? valor : 250;
+/** Un tope de la cola, leído de su variable. El arranque las valida. */
+function tope(variable: string, porDefecto: number): number {
+  if (enPruebas() && process.env[variable] === undefined) return Number.MAX_SAFE_INTEGER;
+  const valor = Number(process.env[variable] ?? porDefecto);
+  return Number.isInteger(valor) && valor > 0 ? valor : porDefecto;
 }
+
+/**
+ * Cuántos correos de la cola al día. OVH no publica un tope diario: este es
+ * una red por si algo se desmanda, y deja salir un boletín a mil hermanos en
+ * una mañana a 150 la hora.
+ */
+export const topeDiario = () => tope('CORREOS_MASIVOS_POR_DIA', 1000);
+
+/** Cuántos correos de la cola por hora: los ~200 de OVH menos el margen de los sueltos. */
+export const topePorHora = () => tope('CORREOS_MASIVOS_POR_HORA', 150);
 
 /** Entre correo y correo: el servicio corta a quien manda de golpe. */
 function pausa(): number {
@@ -57,6 +67,19 @@ export async function enviadosHoy(ahora: Date = new Date()): Promise<number> {
   ]);
   return comunicados + otros + (sueltos?.enviados ?? 0);
 }
+
+/**
+ * Lo que salió de la cola en la última hora. Los sueltos no se cuentan aquí:
+ * solo se apuntan por día, y son pocos (el margen del tope es para ellos).
+ */
+export async function enviadosEnLaUltimaHora(ahora: Date = new Date()): Promise<number> {
+  const donde = { estado: EstadoEnvio.ENVIADO, enviadoEl: { gte: new Date(ahora.getTime() - 3600 * 1000) } };
+  const [comunicados, otros] = await Promise.all([db.comunicadoEnvio.count({ where: donde }), db.correoEnCola.count({ where: donde })]);
+  return comunicados + otros;
+}
+
+/** Si queda cupo en la hora y en el día. */
+const quedaCupo = async () => (await enviadosEnLaUltimaHora()) < topePorHora() && (await enviadosHoy()) < topeDiario();
 
 /**
  * Los lotes del aviso previo del cargo de una remesa («remesa:12»). Salen
@@ -149,7 +172,7 @@ export async function retirarPendientes(donde: Prisma.ComunicadoEnvioWhereInput,
   for (const { comunicadoId } of afectados) await cerrarSiTermino(comunicadoId);
 }
 
-/** Quien deja el boletín (por el enlace o por el aviso de Brevo) no recibe el que aún espera en la cola. */
+/** Quien deja el boletín (por el enlace o por una queja) no recibe el que aún espera en la cola. */
 export const retirarBoletinesPendientes = (email: string) =>
   retirarPendientes({ email: email.trim().toLowerCase(), comunicado: { tipo: TipoComunicado.BOLETIN } });
 
@@ -169,8 +192,8 @@ export async function reintentarLote(lote: string): Promise<number> {
  * El siguiente correo, el más antiguo de las dos tablas: una apertura puesta
  * en cola antes que un comunicado sale antes. false si no queda ninguno.
  *
- * A una dirección que el servicio de envío dio por perdida no se le manda: el
- * servicio la tiene bloqueada y el intento solo gastaría cupo. Queda como
+ * A una dirección que ya rebotó no se le manda: el intento solo gastaría cupo
+ * y otro rebote. Queda como
  * «Rebotó» y no cuenta para el tope del día.
  */
 async function siguienteCorreo(): Promise<boolean> {
@@ -246,7 +269,7 @@ async function repartir(): Promise<void> {
   do {
     otraVuelta = false;
     await avisosAlMovil();
-    while ((await enviadosHoy()) < topeDiario()) {
+    while (await quedaCupo()) {
       if (!(await siguienteCorreo())) break;
       // Algo nuevo para el móvil no espera a que acaben los correos.
       if (otraVuelta) break;

@@ -35,7 +35,7 @@ const CON_SIN_NUMERO: Opcion[] = [
 ]
 // Los filtros que hacen útil una lista guardada: van tras «Más filtros».
 const CON_SIN = (con: string, sin: string): Opcion[] => [{ valor: 'con', etiqueta: con }, { valor: 'sin', etiqueta: sin }]
-// «Que rebota»: el servicio de envío avisó de que a ese correo no le llega nada.
+// «Que rebota»: un correo nuestro rebotó, y a esa dirección no le llega nada.
 const CORREO: Opcion[] = [...CON_SIN('Con correo', 'Sin correo'), { valor: 'rebota', etiqueta: 'Correo que rebota' }]
 const CUENTA = CON_SIN('Con cuenta bancaria', 'Sin cuenta bancaria')
 const EDADES: Opcion[] = [{ valor: 'menores', etiqueta: 'Menores de 18' }, { valor: 'adultos', etiqueta: 'Adultos' }]

@@ -15,7 +15,7 @@ import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_HERMANO } from '../src/utils/cookies.js';
 import { avisosDePrueba, fijarEnvioDePrueba } from '../src/services/push.js';
 import { ComunicadosService, envioTerminado } from '../src/services/comunicados.service.js';
-import { colaTerminada, despertarCola, enviadosHoy, resumenDeEnvios } from '../src/services/correos/cola.js';
+import { colaTerminada, despertarCola, enviadosEnLaUltimaHora, enviadosHoy, resumenDeEnvios } from '../src/services/correos/cola.js';
 import { ponerTransporte } from '../src/services/correos/envio.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { encenderModulos } from './fixtures/modulos.js';
@@ -49,6 +49,7 @@ before(async () => {
 afterEach(() => {
   fijarEnvioDePrueba();
   delete process.env.CORREOS_MASIVOS_POR_DIA;
+  delete process.env.CORREOS_MASIVOS_POR_HORA;
 });
 
 after(async () => {
@@ -188,6 +189,29 @@ test('si el móvil ya no existe, se borra y el aviso sale por correo', async (t)
   assert.equal(envio.porMovil, false);
   assert.equal(await db.movilDeAvisos.count({ where: { userId: h.id } }), 0);
   assert.ok(enviados.includes(h.email));
+});
+
+// OVH corta a quien pasa de unos 200 a la hora: un boletín a todos se reparte
+// en varias horas, y el resto del día no se para.
+test('con el tope de la hora alcanzado, lo que falta espera sin darlo por mañana', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const lote = `prueba:${crypto.randomUUID()}`.slice(0, 60);
+  const viejo = new Date(Date.UTC(2000, 0, 1));
+  await db.correoEnCola.createMany({
+    data: [1, 2, 3].map((n) => ({ lote, titulo: 'Prueba de la hora', para: `hora-${n}-${crypto.randomUUID()}@ejemplo.test`, asunto: 'Hora', html: '<p>Hora</p>', uso: 'prueba', creadoEn: viejo })),
+  });
+  try {
+    await colaTerminada();
+    process.env.CORREOS_MASIVOS_POR_HORA = String((await enviadosEnLaUltimaHora()) + 2);
+    await despertarCola();
+    await colaTerminada();
+
+    const filas = await db.correoEnCola.findMany({ where: { lote }, orderBy: { id: 'asc' } });
+    assert.deepEqual(filas.map((f) => f.estado), ['ENVIADO', 'ENVIADO', 'PENDIENTE']);
+    assert.equal((await resumenDeEnvios()).envios.find((e) => e.clave === lote)?.estado, 'ENVIANDO');
+  } finally {
+    await db.correoEnCola.deleteMany({ where: { lote } });
+  }
 });
 
 test('con el tope del día alcanzado, lo que falta espera y la lista lo dice', async (t) => {

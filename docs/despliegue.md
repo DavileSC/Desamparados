@@ -302,10 +302,11 @@ Opcionales:
 | Variable | Efecto |
 |---|---|
 | `EMAIL_FROM_NAME` | Nombre del remitente. Por defecto, el nombre corto de la instalación y «Secretaría» («Desamparados · Secretaría») |
-| `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT` | Un servicio de envío en vez de Gmail (Brevo: `smtp-relay.brevo.com`, `587`). `EMAIL_USER` y `EMAIL_PASS` pasan a ser el usuario y la clave SMTP del servicio. Gmail deja unos 500 correos al día y los saca con la dirección de la cuenta de Gmail |
-| `EMAIL_FROM` | La dirección con la que salen los correos (`noreply@…`). Obligatoria con `EMAIL_SMTP_HOST`; por defecto, `EMAIL_USER`. Tiene que estar dada de alta como remitente en el servicio, con el dominio autenticado (DKIM) |
-| `CORREOS_MASIVOS_POR_DIA` | Cuántos correos de los envíos a muchos (comunicados, aviso de apertura de papeletas) salen al día; lo que no cabe sale al siguiente, solo. Por defecto `250`, por debajo de los 300 de Brevo gratis: los correos sueltos no cuentan y necesitan margen. Con Gmail se puede subir a unos `450` |
-| `CORREO_AVISOS_SECRETO` | La clave de los avisos de rebote de Brevo (ver «Rebotes de correo»). Sin ella, `/api/correo/avisos` responde 404 y los rebotes no se apuntan. Al menos 24 caracteres: `openssl rand -hex 24` |
+| `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT` | El buzón del dominio en vez de Gmail (OVH: `ssl0.ovh.net`, `465`). `EMAIL_USER` es entonces la dirección entera del buzón (`noreply@…`) y `EMAIL_PASS` su contraseña. Gmail saca los correos con la dirección de la cuenta de Gmail |
+| `EMAIL_FROM` | La dirección con la que salen los correos, solo si no es `EMAIL_USER` (un servicio de envío con usuario de máquina). OVH solo deja enviar con la dirección del buzón |
+| `EMAIL_IMAP_HOST`, `EMAIL_IMAP_PORT` | Leer los rebotes del buzón que envía (OVH: `ssl0.ovh.net`, `993`). Ver «Rebotes de correo». Sin ellas, los rebotes llegan al buzón y no se apuntan |
+| `CORREOS_MASIVOS_POR_HORA` | Cuántos correos de los envíos a muchos (comunicados, aviso de apertura de papeletas) salen por hora. Por defecto `150`: OVH corta en unos 200 por cuenta y los correos sueltos (altas, contraseñas) salen por la misma y necesitan margen |
+| `CORREOS_MASIVOS_POR_DIA` | Los mismos, al día; lo que no cabe sale al siguiente, solo. Por defecto `1000`: OVH no publica un tope diario, es una red por si algo se desmanda |
 | `CONTACT_EMAIL_TO` | Destinatario del formulario de contacto y del aviso de solicitudes, y «Responder a» de todos los correos. Por defecto, `EMAIL_FROM` o `EMAIL_USER` |
 | `CONTACT_EMAIL_USER`, `CONTACT_EMAIL_PASS` | Cuenta aparte para el formulario de contacto |
 | `TOTP_ENC_KEY_ANTERIOR` | Solo durante una rotación de `TOTP_ENC_KEY`. Ver «Rotar `TOTP_ENC_KEY`» |
@@ -352,41 +353,48 @@ Tres cosas que no se ven:
   Bizum no se puede terminar con el terminal público de Redsys (error SIS0475
   al autenticarse): hace falta el de pruebas del banco con Bizum activado.
 
-### Rebotes de correo (Brevo)
+### Correo (OVH) y rebotes
 
-Brevo acepta el correo y es el servidor del destinatario quien lo devuelve
-minutos después (buzón que no existe, dirección mal escrita, queja de spam).
-Para enterarse, Brevo avisa a la API y la dirección queda marcada: la ficha
-del censo lo dice, «Más filtros → Correo → Que rebota» las saca todas, la cola
-no gasta cupo en ellas y el boletín cuenta ese envío como «rebotó». Una queja
-de spam también da de baja del boletín.
+El correo sale por el buzón `noreply@` del dominio, contratado en OVH (Zimbra
+Starter). `secretaria@` es el otro buzón: es el «Responder a» de todos los
+correos (`CONTACT_EMAIL_TO`) y se lee en el webmail de OVH.
 
-1. La clave, `CORREO_AVISOS_SECRETO` en el `.env`. Una instalación nueva ya
-   la trae (la genera `instalar.sh`). En una de antes, generarla con
-   `openssl rand -hex 24`, ponerla en su propia línea y **recrear** la API:
-   `docker compose … up -d api`. Un `restart` no basta: el contenedor solo lee
-   el `.env` al crearse.
-2. En Brevo: Transactional → Settings → Webhook → «Add a new webhook».
-   En la pantalla nueva de Brevo es el menú de la cuenta → Settings →
-   Webhooks → «Create outbound webhook» (octubre de 2026).
-   - URL: `https://DOMINIO/api/correo/avisos`.
-   - Authentication method: **Bearer token**, con la clave. (O Basic, con
-     cualquier usuario y la clave de contraseña.)
-   - Event category: **Transactional email**. Encendidos solo *Hard Bounced*,
-     *Complaint*, *Unsubscribed*, *Blocked* e *Invalid*. *Soft Bounced* no:
-     Brevo lo reintenta y, si no llega, acaba en *Hard Bounced*.
-   - Sin «batched» (por lotes): el cuerpo pasaría del tope de 100 KB de la API.
-3. Comprobarlo: `curl -s -X POST https://DOMINIO/api/correo/avisos` responde
-   `{"message":"Falta la clave del aviso."}` (401). Con «Endpoint no
-   encontrado» (404), la API no ve la clave: falta recrearla.
-4. Probarlo de verdad: un boletín a una sola ficha de prueba con un correo de
-   Gmail que no exista. A los pocos minutos la ficha avisa de que el buzón no
-   existe y el boletín cuenta «1 correo rebotó». Probado así en pruebas el
-   16-10-2026.
+```
+EMAIL_USER=noreply@DOMINIO
+EMAIL_PASS=<la contraseña del buzón>
+EMAIL_SMTP_HOST=ssl0.ovh.net
+EMAIL_SMTP_PORT=465
+EMAIL_IMAP_HOST=ssl0.ovh.net
+EMAIL_IMAP_PORT=993
+CONTACT_EMAIL_TO=secretaria@DOMINIO
+```
 
-En la web de pruebas, la contraseña de nginx tapa la ruta: el bloque
-`location = /api/correo/avisos` de `docker/servidor/nginx-pruebas.conf` la deja
-pasar, como el aviso del banco.
+Después, **recrear** la API (`docker compose … up -d api`): un `restart` no
+basta, el contenedor solo lee el `.env` al crearse.
+
+**Rebotes.** OVH acepta el correo y es el servidor del destinatario quien lo
+devuelve minutos después (buzón que no existe, dirección mal escrita,
+dominio que nos bloquea). El aviso llega como un correo a `noreply@`. Cada
+cuarto de hora la API abre ese buzón por IMAP: lo no leído que sea un
+informe de rebote marca la dirección (la ficha del censo lo dice, «Más
+filtros → Correo → Que rebota» las saca todas, la cola no gasta cupo en ellas
+y el boletín cuenta ese envío como «rebotó») y se aparta a la carpeta
+«Rebotes» del buzón. Lo demás se marca como leído y se queda en la bandeja.
+
+- **Solo una instalación lee cada buzón.** Si `pruebas` y la web real leen
+  el mismo `noreply@`, cada rebote lo apunta la que llegue antes, en su base.
+  Hasta el día de la presentación lo lee `pruebas`; ese día, quitar
+  `EMAIL_IMAP_HOST` de su `.env` y ponerlo en el de la web real.
+- **Probarlo:** un boletín a una sola ficha de prueba con un correo de Gmail
+  que no exista. En menos de media hora la ficha avisa de que el buzón no
+  existe, el boletín cuenta «1 correo rebotó» y el informe está en la carpeta
+  «Rebotes» del webmail. Si no, `docker compose logs api | grep Rebotes`: un
+  fallo al entrar sale ahí con su código.
+
+**DNS** (el dominio está en IONOS, el correo en OVH): los MX de OVH
+(`mx1.mail.ovh.net` 1, `mx2.mail.ovh.net` 5, `mx3.mail.ovh.net` 100), el SPF
+`v=spf1 include:mx.ovh.com ~all` y los registros DKIM que da el panel de OVH.
+Paso a paso, en `docs/servidor.md`, «Correo del dominio».
 
 ### Instagram (publicar las noticias)
 
@@ -1732,8 +1740,9 @@ docker compose -f compose.yaml -f compose.local.yaml down -v
       la IP del visitante y no la de la puerta de enlace de Docker
       (`172.x.0.1`). Si fuera la de Docker, los limitadores de intentos
       tratarían a todos los visitantes como uno solo.
-- [ ] Si el correo sale por Brevo: dar de alta el webhook de los rebotes y
-      probarlo («Rebotes de correo»). Sin él, un correo que rebota sigue
-      saliendo como enviado y la ficha no avisa.
+- [ ] El correo por OVH con `EMAIL_IMAP_HOST` puesto **solo en esta
+      instalación** (quitarlo de `pruebas`) y probado un rebote («Correo (OVH)
+      y rebotes»). Sin él, un correo que rebota sigue saliendo como enviado y
+      la ficha no avisa.
 - [ ] Rellenar los datos legales en `desamparados-web/src/config/site.ts`: hasta
       entonces, el aviso legal muestra «pendiente de confirmar».

@@ -102,28 +102,37 @@ export function validarEntorno(entorno: Entorno = process.env): ResultadoEntorno
   if (definida(entorno.COMUNICADOS_PAUSA_MS) && !esEnteroEnRango(entorno.COMUNICADOS_PAUSA_MS, 0, 60_000)) {
     errores.push(`COMUNICADOS_PAUSA_MS="${entorno.COMUNICADOS_PAUSA_MS}" debe ser un número entero de milisegundos entre 0 y 60000 (por defecto, 1500).`);
   }
-  // Mal escrito, la cola caería en 250 sin decir nada: con Gmail (500 al día)
-  // se quedaría corta, y con un tope menor que el del servicio se pasaría.
+  // Mal escrito, la cola caería en el de por defecto sin decir nada, y con un
+  // tope menor que el del servidor de correo se pasaría.
   if (definida(entorno.CORREOS_MASIVOS_POR_DIA) && !esEnteroEnRango(entorno.CORREOS_MASIVOS_POR_DIA, 1, 100_000)) {
-    errores.push(`CORREOS_MASIVOS_POR_DIA="${entorno.CORREOS_MASIVOS_POR_DIA}" debe ser un número entero de correos al día (por defecto, 250).`);
+    errores.push(`CORREOS_MASIVOS_POR_DIA="${entorno.CORREOS_MASIVOS_POR_DIA}" debe ser un número entero de correos al día (por defecto, 1000).`);
   }
-  // Un servicio de envío (Brevo) en vez de Gmail. Su usuario de entrada no es
-  // una dirección de nadie: sin EMAIL_FROM, los correos saldrían con ella de
-  // remitente y el servicio los rechazaría todos, sin que nada fallara al arrancar.
-  if (definida(entorno.EMAIL_SMTP_HOST) && !definida(entorno.EMAIL_FROM)) {
-    errores.push('Con EMAIL_SMTP_HOST hace falta EMAIL_FROM: la dirección con la que salen los correos (p. ej. noreply@tudominio), dada de alta como remitente en el servicio.');
+  // OVH corta a quien pasa de unos 200 correos a la hora por cuenta, y los
+  // sueltos (altas, contraseñas) salen por la misma: la cola deja margen.
+  if (definida(entorno.CORREOS_MASIVOS_POR_HORA) && !esEnteroEnRango(entorno.CORREOS_MASIVOS_POR_HORA, 1, 100_000)) {
+    errores.push(`CORREOS_MASIVOS_POR_HORA="${entorno.CORREOS_MASIVOS_POR_HORA}" debe ser un número entero de correos a la hora (por defecto, 150).`);
   }
-  if (definida(entorno.EMAIL_SMTP_PORT) && !esEnteroEnRango(entorno.EMAIL_SMTP_PORT, 1, 65535)) {
-    errores.push(`EMAIL_SMTP_PORT="${entorno.EMAIL_SMTP_PORT}" no es un puerto válido (normalmente 587).`);
+  // Con un servidor propio (OVH), el usuario es ya la dirección del buzón y
+  // sirve de remitente. Si no lo es (un servicio de envío con usuario de
+  // máquina), sin EMAIL_FROM los correos saldrían con él de remitente y los
+  // rechazaría todos, sin que nada fallara al arrancar.
+  const esDireccion = (valor: string) => /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(valor.trim());
+  if (definida(entorno.EMAIL_SMTP_HOST) && !definida(entorno.EMAIL_FROM) && !esDireccion(entorno.EMAIL_USER ?? '')) {
+    errores.push('Con EMAIL_SMTP_HOST, EMAIL_USER no es una dirección de correo: hace falta EMAIL_FROM, la dirección con la que salen los correos (p. ej. noreply@tudominio).');
   }
-  if (definida(entorno.EMAIL_FROM) && !/^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(entorno.EMAIL_FROM.trim())) {
+  for (const variable of ['EMAIL_SMTP_PORT', 'EMAIL_IMAP_PORT'] as const) {
+    const puerto = entorno[variable];
+    if (definida(puerto) && !esEnteroEnRango(puerto, 1, 65535)) {
+      errores.push(`${variable}="${puerto}" no es un puerto válido (en OVH, ${variable === 'EMAIL_SMTP_PORT' ? '465' : '993'}).`);
+    }
+  }
+  if (definida(entorno.EMAIL_FROM) && !esDireccion(entorno.EMAIL_FROM)) {
     errores.push(`EMAIL_FROM="${entorno.EMAIL_FROM}" debe ser solo una dirección de correo (el nombre va en EMAIL_FROM_NAME).`);
   }
-  // La clave de los avisos de rebote de Brevo: va en la URL del webhook o en
-  // su token. Corta, se adivina; con «:» o «@», rompe la URL con usuario y
-  // contraseña (https://avisos:CLAVE@…) que es como se da de alta en Brevo.
-  if (definida(entorno.CORREO_AVISOS_SECRETO) && !/^[A-Za-z0-9_-]{24,200}$/.test(entorno.CORREO_AVISOS_SECRETO.trim())) {
-    errores.push('CORREO_AVISOS_SECRETO debe tener al menos 24 caracteres, solo letras, cifras, «-» y «_» (genera una con: openssl rand -hex 24).');
+  // Los rebotes se leen del buzón con la misma cuenta que envía: sin servidor
+  // SMTP propio, EMAIL_USER es una cuenta de Gmail y no es ese buzón.
+  if (definida(entorno.EMAIL_IMAP_HOST) && !definida(entorno.EMAIL_SMTP_HOST)) {
+    errores.push('EMAIL_IMAP_HOST va con EMAIL_SMTP_HOST: los rebotes se leen del buzón del servidor por el que salen los correos.');
   }
   if (definida(entorno.AUDIT_RETENTION_DAYS) && !esEnteroEnRango(entorno.AUDIT_RETENTION_DAYS, 30, 100000)) {
     errores.push(`AUDIT_RETENTION_DAYS="${entorno.AUDIT_RETENTION_DAYS}" debe ser un número entero de días, 30 o más.`);

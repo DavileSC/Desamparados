@@ -1,57 +1,52 @@
-// Los avisos de Brevo, la clave que los protege y las cabeceras de la baja en
-// un clic: todo puro, sin base de datos.
+// Los rebotes que llegan al buzón, las cabeceras de la baja en un clic y el
+// filtro del censo: todo puro, sin base de datos.
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { claveDelAvisoValida, leerAvisos } from '../src/domain/avisos-de-envio.js';
+import { leerRebote } from '../src/domain/avisos-de-envio.js';
 import { cabecerasDeBaja, emailDeToken } from '../src/domain/comunicados.js';
 import { filtrosAvanzados } from '../src/domain/filtros-censo.js';
+import { informeDeRebote } from './fixtures/rebotes.js';
 
-test('de los avisos de Brevo solo cuentan los que dicen que el correo no llega o que no lo quieren', () => {
-  const avisos = leerAvisos([
-    { event: 'hard_bounce', email: ' Ana@Ejemplo.TEST ', reason: '550 5.1.1 User unknown' },
-    { event: 'invalid_email', email: 'mal@ejemplo.test' },
-    { event: 'blocked', email: 'bloqueada@ejemplo.test' },
-    { event: 'spam', email: 'queja@ejemplo.test' },
-    { event: 'unsubscribed', email: 'baja@ejemplo.test' },
-    // Lo que no se usa: entregas, aperturas, rebotes blandos (Brevo reintenta).
-    { event: 'delivered', email: 'ok@ejemplo.test' },
-    { event: 'soft_bounce', email: 'lleno@ejemplo.test' },
-    { event: 'opened', email: 'ok@ejemplo.test' },
-    // Lo que no se entiende, fuera sin error.
-    { event: 'hard_bounce', email: 'sin-arroba' },
-    { event: 'hard_bounce' },
-    'texto',
-    null,
+test('un informe de rebote da la dirección, el motivo por el código y lo que contestó el servidor', () => {
+  assert.deepEqual(leerRebote(informeDeRebote([{ email: 'Ana@Ejemplo.TEST', estado: '5.1.1', diagnostico: 'smtp; 550 5.1.1 <ana@ejemplo.test>: User unknown' }])), [
+    { email: 'ana@ejemplo.test', motivo: 'INVALIDO', bajaDelBoletin: false, detalle: '550 5.1.1 <ana@ejemplo.test>: User unknown' },
   ]);
-  assert.deepEqual(avisos, [
-    { email: 'ana@ejemplo.test', motivo: 'REBOTE', bajaDelBoletin: false, detalle: '550 5.1.1 User unknown' },
-    { email: 'mal@ejemplo.test', motivo: 'INVALIDO', bajaDelBoletin: false, detalle: null },
-    { email: 'bloqueada@ejemplo.test', motivo: 'BLOQUEADO', bajaDelBoletin: false, detalle: null },
-    { email: 'queja@ejemplo.test', motivo: 'SPAM', bajaDelBoletin: true, detalle: null },
-    { email: 'baja@ejemplo.test', motivo: null, bajaDelBoletin: true, detalle: null },
-  ]);
-  // Un solo evento llega como objeto, no como lista.
-  assert.equal(leerAvisos({ event: 'hard_bounce', email: 'uno@ejemplo.test' }).length, 1);
-  assert.deepEqual(leerAvisos(undefined), []);
+  const motivo = (estado: string) => leerRebote(informeDeRebote([{ email: 'x@ejemplo.test', estado }]))[0]?.motivo;
+  assert.equal(motivo('5.1.2'), 'INVALIDO');
+  assert.equal(motivo('5.7.1'), 'BLOQUEADO');
+  assert.equal(motivo('5.2.2'), 'REBOTE');
+  // Sin diagnóstico, el código.
+  assert.equal(leerRebote(informeDeRebote([{ email: 'x@ejemplo.test', estado: '5.2.2' }]))[0]?.detalle, '5.2.2');
 });
 
-test('la clave del aviso vale como token o como contraseña, y nada más', () => {
-  const clave = 'una-clave-larga-de-prueba-0123456789';
-  const basic = (usuario: string, contrasena: string) => `Basic ${Buffer.from(`${usuario}:${contrasena}`).toString('base64')}`;
-  assert.equal(claveDelAvisoValida(`Bearer ${clave}`, clave), true);
-  assert.equal(claveDelAvisoValida(`bearer ${clave}`, clave), true);
-  assert.equal(claveDelAvisoValida(basic('avisos', clave), clave), true);
-  assert.equal(claveDelAvisoValida(basic('cualquiera', clave), clave), true);
+test('solo cuenta lo que falló del todo: un retraso o un 4.x no marcan a nadie', () => {
+  const avisos = leerRebote(informeDeRebote([
+    { email: 'falla@ejemplo.test', estado: '5.1.1' },
+    { email: 'espera@ejemplo.test', estado: '4.4.1', accion: 'delayed' },
+    { email: 'temporal@ejemplo.test', estado: '4.2.2', accion: 'failed' },
+    { email: 'llego@ejemplo.test', estado: '2.0.0', accion: 'delivered' },
+  ]));
+  assert.deepEqual(avisos.map((a) => a.email), ['falla@ejemplo.test']);
+});
 
-  assert.equal(claveDelAvisoValida(undefined, clave), false);
-  assert.equal(claveDelAvisoValida('', clave), false);
-  assert.equal(claveDelAvisoValida(`Bearer ${clave}x`, clave), false);
-  assert.equal(claveDelAvisoValida(basic(clave, 'otra'), clave), false);
-  assert.equal(claveDelAvisoValida(`Basic ${Buffer.from(clave).toString('base64')}`, clave), false);
-  assert.equal(claveDelAvisoValida(clave, clave), false);
-  // Sin clave configurada, ni siquiera una cabecera vacía entra.
-  assert.equal(claveDelAvisoValida('Bearer ', ''), false);
+test('un correo que no es un informe de entrega no da nada, aunque hable de rebotes', () => {
+  const normal = [
+    'From: Ana <ana@ejemplo.test>', 'Subject: Undelivered Mail', 'Content-Type: text/plain', '',
+    'Action: failed', 'Final-Recipient: rfc822; luis@ejemplo.test', 'Status: 5.1.1', '',
+  ].join('\r\n');
+  assert.deepEqual(leerRebote(normal), []);
+  const vacaciones = [
+    'From: Luis <luis@ejemplo.test>', 'Auto-Submitted: auto-replied', 'Subject: Fuera de la oficina', '', 'Vuelvo el lunes.', '',
+  ].join('\r\n');
+  assert.deepEqual(leerRebote(vacaciones), []);
+  assert.deepEqual(leerRebote(''), []);
+});
+
+test('las líneas partidas del informe se unen, y una dirección mal formada se descarta', () => {
+  const partida = informeDeRebote([{ email: 'eva@ejemplo.test', estado: '5.1.1', diagnostico: 'smtp; 550 5.1.1 The email account that you tried\r\n    to reach does not exist' }]);
+  assert.equal(leerRebote(partida)[0]?.detalle, '550 5.1.1 The email account that you tried to reach does not exist');
+  assert.deepEqual(leerRebote(informeDeRebote([{ email: 'sin-arroba', estado: '5.1.1' }])), []);
 });
 
 test('la baja en un clic apunta a la API con el enlace firmado de esa dirección', () => {

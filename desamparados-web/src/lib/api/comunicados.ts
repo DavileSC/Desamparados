@@ -34,7 +34,7 @@ interface Comunicado {
 
 export interface ComunicadoEnLista extends Comunicado {
   /** `alMovil`: los que recibieron el aviso en el móvil en vez del correo. */
-  /** `rebotados`: salieron, pero el servicio de envío avisó después de que no llegaron. */
+  /** `rebotados`: salieron, pero rebotaron después (el aviso llega al buzón que envía). */
   envios: { enviados: number; fallidos: number; rebotados: number; pendientes: number; alMovil: number }
 }
 
