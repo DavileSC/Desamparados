@@ -16,6 +16,7 @@ import EnCarga from '../../../components/esqueleto/EnCarga'
 import { Lineas } from '../../../components/esqueleto/Hueso'
 import { enlaceConFlecha } from '../../../components/estiloDeBoton'
 import { propsDeFoto } from '../../../lib/fotoSubida'
+import { posicionDe } from '../../../lib/encuadre'
 
 // La cabecera y el cuerpo de la ficha: los comparten la ficha y su esqueleto.
 const cabeceraSx = { position: 'relative', pt: { xs: 10, md: 14 }, [desktopMq]: { pt: bajoLaBarra(40) }, pb: { xs: 4, md: 5 }, mb: { xs: 3, md: 4 }, backgroundColor: 'background.paper', overflow: 'hidden' } as const
@@ -69,7 +70,7 @@ export default function NoticiaDetallePage() {
               alt=""
               aria-hidden="true"
               decoding="async"
-              sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.35 }}
+              sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: posicionDe(noticia.encuadre), opacity: 0.35 }}
             />
             <Box
               sx={{

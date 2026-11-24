@@ -75,7 +75,8 @@ describe('destacar contra la base de datos', () => {
     // Fechas lejanas: así estas tres son las que ocupan la portada entera y lo
     // que haya en la base de desarrollo no se mezcla con lo que se comprueba.
     const noticia = (titulo: string, fecha: string, visible = true) => db.noticia.create({
-      data: { titulo: `${marca} ${titulo}`, slug: `${marca.toLowerCase()}-${titulo.toLowerCase()}`, contenido: '<p>Texto</p>', fecha: new Date(fecha), visible },
+      // Con foto: sin ella no se puede volver a publicar (SIN_FOTO_NO_SE_PUBLICA).
+      data: { titulo: `${marca} ${titulo}`, slug: `${marca.toLowerCase()}-${titulo.toLowerCase()}`, contenido: '<p>Texto</p>', imagenUrl: '/storage/public/a.jpg', fecha: new Date(fecha), visible },
     });
     noticias.push(
       (await noticia('Nueva', '2099-03-03')).id,

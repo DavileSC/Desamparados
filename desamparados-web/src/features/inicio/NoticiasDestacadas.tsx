@@ -19,6 +19,7 @@ import { GOLD, aPantalla, contenedorDePortada, enlaceBloque, porElHueco } from '
 import { CORMORANT } from '../actualidad/agenda/letraAlmanaque'
 import { useModulos } from '../../hooks/useModulos'
 import type { Noticia } from '../../types'
+import { posicionDe } from '../../lib/encuadre'
 
 // Las que manda el servidor (NOTICIAS_EN_PORTADA): una grande y dos pequeñas.
 const MAX_NOTICIAS = 3
@@ -205,7 +206,7 @@ function NoticiaDePortada({ noticia, indice, grande }: { noticia: Noticia; indic
             loading={grande ? 'eager' : 'lazy'}
             decoding="async"
             className="noticia-foto"
-            sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+            sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: posicionDe(noticia.encuadre) }}
           />
         ) : (
           // El escudo, por encima del texto de abajo para que no lo pise.

@@ -16,6 +16,12 @@ test('una noticia publicada en el CMS sale en la web', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Título', exact: true }).fill(noticia)
   await page.getByRole('textbox', { name: 'Extracto', exact: true }).fill('Extracto de la noticia que publica la prueba de punta a punta.')
   await page.getByRole('textbox', { name: 'Contenido de la noticia' }).fill('Texto de la noticia de prueba.')
+  // Sin foto no se publica. Una de verdad, que la API pueda pasar a WebP: un
+  // trozo de la propia página, como la del alta.
+  const foto = await page.screenshot({ clip: { x: 0, y: 0, width: 600, height: 400 } })
+  await page.getByLabel('Subir foto').setInputFiles({ name: 'noticia.png', mimeType: 'image/png', buffer: foto })
+  // Con la foto ya subida sale su encuadre.
+  await expect(page.getByRole('slider', { name: 'Horizontal' })).toBeVisible()
   await page.getByRole('button', { name: 'Publicar' }).click()
   // Publicar se confirma: desde ese momento la ve cualquiera.
   const confirmar = page.getByRole('dialog', { name: '¿Publicar la noticia?' })

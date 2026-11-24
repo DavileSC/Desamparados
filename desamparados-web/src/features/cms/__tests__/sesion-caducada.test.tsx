@@ -20,7 +20,8 @@ import { llamarApi } from '../../../lib/api/cliente'
 const admin: AuthUser = { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], origen: 'cms', twoFactorEnabled: true }
 const noticia = {
   id: 7, slug: 'apertura', titulo: 'Apertura del curso', extracto: 'Abre el curso.', contenido: '<p>Texto</p>',
-  imagenUrl: null, visible: false, fecha: '2026-08-26T00:00:00.000Z',
+  // Con foto: sin ella el borrador no se puede publicar.
+  imagenUrl: '/storage/public/apertura.webp', visible: false, fecha: '2026-08-26T00:00:00.000Z',
 }
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 

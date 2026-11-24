@@ -22,6 +22,8 @@ import { valorDe } from './presentacion'
 import { BOTON, enlaceConFlecha } from '../estiloDeBoton'
 import AvisoSuave from '../AvisoSuave'
 import { ArchivoDeNoticiasEsqueleto, PublicacionesEsqueleto } from './esqueletosDeListado'
+import { FilaDeNoticia, NoticiaPrincipal } from './ArchivoDeNoticias'
+import { columnasDeFilas } from './archivoDeNoticiasEstilos'
 import { rejillaDeNoticias } from './rejillaDeNoticias'
 
 /**
@@ -302,32 +304,26 @@ function Agenda({ bloque }: PropsListado) {
 const pedirNoticias = (pagina: Pagina) =>
   archivoDeNoticias(pagina).then(({ noticias, meta }) => ({ data: noticias, meta }))
 
-// El tono de las placas sin foto va por el índice, módulo 3, y la rejilla tiene
-// tres columnas: con el índice tal cual, cada columna repetía color fila tras
-// fila. Sumando la fila, los tonos corren en diagonal y no se tocan ni en
-// horizontal ni en vertical.
-const indiceEnDiagonal = (posicion: number) => posicion + Math.floor(posicion / 3)
-// La placa de la destacada queda encima de las dos primeras columnas: la
-// «piedra» (2) no coincide con ninguna de las dos tarjetas de debajo. La
-// destacada es siempre la primera: con «Cargar más» no hay otras páginas.
-const INDICE_DESTACADA = 2
-
-/** La primera carga: la destacada y tres filas de tres. */
-const PRIMERA_CARGA = 10
-/** Cada «Cargar más»: tres filas más. */
-const LOTE = 9
+/**
+ * La primera carga: la principal y cinco filas de dos. Cada «Cargar más»,
+ * cinco filas más: con 10 y de 9 en 9, como antes, la última fila de las dos
+ * columnas se quedaba con una noticia sola.
+ */
+const PRIMERA_CARGA = 11
+const LOTE = 10
 
 /**
- * El archivo de noticias: la última destacada a lo ancho y el resto en
- * tarjetas, con «Cargar más» al pie en vez de paginador. Las nuevas se añaden
- * debajo, sin mover lo que ya se estaba viendo.
+ * El archivo de noticias: la más reciente en grande y el resto en dos columnas
+ * (ArchivoDeNoticias), con «Cargar más» al pie en vez de paginador. Las nuevas
+ * se añaden debajo, sin mover lo que ya se estaba viendo.
  */
 function ArchivoDeNoticias({ titulo, bloque }: PropsListado) {
   const { items, loading, cargandoMas, hayMas, error, cargarMas } =
     useCargarMas(CLAVE_ARCHIVO_DE_NOTICIAS, pedirNoticias, 'No se han podido cargar las noticias.', { primera: PRIMERA_CARGA, lote: LOTE })
-  // Cuántas hay a la vista viaja con cada tarjeta: al volver desde la ficha de
-  // una noticia la dirección pide las mismas, y la caché ya las tiene.
+  // Cuántas hay a la vista viaja con cada noticia: al volver desde su ficha la
+  // dirección pide las mismas, y la caché ya las tiene.
   const { search: consultaArchivo } = useLocation()
+  const [principal, ...resto] = items
 
   return (
     <>
@@ -338,20 +334,22 @@ function ArchivoDeNoticias({ titulo, bloque }: PropsListado) {
           estado={loading || cargandoMas ? 'cargando' : 'error'}
           que="las noticias"
           alReintentar={cargarMas}
-          esqueleto={<ArchivoDeNoticiasEsqueleto columnas={columnasDe(bloque, 3)} />}
+          esqueleto={<ArchivoDeNoticiasEsqueleto />}
         />
       )}
       {!loading && !error && items.length === 0 && <AvisoSuave>No hay noticias publicadas.</AvisoSuave>}
-      {items.length > 0 && (
-        <Box component="ul" aria-label={titulo || 'Noticias'} sx={rejillaDeNoticias(columnasDe(bloque, 3))}>
-          {items.map((noticia, i) => {
-            const destacada = i === 0
-            return (
-              <Box component="li" key={noticia.id} sx={{ display: 'flex', gridColumn: destacada ? '1 / -1' : undefined }}>
-                <TarjetaNoticia noticia={noticia} indice={destacada ? INDICE_DESTACADA : indiceEnDiagonal(i - 1)} destacada={destacada} volver={consultaArchivo} />
+      {principal && (
+        <Box component="ul" aria-label={titulo || 'Noticias'} sx={{ listStyle: 'none', m: 0, p: 0 }}>
+          <li><NoticiaPrincipal noticia={principal} volver={consultaArchivo} /></li>
+          {resto.length > 0 && (
+            <li>
+              <Box component="ul" aria-label="Más noticias" sx={columnasDeFilas}>
+                {resto.map((noticia, i) => (
+                  <li key={noticia.id}><FilaDeNoticia noticia={noticia} indice={i} volver={consultaArchivo} /></li>
+                ))}
               </Box>
-            )
-          })}
+            </li>
+          )}
         </Box>
       )}
       {items.length > 0 && (

@@ -859,9 +859,16 @@ model Noticia {
   id        Int      @id @default(autoincrement())
   slug      String   @unique
   titulo    String
-  extracto  String?
+  /// Hasta 300 (24-11-2026): con 191, lo que el CMS dejaba escribir de más
+  /// fallaba al guardar. El tope de verdad lo pone el esquema de la API.
+  extracto  String?  @db.VarChar(300)
   contenido String   @db.Text
   imagenUrl String?
+  /// El punto de la foto que se queda a la vista al recortarla, de 0 a 100 en
+  /// cada eje: la principal del archivo es muy apaisada y la miniatura,
+  /// cuadrada. Sin él, el centro.
+  encuadreX Int?
+  encuadreY Int?
   fecha     DateTime @default(now())
   visible   Boolean  @default(true)
   /// La destacada de la portada: encabeza la rejilla y las otras dos plazas

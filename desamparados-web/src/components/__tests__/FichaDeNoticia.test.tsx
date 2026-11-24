@@ -11,6 +11,7 @@ const NOTICIA: Noticia = {
   categoria: 'Cultos',
   fecha: '2026-03-12T00:00:00.000Z',
   slug: 'triduo-titular',
+  encuadre: { x: 50, y: 50 },
   imagen: 'https://www.desamparadosmalaga.com/storage/public/fotos/triduo.webp',
 }
 

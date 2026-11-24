@@ -32,5 +32,6 @@
   "importesPorDonativo": 6,
   "destinosPorDonativo": 6,
   "donativoMinimoEuros": 1,
-  "donativoMaximoEuros": 5000
+  "donativoMaximoEuros": 5000,
+  "extractoNoticia": 300
 }

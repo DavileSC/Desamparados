@@ -64,6 +64,19 @@ function imagenAGuardar(imagenUrl: string | null | undefined): string | null | u
   return imagenUrl === '' ? null : imagenUrl;
 }
 
+/**
+ * Desde el 24-11-2026 el archivo de noticias es todo foto (la principal a
+ * sangre y una miniatura en cada fila), así que no se publica ninguna sin ella.
+ * Solo frena publicar o quitar la foto a una publicada: las antiguas sin foto
+ * se pueden seguir corrigiendo (la web les pone el escudo de reserva) y los
+ * borradores, como el del plazo de papeletas, nacen sin ella.
+ */
+export const SIN_FOTO_NO_SE_PUBLICA = 'Pon una foto antes de publicar la noticia: en la web cada noticia va con la suya.';
+
+function exigirFotoAlPublicar(publicando: boolean, imagen: string | null | undefined) {
+  if (publicando && !imagen) throw new HttpError(SIN_FOTO_NO_SE_PUBLICA, 400, { campo: 'imagenUrl' });
+}
+
 export class NoticiaService {
 
   // =================================================================
@@ -213,6 +226,9 @@ export class NoticiaService {
       finalSlug = slugDeNoticia(data.titulo, fechaNoticia.getFullYear());
     }
 
+    const visible = data.visible ?? true;
+    exigirFotoAlPublicar(visible, imagenAGuardar(data.imagenUrl));
+
     try {
       return await db.noticia.create({
         data: {
@@ -221,7 +237,9 @@ export class NoticiaService {
           extracto: data.extracto !== undefined ? extractoPlano(data.extracto) : undefined,
           contenido: sanearContenidoCms(data.contenido),
           imagenUrl: imagenAGuardar(data.imagenUrl),
-          visible: data.visible ?? true, // Default true
+          encuadreX: data.encuadreX,
+          encuadreY: data.encuadreY,
+          visible,
           fecha: fechaNoticia
         }
       });
@@ -238,6 +256,13 @@ export class NoticiaService {
     // Lo de antes hace falta para saber qué ficheros deja de usar la noticia.
     const anterior = await db.noticia.findUnique({ where: { id } });
     if (!anterior) throw new NotFoundError('Noticia no encontrada');
+
+    // Cómo quedaría: se publica ahora, o sigue publicada y se le quita la foto.
+    const imagenFinal = data.imagenUrl === undefined ? anterior.imagenUrl : imagenAGuardar(data.imagenUrl);
+    const quedaPublicada = data.visible ?? anterior.visible;
+    const sePublica = data.visible === true && !anterior.visible;
+    const pierdeLaFoto = data.imagenUrl !== undefined && !imagenFinal && Boolean(anterior.imagenUrl);
+    exigirFotoAlPublicar(quedaPublicada && (sePublica || pierdeLaFoto), imagenFinal);
 
     // Las reglas de la destacada (una sola, publicada, y se suelta al pasar a
     // borrador) son las mismas en Publicaciones: domain/destacada-portada.
@@ -261,6 +286,8 @@ export class NoticiaService {
               esValida: esImagenPropia,
               mensaje: 'La foto de la noticia no es una imagen del propio sitio: vuelve a subirla con «Cambiar foto».',
             }),
+            encuadreX: data.encuadreX,
+            encuadreY: data.encuadreY,
             visible: data.visible,
             fijada: marca.fijada,
             fecha: data.fecha ? new Date(data.fecha) : undefined,

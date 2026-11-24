@@ -10,6 +10,9 @@ export interface NoticiaDeLaApi {
   extracto: string | null
   contenido: string
   imagenUrl: string | null
+  /** El punto de encuadre de la foto, de 0 a 100; null es el centro. */
+  encuadreX: number | null
+  encuadreY: number | null
   fecha: string
   visible: boolean
   /** La destacada de la portada: va primera y lleva la cinta «Destacada». */
@@ -36,6 +39,7 @@ function aNoticia(noticia: NoticiaDeListado): Noticia {
     extracto: noticia.extracto ?? '',
     contenido: noticia.contenido,
     imagen: noticia.imagenUrl ?? undefined,
+    encuadre: { x: noticia.encuadreX ?? 50, y: noticia.encuadreY ?? 50 },
     categoria: 'Noticias',
     fecha: noticia.fecha,
     slug: noticia.slug,
@@ -104,6 +108,9 @@ export interface DatosDeNoticia {
   contenido: string
   extracto?: string
   imagenUrl?: string
+  /** El punto de encuadre de la foto, de 0 a 100; null vuelve al centro. */
+  encuadreX?: number | null
+  encuadreY?: number | null
   visible: boolean
   /** Solo al editar: destacar es algo que se hace sobre una noticia publicada. */
   fijada?: boolean

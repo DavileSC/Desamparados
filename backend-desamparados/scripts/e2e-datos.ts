@@ -23,6 +23,7 @@ import { SalidasService } from '../src/services/procesion/salidas.service.js';
 import { PlazoPapeletasService } from '../src/services/procesion/plazo.service.js';
 import { privateStorageDir } from '../src/middleware/upload.middleware.js';
 import { buzonPedido } from '../src/utils/buzon-pruebas.js';
+import { borrarSubidasHuerfanas, subidasEnTexto } from '../src/utils/ficheros-publicos.js';
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -130,7 +131,10 @@ async function limpiar(sufijo: string) {
   await db.pedidoTienda.deleteMany({ where: { id: { in: pedidos.map((p) => p.id) } } });
   await db.transaccion.deleteMany({ where: { id: { in: apuntes } } });
   await db.producto.deleteMany({ where: { nombre: producto(sufijo) } });
+  // La noticia y su foto: sin foto no se publica, así que la prueba sube una.
+  const noticias = await db.noticia.findMany({ where: { titulo: noticia(sufijo) }, select: { imagenUrl: true, contenido: true } });
   await db.noticia.deleteMany({ where: { titulo: noticia(sufijo) } });
+  await borrarSubidasHuerfanas(noticias.flatMap((n) => [...subidasEnTexto(n.imagenUrl, n.contenido)]));
 
   // Las páginas que se editaron: vuelven a la última versión que no es de
   // estas cuentas (o a su texto de partida si no tenían fila), y fuera las

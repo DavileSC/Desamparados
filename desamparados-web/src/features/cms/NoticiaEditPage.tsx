@@ -14,6 +14,8 @@ import { ANCHO_EDICION } from './PantallaEdicion'
 import AvisoCambiosSinGuardar from './ficha/AvisoCambiosSinGuardar'
 import { useFichaCms } from './ficha/useFichaCms'
 import CampoImagen from './CampoImagen'
+import EncuadreDeFoto from './EncuadreDeFoto'
+import topes from '../../../../shared/topes-contenido.json'
 import PanelRedes from './redes/PanelRedes'
 import EditorTexto from './EditorTexto'
 import { EtiquetaEstado, Progreso } from './redaccion/FilaRedaccion'
@@ -24,8 +26,8 @@ import { crearNoticia, noticiaDelCms, actualizarNoticia, invalidarNoticiasPublic
 import { site } from '../../config/site'
 import { useAhora } from '../../hooks/useAhora'
 
-/** Lo que cabe en las tres líneas de la tarjeta de la portada; pasarse no impide guardar. */
-const EXTRACTO_RECOMENDADO = 180
+/** El tope del extracto: el de su columna en la base, que la API también comprueba. */
+const EXTRACTO_MAXIMO = topes.extractoNoticia
 
 type Accion = 'borrador' | 'publicar' | 'guardar' | 'despublicar'
 
@@ -56,7 +58,8 @@ export default function NoticiaEditPage() {
       cargar: noticiaDelCms,
       aFormulario: (item) => ({
         titulo: item.titulo, contenido: item.contenido, extracto: item.extracto ?? '',
-        imagenUrl: item.imagenUrl ?? '', visible: item.visible, fecha: item.fecha.slice(0, 10), slug: item.slug,
+        imagenUrl: item.imagenUrl ?? '', encuadreX: item.encuadreX, encuadreY: item.encuadreY,
+        visible: item.visible, fecha: item.fecha.slice(0, 10), slug: item.slug,
       }),
       vacio: vacia(),
       errorAlCargar: 'No se ha podido cargar la noticia.',
@@ -70,6 +73,14 @@ export default function NoticiaEditPage() {
   const publicada = !nueva && inicial.visible
   const conTitulo = form.titulo.trim() !== ''
   const conTexto = tieneTexto(form.contenido)
+  // En la web cada noticia va con su foto (la principal del archivo y su
+  // miniatura): sin ella no se publica, y a una publicada no se le quita.
+  // La API lo comprueba igual; aquí se avisa antes de pulsar.
+  const conFoto = Boolean(form.imagenUrl)
+  const quitandoLaFoto = publicada && !conFoto && Boolean(inicial.imagenUrl)
+  const avisoFoto = !publicada && !conFoto
+    ? 'Para publicarla, sube una foto.'
+    : quitandoLaFoto ? 'Una noticia publicada necesita su foto: sube otra o pásala a borrador.' : null
 
   const guardar = async (accion: Accion) => {
     setConfirmando(null)
@@ -128,15 +139,18 @@ export default function NoticiaEditPage() {
             {publicada ? (
               <>
                 <Button variant="outlined" color="inherit" disabled={guardando} onClick={() => pedir('despublicar')} sx={{ borderColor: 'divider' }}>Pasar a borrador</Button>
-                <Button variant="contained" disabled={guardando || !sucio || !conTitulo || !conTexto} onClick={() => pedir('guardar')}>Guardar cambios</Button>
+                <Button variant="contained" disabled={guardando || !sucio || !conTitulo || !conTexto || quitandoLaFoto} onClick={() => pedir('guardar')}>Guardar cambios</Button>
               </>
             ) : (
               <>
                 <Button variant="outlined" color="inherit" disabled={guardando || !conTitulo || (!nueva && !sucio)} onClick={() => pedir('borrador')} sx={{ borderColor: 'divider' }}>Guardar borrador</Button>
-                <Button variant="contained" disabled={guardando || !conTitulo || !conTexto} onClick={() => pedir('publicar')}>Publicar</Button>
+                <Button variant="contained" disabled={guardando || !conTitulo || !conTexto || !conFoto} onClick={() => pedir('publicar')}>Publicar</Button>
               </>
             )}
           </Stack>
+          {avisoFoto && (
+            <Typography variant="body2" sx={{ flexBasis: '100%', textAlign: { sm: 'right' }, color: 'text.secondary' }}>{avisoFoto}</Typography>
+          )}
         </Box>
 
         {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
@@ -160,6 +174,7 @@ export default function NoticiaEditPage() {
                 fullWidth
                 multiline
                 minRows={2}
+                slotProps={{ htmlInput: { maxLength: EXTRACTO_MAXIMO } }}
                 helperText={<ContadorExtracto largo={form.extracto?.length ?? 0} />}
               />
               <EditorTexto valor={form.contenido} onCambio={(html) => campo('contenido', html)} etiqueta="Contenido de la noticia" />
@@ -206,8 +221,17 @@ export default function NoticiaEditPage() {
                 etiqueta="Foto de la noticia"
                 valor={form.imagenUrl ?? ''}
                 onCambio={(ruta) => campo('imagenUrl', ruta)}
-                ayuda="JPG, PNG o WebP de hasta 5 MB. Mejor apaisada: en la portada se recorta a 4:3."
+                ayuda="JPG, PNG o WebP de hasta 5 MB. Obligatoria para publicar. Mejor apaisada: la web la recorta de varias formas."
               />
+              {form.imagenUrl && (
+                <Box sx={{ mt: 2 }}>
+                  <EncuadreDeFoto
+                    foto={form.imagenUrl}
+                    valor={{ x: form.encuadreX ?? 50, y: form.encuadreY ?? 50 }}
+                    onCambio={({ x, y }) => { campo('encuadreX', x); campo('encuadreY', y) }}
+                  />
+                </Box>
+              )}
             </Panel>
 
             <Panel titulo="Dirección en la web">
@@ -221,6 +245,7 @@ export default function NoticiaEditPage() {
                   id: String(id ?? 'nueva'), slug: form.slug || 'vista-previa', categoria: 'Noticias',
                   titulo: form.titulo.trim() || 'Título de la noticia', extracto: form.extracto ?? '', contenido: form.contenido,
                   imagen: form.imagenUrl || undefined, fecha: form.fecha ? `${form.fecha}T12:00:00` : ahora.toISOString(),
+                  encuadre: { x: form.encuadreX ?? 50, y: form.encuadreY ?? 50 },
                 }} />
               </div>
             </Panel>
@@ -248,7 +273,7 @@ export default function NoticiaEditPage() {
 }
 
 function vacia(): DatosDeNoticia {
-  return { titulo: '', contenido: '', extracto: '', imagenUrl: '', visible: false, fecha: hoy(), slug: '' }
+  return { titulo: '', contenido: '', extracto: '', imagenUrl: '', encuadreX: null, encuadreY: null, visible: false, fecha: hoy(), slug: '' }
 }
 
 function Panel({ titulo, children }: { titulo: string; children: ReactNode }) {
@@ -262,12 +287,12 @@ function Panel({ titulo, children }: { titulo: string; children: ReactNode }) {
 
 function ContadorExtracto({ largo }: { largo: number }) {
   const { superficies } = useTemaCms()
-  const pasado = largo > EXTRACTO_RECOMENDADO
+  const cerca = largo > EXTRACTO_MAXIMO - 20
   return (
     <Box component="span" sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
       <span>Lo que se lee en la portada y en el archivo.</span>
-      <Box component="span" sx={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', color: pasado ? superficies.avisoTexto : undefined, fontWeight: pasado ? 600 : undefined }}>
-        {largo} / {EXTRACTO_RECOMENDADO}
+      <Box component="span" sx={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', color: cerca ? superficies.avisoTexto : undefined, fontWeight: cerca ? 600 : undefined }}>
+        {largo} / {EXTRACTO_MAXIMO}
       </Box>
     </Box>
   )

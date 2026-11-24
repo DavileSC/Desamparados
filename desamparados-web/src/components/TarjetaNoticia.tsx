@@ -8,6 +8,7 @@ import Hueso, { Lineas } from './esqueleto/Hueso'
 import { propsDeFoto } from '../lib/fotoSubida'
 import { MARCA, alfa } from '../theme/marca'
 import { RUTA_ESCUDO } from './EscudoDelGrupo'
+import { posicionDe } from '../lib/encuadre'
 
 interface TarjetaNoticiaProps {
   noticia: Noticia
@@ -154,7 +155,7 @@ export default function TarjetaNoticia({ noticia, indice = 0, destacada = false,
             loading={destacada ? 'eager' : 'lazy'}
             decoding="async"
             className="noticia-foto"
-            sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+            sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: posicionDe(noticia.encuadre) }}
           />
         ) : (
           // Sin foto (o con una que no carga), una placa velada con el escudo: la

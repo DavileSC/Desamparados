@@ -17,7 +17,12 @@ export interface Noticia {
   slug: string
   /** Destacada a mano en el CMS: en la portada va primera y con cinta. */
   fijada?: boolean
+  /** El punto de la foto que queda a la vista al recortarla, de 0 a 100 en cada eje. */
+  encuadre: Encuadre
 }
+
+/** Un punto de una foto, de 0 a 100 en cada eje: 50, 50 es el centro. */
+export interface Encuadre { x: number; y: number }
 
 export interface Acto {
   id: string

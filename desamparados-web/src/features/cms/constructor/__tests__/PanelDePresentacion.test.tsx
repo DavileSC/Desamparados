@@ -33,11 +33,12 @@ describe('la presentación de una galería', () => {
 describe('las opciones que no harían nada', () => {
   const listado = (fuente: string, presentacion?: Record<string, string>) => ({ tipo: 'listado', titulo: 'Noticias', fuente, presentacion }) as unknown as Bloque
 
-  it('el archivo de noticias no ofrece cuántos ni en lista, pero sí columnas', () => {
+  // Desde el 24-11-2026 va siempre igual: la principal y dos columnas de filas.
+  it('el archivo de noticias no ofrece cuántos, ni en lista, ni columnas', () => {
     pintar(listado('noticias'))
     expect(screen.queryByText('Cuántos')).not.toBeInTheDocument()
     expect(screen.queryByText('Disposición')).not.toBeInTheDocument()
-    expect(screen.getByText('Columnas')).toBeInTheDocument()
+    expect(screen.queryByText('Columnas')).not.toBeInTheDocument()
     // Pinta su propio título y no lo centra, y su ancho es el de la página.
     expect(screen.queryByText('Título')).not.toBeInTheDocument()
     expect(screen.queryByText('Ancho')).not.toBeInTheDocument()

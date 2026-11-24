@@ -1,4 +1,5 @@
 import { type } from 'arktype';
+import topes from '../../../shared/topes-contenido.json' with { type: 'json' };
 import { textoRequerido } from '../config/common';
 import { rutaImagenPublica } from './portada.schema';
 import { aRutaPropia, esImagenPropia } from '../utils/rutas-propias';
@@ -23,13 +24,26 @@ export const imagenOpcional = type('string | null')
 export const imagenAlEditar = type('string | null')
     .pipe((valor: string | null) => (valor === null ? null : aRutaPropia(valor, esImagenPropia)));
 
+// El tope del extracto es el de su columna (VARCHAR(300)), y el CMS lo lee del
+// mismo sitio: sin él, uno más largo llegaba a la base y salía como un 400
+// genérico de «texto demasiado largo».
+export const EXTRACTO_MAXIMO = topes.extractoNoticia;
+const extracto = type(`string <= ${EXTRACTO_MAXIMO}`)
+    .describe(`un extracto de ${EXTRACTO_MAXIMO} caracteres como mucho`);
+
+// El punto de encuadre de la foto, en cada eje de 0 a 100; null vuelve al centro.
+const coordenadaDeEncuadre = type("0 <= number.integer <= 100 | null")
+    .describe("un punto de encuadre entre 0 y 100");
+
 // Esquema para crear (titulo y contenido obligatorios)
 export const crearNoticiaSchema = type({
     body: {
         titulo: textoRequerido,
         contenido: contenidoHtml,
-        "extracto?": "string",
+        "extracto?": extracto,
         "imagenUrl?": imagenOpcional,
+        "encuadreX?": coordenadaDeEncuadre,
+        "encuadreY?": coordenadaDeEncuadre,
         "visible?": "boolean",
         "fecha?": type("string").matching(/^\d{4}-\d{2}-\d{2}/), // Fecha ISO
         "slug?": type("string").matching(/^[a-z0-9-]+$/) // Solo letras minúsculas, números y guiones
@@ -41,8 +55,10 @@ export const actualizarNoticiaSchema = type({
     body: {
         "titulo?": textoRequerido,
         "contenido?": contenidoHtml,
-        "extracto?": "string",
+        "extracto?": extracto,
         "imagenUrl?": imagenAlEditar,
+        "encuadreX?": coordenadaDeEncuadre,
+        "encuadreY?": coordenadaDeEncuadre,
         "visible?": "boolean",
         // La destacada de la portada. Solo al editar: se destaca algo que ya
         // existe y está publicado, no se crea destacado.

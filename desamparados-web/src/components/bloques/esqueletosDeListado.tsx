@@ -1,7 +1,7 @@
 import { Box, Grid } from '@mui/material'
-import { TarjetaNoticiaEsqueleto } from '../TarjetaNoticia'
 import { TarjetaPublicacionEsqueleto } from '../TarjetaPublicacion'
-import { rejillaDeNoticias } from './rejillaDeNoticias'
+import Hueso, { Lineas } from '../esqueleto/Hueso'
+import { columnasDeFilas, filaSx, marcoCuadradoSx, principalAlto } from './archivoDeNoticiasEstilos'
 
 /*
  * Los esqueletos de los listados largos, aparte de `BloqueListado`: la página
@@ -10,12 +10,29 @@ import { rejillaDeNoticias } from './rejillaDeNoticias'
  * trozo de todas las páginas.
  */
 
-/** El archivo de noticias mientras llega: la destacada a lo ancho y una fila debajo. */
-export function ArchivoDeNoticiasEsqueleto({ columnas = 3 }: { columnas?: number }) {
+/** El archivo de noticias mientras llega: la principal y tres filas de dos, con la forma de las de verdad. */
+export function ArchivoDeNoticiasEsqueleto() {
   return (
-    <Box sx={rejillaDeNoticias(columnas)}>
-      <Box sx={{ display: 'flex', gridColumn: '1 / -1' }}><TarjetaNoticiaEsqueleto destacada /></Box>
-      {Array.from({ length: columnas }, (_, i) => <Box key={i} sx={{ display: 'flex' }}><TarjetaNoticiaEsqueleto /></Box>)}
+    <Box>
+      <Box sx={{ minHeight: principalAlto, display: 'grid', alignContent: 'end', p: { xs: 2.5, sm: 4, md: 7 }, backgroundColor: '#18161a' }}>
+        <Box sx={{ display: 'grid', gap: 2, maxWidth: 860 }}>
+          <Lineas anchos={['120px']} linea={16.5} grosor={9} />
+          <Lineas anchos={['88%', '54%']} linea={{ xs: 32, sm: 45, md: 58 }} grosor={{ xs: 18, sm: 24, md: 30 }} />
+          <Lineas anchos={['70%', '52%']} linea={{ xs: 24, md: 27 }} grosor={10} />
+        </Box>
+      </Box>
+      <Box sx={columnasDeFilas}>
+        {Array.from({ length: 6 }, (_, i) => (
+          <Box key={i} sx={filaSx}>
+            <Box sx={marcoCuadradoSx}><Hueso sx={{ position: 'absolute', inset: 0, borderRadius: 0 }} /></Box>
+            <Box sx={{ display: 'grid', gap: 0.75 }}>
+              <Lineas anchos={['32%']} linea={16.5} grosor={9} />
+              <Lineas anchos={[`${88 - (i % 3) * 12}%`, '48%']} linea={{ xs: 21, md: 26 }} grosor={12} />
+              <Box sx={{ display: { xs: 'none', sm: 'block' } }}><Lineas anchos={['96%', '64%']} linea={21.7} grosor={8} /></Box>
+            </Box>
+          </Box>
+        ))}
+      </Box>
     </Box>
   )
 }

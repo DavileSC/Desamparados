@@ -12,7 +12,9 @@ const noticia = {
   extracto: 'El Grupo Parroquial abre el nuevo curso.', contenido: '<p>Texto</p>',
   imagenUrl: null, visible: true, fecha: '2026-08-26T00:00:00.000Z',
 }
-const borrador = { ...noticia, id: 9, slug: 'cultos-octubre', titulo: 'Cultos de octubre', visible: false }
+// El borrador ya tiene foto: sin ella no se puede publicar (ver «la foto al publicar»).
+const borrador = { ...noticia, id: 9, slug: 'cultos-octubre', titulo: 'Cultos de octubre', visible: false, imagenUrl: '/storage/public/cultos.webp' }
+const borradorSinFoto = { ...noticia, id: 11, slug: 'besamanos', titulo: 'Besamanos', visible: false }
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 
@@ -31,7 +33,7 @@ function montar(ruta: string) {
   const simulado = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
     if (init?.method === 'POST' || init?.method === 'PUT') return Promise.resolve(json({ id: 1, ...JSON.parse(String(init.body)) }))
     const id = Number(String(url).match(/\/news\/admin\/(\d+)/)?.[1])
-    const encontrada = [noticia, borrador].find((n) => n.id === id)
+    const encontrada = [noticia, borrador, borradorSinFoto].find((n) => n.id === id)
     return Promise.resolve(encontrada ? json(encontrada) : json({ error: 'Noticia no encontrada' }, 404))
   })
   vi.stubGlobal('fetch', simulado)
@@ -135,6 +137,30 @@ describe('una noticia nueva', () => {
     const direccion = await screen.findByLabelText(/dirección/i)
     await user.type(direccion, 'Cultos Nov ¡2026!')
     expect(direccion).toHaveValue('cultos-nov-2026')
+  })
+})
+
+describe('la foto al publicar', () => {
+  it('un borrador sin foto no se puede publicar, y se dice por qué', async () => {
+    montar('/cms/noticias/11/editar')
+    expect(await screen.findByRole('button', { name: 'Publicar' })).toBeDisabled()
+    expect(screen.getByText('Para publicarla, sube una foto.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Guardar borrador' })).toBeInTheDocument()
+  })
+
+  it('con foto se puede encuadrar, y el encuadre viaja al guardar', async () => {
+    const user = userEvent.setup()
+    const simulado = montar('/cms/noticias/9/editar')
+    const horizontal = await screen.findByRole('slider', { name: 'Horizontal' })
+    horizontal.focus()
+    await user.keyboard('{ArrowRight}{ArrowRight}')
+    await user.click(screen.getByRole('button', { name: 'Guardar borrador' }))
+    await waitFor(() => expect(guardado(simulado)).toMatchObject({ metodo: 'PUT', cuerpo: { encuadreX: 52 } }))
+  })
+
+  it('el extracto no deja pasar de 300 caracteres', async () => {
+    montar('/cms/noticias/9/editar')
+    expect(await screen.findByLabelText('Extracto')).toHaveAttribute('maxLength', '300')
   })
 })
 

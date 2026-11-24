@@ -15,6 +15,7 @@ const noticiaDePrueba: Noticia = {
   categoria: 'Noticias',
   fecha: '2026-08-29T10:00:00.000Z',
   slug: 'solemne-triduo',
+  encuadre: { x: 50, y: 50 },
 }
 
 describe('TarjetaNoticia', () => {

@@ -11,7 +11,7 @@ import { site } from '../../../../config/site'
 const noticia: NoticiaDeLaApi = {
   id: 7, slug: 'besamanos-2026', titulo: 'Besamanos de la Virgen', extracto: 'El sábado, a las seis.',
   contenido: '<p>Texto</p>', imagenUrl: '/storage/public/0123456789abcdef0123456789abcdef.webp',
-  visible: true, fijada: false, fecha: '2026-11-03T00:00:00.000Z',
+  visible: true, fijada: false, fecha: '2026-11-03T00:00:00.000Z', encuadreX: null, encuadreY: null,
 }
 const conectada = { conectada: true, usuario: 'grupo_desamparados', caducaEl: '2027-01-02T00:00:00.000Z', conectadoEl: '2026-11-03T00:00:00.000Z', errorAlRenovar: null }
 const sinCuenta = { conectada: false, usuario: null, caducaEl: null, conectadoEl: null, errorAlRenovar: null }

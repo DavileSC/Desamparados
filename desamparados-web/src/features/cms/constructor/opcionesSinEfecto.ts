@@ -26,8 +26,9 @@ export function opcionesSinEfecto(bloque: Bloque): Set<string> {
   if (bloque.tipo === 'listado') {
     const corto = LISTADOS_CORTOS.has(bloque.fuente)
     if (!corto) { fuera.add('cantidad'); fuera.add('disposicion') }
-    // La agenda completa es un calendario; un listado corto en lista no va en columnas.
-    if (bloque.fuente === 'agenda' || (corto && valorDe(bloque, 'disposicion') === 'lista')) fuera.add('columnas')
+    // La agenda completa es un calendario, el archivo de noticias va siempre a
+    // dos columnas (la principal y sus filas) y un listado corto en lista no va en columnas.
+    if (bloque.fuente === 'agenda' || bloque.fuente === 'noticias' || (corto && valorDe(bloque, 'disposicion') === 'lista')) fuera.add('columnas')
   }
   if (bloque.tipo === 'fotoTexto' && valorDe(bloque, 'estilo') === 'fundido') {
     // Fundida, la foto va de lado a lado de la ventana: ni su ancho ni el del bloque cambian nada.
