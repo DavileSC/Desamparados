@@ -1037,11 +1037,13 @@ Trampas:
   prefirió así.
 - **El velo pasa de la barra, pero solo difumina.** Desde el 21-11-2026 acaba
   en un desenfoque progresivo (cuatro capas y la tinta apagándose) que asoma
-  por debajo de los 82 px: `ALTO_VELO` (180) no cuenta para
-  `ALTO_BARRA_ESCRITORIO` y no tapa clics. La cola entera solo sale de entrada
-  si la página pone una foto bajo la barra (`useFotoBajoLaBarra()`, en el hero
-  y en `CabeceraASangre`); si no, en reposo emborronaría el título (la Agenda)
-  y sale al bajar, a la mitad (`COLA_AL_BAJAR`). Lo que se queda bajo la barra
+  por debajo de los 82 px: `COLA_DEL_VELO` (14 px desde el 24-11; con 98 se
+  leía como una sombra) no cuenta para `ALTO_BARRA_ESCRITORIO` y no tapa
+  clics. Las capas se miden en px desde el pie de la barra, no en % del velo:
+  todas llegan enteras hasta él, o el texto de la barra dejaría ver la foto
+  más nítida. La cola solo sale de entrada si la página pone una foto bajo la
+  barra (`useFotoBajoLaBarra()`, en el hero y en `CabeceraASangre`); si no,
+  sale al bajar. Lo que se queda bajo la barra
   al bajar (destino de un ancla, lo pegado con `sticky`) va con
   `bajoElVelo(aire)`, no con `bajoLaBarra`. Una cabecera nueva con foto a
   sangre llama al hook, o su foto se verá cortada en seco.

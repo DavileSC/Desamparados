@@ -27,24 +27,18 @@ export const tinta = (opacidad: number) => `rgba(7, 6, 8, ${opacidad.toFixed(3)}
 export const VELO_ARRIBA = 0.72
 export const VELO_SCROLL = 0.86
 /**
- * Lo que mide el velo de escritorio: la barra y, por debajo, lo que tarda en
- * deshacerse (desenfoque progresivo, 21-11-2026). Pasa de la barra, pero no
- * cuenta para `ALTO_BARRA_ESCRITORIO`: no tapa, solo difumina.
+ * Lo que asoma el velo de escritorio por debajo de la barra mientras se
+ * deshace. No cuenta para `ALTO_BARRA_ESCRITORIO`: no tapa, solo difumina.
+ * Era de 98 px (21-11-2026) y se leía como una sombra sobre la foto; el
+ * 24-11-2026 se acortó a 14 (forma B de su maqueta), casi al ras de la barra.
  */
-export const ALTO_VELO = 180
-/**
- * Al bajar por la página, la cola se queda en esta parte de la entera: entera,
- * sus 98 px caerían sobre lo alto de cada sección de la portada y sobre el
- * destino de las anclas. La entera es para la foto de arriba del todo.
- */
-export const COLA_AL_BAJAR = 0.5
+export const COLA_DEL_VELO = 14
 
 /**
  * Para lo que se queda bajo la barra al bajar (el destino de un ancla, lo que va
  * pegado con `sticky`): por debajo de la cola del velo, que lo emborronaría.
  */
-export const bajoElVelo = (aire: number) =>
-  `${ALTO_BARRA_ESCRITORIO + Math.ceil((ALTO_VELO - ALTO_BARRA_ESCRITORIO) * COLA_AL_BAJAR) + aire}px`
+export const bajoElVelo = (aire: number) => `${ALTO_BARRA_ESCRITORIO + COLA_DEL_VELO + aire}px`
 
 /** El piso de arriba de la barra de escritorio: redes, escudo y nombre, acceso. */
 export const ALTO_FRANJA = 48
