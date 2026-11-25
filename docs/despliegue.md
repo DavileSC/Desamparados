@@ -356,7 +356,7 @@ Tres cosas que no se ven:
 ### Correo (OVH) y rebotes
 
 El correo sale por el buzón `noreply@` del dominio, contratado en OVH (Zimbra
-Starter). `secretaria@` es el otro buzón: es el «Responder a» de todos los
+Starter). `info@` es el otro buzón: es el «Responder a» de todos los
 correos (`CONTACT_EMAIL_TO`) y se lee en el webmail de OVH.
 
 ```
@@ -366,7 +366,7 @@ EMAIL_SMTP_HOST=ssl0.ovh.net
 EMAIL_SMTP_PORT=465
 EMAIL_IMAP_HOST=ssl0.ovh.net
 EMAIL_IMAP_PORT=993
-CONTACT_EMAIL_TO=secretaria@DOMINIO
+CONTACT_EMAIL_TO=info@DOMINIO
 ```
 
 Después, **recrear** la API (`docker compose … up -d api`): un `restart` no

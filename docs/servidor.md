@@ -825,7 +825,7 @@ lo que quede en los registros.
 ## Correo del dominio
 
 Dos buzones Zimbra Starter en OVH: **`noreply@`**, por el que sale todo el
-correo de la web y al que llegan los rebotes, y **`secretaria@`**, el de las
+correo de la web y al que llegan los rebotes, y **`info@`**, el de las
 personas (el «Responder a» de todos los correos y el destino del formulario de
 contacto). Se leen en el webmail de OVH (Zimbra) o en el móvil por IMAP. El
 dominio está en **IONOS**: los registros se ponen allí, no en OVH. Antes
@@ -835,7 +835,6 @@ dominio está en **IONOS**: los registros se ponen allí, no en OVH. Antes
 **1. En OVH** (Web Cloud → Correos → el servicio Zimbra):
 
 - Crear las dos cuentas con contraseña larga. La de `noreply@` va al `.env`.
-- `info@`, si se quiere conservar: una redirección a `secretaria@`.
 - Pestaña del dominio, **DKIM**: activarlo. Como el DNS no está en OVH, da
   los registros (dos CNAME de selector) para copiarlos en IONOS.
 
@@ -849,7 +848,7 @@ captura de la zona entera, por si hay que volver.
 | DKIM | Los CNAME que da OVH |
 | Brevo | Quitar `brevo-code` (TXT), `brevo1._domainkey`, `brevo2._domainkey`, `img.info` y `r.info`. Si están en el grupo «Third Party Service», desactivar el grupo entero |
 | Mailjet | Quitar el TXT de Mailjet y `mailjet._domainkey` |
-| DMARC (`_dmarc`) | `v=DMARC1; p=none; rua=mailto:secretaria@DOMINIO`: los informes, a nuestro buzón en vez de a Brevo |
+| DMARC (`_dmarc`) | `v=DMARC1; p=none; rua=mailto:info@DOMINIO`: los informes, a nuestro buzón en vez de a Brevo |
 
 Los cambios tardan de minutos a unas horas. Mientras, el correo puede llegar
 aún a IONOS.
@@ -859,7 +858,7 @@ rebotes» en `docs/despliegue.md`, y recrear la API.
 
 **4. Comprobarlo:**
 
-- Desde un Gmail, escribir a `noreply@` y a `secretaria@`: llegan al webmail.
+- Desde un Gmail, escribir a `noreply@` y a `info@`: llegan al webmail.
 - Desde la web, «¿Olvidaste la contraseña?» con una cuenta propia: el correo
   llega a la bandeja de entrada (no a spam) y, en Gmail, «Mostrar original»
   dice `SPF: PASS`, `DKIM: PASS` y `DMARC: PASS`.
