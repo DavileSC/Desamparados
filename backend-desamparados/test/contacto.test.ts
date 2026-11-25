@@ -318,6 +318,8 @@ describe('EmailService', () => {
     process.env.EMAIL_SMTP_PORT = '465';
     process.env.CONTACT_EMAIL_USER = 'contacto@example.es';
     process.env.CONTACT_EMAIL_PASS = 'clave';
+    // Sin destino, enviarContacto devuelve false: en local lo ponía el .env y en el CI no hay.
+    process.env.CONTACT_EMAIL_TO = 'info@example.es';
 
     assert.equal(await EmailService.enviarContacto({ ...valido, telefono: '' }), true);
     assert.partialDeepStrictEqual(crear.mock.calls[0].arguments[0], { host: 'ssl0.ovh.net', port: 465, secure: true, auth: { user: 'contacto@example.es', pass: 'clave' } });
