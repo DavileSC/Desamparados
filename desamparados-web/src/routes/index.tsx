@@ -191,7 +191,7 @@ const router = createBrowserRouter([
           { path: 'noticias', element: pagina(NoticiasPage, 'noticias') },
           { path: 'noticias/:slug', element: pagina(NoticiaDetallePage, 'noticias') },
           { path: 'publicaciones', element: pagina(PublicacionesPage, 'publicaciones') },
-          { path: 'publicaciones/boletines', element: pagina(BoletinesPage, 'publicaciones') },
+          { path: 'publicaciones/newsletter', element: pagina(BoletinesPage, 'publicaciones') },
           { path: 'publicaciones/dossier-prensa', element: pagina(DossierPrensaPage, 'publicaciones') },
           { path: 'hazte-hermano', element: pagina(HazteHermanoPage, 'alta-web') },
           { path: 'contacto', element: pagina(ContactoPage, 'nucleo') },
@@ -207,6 +207,8 @@ const router = createBrowserRouter([
           { path: 'condiciones-de-compra', element: pagina(CondicionesDeCompraPage, 'tienda-web') },
           // La parroquia se llamaba como la orden que la atiende (hasta el 12-10-2026).
           { path: 'parroquia-pasionistas', element: <DireccionAntigua a="/parroquia" /> },
+          // Los boletines pasaron a llamarse «Newsletter» (26-11-2026).
+          { path: 'publicaciones/boletines', element: <DireccionAntigua a="/publicaciones/newsletter" /> },
           // Las direcciones de antes de quitar las portadas de sección (25-09-2026):
           // /corporacion/historia sigue llevando a /historia, y así con todas.
           { path: 'corporacion/*', element: <DireccionAntigua /> },

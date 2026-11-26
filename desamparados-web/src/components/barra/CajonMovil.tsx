@@ -20,10 +20,9 @@ import IconoDelMenu from './IconoDelMenu'
 import { FileteMovil, MarcaMovil } from './MarcaDeLaBarra'
 import { useEnlacesDeRedes } from './redes'
 import { esActiva, seccionActiva, tinta } from './estilos'
-import type { EntradaMenu } from '../../config/navegacion'
+import { NOMBRE_DEL_ACCESO, type EntradaMenu } from '../../config/navegacion'
 import { useMenuPublico } from '../../hooks/useMenuPublico'
 import { useModulos } from '../../hooks/useModulos'
-import { useNombreEnMenu } from '../../hooks/useNombresEnMenu'
 import { GOLD, GRANATE, TINTA } from '../../features/inicio/estilos'
 // La serif de la agenda: importarla de ahí trae también sus ficheros de letra.
 import { CORMORANT } from '../../features/actualidad/agenda/letraAlmanaque'
@@ -179,7 +178,6 @@ function Panel({ alCerrar }: { alCerrar: () => void }) {
   const menu = useMenuPublico()
   const enlacesDeRedes = useEnlacesDeRedes()
   const { activo } = useModulos()
-  const nombreDelAcceso = useNombreEnMenu('/acceso')
   // Mientras sale, las rayas vuelven a su sitio a la vez que se van las capas.
   const presente = useIsPresent()
   const opacidad = useTextosPortada().menuMovil?.opacidad ?? 97
@@ -325,7 +323,7 @@ function Panel({ alCerrar }: { alCerrar: () => void }) {
                   py: 1.5,
                 }}
               >
-                {nombreDelAcceso}
+                {NOMBRE_DEL_ACCESO}
               </Box>
             ) : <span />}
             <Box sx={{ display: 'flex', gap: 0.5 }}>

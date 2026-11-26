@@ -391,7 +391,7 @@ describe('PortadaAdminPage', () => {
 
     const mosaico = screen.getByRole('group', { name: /textos de los accesos/i })
     expect(within(mosaico).getAllByLabelText('Título').map((campo) => (campo as HTMLInputElement).value)).toEqual([
-      'Contacto', 'Canal de YouTube', 'Boletines', 'Historia', 'Caridad', 'Nuestra sede',
+      'Contacto', 'Canal de YouTube', 'Newsletter', 'Historia', 'Caridad', 'Nuestra sede',
     ])
     // El destino y el icono los pone el código: aquí no hay nada que pulsar.
     expect(within(mosaico).queryByRole('button')).not.toBeInTheDocument()

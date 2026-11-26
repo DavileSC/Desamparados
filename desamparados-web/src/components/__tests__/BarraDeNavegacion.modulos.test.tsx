@@ -14,10 +14,15 @@ describe('la barra y el pie con módulos apagados', () => {
 
   // «Acceso hermanos» ya no va en el pie, y en jsdom la barra es la del móvil,
   // que lo guarda en el cajón: aquí solo se comprueba lo que el pie enlaza.
-  it('con todo encendido, el pie enlaza la tienda y el alta', () => {
+  it('con todo encendido, el pie enlaza el alta, que ya no está en el menú, y no la tienda', () => {
     renderWithProviders(<><BarraDeNavegacion /><PieDePagina /></>)
-    expect(screen.getAllByRole('link', { name: 'Hazte hermano' }).length).toBeGreaterThan(0)
-    expect(screen.getAllByRole('link', { name: 'Tienda' }).length).toBeGreaterThan(0)
+    expect(screen.getByRole('link', { name: 'Hazte hermano' })).toHaveAttribute('href', '/hazte-hermano')
+    expect(screen.queryByRole('link', { name: 'Tienda' })).not.toBeInTheDocument()
+  })
+
+  it('sin el alta en la web, el pie no la enlaza', () => {
+    renderWithProviders(<PieDePagina />, { modulos: ['noticias', 'agenda'] })
+    expect(screen.queryByRole('link', { name: 'Hazte hermano' })).not.toBeInTheDocument()
   })
 
   it('sin la agenda, el pie no la enlaza; con ella, sí', () => {

@@ -49,13 +49,14 @@ function navEscritorio() {
 describe('BarraDeNavegacion en escritorio', () => {
   beforeEach(() => simularAncho(1440))
 
-  it('muestra las siete secciones; las que despliegan no llevan a ninguna página', () => {
+  it('muestra las siete entradas; las que despliegan no llevan a ninguna página', () => {
     renderWithProviders(<BarraDeNavegacion />)
     const nav = navEscritorio()
     for (const etiqueta of ['Inicio', 'Contacto']) {
       expect(within(nav).getByRole('link', { name: etiqueta, hidden: true })).toBeInTheDocument()
     }
-    for (const etiqueta of ['Corporación', 'Sagrada titular', 'Actualidad', 'Publicaciones', 'Hermanos']) {
+    expect(within(nav).getByRole('link', { name: 'Hermanos', hidden: true })).toHaveAttribute('href', '/acceso')
+    for (const etiqueta of ['Actualidad', 'Corporación', 'Sagrada titular', 'Publicaciones']) {
       expect(within(nav).getByRole('button', { name: etiqueta, hidden: true })).not.toHaveAttribute('href')
       expect(within(nav).queryByRole('link', { name: etiqueta, hidden: true })).not.toBeInTheDocument()
     }
@@ -147,32 +148,31 @@ describe('BarraDeNavegacion en escritorio', () => {
   it('abre la sección al llegar con el teclado y la cierra con Escape', async () => {
     const user = userEvent.setup()
     renderWithProviders(<BarraDeNavegacion />)
-    const hermanos = within(navEscritorio()).getByRole('button', { name: 'Hermanos', hidden: true })
-    act(() => hermanos.focus())
-    expect(hermanos).toHaveAttribute('aria-expanded', 'true')
-    // «Acceso hermanos» está también en el botón de la barra: con la sección abierta, son dos.
-    const accesos = () => screen.queryAllByRole('link', { name: 'Acceso hermanos', hidden: true })
-    expect(accesos()).toHaveLength(2)
-    expect(accesos().every((a) => a.getAttribute('href') === '/acceso')).toBe(true)
+    const publicaciones = within(navEscritorio()).getByRole('button', { name: 'Publicaciones', hidden: true })
+    act(() => publicaciones.focus())
+    expect(publicaciones).toHaveAttribute('aria-expanded', 'true')
+    const newsletter = () => screen.queryAllByRole('link', { name: 'Newsletter', hidden: true })
+    expect(newsletter()).toHaveLength(1)
+    expect(newsletter()[0]).toHaveAttribute('href', '/publicaciones/newsletter')
 
     await user.keyboard('{Escape}')
-    expect(hermanos).toHaveAttribute('aria-expanded', 'false')
-    expect(accesos()).toHaveLength(1)
+    expect(publicaciones).toHaveAttribute('aria-expanded', 'false')
+    expect(newsletter()).toHaveLength(0)
   })
 
   it('tras cerrar con Escape, Enter y Espacio la vuelven a abrir y a cerrar', async () => {
     // Antes no tenían efecto: para reabrir había que salir de la sección y volver.
     const user = userEvent.setup()
     renderWithProviders(<BarraDeNavegacion />)
-    const hermanos = within(navEscritorio()).getByRole('button', { name: 'Hermanos', hidden: true })
-    act(() => hermanos.focus())
+    const publicaciones = within(navEscritorio()).getByRole('button', { name: 'Publicaciones', hidden: true })
+    act(() => publicaciones.focus())
     await user.keyboard('{Escape}')
-    expect(hermanos).toHaveAttribute('aria-expanded', 'false')
+    expect(publicaciones).toHaveAttribute('aria-expanded', 'false')
 
     await user.keyboard('{Enter}')
-    expect(hermanos).toHaveAttribute('aria-expanded', 'true')
+    expect(publicaciones).toHaveAttribute('aria-expanded', 'true')
     await user.keyboard(' ')
-    expect(hermanos).toHaveAttribute('aria-expanded', 'false')
+    expect(publicaciones).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('las secciones sin subpáginas no anuncian desplegable', () => {
@@ -197,9 +197,10 @@ describe('BarraDeNavegacion en móvil', () => {
     await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
 
     const cajon = screen.getByRole('presentation')
-    // Las secciones con subpáginas solo se despliegan; Contacto sí lleva a su página.
+    // Las secciones con subpáginas solo se despliegan; Hermanos y Contacto sí llevan a su página.
     expect(within(cajon).getByRole('button', { name: 'Corporación' })).toHaveAttribute('aria-expanded', 'false')
-    expect(within(cajon).queryByRole('link', { name: 'Hermanos' })).not.toBeInTheDocument()
+    expect(within(cajon).queryByRole('link', { name: 'Corporación' })).not.toBeInTheDocument()
+    expect(within(cajon).getByRole('link', { name: 'Hermanos' })).toHaveAttribute('href', '/acceso')
     expect(within(cajon).getByRole('link', { name: 'Contacto' })).toHaveAttribute('href', '/contacto')
     expect(within(cajon).queryByRole('link', { name: 'Historia' })).not.toBeInTheDocument()
   })
@@ -232,15 +233,16 @@ describe('BarraDeNavegacion en móvil', () => {
     expect(screen.getByRole('link', { name: 'Recorrido' })).toHaveAttribute('href', '/sabado-de-pasion/recorrido')
   })
 
-  it('el botón del acceso y los títulos de sección llevan también el nombre del CMS', async () => {
+  it('los títulos de sección y «Hermanos» llevan el nombre del CMS; el botón del acceso, el suyo', async () => {
     const user = userEvent.setup()
     renderWithProviders(<BarraDeNavegacion />, { nombresEnMenu: { '/acceso': 'Área de hermanos', 'seccion:/sagrada-titular': 'Sagrados titulares' } })
     expect(within(navEscritorio()).getByRole('button', { name: 'Sagrados titulares', hidden: true })).toBeInTheDocument()
-    expect(screen.getAllByRole('link', { name: 'Área de hermanos', hidden: true }).length).toBeGreaterThan(0)
-    expect(screen.queryByRole('link', { name: 'Acceso hermanos', hidden: true })).not.toBeInTheDocument()
+    expect(within(navEscritorio()).getByRole('link', { name: 'Área de hermanos', hidden: true })).toHaveAttribute('href', '/acceso')
+    // El botón no sigue al nombre de la entrada: «Área de hermanos» y «Acceso hermanos» a la vez.
+    expect(screen.getAllByRole('link', { name: 'Acceso hermanos', hidden: true }).length).toBeGreaterThan(0)
     await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
     expect(screen.getByRole('button', { name: 'Sagrados titulares' })).toBeInTheDocument()
-    expect(screen.queryByText('Acceso hermanos')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Área de hermanos' })).toHaveAttribute('href', '/acceso')
   })
 
   it('el cajón usa también los nombres puestos en el CMS', async () => {

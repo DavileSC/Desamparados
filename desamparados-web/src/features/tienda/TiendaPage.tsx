@@ -29,7 +29,6 @@ import CestaDeLaTienda, { type Comprador } from './CestaDeLaTienda'
 import CestaFlotante from './CestaFlotante'
 import { MAX_POR_LINEA, claveDe, euros, guardarCesta, leerCesta, lineasDeLaCesta, quedanDe, topeDe, type Cesta } from './cesta'
 import { MARCA } from '../../theme/marca'
-import { useNombreEnMenu } from '../../hooks/useNombresEnMenu'
 
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
 
@@ -104,7 +103,8 @@ export default function TiendaPage() {
   const consulta = useQuery({ queryKey: ['tienda', 'catalogo'], queryFn: catalogo })
   const [cesta, setCesta] = useState<Cesta>(leerCesta)
   // Como se llame en el menú: el título y la pestaña dicen lo mismo que él.
-  const nombreEnMenu = useNombreEnMenu('/tienda')
+  // Fijo desde el 26-11-2026, cuando la página salió del menú: ya no hay nombre del menú que seguir.
+  const nombreEnMenu = 'Tienda'
   const [error, setError] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [cestaAbierta, setCestaAbierta] = useState(false)

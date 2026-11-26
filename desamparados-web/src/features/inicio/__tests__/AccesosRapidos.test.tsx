@@ -38,20 +38,20 @@ describe('AccesosRapidos', () => {
       '/parroquia',
       '/nuestros-fines/caridad',
       '/historia',
-      '/publicaciones/boletines',
+      '/publicaciones/newsletter',
       '/contacto',
     ])
   })
 
   it('anuncia en cada enlace qué hay detrás, no solo su título', async () => {
     // Se rompe si la descripción se saca del enlace: un lector de pantalla
-    // volvería a oír solo «Boletines», sin contexto.
+    // volvería a oír solo «Newsletter», sin contexto.
     responderPortada(textosDePrueba())
     renderWithProviders(<AccesosRapidos />)
 
     expect(
-      await screen.findByRole('link', { name: /boletines.*boletín informativo y anuarios/i }),
-    ).toHaveAttribute('href', '/publicaciones/boletines')
+      await screen.findByRole('link', { name: /newsletter.*todos los números, uno a uno/i }),
+    ).toHaveAttribute('href', '/publicaciones/newsletter')
   })
 
   it('destaca «Hazte hermano» como primer acceso, con titular y llamada a la acción', async () => {

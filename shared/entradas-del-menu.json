@@ -19,11 +19,13 @@
     "Sagrada titular…), que también se renombran, desde el título de su grupo",
     "en Páginas. Su clave es «seccion:» y su ruta, para que no choque con una",
     "página de la misma ruta: «Publicaciones» despliega y «/publicaciones» es",
-    "«Todas las publicaciones». Con el nombre de siempre de navegacion.ts."
+    "otra página. Con el nombre de siempre de navegacion.ts."
   ],
   "tope": 40,
   "entradas": [
     { "ruta": "/", "nombre": "Inicio" },
+    { "ruta": "/noticias", "nombre": "Noticias" },
+    { "ruta": "/agenda", "nombre": "Agenda" },
     { "ruta": "/historia", "nombre": "Historia" },
     { "ruta": "/historia/organos-de-gobierno", "nombre": "Órganos de Gobierno" },
     { "ruta": "/parroquia", "nombre": "Parroquia" },
@@ -38,22 +40,15 @@
     { "ruta": "/rosario", "nombre": "Rosario" },
     { "ruta": "/desamparados", "nombre": "Desamparados" },
     { "ruta": "/ajuar", "nombre": "Ajuar" },
-    { "ruta": "/apadrina", "nombre": "Apadrina" },
-    { "ruta": "/agenda", "nombre": "Agenda" },
-    { "ruta": "/noticias", "nombre": "Noticias" },
-    { "ruta": "/tienda", "nombre": "Tienda" },
-    { "ruta": "/publicaciones", "nombre": "Todas las publicaciones" },
-    { "ruta": "/publicaciones/boletines", "nombre": "Boletines" },
+    { "ruta": "/publicaciones/newsletter", "nombre": "Newsletter" },
     { "ruta": "/publicaciones/dossier-prensa", "nombre": "Dossier prensa" },
-    { "ruta": "/hazte-hermano", "nombre": "Hazte hermano" },
-    { "ruta": "/acceso", "nombre": "Acceso hermanos" },
+    { "ruta": "/acceso", "nombre": "Hermanos" },
     { "ruta": "/contacto", "nombre": "Contacto" }
   ],
   "secciones": [
+    { "ruta": "seccion:/actualidad", "nombre": "Actualidad" },
     { "ruta": "seccion:/corporacion", "nombre": "Corporación" },
     { "ruta": "seccion:/sagrada-titular", "nombre": "Sagrada titular" },
-    { "ruta": "seccion:/actualidad", "nombre": "Actualidad" },
-    { "ruta": "seccion:/publicaciones", "nombre": "Publicaciones" },
-    { "ruta": "seccion:/hermanos", "nombre": "Hermanos" }
+    { "ruta": "seccion:/publicaciones", "nombre": "Publicaciones" }
   ]
 }

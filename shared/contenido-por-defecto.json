@@ -43,8 +43,8 @@
         },
         {
           "clave": "boletines",
-          "titulo": "Boletines",
-          "descripcion": "Boletín informativo y anuarios"
+          "titulo": "Newsletter",
+          "descripcion": "Todos los números, uno a uno"
         },
         {
           "clave": "youtube",
@@ -643,8 +643,8 @@
   },
   "boletines": {
     "cabecera": {
-      "titulo": "Boletines",
-      "subtitulo": "El boletín informativo de la corporación, número a número.",
+      "titulo": "Newsletter",
+      "subtitulo": "La newsletter de la corporación, número a número.",
       "foto": "",
       "fotoAlt": "",
       "encuadre": 35
@@ -652,7 +652,7 @@
     "bloques": [
       {
         "tipo": "listado",
-        "titulo": "Todos los boletines",
+        "titulo": "Todos los números",
         "fuente": "boletines"
       }
     ]

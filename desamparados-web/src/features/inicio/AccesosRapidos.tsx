@@ -45,7 +45,7 @@ const ACCESOS: Acceso[] = [
   { clave: 'sede', icon: <IconoSede />, href: '/parroquia' },
   { clave: 'caridad', icon: <IconoCaridad />, href: '/nuestros-fines/caridad' },
   { clave: 'historia', icon: <IconoHistoria />, href: '/historia' },
-  { clave: 'boletines', icon: <IconoBoletines />, href: '/publicaciones/boletines' },
+  { clave: 'boletines', icon: <IconoBoletines />, href: '/publicaciones/newsletter' },
 ]
 
 const CONTACTO: Acceso = { clave: 'contacto', icon: <IconoContacto />, href: '/contacto' }

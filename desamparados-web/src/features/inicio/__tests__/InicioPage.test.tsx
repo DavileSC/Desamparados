@@ -43,7 +43,7 @@ describe('InicioPage', () => {
     expect(secciones).not.toContain('agenda-title')
     expect(secciones).not.toContain('publicaciones-titulo')
     expect(container.querySelector('a[href="/hazte-hermano"]')).toBeNull()
-    expect(container.querySelector('a[href="/publicaciones/boletines"]')).toBeNull()
+    expect(container.querySelector('a[href="/publicaciones/newsletter"]')).toBeNull()
     expect(container.querySelector('a[href="/agenda"]')).toBeNull()
     const pedidas = fetchSimulado.mock.calls.map(([url]) => String(url))
     for (const ruta of ['/news', '/events', '/publications']) {
@@ -96,7 +96,7 @@ describe('InicioPage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } })))
     const { container } = renderWithProviders(<HelmetProvider><InicioPage /></HelmetProvider>)
     expect(container.querySelector('a[href="/hazte-hermano"]')).not.toBeNull()
-    expect(container.querySelector('a[href="/publicaciones/boletines"]')).not.toBeNull()
+    expect(container.querySelector('a[href="/publicaciones/newsletter"]')).not.toBeNull()
     expect(screen.getAllByRole('link').some((a) => a.getAttribute('href') === '/agenda')).toBe(true)
   })
 })

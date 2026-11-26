@@ -9,7 +9,7 @@ import { FileteMovil, MarcaEscritorio, MarcaMovil } from './barra/MarcaDeLaBarra
 import { ALTO_BARRA_ESCRITORIO, ALTO_FRANJA, COLA_DEL_VELO, DESKTOP_NAV_MIN, VELO_ARRIBA, VELO_SCROLL, compactMq, desktopMq, estrechoMq, tinta } from './barra/estilos'
 import { BOTON } from './estiloDeBoton'
 import { useModulos } from '../hooks/useModulos'
-import { useNombreEnMenu } from '../hooks/useNombresEnMenu'
+import { NOMBRE_DEL_ACCESO } from '../config/navegacion'
 
 /**
  * La barra de la web pública. Aquí está el armazón —el velo que se va cerrando
@@ -79,7 +79,6 @@ export default function BarraDeNavegacion() {
   const [cajonAbierto, setCajonAbierto] = useState(false)
   const enlacesDeRedes = useEnlacesDeRedes()
   const { activo } = useModulos()
-  const nombreDelAcceso = useNombreEnMenu('/acceso')
 
   const veloRef = useRef<HTMLDivElement>(null)
 
@@ -238,7 +237,7 @@ export default function BarraDeNavegacion() {
                     [compactMq]: { px: 1.5, fontSize: '12.5px' },
                   }}
                 >
-                  {nombreDelAcceso}
+                  {NOMBRE_DEL_ACCESO}
                 </Button>
               )}
             </Box>

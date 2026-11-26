@@ -935,19 +935,22 @@ los dos**; `config/__tests__/navegacion.test.ts` falla si no cuadran. Sin eso,
 una entrada nueva no se podría renombrar (400 «No es una entrada del menú») o
 se aceptaría una que ya no existe.
 
-**`/publicaciones` es a la vez un título y una página.** «Publicaciones»
-(título que despliega) y «Todas las publicaciones» comparten ruta: el nombre
-guardado para `/publicaciones` es el de la página; el del título va con
-`seccion:/publicaciones` (`claveDeSeccion` en `navegacion.ts`). Los títulos se
-renombran desde el título de su grupo en Páginas (el «grupo» de
-`paginas-publicas.json` es su nombre de siempre); el que no tiene páginas de
-bloques (Hermanos), entre «Otras entradas del menú». Así una corporación con
-un Cristo o con varios titulares cambia «Sagrada titular».
+**El nombre de un título no es el de su ruta.** «Publicaciones» (título que
+despliega) tiene la ruta `/publicaciones`, que es también una página (la de
+todas, con los anuarios; fuera del menú desde el 26-11-2026): el nombre del
+título va con `seccion:/publicaciones` (`claveDeSeccion` en `navegacion.ts`).
+Los títulos se renombran desde el título de su grupo en Páginas (el «grupo» de
+`paginas-publicas.json` es su nombre de siempre); uno sin páginas de bloques
+saldría entre «Otras entradas del menú» (hoy no hay ninguno). Así una
+corporación con un Cristo o con varios titulares cambia «Sagrada titular».
 
-**Lo que nombra una entrada fuera del menú usa `useNombreEnMenu(ruta)`**: el
-botón del acceso de la barra y del cajón, y el título y la pestaña de Hazte
-hermano, Apadrina y la Tienda. Un texto fijo con el nombre de una entrada se
-queda con el de siempre cuando la renombran.
+**Lo que nombra una entrada fuera del menú usa `useNombreEnMenu(ruta)`**, y
+solo vale para rutas que siguen en el catálogo: con una que lo deja, devuelve
+la ruta tal cual («/tienda» de título). Por eso, desde el 26-11-2026, Hazte
+hermano, Apadrina y la Tienda llevan su nombre fijo, y el botón del acceso de
+la barra y del cajón también (`NOMBRE_DEL_ACCESO`): la entrada `/acceso` se
+llama ahora «Hermanos» y el botón tiene que seguir diciendo «Acceso
+hermanos».
 
 **Una ruta que deja el menú no rompe nada.** Al leer, `depurarNombres` tira lo
 que ya no está en el catálogo; el siguiente guardado lo borra de la fila.

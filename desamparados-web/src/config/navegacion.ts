@@ -36,6 +36,16 @@ export interface EntradaMenu {
 // 'paginas-propias', que solo enciende el fichero de su instalación.
 export const menuPublico: EntradaMenu[] = [
   { label: 'Inicio', href: '/', modulo: 'nucleo' },
+  // Tienda y Apadrina salieron del menú el 26-11-2026. Quitarlas de la web es
+  // cosa de cada instalación: se apagan sus módulos en Sistema → «Módulos».
+  {
+    label: 'Actualidad', modulo: 'nucleo',
+    href: '/actualidad',
+    hijos: [
+      { label: 'Noticias', href: '/noticias', modulo: 'noticias' },
+      { label: 'Agenda', href: '/agenda', modulo: 'agenda' },
+    ],
+  },
   {
     label: 'Corporación', modulo: 'nucleo',
     href: '/corporacion',
@@ -73,38 +83,30 @@ export const menuPublico: EntradaMenu[] = [
     hijos: [
       { label: 'Desamparados', href: '/desamparados', modulo: 'paginas-propias' },
       { label: 'Ajuar', href: '/ajuar', modulo: 'nucleo' },
-      { label: 'Apadrina', href: '/apadrina', modulo: 'apadrinamientos' },
-    ],
-  },
-  {
-    label: 'Actualidad', modulo: 'nucleo',
-    href: '/actualidad',
-    hijos: [
-      { label: 'Agenda', href: '/agenda', modulo: 'agenda' },
-      { label: 'Noticias', href: '/noticias', modulo: 'noticias' },
-      { label: 'Tienda', href: '/tienda', modulo: 'tienda-web' },
     ],
   },
   {
     label: 'Publicaciones', modulo: 'nucleo',
     href: '/publicaciones',
     hijos: [
-      // El archivo entero: el único sitio donde salen los anuarios y las de historia.
-      { label: 'Todas las publicaciones', href: '/publicaciones', exacta: true, modulo: 'publicaciones' },
-      { label: 'Boletines', href: '/publicaciones/boletines', modulo: 'publicaciones' },
+      // «Todas las publicaciones» (/publicaciones, con los anuarios) salió del
+      // menú el 26-11-2026; la página sigue en pie para los enlaces que la llevan.
+      { label: 'Newsletter', href: '/publicaciones/newsletter', modulo: 'publicaciones' },
       { label: 'Dossier prensa', href: '/publicaciones/dossier-prensa', modulo: 'publicaciones' },
     ],
   },
-  {
-    label: 'Hermanos', modulo: 'nucleo',
-    href: '/hermanos',
-    hijos: [
-      { label: 'Hazte hermano', href: '/hazte-hermano', modulo: 'alta-web' },
-      { label: 'Acceso hermanos', href: '/acceso', modulo: 'area-hermanos' },
-    ],
-  },
+  // Una sola página con las dos puertas (ya soy hermano · quiero serlo):
+  // Hazte hermano cuelga de la suya.
+  { label: 'Hermanos', href: '/acceso', modulo: 'area-hermanos' },
   { label: 'Contacto', href: '/contacto', modulo: 'nucleo' },
 ]
+
+/**
+ * El botón del acceso de la barra y del cajón: lleva a /acceso, como
+ * «Hermanos» del menú, pero no se llama igual ni cambia con su nombre. Hasta
+ * el 26-11-2026 la entrada del menú era «Acceso hermanos» y el botón la seguía.
+ */
+export const NOMBRE_DEL_ACCESO = 'Acceso hermanos'
 
 /** Todas las entradas del árbol en orden de lectura (padre antes que hijos). */
 export function aplanarMenu(entradas: EntradaMenu[]): EntradaMenu[] {

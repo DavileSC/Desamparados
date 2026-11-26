@@ -31,6 +31,9 @@ describe('menuPublico', () => {
     expect(dibujar(menuPublico).join('\n')).toBe(
       [
         'Inicio /',
+        'Actualidad /actualidad',
+        '  Noticias /noticias',
+        '  Agenda /agenda',
         'Corporación /corporacion',
         '  Historia /historia',
         '    Órganos de Gobierno /historia/organos-de-gobierno',
@@ -47,18 +50,10 @@ describe('menuPublico', () => {
         'Sagrada titular /sagrada-titular',
         '  Desamparados /desamparados',
         '  Ajuar /ajuar',
-        '  Apadrina /apadrina',
-        'Actualidad /actualidad',
-        '  Agenda /agenda',
-        '  Noticias /noticias',
-        '  Tienda /tienda',
         'Publicaciones /publicaciones',
-        '  Todas las publicaciones /publicaciones',
-        '  Boletines /publicaciones/boletines',
+        '  Newsletter /publicaciones/newsletter',
         '  Dossier prensa /publicaciones/dossier-prensa',
-        'Hermanos /hermanos',
-        '  Hazte hermano /hazte-hermano',
-        '  Acceso hermanos /acceso',
+        'Hermanos /acceso',
         'Contacto /contacto',
       ].join('\n'),
     )
@@ -91,26 +86,25 @@ describe('menuPublico', () => {
 
   it('menuVisible quita las entradas de módulos apagados y una sección que se queda sin hijos', () => {
     const dibujo = (activos: string[]) => dibujar(menuVisible(menuPublico, new Set(activos))).join('\n')
-    expect(dibujo(['agenda', 'noticias', 'publicaciones', 'area-hermanos', 'alta-web', 'apadrinamientos', 'tienda-web', 'paginas-propias'])).toBe(dibujar(menuPublico).join('\n'))
-    const sinTienda = dibujo(['agenda', 'noticias', 'publicaciones', 'area-hermanos', 'alta-web', 'apadrinamientos'])
-    expect(sinTienda).not.toContain('Tienda /tienda')
-    expect(sinTienda).toContain('Noticias /noticias')
+    expect(dibujo(['agenda', 'noticias', 'publicaciones', 'area-hermanos', 'paginas-propias'])).toBe(dibujar(menuPublico).join('\n'))
+    const sinAgenda = dibujo(['noticias', 'publicaciones', 'area-hermanos'])
+    expect(sinAgenda).not.toContain('Agenda /agenda')
+    expect(sinAgenda).toContain('Noticias /noticias')
     const sinActualidad = dibujo(['publicaciones', 'area-hermanos'])
     expect(sinActualidad).not.toContain('Actualidad')
     expect(sinActualidad).toContain('Corporación /corporacion')
-    expect(sinActualidad).not.toContain('Hazte hermano')
-    expect(sinActualidad).toContain('Acceso hermanos /acceso')
+    expect(sinActualidad).toContain('Hermanos /acceso')
+    expect(dibujo(['publicaciones'])).not.toContain('Hermanos')
   })
 
   it('sin las páginas propias se va el grupo Sábado de Pasión entero, Rosario y Desamparados; Ajuar se queda', () => {
-    const sinPropias = dibujar(menuVisible(menuPublico, new Set(['apadrinamientos']))).join('\n')
+    const sinPropias = dibujar(menuVisible(menuPublico, new Set())).join('\n')
     for (const fuera of ['Sábado de Pasión', 'Recorrido', 'Trono', 'Enseres', 'Rosario', 'Desamparados /desamparados']) {
       expect(sinPropias).not.toContain(fuera)
     }
     expect(sinPropias).toContain('Cultos /cultos')
-    expect(sinPropias).toContain('Sagrada titular /sagrada-titular\n  Ajuar /ajuar\n  Apadrina /apadrina')
-    // Sin Apadrina tampoco, a «Sagrada titular» le queda el Ajuar: no desaparece.
-    expect(dibujar(menuVisible(menuPublico, new Set())).join('\n')).toContain('Sagrada titular /sagrada-titular\n  Ajuar /ajuar')
+    // A «Sagrada titular» le queda el Ajuar: no desaparece.
+    expect(sinPropias).toContain('Sagrada titular /sagrada-titular\n  Ajuar /ajuar')
     const conPropias = dibujar(menuVisible(menuPublico, new Set(['paginas-propias']))).join('\n')
     expect(conPropias).toContain('Sábado de Pasión /sabado-de-pasion\n    Recorrido')
     expect(conPropias).toContain('Desamparados /desamparados')
@@ -128,13 +122,13 @@ describe('menuPublico', () => {
   })
 
   it('ponerNombres cambia el nombre de las páginas, y el de los títulos que despliegan solo por su clave', () => {
-    const nombres = { '/parroquia': 'Parroquia · Pasionistas', '/historia': 'Nuestra historia', '/publicaciones': 'Archivo', '/corporacion': 'No vale', 'seccion:/sagrada-titular': 'Sagrados titulares' }
+    const nombres = { '/parroquia': 'Parroquia · Pasionistas', '/historia': 'Nuestra historia', '/publicaciones': 'No está en el menú', '/corporacion': 'No vale', 'seccion:/sagrada-titular': 'Sagrados titulares', 'seccion:/publicaciones': 'Archivo' }
     const dibujo = dibujar(ponerNombres(menuPublico, nombres)).join('\n')
     expect(dibujo).toContain('  Parroquia · Pasionistas /parroquia')
     // Una subsección con páginas dentro sí es un enlace: cambia.
     expect(dibujo).toContain('  Nuestra historia /historia\n    Órganos de Gobierno')
-    // «Publicaciones» despliega y comparte ruta con «Todas las publicaciones»: cambia solo la página.
-    expect(dibujo).toContain('Publicaciones /publicaciones\n  Archivo /publicaciones')
+    // El título que despliega cambia por su clave, no por la ruta de la página /publicaciones.
+    expect(dibujo).toContain('Archivo /publicaciones\n  Newsletter')
     expect(dibujo).toContain('Corporación /corporacion')
     expect(dibujo).toContain('Sagrados titulares /sagrada-titular\n  Desamparados /desamparados')
     expect(ponerNombres(menuPublico, {})).toBe(menuPublico)

@@ -39,7 +39,6 @@ import { deLaCorporacion, laCorporacion } from '../../../domain/articulos'
 import { site } from '../../../config/site'
 import { hoy as hoyAqui } from '../../../lib/fechas'
 import { useModulos } from '../../../hooks/useModulos'
-import { useNombreEnMenu } from '../../../hooks/useNombresEnMenu'
 
 // Mismo umbral que el navbar (`DESKTOP_NAV_MIN`): por debajo la barra va en
 // flujo y mide 56 px en móvil y 64 en tableta; desde ahí es fija (`ALTO_BARRA_ESCRITORIO`) y se
@@ -71,7 +70,8 @@ export default function HazteHermanoPage() {
   // frase de entrada las nombra en genérico, o no las nombra.
   const conSalidas = useModulos().activo('procesion')
   // Como se llame en el menú: el título y la pestaña dicen lo mismo que él.
-  const nombreEnMenu = useNombreEnMenu('/hazte-hermano')
+  // Fijo desde el 26-11-2026, cuando la página cuelga de la puerta del alta en /acceso: ya no hay nombre del menú que seguir.
+  const nombreEnMenu = 'Hazte hermano'
   const [camino, setCamino] = useState<Camino | null>(null)
   const [enviada, setEnviada] = useState<{ nombre: string; email: string; fichas: number; soloMenores: boolean } | null>(null)
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null)

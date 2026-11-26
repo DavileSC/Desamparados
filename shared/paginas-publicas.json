@@ -147,10 +147,10 @@
     },
     {
       "slug": "boletines",
-      "nombre": "Boletines",
-      "ruta": "/publicaciones/boletines",
+      "nombre": "Newsletter",
+      "ruta": "/publicaciones/newsletter",
       "grupo": "Publicaciones",
-      "descripcion": "Los boletines anuales de la corporación.",
+      "descripcion": "La newsletter de la corporación, número a número.",
       "modulo": "publicaciones"
     },
     {

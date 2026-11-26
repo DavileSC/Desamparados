@@ -21,7 +21,11 @@ import { useAhora } from '../hooks/useAhora'
 // El pie es una sola franja (05-10-2026): el mapa del sitio entero lo hacía
 // demasiado alto y repetía el menú de arriba. Quedan los destinos que más se buscan,
 // el contacto y el mapa.
-const destacados = ['/agenda', '/noticias', '/tienda', '/hazte-hermano', '/contacto']
+const destacados = ['/agenda', '/noticias', '/hazte-hermano', '/contacto']
+
+// Hazte hermano dejó el menú el 26-11-2026 (se entra por la puerta del alta de
+// /acceso), pero sigue siendo de lo que más se busca: el pie la nombra él.
+const FUERA_DEL_MENU = new Map([['/hazte-hermano', { label: 'Hazte hermano', modulo: 'alta-web' as const }]])
 
 // Las condiciones de compra, solo con la tienda encendida.
 const legalLinks = [
@@ -64,8 +68,10 @@ export default function PieDePagina() {
   // cambia de nombre, el pie lo recoge solo, y si desaparece (porque su módulo
   // está apagado), su enlace deja de pintarse en vez de quedar muerto.
   const entradasMenu = new Map(aplanarMenu(useMenuPublico()).map((entrada) => [entrada.href, entrada.label]))
+  const { activo } = useModulos()
   const enlacesDestacados = destacados.flatMap((ruta) => {
-    const label = entradasMenu.get(ruta)
+    const fuera = FUERA_DEL_MENU.get(ruta)
+    const label = fuera ? (activo(fuera.modulo) ? fuera.label : undefined) : entradasMenu.get(ruta)
     return label ? [{ ruta, label }] : []
   })
   const { aceptadas, volverAPreguntar } = useConsentimientoDeCookies()
@@ -73,7 +79,6 @@ export default function PieDePagina() {
   // usuario ha aceptado las cookies o pulsa explícitamente "Mostrar mapa" (click-to-load).
   const [mapRequested, setMapRequested] = useState(false)
   const verMapa = aceptadas || mapRequested
-  const { activo } = useModulos()
   // Mientras llegan, sus huecos quedan vacíos: mejor que un dato inventado.
   const contacto = useContacto()
   const enlacesDeRedes = useEnlacesDeRedes()

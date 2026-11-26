@@ -16,7 +16,6 @@ import type { MetodoEnLinea } from '../../lib/api/tienda'
 import { irAlBanco } from '../../lib/api/procesion'
 import { site } from '../../config/site'
 import { euros } from '../../lib/euros'
-import { useNombreEnMenu } from '../../hooks/useNombresEnMenu'
 
 const VACIO = { nombre: '', email: '', telefono: '', dedicatoria: '', mostrarNombre: true, metodo: 'TARJETA' as MetodoEnLinea }
 
@@ -28,7 +27,8 @@ export default function ApadrinaPage() {
   const navegar = useNavigate()
   const [datos, setDatos] = useState<CampanasPublicas | null>(null)
   // Como se llame en el menú: el título y la pestaña dicen lo mismo que él.
-  const nombreEnMenu = useNombreEnMenu('/apadrina')
+  // Fijo desde el 26-11-2026, cuando la página salió del menú: ya no hay nombre del menú que seguir.
+  const nombreEnMenu = 'Apadrina'
   const [error, setError] = useState<string | null>(null)
   const [elegida, setElegida] = useState<Pieza | null>(null)
   const [form, setForm] = useState(VACIO)

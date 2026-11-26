@@ -220,18 +220,18 @@ describe('PaginasAdminPage', () => {
 
   it('las entradas del menú que no son páginas de bloques se renombran al final', async () => {
     const user = userEvent.setup()
-    montar(TODOS_CON_PAGINAS_PROPIAS, { '/tienda': 'Tienda solidaria' })
+    montar(TODOS_CON_PAGINAS_PROPIAS, { '/acceso': 'Área de hermanos' })
     await user.click(screen.getByRole('button', { name: /Otras entradas del menú/ }))
     const region = screen.getByRole('region', { name: /Otras entradas del menú/ })
-    for (const nombre of ['Inicio', 'Apadrina', 'Tienda solidaria', 'Hazte hermano', 'Acceso hermanos']) {
+    for (const nombre of ['Inicio', 'Área de hermanos']) {
       expect(within(region).getByText(nombre)).toBeInTheDocument()
     }
     // Las páginas de bloques no se repiten aquí.
     expect(within(region).queryByText('Contacto')).not.toBeInTheDocument()
-    expect(within(region).getByRole('button', { name: 'Cambiar el nombre en el menú de la página Tienda' })).toBeInTheDocument()
+    expect(within(region).getByRole('button', { name: 'Cambiar el nombre en el menú de la página Hermanos' })).toBeInTheDocument()
   })
 
-  it('los títulos de primer nivel se renombran desde su grupo, y el que no tiene páginas, entre las otras entradas', async () => {
+  it('los títulos de primer nivel se renombran desde su grupo, y ninguno se repite entre las otras entradas', async () => {
     const user = userEvent.setup()
     montar(TODOS_CON_PAGINAS_PROPIAS, { 'seccion:/sagrada-titular': 'Sagrados titulares' })
     // El grupo se ve con su nombre en el menú, y el lápiz va fuera del botón que pliega.
@@ -239,7 +239,8 @@ describe('PaginasAdminPage', () => {
     expect(screen.getByRole('button', { name: 'Cambiar el nombre en el menú de la sección Sagrada titular' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Otras entradas del menú/ }))
     const region = screen.getByRole('region', { name: /Otras entradas del menú/ })
-    expect(within(region).getByRole('button', { name: 'Cambiar el nombre en el menú de la sección Hermanos' })).toBeInTheDocument()
+    // Hermanos dejó de ser un título que despliega (26-11-2026): todos tienen ya su grupo.
+    expect(within(region).queryByRole('button', { name: /de la sección/ })).not.toBeInTheDocument()
   })
 
   it('el menú lleva al índice, y el índice y las páginas dejan pasar a los mismos cargos', () => {
