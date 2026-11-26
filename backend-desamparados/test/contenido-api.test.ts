@@ -67,9 +67,10 @@ test('la siembra deja una fila por página editable, con los textos de siempre',
   // editado (9 paradas), con lo que esta prueba fallaba siempre en local.
   const documento = (slug: string) => porDefecto(slug as SlugContenido) as any;
 
-  // Los tres fines, cada uno con su página (desde el 26-09-2026, en los tres anillos).
+  // Los tres fines del contenido neutro; Formación sin botón desde que su página dejó el
+  // núcleo (26-11-2026): Vida y Evangelización son páginas propias de Desamparados.
   const fines = documento('nuestros-fines').bloques.find((b: any) => b.tipo === 'anillos');
-  assert.deepEqual(fines.fines.map((f: any) => f.enlace), ['/cultos', '/nuestros-fines/caridad', '/nuestros-fines/formacion']);
+  assert.deepEqual(fines.fines.map((f: any) => f.enlace), ['/cultos', '/nuestros-fines/caridad', '']);
   // La cronología se siembra con sus hitos (los neutros: cada corporación escribe los suyos).
   const cronologia = documento('historia').bloques.find((b: any) => b.tipo === 'cronologia');
   assert.ok(cronologia.hitos.length >= 1);

@@ -41,7 +41,7 @@ export default function Hero() {
   const { activos, activo } = useModulos()
   // El enlace puede pintarse mientras no se sabe (la lista llega en milisegundos):
   // retirarlo después sería peor que dejarlo un instante de más.
-  const conAgenda = activos === null || activo('agenda')
+  const conNoticias = activos === null || activo('noticias')
   // En la vista previa del CMS el título no es el de la pantalla: la pantalla
   // ya tiene el suyo, «Portada», y dos títulos principales confunden al lector.
   const enVistaPrevia = useContext(BorradorPortadaContext) !== null
@@ -364,10 +364,10 @@ export default function Hero() {
               <Boton component={Link} to="/historia" sx={{ px: { xs: 2.5, md: 3.5 }, fontSize: { xs: 14, md: 15 } }}>
                 <TextoDePortada anchos={['8em']}>{textos.hero.botonPrincipal}</TextoDePortada>
               </Boton>
-              {/* Las noticias ya vienen justo debajo del hero; la segunda acción lleva a lo que más se consulta.
-                  Sin la Agenda no hay otro destino que no repita el botón principal: no se pinta. */}
-              {conAgenda && (
-                <Box component={Link} to="/agenda" sx={{ ...enlaceConFlecha, color: '#e4e2df' }}>
+              {/* La segunda acción lleva a todas las noticias (desde el 26-11-2026; antes, a la agenda).
+                  Sin el módulo de noticias no hay otro destino que no repita el botón principal: no se pinta. */}
+              {conNoticias && (
+                <Box component={Link} to="/noticias" sx={{ ...enlaceConFlecha, color: '#e4e2df' }}>
                   <TextoDePortada anchos={['8em']}>{textos.hero.enlaceSecundario}</TextoDePortada> <ArrowForwardIcon sx={{ fontSize: 16 }} />
                 </Box>
               )}

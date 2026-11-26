@@ -106,7 +106,7 @@ export default function PortadaAdminPage() {
             valor={textos.hero.enlaceSecundario}
             onCambio={(enlaceSecundario) => cambiarHero({ enlaceSecundario })}
             maxLength={60}
-            ayuda="El enlace de al lado. Sigue llevando a la agenda."
+            ayuda="El enlace de al lado. Sigue llevando a las noticias."
           />
           {activo('procesion') && (
             <Box>

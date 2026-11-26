@@ -29,7 +29,8 @@ const OrganosDeGobiernoPage = lazy(() => import('../features/corporacion/gobiern
 const ParroquiaPage = lazy(() => import('../features/corporacion/parroquia/ParroquiaPage'))
 const NuestrosFinesPage = lazy(() => import('../features/corporacion/fines/NuestrosFinesPage'))
 const CaridadPage = lazy(() => import('../features/corporacion/fines/CaridadPage'))
-const FormacionPage = lazy(() => import('../features/corporacion/fines/FormacionPage'))
+const VidaPage = lazy(() => import('../features/corporacion/fines/VidaPage'))
+const EvangelizacionPage = lazy(() => import('../features/corporacion/fines/EvangelizacionPage'))
 const CultosPage = lazy(() => import('../features/corporacion/cultos/CultosPage'))
 const RosarioPage = lazy(() => import('../features/corporacion/rosario/RosarioPage'))
 const SabadoPasionPage = lazy(() => import('../features/corporacion/sabado-pasion/SabadoPasionPage'))
@@ -177,8 +178,9 @@ const router = createBrowserRouter([
           { path: 'historia/organos-de-gobierno', element: pagina(OrganosDeGobiernoPage, 'nucleo') },
           { path: 'parroquia', element: pagina(ParroquiaPage, 'nucleo') },
           { path: 'nuestros-fines', element: pagina(NuestrosFinesPage, 'nucleo') },
+          { path: 'nuestros-fines/vida', element: pagina(VidaPage, 'paginas-propias') },
+          { path: 'nuestros-fines/evangelizacion', element: pagina(EvangelizacionPage, 'paginas-propias') },
           { path: 'nuestros-fines/caridad', element: pagina(CaridadPage, 'nucleo') },
-          { path: 'nuestros-fines/formacion', element: pagina(FormacionPage, 'nucleo') },
           { path: 'cultos', element: pagina(CultosPage, 'nucleo') },
           { path: 'sabado-de-pasion', element: pagina(SabadoPasionPage, 'paginas-propias') },
           { path: 'sabado-de-pasion/recorrido', element: pagina(RecorridoPage, 'paginas-propias') },
@@ -207,6 +209,8 @@ const router = createBrowserRouter([
           { path: 'condiciones-de-compra', element: pagina(CondicionesDeCompraPage, 'tienda-web') },
           // La parroquia se llamaba como la orden que la atiende (hasta el 12-10-2026).
           { path: 'parroquia-pasionistas', element: <DireccionAntigua a="/parroquia" /> },
+          // Formación dejó paso a Evangelización, de las páginas propias (26-11-2026).
+          { path: 'nuestros-fines/formacion', element: <DireccionAntigua a="/nuestros-fines/evangelizacion" /> },
           // El Rosario pasó a colgar de Cultos (26-11-2026).
           { path: 'rosario', element: <DireccionAntigua a="/cultos/rosario" /> },
           // Los boletines pasaron a llamarse «Newsletter» (26-11-2026).

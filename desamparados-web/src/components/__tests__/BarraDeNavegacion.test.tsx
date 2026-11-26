@@ -83,34 +83,45 @@ describe('BarraDeNavegacion en escritorio', () => {
     await user.hover(within(navEscritorio()).getByRole('button', { name: 'Corporación', hidden: true }))
 
     expect(screen.getByRole('link', { name: 'Historia', hidden: true })).toHaveAttribute('href', '/historia')
+    // Con fireEvent y no con user.click: en jsdom, mover el ratón de user-event a
+    // cualquier cosa de la hoja dispara el mouseleave de la sección y la cierra.
+    fireEvent.click(screen.getByRole('button', { name: 'Páginas de Historia', hidden: true }))
     expect(screen.getByRole('link', { name: 'Órganos de Gobierno', hidden: true })).toHaveAttribute(
       'href',
       '/historia/organos-de-gobierno',
     )
+    fireEvent.click(screen.getByRole('button', { name: 'Páginas de Sábado de Pasión', hidden: true }))
     expect(screen.getByRole('link', { name: 'Enseres', hidden: true })).toHaveAttribute('href', '/sabado-de-pasion/enseres')
   })
 
-  it('en la hoja, las subpáginas de una página van plegadas y su flecha las abre de una en una', async () => {
+  it('en la hoja, las subpáginas de una página salen en una segunda hoja, de una en una', async () => {
     const user = userEvent.setup()
     renderWithProviders(<BarraDeNavegacion />, { modulos: TODOS_CON_PAGINAS_PROPIAS })
     await user.hover(within(navEscritorio()).getByRole('button', { name: 'Corporación', hidden: true }))
-    // Con fireEvent y no con user.click: en jsdom, mover el ratón de user-event a
-    // cualquier cosa de la hoja dispara el mouseleave de la sección y la cierra.
     const historia = screen.getByRole('button', { name: 'Páginas de Historia', hidden: true })
     const sabado = screen.getByRole('button', { name: 'Páginas de Sábado de Pasión', hidden: true })
+    // Fuera de un grupo, ningún panel abierto.
     expect(historia).toHaveAttribute('aria-expanded', 'false')
-    // Plegadas siguen en la página, pero inertes: el tabulador no entra en ellas.
-    expect(screen.getByRole('link', { name: 'Órganos de Gobierno', hidden: true }).closest('[inert]')).not.toBeNull()
+    expect(screen.queryByRole('link', { name: 'Órganos de Gobierno', hidden: true })).not.toBeInTheDocument()
 
     fireEvent.click(historia)
     expect(historia).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('link', { name: 'Órganos de Gobierno', hidden: true }).closest('[inert]')).toBeNull()
+    expect(screen.getByRole('link', { name: 'Órganos de Gobierno', hidden: true })).toHaveAttribute(
+      'href',
+      '/historia/organos-de-gobierno',
+    )
 
     fireEvent.click(sabado)
     expect(historia).toHaveAttribute('aria-expanded', 'false')
     expect(sabado).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.queryByRole('link', { name: 'Órganos de Gobierno', hidden: true })).not.toBeInTheDocument()
     // El nombre sigue llevando a su página.
     expect(screen.getByRole('link', { name: 'Sábado de Pasión', hidden: true })).toHaveAttribute('href', '/sabado-de-pasion')
+
+    // Con el ratón, basta con pasar por la fila.
+    fireEvent.mouseEnter(screen.getByRole('link', { name: 'Cultos', hidden: true }).closest('li')!)
+    expect(screen.getByRole('button', { name: 'Páginas de Cultos', hidden: true })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('link', { name: 'Rosario', hidden: true })).toHaveAttribute('href', '/cultos/rosario')
   })
 
   it('con un nombre puesto en el CMS, la página sale con él; sin él, con el de siempre', async () => {

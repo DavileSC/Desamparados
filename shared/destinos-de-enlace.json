@@ -30,6 +30,7 @@
     "el CMS no las ofrece."
   ],
   "antiguas": [
+    { "ruta": "/nuestros-fines/formacion", "ahora": "/nuestros-fines/evangelizacion" },
     { "ruta": "/parroquia-pasionistas", "ahora": "/parroquia" },
     { "ruta": "/publicaciones/boletines", "ahora": "/publicaciones/newsletter" },
     { "ruta": "/rosario", "ahora": "/cultos/rosario" }

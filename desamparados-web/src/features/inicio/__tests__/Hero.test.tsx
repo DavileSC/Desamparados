@@ -37,13 +37,12 @@ describe('Hero', () => {
     observe.mockRestore()
   })
 
-  it('ofrece la agenda como segunda acción, no las noticias que ya vienen justo debajo', async () => {
+  it('ofrece las noticias como segunda acción', async () => {
     respuestaPortada(POR_DEFECTO.portada)
     renderWithProviders(<Hero />)
 
     expect(await screen.findByRole('link', { name: POR_DEFECTO.portada.hero.botonPrincipal })).toHaveAttribute('href', '/historia')
-    expect(screen.getByRole('link', { name: /agenda y cultos/i })).toHaveAttribute('href', '/agenda')
-    expect(screen.queryByRole('link', { name: /ver actualidad/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: POR_DEFECTO.portada.hero.enlaceSecundario })).toHaveAttribute('href', '/noticias')
   })
 
   it('rota las fotos del CMS: la siguiente ya está montada y pasa a ser la visible al cumplirse el intervalo', async () => {

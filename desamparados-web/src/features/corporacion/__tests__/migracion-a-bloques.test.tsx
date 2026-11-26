@@ -13,7 +13,7 @@ import CATALOGO from '../../../../../shared/paginas-publicas.json'
 
 /** Los enlaces que tenía cada página y que no pueden haberse perdido. */
 const ENLACES: Record<string, string[]> = {
-  'nuestros-fines': ['/nuestros-fines/caridad', '/nuestros-fines/formacion'],
+  'nuestros-fines': ['/nuestros-fines/caridad'],
   'sabado-de-pasion': [
     '/sabado-de-pasion/recorrido',
     '/sabado-de-pasion/trono',

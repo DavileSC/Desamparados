@@ -60,8 +60,10 @@ export const menuPublico: EntradaMenu[] = [
         label: 'Nuestros fines', modulo: 'nucleo',
         href: '/nuestros-fines',
         hijos: [
+          // Vida y Evangelización sustituyen a Formación desde el 26-11-2026.
+          { label: 'Vida', href: '/nuestros-fines/vida', modulo: 'paginas-propias' },
+          { label: 'Evangelización', href: '/nuestros-fines/evangelizacion', modulo: 'paginas-propias' },
           { label: 'Caridad', href: '/nuestros-fines/caridad', modulo: 'nucleo' },
-          { label: 'Formación', href: '/nuestros-fines/formacion', modulo: 'nucleo' },
         ],
       },
       {

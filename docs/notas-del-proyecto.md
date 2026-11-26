@@ -1058,10 +1058,11 @@ Trampas:
 - **En las pruebas, no se mueve el ratón dentro de la hoja.** Con jsdom, un
   `user.hover` o `user.click` sobre cualquier cosa de la hoja dispara el
   `mouseleave` de la sección y la cierra (pasaba ya antes de los grupos
-  plegables, 21-11-2026). Para pulsar dentro, `fireEvent.click`. Las subpáginas
-  de cada página de la hoja van plegadas y siguen montadas con `inert`: se
-  buscan con `hidden: true` y se mira si cuelgan de un `[inert]`. Sin
-  `visibility: hidden`, que deja a los enlaces sin nombre accesible.
+  plegables, 21-11-2026). Para pulsar dentro, `fireEvent.click`; para pasar
+  por una fila, `fireEvent.mouseEnter` sobre su `li`. Desde el 26-11-2026 las
+  subpáginas de cada página salen en una segunda hoja a la derecha, a la
+  altura de su fila (forma C), que solo se monta abierta: cerradas no están en
+  el documento.
 - **Las pruebas del servidor escriben en la base local.** `npm test` usa la
   misma `desamparados_db` que la web en marcha: `contenido-api.test.ts` guarda
   la portada y luego la devuelve a como la leyó. Si se pasan con un campo

@@ -40,7 +40,7 @@ const correo = (quien: string, sufijo: string) => `e2e-${quien}-${sufijo}@prueba
  * La página de bloques que edita la prueba del constructor: una del núcleo,
  * que está en cualquier instalación. La recogida la deja como estaba.
  */
-const PAGINA = { slug: 'formacion', ruta: '/nuestros-fines/formacion' } as const;
+const PAGINA = { slug: 'caridad', ruta: '/nuestros-fines/caridad' } as const;
 
 async function cuenta(quien: string, sufijo: string, role: Role, extra: { twoFactorEnabled?: boolean; twoFactorSecret?: string } = {}) {
   return db.user.create({

@@ -48,7 +48,23 @@
       "nombre": "Nuestros Fines",
       "ruta": "/nuestros-fines",
       "grupo": "Corporación",
-      "descripcion": "Caridad y formación, los dos ejes de la acción de la corporación."
+      "descripcion": "Para qué existe la corporación: sus fines, cada uno con su página."
+    },
+    {
+      "slug": "vida",
+      "nombre": "Vida",
+      "ruta": "/nuestros-fines/vida",
+      "grupo": "Corporación",
+      "descripcion": "La vida del Grupo durante el año: la misa de hermandad, las convivencias y el acompañamiento a los hermanos.",
+      "modulo": "paginas-propias"
+    },
+    {
+      "slug": "evangelizacion",
+      "nombre": "Evangelización",
+      "ruta": "/nuestros-fines/evangelizacion",
+      "grupo": "Corporación",
+      "descripcion": "Catequesis, charlas y retiros para conocer la fe y contarla.",
+      "modulo": "paginas-propias"
     },
     {
       "slug": "caridad",
@@ -56,13 +72,6 @@
       "ruta": "/nuestros-fines/caridad",
       "grupo": "Corporación",
       "descripcion": "La ayuda social y la obra asistencial."
-    },
-    {
-      "slug": "formacion",
-      "nombre": "Formación",
-      "ruta": "/nuestros-fines/formacion",
-      "grupo": "Corporación",
-      "descripcion": "La educación en la fe y la transmisión de los valores cofrades."
     },
     {
       "slug": "cultos",

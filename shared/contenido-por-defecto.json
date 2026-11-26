@@ -5,7 +5,7 @@
       "titulo": "Fe, tradición y comunidad",
       "parrafo": "Devoción, historia y patrimonio al servicio de nuestra comunidad. Acompáñanos a lo largo de todo el año.",
       "botonPrincipal": "Nuestra historia",
-      "enlaceSecundario": "Agenda y cultos",
+      "enlaceSecundario": "Noticias",
       "video": "",
       "cuentaAtras": true
     },
@@ -292,7 +292,7 @@
             "cargo": "Vocalía de Formación",
             "nombre": "",
             "texto": "Crecer en la fe.",
-            "enlace": "/nuestros-fines/formacion"
+            "enlace": ""
           }
         ]
       },
@@ -367,8 +367,8 @@
           {
             "titulo": "Formación",
             "texto": "Catequesis, charlas y encuentros para crecer en la fe y entender lo que celebramos.",
-            "boton": "Qué ofrecemos",
-            "enlace": "/nuestros-fines/formacion"
+            "boton": "",
+            "enlace": ""
           }
         ],
         "texto": "La salida procesional es lo que más se ve, pero es solo una parte. El resto del año la corporación reza, ayuda y aprende, y cualquiera puede sumarse."
@@ -428,10 +428,10 @@
       }
     ]
   },
-  "formacion": {
+  "vida": {
     "cabecera": {
-      "titulo": "Formación",
-      "subtitulo": "Crecer en la fe para entender lo que celebramos.",
+      "titulo": "Vida",
+      "subtitulo": "Lo que pasa en la corporación el resto del año.",
       "foto": "",
       "fotoAlt": "",
       "encuadre": 40
@@ -443,7 +443,36 @@
         "presentacion": {
           "estilo": "carta"
         },
-        "html": "<p>La formación es uno de los pilares de la corporación. No se trata solo de aprender, sino de crecer en la fe y de entender lo que celebramos a lo largo del año.</p>"
+        "html": "<p>Entre una salida y la siguiente hay un año entero de misas, convivencias y trabajo compartido: ahí es donde los hermanos se hacen familia.</p>"
+      },
+      {
+        "tipo": "llamada",
+        "titulo": "",
+        "presentacion": {
+          "estilo": "fila"
+        },
+        "texto": "Si quieres vivirlo desde dentro, hazte hermano.",
+        "boton": "Hazte hermano",
+        "enlace": "/hazte-hermano"
+      }
+    ]
+  },
+  "evangelizacion": {
+    "cabecera": {
+      "titulo": "Evangelización",
+      "subtitulo": "Conocer la fe para poder contarla.",
+      "foto": "",
+      "fotoAlt": "",
+      "encuadre": 40
+    },
+    "bloques": [
+      {
+        "tipo": "texto",
+        "titulo": "",
+        "presentacion": {
+          "estilo": "carta"
+        },
+        "html": "<p>Evangelizar es uno de los fines de la corporación. Empieza por dentro, ayudando a cada hermano a conocer mejor su fe, y sigue fuera, contándola con naturalidad.</p>"
       },
       {
         "tipo": "cita",
