@@ -64,7 +64,12 @@ export const menuPublico: EntradaMenu[] = [
           { label: 'Formación', href: '/nuestros-fines/formacion', modulo: 'nucleo' },
         ],
       },
-      { label: 'Cultos', href: '/cultos', modulo: 'nucleo' },
+      {
+        label: 'Cultos', modulo: 'nucleo',
+        href: '/cultos',
+        // El Rosario colgaba suelto de Corporación (/rosario) hasta el 26-11-2026.
+        hijos: [{ label: 'Rosario', href: '/cultos/rosario', modulo: 'paginas-propias' }],
+      },
       {
         label: 'Sábado de Pasión', modulo: 'paginas-propias',
         href: '/sabado-de-pasion',
@@ -74,7 +79,6 @@ export const menuPublico: EntradaMenu[] = [
           { label: 'Enseres', href: '/sabado-de-pasion/enseres', modulo: 'paginas-propias' },
         ],
       },
-      { label: 'Rosario', href: '/rosario', modulo: 'paginas-propias' },
     ],
   },
   {
@@ -146,14 +150,19 @@ export function ponerNombres(entradas: EntradaMenu[], nombres: Readonly<Record<s
 }
 
 /**
- * El menú con estos módulos encendidos. Una sección (que no es enlace) que se
- * quede sin hijos desaparece: un título que no despliega nada confunde.
+ * El menú con estos módulos encendidos. Un título de primer nivel (que no es
+ * enlace) que se quede sin hijos desaparece: un título que no despliega nada
+ * confunde. Por debajo, una página con subpáginas sí es un enlace: sin ellas
+ * se queda como página sola (Cultos sin el Rosario de las páginas propias).
  */
-export function menuVisible(entradas: EntradaMenu[], activos: ReadonlySet<string>): EntradaMenu[] {
+export function menuVisible(entradas: EntradaMenu[], activos: ReadonlySet<string>, primerNivel = true): EntradaMenu[] {
   return entradas.flatMap((e) => {
     if (!cumple(e.modulo, activos)) return []
     if (!e.hijos) return [e]
-    const hijos = menuVisible(e.hijos, activos)
-    return hijos.length === 0 ? [] : [{ ...e, hijos }]
+    const hijos = menuVisible(e.hijos, activos, false)
+    if (hijos.length > 0) return [{ ...e, hijos }]
+    if (primerNivel) return []
+    const { hijos: _sinHijos, ...sola } = e
+    return [sola]
   })
 }

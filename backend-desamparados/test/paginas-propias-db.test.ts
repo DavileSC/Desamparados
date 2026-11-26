@@ -25,7 +25,7 @@ let server: Server;
 let baseUrl: string;
 let dbDisponible = false;
 const DOMINIO = `https://${identidad.dominio}`;
-const PROPIAS = ['/desamparados', '/rosario', '/sabado-de-pasion', '/sabado-de-pasion/recorrido', '/sabado-de-pasion/trono', '/sabado-de-pasion/enseres'];
+const PROPIAS = ['/desamparados', '/cultos/rosario', '/sabado-de-pasion', '/sabado-de-pasion/recorrido', '/sabado-de-pasion/trono', '/sabado-de-pasion/enseres'];
 
 before(async () => {
   server = app.listen(0);

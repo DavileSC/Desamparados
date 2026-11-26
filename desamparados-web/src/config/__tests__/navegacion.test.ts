@@ -42,11 +42,11 @@ describe('menuPublico', () => {
         '    Caridad /nuestros-fines/caridad',
         '    Formación /nuestros-fines/formacion',
         '  Cultos /cultos',
+        '    Rosario /cultos/rosario',
         '  Sábado de Pasión /sabado-de-pasion',
         '    Recorrido /sabado-de-pasion/recorrido',
         '    Trono /sabado-de-pasion/trono',
         '    Enseres /sabado-de-pasion/enseres',
-        '  Rosario /rosario',
         'Sagrada titular /sagrada-titular',
         '  Desamparados /desamparados',
         '  Ajuar /ajuar',
@@ -97,12 +97,14 @@ describe('menuPublico', () => {
     expect(dibujo(['publicaciones'])).not.toContain('Hermanos')
   })
 
-  it('sin las páginas propias se va el grupo Sábado de Pasión entero, Rosario y Desamparados; Ajuar se queda', () => {
+  it('sin las páginas propias se va el grupo Sábado de Pasión entero, el Rosario de Cultos y Desamparados; Ajuar se queda', () => {
     const sinPropias = dibujar(menuVisible(menuPublico, new Set())).join('\n')
     for (const fuera of ['Sábado de Pasión', 'Recorrido', 'Trono', 'Enseres', 'Rosario', 'Desamparados /desamparados']) {
       expect(sinPropias).not.toContain(fuera)
     }
-    expect(sinPropias).toContain('Cultos /cultos')
+    // Cultos es una página: sin el Rosario se queda, sola y sin desplegable.
+    expect(sinPropias).toContain('  Cultos /cultos\nSagrada titular')
+    expect(menuVisible(menuPublico, new Set()).find((e) => e.label === 'Corporación')?.hijos?.find((e) => e.label === 'Cultos')?.hijos).toBeUndefined()
     // A «Sagrada titular» le queda el Ajuar: no desaparece.
     expect(sinPropias).toContain('Sagrada titular /sagrada-titular\n  Ajuar /ajuar')
     const conPropias = dibujar(menuVisible(menuPublico, new Set(['paginas-propias']))).join('\n')

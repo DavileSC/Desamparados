@@ -175,7 +175,7 @@ const GUIA = 64
  * Una sección del árbol, plegada de entrada: así caben todas en una pantalla y
  * se abre solo la que se va a tocar.
  *
- * Una sección con una sola página que se llama como ella (Rosario, Contacto)
+ * Una sección con una sola página que se llama como ella (Contacto)
  * no se pliega: la fila es ya el enlace a su editor, sin repetir el nombre dentro.
  */
 function Seccion({ titulo, paginas }: { titulo: string; paginas: PaginaPublica[] }) {

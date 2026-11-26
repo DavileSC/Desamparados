@@ -662,7 +662,7 @@ alguno de los tres.
 **Los módulos «de instalación» van aparte y no se parecen a los demás en
 nada salvo en preguntar por ellos.** `deInstalacion` de `shared/modulos.json`
 (hoy solo `paginas-propias`: las páginas hechas a medida de Desamparados,
-/desamparados, /rosario y el Sábado de Pasión con recorrido, trono y enseres)
+/desamparados, /cultos/rosario y el Sábado de Pasión con recorrido, trono y enseres)
 no está en `CLAVES_MODULO` sino en `CLAVES_DE_INSTALACION`: no sale en
 Sistema → «Módulos», no tiene fila en `Modulo` y `cambiar` responde 404. Está
 encendido si y solo si su clave está en `modulos.activos` del fichero de la
@@ -970,6 +970,11 @@ Desde el 18-10-2026 el bloque Itinerario guarda el recorrido de siempre
 paradas y su mapa; `enUso` dice cuál enseñan la web y el directo. Quien lea
 `bloque.recorrido` o `bloque.paradas` directamente enseña el habitual aunque
 la salida vaya por el alternativo, que es justo lo que pasó con el Rosario.
+
+**Cuál sigue el directo:** el primer itinerario con mapa de las páginas
+encendidas, en el orden de `shared/paginas-publicas.json`. El del Rosario va
+ahí detrás del Recorrido del Sábado de Pasión aunque en el menú cuelgue de
+Cultos (26-11-2026): delante, el directo seguiría el del Rosario.
 
 Hay que pasar por `itinerarioEnUso` (web, `components/bloques/recorrido.ts`)
 o `itinerarioConMapa` (API, `cortejo-directo.service.ts`). Lo hacen ya el

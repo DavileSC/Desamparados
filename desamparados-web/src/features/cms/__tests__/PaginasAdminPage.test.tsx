@@ -135,9 +135,9 @@ describe('PaginasAdminPage', () => {
 
   it('una sección de una sola página con su nombre es ya el enlace, sin plegar', () => {
     montar()
-    // Anclado: el botón de su nombre en el menú también dice «Rosario».
-    expect(screen.queryByRole('button', { name: /^Rosario/ })).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Rosario' })).toHaveAttribute('href', '/cms/paginas/rosario')
+    // Anclado: el botón de su nombre en el menú también dice «Contacto».
+    expect(screen.queryByRole('button', { name: /^Contacto/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Contacto' })).toHaveAttribute('href', '/cms/paginas/contacto')
   })
 
   it('sin las páginas propias, ni su sección ni sus páginas; el Ajuar sigue', async () => {

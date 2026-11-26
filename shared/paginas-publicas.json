@@ -14,7 +14,12 @@
     "«modulo» (opcional) es la clave del módulo del que depende la página; sin él, es del",
     "núcleo. Con el módulo apagado, la página no sale en el índice del CMS ni en el selector",
     "de enlaces, y la API no la sirve ni deja guardarla (404 MODULO_NO_ACTIVADO). Lo usan",
-    "las páginas propias de una corporación («paginas-propias», de shared/modulos.json)."
+    "las páginas propias de una corporación («paginas-propias», de shared/modulos.json).",
+    "",
+    "El orden cuenta: «Cortejo en directo» sigue el primer itinerario con mapa de",
+    "estas páginas, y el del Rosario no puede ir delante del Recorrido del Sábado",
+    "de Pasión. Por eso el Rosario sigue aquí abajo aunque cuelgue de Cultos: el",
+    "índice del CMS anida cada página bajo su madre por la ruta, no por el orden."
   ],
   "paginas": [
     {
@@ -101,8 +106,8 @@
     {
       "slug": "rosario",
       "nombre": "Rosario",
-      "ruta": "/rosario",
-      "grupo": "Rosario",
+      "ruta": "/cultos/rosario",
+      "grupo": "Corporación",
       "descripcion": "El Rosario vespertino de octubre: qué es, su itinerario por el barrio y la galería de fotos.",
       "modulo": "paginas-propias"
     },

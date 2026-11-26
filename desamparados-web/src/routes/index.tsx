@@ -184,7 +184,7 @@ const router = createBrowserRouter([
           { path: 'sabado-de-pasion/recorrido', element: pagina(RecorridoPage, 'paginas-propias') },
           { path: 'sabado-de-pasion/trono', element: pagina(TronoPage, 'paginas-propias') },
           { path: 'sabado-de-pasion/enseres', element: pagina(EnseresPage, 'paginas-propias') },
-          { path: 'rosario', element: pagina(RosarioPage, 'paginas-propias') },
+          { path: 'cultos/rosario', element: pagina(RosarioPage, 'paginas-propias') },
           { path: 'desamparados', element: pagina(DesamparadosPage, 'paginas-propias') },
           { path: 'ajuar', element: pagina(AjuarPage, 'nucleo') },
           { path: 'agenda', element: pagina(AgendaPage, 'agenda') },
@@ -207,6 +207,8 @@ const router = createBrowserRouter([
           { path: 'condiciones-de-compra', element: pagina(CondicionesDeCompraPage, 'tienda-web') },
           // La parroquia se llamaba como la orden que la atiende (hasta el 12-10-2026).
           { path: 'parroquia-pasionistas', element: <DireccionAntigua a="/parroquia" /> },
+          // El Rosario pasó a colgar de Cultos (26-11-2026).
+          { path: 'rosario', element: <DireccionAntigua a="/cultos/rosario" /> },
           // Los boletines pasaron a llamarse «Newsletter» (26-11-2026).
           { path: 'publicaciones/boletines', element: <DireccionAntigua a="/publicaciones/newsletter" /> },
           // Las direcciones de antes de quitar las portadas de sección (25-09-2026):
