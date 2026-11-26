@@ -9,7 +9,7 @@ import type { PaginaDeBloques } from '../../../lib/api/contenido'
 
 describe('cejaDePagina', () => {
   it('dice dónde está la página en el menú, de fuera adentro', () => {
-    expect(cejaDePagina('enseres', 'Enseres')).toEqual(['Corporación', 'Sábado de Pasión'])
+    expect(cejaDePagina('patrimonio', 'Patrimonio')).toEqual(['Corporación', 'Sábado de Pasión'])
     expect(cejaDePagina('organos-de-gobierno', 'Órganos de Gobierno')).toEqual(['Corporación', 'Historia'])
     expect(cejaDePagina('caridad', 'Caridad')).toEqual(['Corporación', 'Nuestros fines'])
     expect(cejaDePagina('ajuar', 'Ajuar')).toEqual(['Sagrada titular'])

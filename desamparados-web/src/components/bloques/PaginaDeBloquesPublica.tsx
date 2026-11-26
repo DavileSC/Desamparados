@@ -151,15 +151,31 @@ export default function PaginaDeBloquesPublica({ slug }: Props) {
 
 /**
  * Con un ancla en la dirección (`/historia#fundacion`), baja hasta el bloque
- * que la lleva. El router no lo hace solo, y además el bloque no existe hasta
- * que llega el contenido: por eso se intenta otra vez cuando llega.
+ * que la lleva. El router no lo hace solo, y el bloque no existe cuando llega
+ * el contenido si la página lleva bloques que se descargan aparte: hasta que
+ * llegan, `ConBloquesCargados` enseña el esqueleto. Por eso se vigila la página
+ * hasta que aparece el ancla, con un tope para no quedarse mirando siempre por
+ * un ancla que no existe.
  */
+const ESPERA_DEL_ANCLA = 5000
+
 function useBajarAlAncla(cargado: boolean) {
   const { hash } = useLocation()
   useEffect(() => {
-    if (!hash) return
+    if (!hash || !cargado) return
     const id = decodeURIComponent(hash.slice(1))
-    const marco = requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView?.({ block: 'start' }))
-    return () => cancelAnimationFrame(marco)
+    let marco = 0
+    const bajar = () => {
+      const destino = document.getElementById(id)
+      if (!destino) return false
+      // Un marco más tarde: el bloque recién montado aún no tiene su alto.
+      marco = requestAnimationFrame(() => destino.scrollIntoView?.({ block: 'start' }))
+      return true
+    }
+    if (bajar()) return () => cancelAnimationFrame(marco)
+    const vigia = new MutationObserver(() => { if (bajar()) vigia.disconnect() })
+    vigia.observe(document.body, { childList: true, subtree: true })
+    const tope = window.setTimeout(() => vigia.disconnect(), ESPERA_DEL_ANCLA)
+    return () => { vigia.disconnect(); window.clearTimeout(tope); cancelAnimationFrame(marco) }
   }, [hash, cargado])
 }

@@ -12,7 +12,7 @@ import { esClaveEncendible, type ClaveEncendible } from './modulos.js';
  * en `string` y con él el mapa de esquemas y `porDefecto` sin comprobación.
  * De que las dos listas no se separen se encarga `paginas-catalogo.test.ts`.
  */
-export const SLUGS_CONTENIDO = ['portada', 'recorrido', 'historia', 'parroquia', 'pasionistas', 'organos-de-gobierno', 'nuestros-fines', 'vida', 'evangelizacion', 'caridad', 'cultos', 'grupo-joven', 'sabado-de-pasion', 'trono', 'enseres', 'rosario', 'desamparados', 'ajuar', 'agenda', 'noticias', 'publicaciones', 'boletines', 'dossier-prensa', 'contacto'] as const;
+export const SLUGS_CONTENIDO = ['portada', 'recorrido', 'historia', 'parroquia', 'pasionistas', 'organos-de-gobierno', 'nuestros-fines', 'vida', 'evangelizacion', 'caridad', 'cultos', 'grupo-joven', 'sabado-de-pasion', 'patrimonio', 'rosario', 'desamparados', 'ajuar', 'agenda', 'noticias', 'publicaciones', 'boletines', 'dossier-prensa', 'contacto'] as const;
 export type SlugContenido = (typeof SLUGS_CONTENIDO)[number];
 
 export const esSlugContenido = (valor: unknown): valor is SlugContenido =>

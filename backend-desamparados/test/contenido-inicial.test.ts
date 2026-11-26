@@ -66,8 +66,8 @@ describe('qué semilla vale', () => {
     assert.throws(() => validarContenidoInicial(malo), /historia: .*titulo/);
     const bloqueRaro = { cultos: { bloques: [{ tipo: 'inventado', titulo: '' }] } };
     assert.throws(() => validarContenidoInicial(bloqueRaro), /inventado/);
-    const fotoAjena = { trono: { cabecera: { titulo: 'Trono', subtitulo: '', foto: 'https://otro.example/a.jpg', fotoAlt: '' } } };
-    assert.throws(() => validarContenidoInicial(fotoAjena), /trono/);
+    const fotoAjena = { patrimonio: { cabecera: { titulo: 'Patrimonio', subtitulo: '', foto: 'https://otro.example/a.jpg', fotoAlt: '' } } };
+    assert.throws(() => validarContenidoInicial(fotoAjena), /patrimonio/);
   });
 
   test('lo que la mezcla tiraría en silencio tampoco deja arrancar', () => {
@@ -92,8 +92,8 @@ describe('qué semilla vale', () => {
   });
 
   test('el HTML se guarda saneado, como un guardado del CMS', () => {
-    const semilla = validarContenidoInicial({ trono: { bloques: [{ tipo: 'texto', titulo: '', html: '<p>Hola</p><script>alert(1)</script>' }] } });
-    assert.ok(!(semilla.get('trono') as any).bloques[0].html.includes('<script'));
+    const semilla = validarContenidoInicial({ patrimonio: { bloques: [{ tipo: 'texto', titulo: '', html: '<p>Hola</p><script>alert(1)</script>' }] } });
+    assert.ok(!(semilla.get('patrimonio') as any).bloques[0].html.includes('<script'));
   });
 });
 

@@ -25,7 +25,7 @@ let server: Server;
 let baseUrl: string;
 let dbDisponible = false;
 const DOMINIO = `https://${identidad.dominio}`;
-const PROPIAS = ['/desamparados', '/pasionistas', '/grupo-joven', '/cultos/rosario', '/nuestros-fines/vida', '/nuestros-fines/evangelizacion', '/sabado-de-pasion', '/sabado-de-pasion/recorrido', '/sabado-de-pasion/trono', '/sabado-de-pasion/enseres'];
+const PROPIAS = ['/desamparados', '/pasionistas', '/grupo-joven', '/cultos/rosario', '/nuestros-fines/vida', '/nuestros-fines/evangelizacion', '/sabado-de-pasion', '/sabado-de-pasion/recorrido', '/sabado-de-pasion/patrimonio'];
 
 before(async () => {
   server = app.listen(0);
@@ -84,7 +84,7 @@ describe('la API de contenido', () => {
     try {
       await con(false, async () => {
         const cookie = `${COOKIE_CMS}=${generateToken(admin.id, Role.ADMIN, false, 'cms')}`;
-        for (const slug of ['desamparados', 'rosario', 'sabado-de-pasion', 'recorrido', 'trono', 'enseres']) {
+        for (const slug of ['desamparados', 'rosario', 'sabado-de-pasion', 'recorrido', 'patrimonio']) {
           const leer = await fetch(`${baseUrl}/api/contenido/${slug}`);
           assert.equal(leer.status, 404, slug);
           assert.equal((await leer.json() as { error: string }).error, 'MODULO_NO_ACTIVADO', slug);
@@ -105,7 +105,7 @@ describe('la API de contenido', () => {
   test('encendido: se sirven como siempre', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     await con(true, async () => {
-      for (const slug of ['desamparados', 'rosario', 'sabado-de-pasion', 'recorrido', 'trono', 'enseres']) {
+      for (const slug of ['desamparados', 'rosario', 'sabado-de-pasion', 'recorrido', 'patrimonio']) {
         assert.equal((await fetch(`${baseUrl}/api/contenido/${slug}`)).status, 200, slug);
       }
     });

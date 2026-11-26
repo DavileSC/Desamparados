@@ -9,7 +9,7 @@ export type SlugContenido =
   | 'portada' | 'recorrido' | 'historia'
   | 'parroquia' | 'pasionistas' | 'organos-de-gobierno'
   | 'nuestros-fines' | 'vida' | 'evangelizacion' | 'caridad' | 'cultos' | 'grupo-joven'
-  | 'sabado-de-pasion' | 'trono' | 'enseres' | 'rosario'
+  | 'sabado-de-pasion' | 'patrimonio' | 'rosario'
   | 'desamparados' | 'ajuar'
   | 'agenda' | 'noticias'
   | 'publicaciones' | 'boletines' | 'dossier-prensa'

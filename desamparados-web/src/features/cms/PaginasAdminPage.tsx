@@ -358,7 +358,7 @@ function agruparPorGrupo(paginas: PaginaPublica[]): [string, PaginaPublica[]][] 
 
 /**
  * Qué página cuelga de cuál dentro de una sección: la subpágina es la que
- * tiene la ruta de otra como prefijo (/sabado-de-pasion/trono cuelga de
+ * tiene la ruta de otra como prefijo (/sabado-de-pasion/recorrido cuelga de
  * /sabado-de-pasion), que es también como las anida el menú de la web. Las
  * madres, en el orden del catálogo, y cada una con sus hijas detrás aunque en
  * el catálogo haya otra página por medio.

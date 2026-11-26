@@ -39,7 +39,7 @@ describe('destinos de los enlaces del CMS', () => {
 
   it('el selector no ofrece las páginas propias si su módulo está apagado, pero un enlace ya guardado a ellas sigue valiendo', () => {
     const rutas = (activos: string[]) => destinosActivos(new Set(activos)).map((d) => d.ruta)
-    for (const propia of ['/desamparados', '/cultos/rosario', '/sabado-de-pasion', '/sabado-de-pasion/trono']) {
+    for (const propia of ['/desamparados', '/cultos/rosario', '/sabado-de-pasion', '/sabado-de-pasion/patrimonio']) {
       expect(rutas([]), propia).not.toContain(propia)
       expect(rutas(['paginas-propias']), propia).toContain(propia)
       // Si no, una página que enlazara a ella ya no se podría volver a guardar.

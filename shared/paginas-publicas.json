@@ -101,7 +101,7 @@
       "nombre": "Sábado de Pasión",
       "ruta": "/sabado-de-pasion",
       "grupo": "Sábado de Pasión",
-      "descripcion": "La salida procesional y los accesos a sus tres páginas.",
+      "descripcion": "La salida procesional y los accesos a sus dos páginas.",
       "modulo": "paginas-propias"
     },
     {
@@ -113,19 +113,11 @@
       "modulo": "paginas-propias"
     },
     {
-      "slug": "trono",
-      "nombre": "Trono",
-      "ruta": "/sabado-de-pasion/trono",
+      "slug": "patrimonio",
+      "nombre": "Patrimonio",
+      "ruta": "/sabado-de-pasion/patrimonio",
       "grupo": "Sábado de Pasión",
-      "descripcion": "El trono de la imagen titular.",
-      "modulo": "paginas-propias"
-    },
-    {
-      "slug": "enseres",
-      "nombre": "Enseres",
-      "ruta": "/sabado-de-pasion/enseres",
-      "grupo": "Sábado de Pasión",
-      "descripcion": "El acompañamiento musical y las insignias.",
+      "descripcion": "El trono, los enseres y el cortejo, cada uno en su sección.",
       "modulo": "paginas-propias"
     },
     {

@@ -37,8 +37,7 @@ const GrupoJovenPage = lazy(() => import('../features/corporacion/grupo-joven/Gr
 const RosarioPage = lazy(() => import('../features/corporacion/rosario/RosarioPage'))
 const SabadoPasionPage = lazy(() => import('../features/corporacion/sabado-pasion/SabadoPasionPage'))
 const RecorridoPage = lazy(() => import('../features/corporacion/sabado-pasion/RecorridoPage'))
-const TronoPage = lazy(() => import('../features/corporacion/sabado-pasion/TronoPage'))
-const EnseresPage = lazy(() => import('../features/corporacion/sabado-pasion/EnseresPage'))
+const PatrimonioPage = lazy(() => import('../features/corporacion/sabado-pasion/PatrimonioPage'))
 const DesamparadosPage = lazy(() => import('../features/titular/DesamparadosPage'))
 const AjuarPage = lazy(() => import('../features/titular/AjuarPage'))
 const AgendaPage = lazy(() => import('../features/actualidad/agenda/AgendaPage'))
@@ -188,8 +187,7 @@ const router = createBrowserRouter([
           { path: 'grupo-joven', element: pagina(GrupoJovenPage, 'paginas-propias') },
           { path: 'sabado-de-pasion', element: pagina(SabadoPasionPage, 'paginas-propias') },
           { path: 'sabado-de-pasion/recorrido', element: pagina(RecorridoPage, 'paginas-propias') },
-          { path: 'sabado-de-pasion/trono', element: pagina(TronoPage, 'paginas-propias') },
-          { path: 'sabado-de-pasion/enseres', element: pagina(EnseresPage, 'paginas-propias') },
+          { path: 'sabado-de-pasion/patrimonio', element: pagina(PatrimonioPage, 'paginas-propias') },
           { path: 'cultos/rosario', element: pagina(RosarioPage, 'paginas-propias') },
           { path: 'desamparados', element: pagina(DesamparadosPage, 'paginas-propias') },
           { path: 'ajuar', element: pagina(AjuarPage, 'nucleo') },

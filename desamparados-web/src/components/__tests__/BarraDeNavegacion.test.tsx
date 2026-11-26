@@ -91,7 +91,7 @@ describe('BarraDeNavegacion en escritorio', () => {
       '/historia/organos-de-gobierno',
     )
     fireEvent.click(screen.getByRole('button', { name: 'Páginas de Sábado de Pasión', hidden: true }))
-    expect(screen.getByRole('link', { name: 'Enseres', hidden: true })).toHaveAttribute('href', '/sabado-de-pasion/enseres')
+    expect(screen.getByRole('link', { name: 'Patrimonio', hidden: true })).toHaveAttribute('href', '/sabado-de-pasion/patrimonio')
   })
 
   it('en la hoja, las subpáginas de una página salen en una segunda hoja, de una en una', async () => {
@@ -162,7 +162,7 @@ describe('BarraDeNavegacion en escritorio', () => {
     await user.hover(within(navEscritorio()).getByRole('button', { name: 'Corporación', hidden: true }))
 
     expect(screen.getByRole('link', { name: 'Historia', hidden: true })).toHaveAttribute('href', '/historia')
-    expect(screen.queryByRole('link', { name: 'Enseres', hidden: true })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Patrimonio', hidden: true })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Rosario', hidden: true })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Sábado de Pasión', hidden: true })).not.toBeInTheDocument()
   })

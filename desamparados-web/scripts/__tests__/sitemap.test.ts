@@ -52,13 +52,13 @@ describe('las páginas que van al sitemap', () => {
 
   it('las páginas propias solo se anuncian donde la instalación las enciende (el ejemplo, no)', () => {
     const rutas = rutasDelBloquePublico()
-    for (const ruta of ['desamparados', 'pasionistas', 'grupo-joven', 'cultos/rosario', 'nuestros-fines/vida', 'nuestros-fines/evangelizacion', 'sabado-de-pasion', 'sabado-de-pasion/recorrido', 'sabado-de-pasion/trono', 'sabado-de-pasion/enseres']) {
+    for (const ruta of ['desamparados', 'pasionistas', 'grupo-joven', 'cultos/rosario', 'nuestros-fines/vida', 'nuestros-fines/evangelizacion', 'sabado-de-pasion', 'sabado-de-pasion/recorrido', 'sabado-de-pasion/patrimonio']) {
       expect(rutas.find((r) => r.ruta === ruta)?.requisito, ruta).toEqual(['paginas-propias'])
     }
     expect(rutas.find((r) => r.ruta === 'ajuar')?.requisito).toEqual(['nucleo'])
     expect(urlsIndexables()).not.toContain('/cultos/rosario')
     expect(urlsIndexables()).toContain('/ajuar')
-    expect(urlsIndexables(['paginas-propias'])).toContain('/sabado-de-pasion/trono')
+    expect(urlsIndexables(['paginas-propias'])).toContain('/sabado-de-pasion/patrimonio')
   })
 
   it('las rutas con parámetro y las redirecciones no se anuncian', () => {

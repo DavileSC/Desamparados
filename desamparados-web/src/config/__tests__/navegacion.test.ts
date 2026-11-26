@@ -48,8 +48,7 @@ describe('menuPublico', () => {
         '  Grupo Joven /grupo-joven',
         '  Sábado de Pasión /sabado-de-pasion',
         '    Recorrido /sabado-de-pasion/recorrido',
-        '    Trono /sabado-de-pasion/trono',
-        '    Enseres /sabado-de-pasion/enseres',
+        '    Patrimonio /sabado-de-pasion/patrimonio',
         'Sagrada titular /sagrada-titular',
         '  Desamparados /desamparados',
         '  Ajuar /ajuar',
@@ -102,7 +101,7 @@ describe('menuPublico', () => {
 
   it('sin las páginas propias se va el grupo Sábado de Pasión entero, el Rosario de Cultos y Desamparados; Ajuar se queda', () => {
     const sinPropias = dibujar(menuVisible(menuPublico, new Set())).join('\n')
-    for (const fuera of ['Sábado de Pasión', 'Recorrido', 'Trono', 'Enseres', 'Rosario', 'Desamparados /desamparados']) {
+    for (const fuera of ['Sábado de Pasión', 'Recorrido', 'Patrimonio', 'Rosario', 'Desamparados /desamparados']) {
       expect(sinPropias).not.toContain(fuera)
     }
     // Cultos es una página: sin el Rosario se queda, sola y sin desplegable.

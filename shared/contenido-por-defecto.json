@@ -592,23 +592,18 @@
             "enlace": "/sabado-de-pasion/recorrido"
           },
           {
-            "titulo": "Trono",
-            "descripcion": "El trono de nuestra imagen titular.",
-            "enlace": "/sabado-de-pasion/trono"
-          },
-          {
-            "titulo": "Enseres",
-            "descripcion": "El patrimonio de la corporación, pieza a pieza.",
-            "enlace": "/sabado-de-pasion/enseres"
+            "titulo": "Patrimonio",
+            "descripcion": "El trono, los enseres y el cortejo.",
+            "enlace": "/sabado-de-pasion/patrimonio"
           }
         ]
       }
     ]
   },
-  "trono": {
+  "patrimonio": {
     "cabecera": {
-      "titulo": "Trono",
-      "subtitulo": "El trono de nuestra imagen titular.",
+      "titulo": "Patrimonio",
+      "subtitulo": "El trono, los enseres y el cortejo de la salida procesional.",
       "foto": "",
       "fotoAlt": "",
       "encuadre": 55
@@ -616,24 +611,27 @@
     "bloques": [
       {
         "tipo": "texto",
-        "titulo": "",
-        "html": "<p>Aquí se presenta el trono: su historia, sus autores y las piezas que lo componen.</p>"
-      }
-    ]
-  },
-  "enseres": {
-    "cabecera": {
-      "titulo": "Enseres",
-      "subtitulo": "El patrimonio de la corporación, pieza a pieza.",
-      "foto": "",
-      "fotoAlt": "",
-      "encuadre": 45
-    },
-    "bloques": [
+        "titulo": "El trono",
+        "html": "<p>Aquí se presenta el trono: su historia, sus autores y las piezas que lo componen.</p>",
+        "presentacion": {
+          "ancla": "trono"
+        }
+      },
       {
         "tipo": "texto",
-        "titulo": "",
-        "html": "<p>Los enseres procesionales acompañan a la imagen titular en su salida. Aquí se presentan, pieza a pieza.</p>"
+        "titulo": "Enseres",
+        "html": "<p>Los enseres procesionales acompañan a la imagen titular en su salida. Aquí se presentan, pieza a pieza.</p>",
+        "presentacion": {
+          "ancla": "enseres"
+        }
+      },
+      {
+        "tipo": "texto",
+        "titulo": "El cortejo",
+        "html": "<p>Aquí se cuenta cómo se ordena el cortejo de la salida: quién lo abre, cómo van los tramos y qué lleva cada uno hasta llegar a la imagen titular.</p>",
+        "presentacion": {
+          "ancla": "cortejo"
+        }
       }
     ]
   },

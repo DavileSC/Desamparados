@@ -16,8 +16,7 @@ const ENLACES: Record<string, string[]> = {
   'nuestros-fines': ['/nuestros-fines/caridad'],
   'sabado-de-pasion': [
     '/sabado-de-pasion/recorrido',
-    '/sabado-de-pasion/trono',
-    '/sabado-de-pasion/enseres',
+    '/sabado-de-pasion/patrimonio',
   ],
 }
 

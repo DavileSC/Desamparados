@@ -1055,6 +1055,13 @@ Trampas:
   al bajar (destino de un ancla, lo pegado con `sticky`) va con
   `bajoElVelo(aire)`, no con `bajoLaBarra`. Una cabecera nueva con foto a
   sangre llama al hook, o su foto se verá cortada en seco.
+- **Un ancla en la dirección no existe cuando llega el contenido** si la página
+  lleva bloques que se descargan aparte (carrusel, foto fija, mapa…):
+  `ConBloquesCargados` enseña el esqueleto hasta que llegan. `useBajarAlAncla`
+  (en `PaginaDeBloquesPublica`) vigila la página hasta que aparece, con un
+  tope de 5 s. Hasta el 26-11-2026 lo intentaba una sola vez y
+  `/parroquia#como-llegar` o `/sabado-de-pasion/patrimonio#enseres` se quedaban
+  arriba.
 - **En las pruebas, no se mueve el ratón dentro de la hoja.** Con jsdom, un
   `user.hover` o `user.click` sobre cualquier cosa de la hoja dispara el
   `mouseleave` de la sección y la cierra (pasaba ya antes de los grupos

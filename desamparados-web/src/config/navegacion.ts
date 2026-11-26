@@ -80,8 +80,8 @@ export const menuPublico: EntradaMenu[] = [
         href: '/sabado-de-pasion',
         hijos: [
           { label: 'Recorrido', href: '/sabado-de-pasion/recorrido', modulo: 'paginas-propias' },
-          { label: 'Trono', href: '/sabado-de-pasion/trono', modulo: 'paginas-propias' },
-          { label: 'Enseres', href: '/sabado-de-pasion/enseres', modulo: 'paginas-propias' },
+          // Trono y Enseres fueron dos páginas hasta el 26-11-2026: ahora son secciones de Patrimonio.
+          { label: 'Patrimonio', href: '/sabado-de-pasion/patrimonio', modulo: 'paginas-propias' },
         ],
       },
     ],

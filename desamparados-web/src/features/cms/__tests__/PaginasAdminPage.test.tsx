@@ -122,7 +122,7 @@ describe('PaginasAdminPage', () => {
     await user.click(screen.getByRole('button', { name: /^Corporación/ }))
 
     const madre = screen.getByRole('link', { name: 'Sábado de Pasión' }).closest('li')!
-    for (const hija of ['Recorrido', 'Trono', 'Enseres']) {
+    for (const hija of ['Recorrido', 'Patrimonio']) {
       expect(within(madre).getByRole('link', { name: hija })).toBeInTheDocument()
     }
     // En el catálogo, Parroquia va entre Historia y Órganos de Gobierno: la

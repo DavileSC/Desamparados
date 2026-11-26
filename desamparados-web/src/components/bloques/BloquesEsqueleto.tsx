@@ -19,7 +19,7 @@ const POR_PAGINA: Record<string, () => ReactNode> = {
   'dossier-prensa': () => <PublicacionesEsqueleto />,
   agenda: () => <AgendaEsqueleto />,
   cultos: () => <FotoFundidaEsqueleto />,
-  trono: () => <TelonEsqueleto />,
+  patrimonio: () => <TelonEsqueleto />,
   'nuestros-fines': () => <FinesEnFocoEsqueleto />,
   parroquia: () => <DibujoEsqueleto />,
 }
