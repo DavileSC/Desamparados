@@ -56,6 +56,8 @@ export const menuPublico: EntradaMenu[] = [
         hijos: [{ label: 'Órganos de Gobierno', href: '/historia/organos-de-gobierno', modulo: 'nucleo' }],
       },
       { label: 'Parroquia', href: '/parroquia', modulo: 'nucleo' },
+      // Lo de los Pasionistas iba dentro de Parroquia hasta el 26-11-2026.
+      { label: 'Pasionistas', href: '/pasionistas', modulo: 'paginas-propias' },
       {
         label: 'Nuestros fines', modulo: 'nucleo',
         href: '/nuestros-fines',

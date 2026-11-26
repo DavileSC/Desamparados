@@ -38,6 +38,7 @@ describe('menuPublico', () => {
         '  Historia /historia',
         '    Órganos de Gobierno /historia/organos-de-gobierno',
         '  Parroquia /parroquia',
+        '  Pasionistas /pasionistas',
         '  Nuestros fines /nuestros-fines',
         '    Vida /nuestros-fines/vida',
         '    Evangelización /nuestros-fines/evangelizacion',

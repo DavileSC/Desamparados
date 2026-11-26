@@ -27,6 +27,7 @@ const InicioPage = lazy(() => import('../features/inicio/InicioPage'))
 const HistoriaPage = lazy(() => import('../features/corporacion/historia/HistoriaPage'))
 const OrganosDeGobiernoPage = lazy(() => import('../features/corporacion/gobierno/OrganosDeGobiernoPage'))
 const ParroquiaPage = lazy(() => import('../features/corporacion/parroquia/ParroquiaPage'))
+const PasionistasPage = lazy(() => import('../features/corporacion/parroquia/PasionistasPage'))
 const NuestrosFinesPage = lazy(() => import('../features/corporacion/fines/NuestrosFinesPage'))
 const CaridadPage = lazy(() => import('../features/corporacion/fines/CaridadPage'))
 const VidaPage = lazy(() => import('../features/corporacion/fines/VidaPage'))
@@ -177,6 +178,7 @@ const router = createBrowserRouter([
           { path: 'historia', element: pagina(HistoriaPage, 'nucleo') },
           { path: 'historia/organos-de-gobierno', element: pagina(OrganosDeGobiernoPage, 'nucleo') },
           { path: 'parroquia', element: pagina(ParroquiaPage, 'nucleo') },
+          { path: 'pasionistas', element: pagina(PasionistasPage, 'paginas-propias') },
           { path: 'nuestros-fines', element: pagina(NuestrosFinesPage, 'nucleo') },
           { path: 'nuestros-fines/vida', element: pagina(VidaPage, 'paginas-propias') },
           { path: 'nuestros-fines/evangelizacion', element: pagina(EvangelizacionPage, 'paginas-propias') },

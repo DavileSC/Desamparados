@@ -335,6 +335,39 @@
       }
     ]
   },
+  "pasionistas": {
+    "cabecera": {
+      "titulo": "Pasionistas",
+      "subtitulo": "La comunidad religiosa que atiende la parroquia.",
+      "foto": "",
+      "fotoAlt": "",
+      "encuadre": 40
+    },
+    "bloques": [
+      {
+        "tipo": "texto",
+        "titulo": "",
+        "presentacion": {
+          "estilo": "carta"
+        },
+        "html": "<p>La parroquia la atiende una comunidad de religiosos pasionistas, que acompañan a la corporación en sus cultos y en su vida de fe.</p>"
+      },
+      {
+        "tipo": "botones",
+        "titulo": "",
+        "presentacion": {
+          "alineacion": "centro"
+        },
+        "botones": [
+          {
+            "texto": "La parroquia",
+            "enlace": "/parroquia",
+            "estilo": "principal"
+          }
+        ]
+      }
+    ]
+  },
   "nuestros-fines": {
     "cabecera": {
       "titulo": "Nuestros fines",

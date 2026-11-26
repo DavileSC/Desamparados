@@ -29,6 +29,7 @@
     { "ruta": "/historia", "nombre": "Historia" },
     { "ruta": "/historia/organos-de-gobierno", "nombre": "Órganos de Gobierno" },
     { "ruta": "/parroquia", "nombre": "Parroquia" },
+    { "ruta": "/pasionistas", "nombre": "Pasionistas" },
     { "ruta": "/nuestros-fines", "nombre": "Nuestros fines" },
     { "ruta": "/nuestros-fines/vida", "nombre": "Vida" },
     { "ruta": "/nuestros-fines/evangelizacion", "nombre": "Evangelización" },

@@ -124,6 +124,7 @@ const ESQUEMAS = {
   historia: paginaDeBloquesSchema,
   recorrido: paginaDeBloquesSchema,
   parroquia: paginaDeBloquesSchema,
+  pasionistas: paginaDeBloquesSchema,
   'organos-de-gobierno': paginaDeBloquesSchema,
   'nuestros-fines': paginaDeBloquesSchema,
   caridad: paginaDeBloquesSchema,

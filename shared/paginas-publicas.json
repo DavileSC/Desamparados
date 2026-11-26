@@ -37,6 +37,14 @@
       "descripcion": "La sede canónica y la comunidad parroquial que acompaña a la corporación."
     },
     {
+      "slug": "pasionistas",
+      "nombre": "Pasionistas",
+      "ruta": "/pasionistas",
+      "grupo": "Corporación",
+      "descripcion": "La comunidad de religiosos pasionistas que atiende la parroquia: su carisma y su trabajo en el barrio.",
+      "modulo": "paginas-propias"
+    },
+    {
       "slug": "organos-de-gobierno",
       "nombre": "Órganos de Gobierno",
       "ruta": "/historia/organos-de-gobierno",

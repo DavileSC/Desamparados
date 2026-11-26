@@ -22,6 +22,7 @@
     { "ruta": "/nuestros-fines/evangelizacion", "requisito": ["paginas-propias"] },
     { "ruta": "/nuestros-fines/vida", "requisito": ["paginas-propias"] },
     { "ruta": "/parroquia", "requisito": ["nucleo"] },
+    { "ruta": "/pasionistas", "requisito": ["paginas-propias"] },
     { "ruta": "/politica-cookies", "requisito": ["nucleo"] },
     { "ruta": "/politica-privacidad", "requisito": ["nucleo"] },
     { "ruta": "/publicaciones", "requisito": ["publicaciones"] },
