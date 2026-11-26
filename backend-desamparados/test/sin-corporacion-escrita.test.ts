@@ -12,7 +12,11 @@ import { fileURLToPath } from 'node:url';
 const RAIZ = fileURLToPath(new URL('../../', import.meta.url));
 // `\s+` y no un espacio: los patrones se pasan al fichero entero (ver
 // `buscar`), y así ven también la frase partida entre dos líneas de JSX.
-const CORPORACION = /Grupo\s+Parroquial|\b(?:el|del|al|nuestro|El|Del|Al|Nuestro)\s+Grupo\b/;
+//
+// «el Grupo Joven» no cuenta: es el grupo de los jóvenes, que tienen
+// Hermandades, Cofradías y Grupos Parroquiales por igual (página propia desde
+// el 26-11-2026), no la corporación.
+const CORPORACION = /Grupo\s+Parroquial|\b(?:el|del|al|nuestro|El|Del|Al|Nuestro)\s+Grupo\b(?!\s+Joven\b)/;
 // «del ${identidad.nombre}», «el ${identidad.tipo}»…: la Tarea 4 encontró este
 // fallo de concordancia (un artículo escrito a mano delante del nombre propio
 // de la corporación interpolado) porque no contiene la palabra «Grupo» y el
@@ -166,6 +170,8 @@ test('la guardiana ve la frase partida entre líneas, la concatenada y la variab
   assert.equal(ve("const t = 'el ' + salida.nombre;"), 1);
   assert.equal(ve('const { nombre } = salida;', 'const t = `del ${nombre}`;'), 1);
   assert.equal(ve('// del Grupo Parroquial, en un comentario', 'const t = deLaCorporacion();'), 0);
+  assert.equal(ve('<p>¿Quieres sumarte al Grupo Joven?</p>'), 0);
+  assert.equal(ve('<p>Los jóvenes del Grupo y su Grupo Joven</p>'), 1);
 });
 
 test('ni el código ni las plantillas escriben la corporación ni la salida a mano', () => {
@@ -199,6 +205,7 @@ const PAGINAS_PROPIAS = [
   'desamparados-web/src/features/titular/',
   'desamparados-web/src/features/corporacion/sabado-pasion/',
   'desamparados-web/src/features/corporacion/rosario/',
+  'desamparados-web/src/features/corporacion/parroquia/PasionistasPage.tsx',
   // Sus dibujos (el templo de su parroquia y el signo pasionista): el bloque
   // Dibujo es del mismo módulo en shared/tipos-de-bloque.json.
   'desamparados-web/src/components/bloques/BloqueDibujo.tsx',
@@ -211,10 +218,22 @@ const EXCEPCIONES_NOMBRES: { fichero: string; contiene: string; motivo: string }
     contiene: "'29': ['Málaga', 'Andalucía']",
     motivo: 'La provincia de Málaga en la lista de provincias por código postal: un dato geográfico, no esta corporación.',
   },
-  ...(['Sábado de Pasión', 'Desamparados'] as const).map((rotulo) => ({
+  ...(['Sábado de Pasión', 'Desamparados', 'Pasionistas'] as const).map((rotulo) => ({
     fichero: 'desamparados-web/src/config/navegacion.ts',
     contiene: `label: '${rotulo}'`,
     motivo: 'Menú del módulo paginas-propias: el rótulo de una página propia, que solo se ve con el módulo encendido.',
+  })),
+  // Pasionistas es una página propia (26-11-2026): su slug está en las listas
+  // de páginas de los dos lados y su ruta en las de la web, como las demás.
+  ...([
+    ['backend-desamparados/src/domain/contenido.ts', "'pasionistas'"],
+    ['backend-desamparados/src/schemas/contenido.schema.ts', 'pasionistas: paginaDeBloquesSchema'],
+    ['desamparados-web/src/lib/api/contenido.ts', "'pasionistas'"],
+    ['desamparados-web/src/routes/index.tsx', "path: 'pasionistas'"],
+  ] as const).map(([fichero, contiene]) => ({
+    fichero,
+    contiene,
+    motivo: 'Slug o ruta de la página propia de los Pasionistas, del módulo paginas-propias: no es texto visible.',
   })),
   {
     fichero: 'desamparados-web/src/features/cms/bloques/formularios/nuevos.tsx',
@@ -264,11 +283,16 @@ test('el código de núcleo no nombra a esta corporación, su templo, su ciudad 
 // una ruta a /images/ que no existe sería un hueco roto en la web de otra.
 const NO_NEUTRO = /Desamparados|Goretti|Málaga|Pasionistas|Sábado de Pasión|\/images\/|Grupo Parroquial|Hermandad|Cofradía/;
 
+// La única excepción: el título de la página propia de los Pasionistas, que
+// es su nombre. Va en el módulo paginas-propias, que otra instalación no
+// enciende. La línea entera, para que cualquier otra mención siga cayendo.
+const NEUTRO_PERMITIDO = ['"titulo": "Pasionistas",'];
+
 test('el contenido de partida no nombra a ninguna corporación ni cita fotos del repositorio', () => {
   const fichero = join(RAIZ, 'shared/contenido-por-defecto.json');
   const hallazgos = lineasDe(readFileSync(fichero, 'utf8'))
     .map((l, i) => [i + 1, l] as const)
-    .filter(([, l]) => NO_NEUTRO.test(l))
+    .filter(([, l]) => NO_NEUTRO.test(l) && !NEUTRO_PERMITIDO.includes(l.trim()))
     .map(([n, l]) => `shared/contenido-por-defecto.json:${n}: ${l.trim()}`);
   assert.deepEqual(hallazgos, [], `El contenido de partida tiene que ser neutro (lo de una corporación va en su instalacion/contenido-inicial.json):\n${hallazgos.join('\n')}`);
 });
