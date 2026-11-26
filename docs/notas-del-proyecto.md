@@ -1062,7 +1062,13 @@ Trampas:
   por una fila, `fireEvent.mouseEnter` sobre su `li`. Desde el 26-11-2026 las
   subpáginas de cada página salen en una segunda hoja a la derecha, a la
   altura de su fila (forma C), que solo se monta abierta: cerradas no están en
-  el documento.
+  el documento. **Las esperas del ratón no se quitan**: abrir la de una fila
+  tarda 150 ms, cambiarla por otra 300 ms y cerrar la hoja al salir por abajo
+  250 ms. Sin ellas, el camino en diagonal hasta una subpágina cruza otras
+  filas (cambiaba de segunda hoja y el ratón quedaba fuera) o pisa el hueco de
+  debajo de la hoja (se cerraba todo); pasó el 26-11-2026. En las pruebas,
+  `waitFor` tras pasar por una fila, y `mouseLeave` con `relatedTarget`: sin
+  él React lo toma como salir de la ventana y cierra la hoja.
 - **Las pruebas del servidor escriben en la base local.** `npm test` usa la
   misma `desamparados_db` que la web en marcha: `contenido-api.test.ts` guarda
   la portada y luego la devuelve a como la leyó. Si se pasan con un campo

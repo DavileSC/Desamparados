@@ -74,6 +74,7 @@ export const menuPublico: EntradaMenu[] = [
         // El Rosario colgaba suelto de Corporación (/rosario) hasta el 26-11-2026.
         hijos: [{ label: 'Rosario', href: '/cultos/rosario', modulo: 'paginas-propias' }],
       },
+      { label: 'Grupo Joven', href: '/grupo-joven', modulo: 'paginas-propias' },
       {
         label: 'Sábado de Pasión', modulo: 'paginas-propias',
         href: '/sabado-de-pasion',

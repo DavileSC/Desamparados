@@ -45,6 +45,7 @@ describe('menuPublico', () => {
         '    Caridad /nuestros-fines/caridad',
         '  Cultos /cultos',
         '    Rosario /cultos/rosario',
+        '  Grupo Joven /grupo-joven',
         '  Sábado de Pasión /sabado-de-pasion',
         '    Recorrido /sabado-de-pasion/recorrido',
         '    Trono /sabado-de-pasion/trono',

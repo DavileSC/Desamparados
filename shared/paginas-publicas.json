@@ -89,6 +89,14 @@
       "descripcion": "Las celebraciones y devociones del año."
     },
     {
+      "slug": "grupo-joven",
+      "nombre": "Grupo Joven",
+      "ruta": "/grupo-joven",
+      "grupo": "Corporación",
+      "descripcion": "Los hermanos más jóvenes: qué hacen durante el año y cómo sumarse.",
+      "modulo": "paginas-propias"
+    },
+    {
       "slug": "sabado-de-pasion",
       "nombre": "Sábado de Pasión",
       "ruta": "/sabado-de-pasion",

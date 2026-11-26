@@ -118,10 +118,32 @@ describe('BarraDeNavegacion en escritorio', () => {
     // El nombre sigue llevando a su página.
     expect(screen.getByRole('link', { name: 'Sábado de Pasión', hidden: true })).toHaveAttribute('href', '/sabado-de-pasion')
 
-    // Con el ratón, basta con pasar por la fila.
+    // Con el ratón, quedándose un momento en la fila.
+    const cultos = screen.getByRole('button', { name: 'Páginas de Cultos', hidden: true })
     fireEvent.mouseEnter(screen.getByRole('link', { name: 'Cultos', hidden: true }).closest('li')!)
-    expect(screen.getByRole('button', { name: 'Páginas de Cultos', hidden: true })).toHaveAttribute('aria-expanded', 'true')
+    await waitFor(() => expect(cultos).toHaveAttribute('aria-expanded', 'true'))
     expect(screen.getByRole('link', { name: 'Rosario', hidden: true })).toHaveAttribute('href', '/cultos/rosario')
+  })
+
+  it('pasar de largo por otra fila no cambia la segunda hoja abierta', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<BarraDeNavegacion />, { modulos: TODOS_CON_PAGINAS_PROPIAS })
+    await user.hover(within(navEscritorio()).getByRole('button', { name: 'Corporación', hidden: true }))
+    const fines = screen.getByRole('button', { name: 'Páginas de Nuestros fines', hidden: true })
+    fireEvent.click(fines)
+    // Camino de Caridad en diagonal, el ratón cruza la fila de Cultos y llega a
+    // la segunda hoja, que es parte de la fila de Nuestros fines.
+    // Con `relatedTarget`: sin él, React lo toma como salir de la ventana y
+    // cierra la hoja entera.
+    const filaDeCultos = screen.getByRole('link', { name: 'Cultos', hidden: true }).closest('li')!
+    const caridad = screen.getByRole('link', { name: 'Caridad', hidden: true })
+    expect(fines.closest('li')).toContainElement(caridad)
+    fireEvent.mouseEnter(filaDeCultos)
+    fireEvent.mouseLeave(filaDeCultos, { relatedTarget: caridad })
+    fireEvent.mouseEnter(fines.closest('li')!, { relatedTarget: filaDeCultos })
+    await new Promise((r) => setTimeout(r, 400))
+    expect(fines).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: 'Páginas de Cultos', hidden: true })).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('con un nombre puesto en el CMS, la página sale con él; sin él, con el de siempre', async () => {

@@ -539,6 +539,35 @@
       }
     ]
   },
+  "grupo-joven": {
+    "cabecera": {
+      "titulo": "Grupo Joven",
+      "subtitulo": "Los hermanos más jóvenes de la corporación.",
+      "foto": "",
+      "fotoAlt": "",
+      "encuadre": 40
+    },
+    "bloques": [
+      {
+        "tipo": "texto",
+        "titulo": "",
+        "presentacion": {
+          "estilo": "carta"
+        },
+        "html": "<p>El Grupo Joven reúne a los hermanos más jóvenes de la corporación: se forman juntos, echan una mano en los cultos y en la salida, y hacen piña durante todo el año.</p>"
+      },
+      {
+        "tipo": "llamada",
+        "titulo": "",
+        "presentacion": {
+          "estilo": "fila"
+        },
+        "texto": "¿Quieres sumarte al Grupo Joven?",
+        "boton": "Escríbenos",
+        "enlace": "/contacto"
+      }
+    ]
+  },
   "sabado-de-pasion": {
     "cabecera": {
       "titulo": "Salida procesional",

@@ -6,7 +6,7 @@
  * dentro): pulsarlo solo abre o cierra la hoja. Dentro, las páginas con
  * subpáginas propias las abren en una segunda hoja a la derecha.
  */
-import { useId, useState, useRef, type FocusEvent, type KeyboardEvent } from 'react'
+import { useEffect, useId, useState, useRef, type FocusEvent, type KeyboardEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Box, Button } from '@mui/material'
 import { ALTO_MENU, VIDRIO, compactMq, esActiva, estrechoMq, seccionActiva, tinta } from './estilos'
@@ -30,6 +30,13 @@ const cristal = {
 /** La flecha de las páginas con subpáginas: hueco de 24 px, el mínimo de WCAG 2.5.8. */
 const HUECO_FLECHA = 24
 
+/** Lo que el ratón tiene que quedarse en una fila para abrir su segunda hoja… */
+const ESPERA_AL_ABRIR_MS = 150
+/** …y para cambiar la que ya está abierta por otra (o cerrarla). */
+const ESPERA_AL_CAMBIAR_MS = 300
+/** Lo que tarda en cerrarse la hoja cuando el ratón sale de ella por abajo o por un lado. */
+const GRACIA_AL_SALIR_MS = 250
+
 /** Si la página que se ve es la de esta entrada o una de las suyas: su grupo sale abierto. */
 const contieneLaActual = (pathname: string, entrada: EntradaMenu) =>
   esActiva(pathname, entrada.href, entrada.exacta) || (entrada.hijos ?? []).some((n) => esActiva(pathname, n.href, n.exacta))
@@ -44,10 +51,11 @@ const contieneLaActual = (pathname: string, entrada: EntradaMenu) =>
  * flecha, que es la que lo dice al lector de pantalla. Va dentro de la fila y
  * no al final de la hoja: con el tabulador, las subpáginas siguen a su página.
  */
-function PaginaDeLaHoja({ entrada, abierta, alAbrir, alAlternar }: {
+function PaginaDeLaHoja({ entrada, abierta, alPasar, alSalir, alAlternar }: {
   entrada: EntradaMenu
   abierta: boolean
-  alAbrir: () => void
+  alPasar: () => void
+  alSalir: () => void
   alAlternar: () => void
 }) {
   const location = useLocation()
@@ -58,7 +66,8 @@ function PaginaDeLaHoja({ entrada, abierta, alAbrir, alAlternar }: {
   return (
     <Box
       component="li"
-      onMouseEnter={conSubpaginas ? alAbrir : undefined}
+      onMouseEnter={alPasar}
+      onMouseLeave={alSalir}
       sx={{
         position: 'relative',
         py: 0.75,
@@ -194,6 +203,30 @@ function Hoja({ hijos }: { hijos: EntradaMenu[] }) {
   const [grupoAbierto, setGrupoAbierto] = useState<string | null>(
     () => hijos.find((h) => h.hijos?.length && contieneLaActual(location.pathname, h))?.href ?? null,
   )
+  // Con una segunda hoja abierta, el camino natural del ratón hasta ella (en
+  // diagonal) cruza las filas de debajo: si cambiara al momento, la de Cultos
+  // sustituía a la de Nuestros fines y, más corta, dejaba el ratón fuera y la
+  // hoja entera se cerraba. Por eso cambia solo si el ratón se queda en la otra
+  // fila; si llega antes a la segunda hoja (que es parte de su fila), se queda.
+  const espera = useRef<number | null>(null)
+  const cancelar = () => {
+    if (espera.current === null) return
+    window.clearTimeout(espera.current)
+    espera.current = null
+  }
+  useEffect(() => () => {
+    if (espera.current !== null) window.clearTimeout(espera.current)
+  }, [])
+  const pedir = (href: string | null) => {
+    cancelar()
+    if (href === grupoAbierto) return
+    // Sin ninguna abierta no hay nada que proteger: basta con no abrir las de
+    // las filas por las que el ratón solo pasa camino de otra.
+    espera.current = window.setTimeout(() => {
+      espera.current = null
+      setGrupoAbierto(href)
+    }, grupoAbierto === null ? ESPERA_AL_ABRIR_MS : ESPERA_AL_CAMBIAR_MS)
+  }
   return (
     // El título acaba en el espaciado de su última letra: sin restarlo, la
     // flecha caía un poco a la derecha de la palabra.
@@ -226,8 +259,13 @@ function Hoja({ hijos }: { hijos: EntradaMenu[] }) {
             key={hijo.href}
             entrada={hijo}
             abierta={grupoAbierto === hijo.href}
-            alAbrir={() => setGrupoAbierto(hijo.href)}
-            alAlternar={() => setGrupoAbierto((actual) => (actual === hijo.href ? null : hijo.href))}
+            // Una fila sin subpáginas cierra la segunda hoja abierta, con la misma espera.
+            alPasar={() => pedir(hijo.hijos?.length ? hijo.href : null)}
+            alSalir={cancelar}
+            alAlternar={() => {
+              cancelar()
+              setGrupoAbierto((actual) => (actual === hijo.href ? null : hijo.href))
+            }}
           />
         ))}
       </Box>
@@ -254,6 +292,35 @@ function SeccionEscritorio({ entrada }: { entrada: EntradaMenu }) {
 
   const vieneDeFuera = (e: FocusEvent<HTMLDivElement>) => !e.currentTarget.contains(e.relatedTarget as Node | null)
 
+  // Cerrar con un momento de gracia si el ratón sale por la hoja: la segunda
+  // hoja baja más que la primera, y camino de ella (en diagonal desde la última
+  // fila) el ratón pisa un instante el hueco de debajo, fuera de las dos. Si
+  // sale por la barra, hacia otra sección, se cierra al momento: dos hojas a la
+  // vez se pisarían.
+  const cierre = useRef<number | null>(null)
+  const noCerrar = () => {
+    if (cierre.current === null) return
+    window.clearTimeout(cierre.current)
+    cierre.current = null
+  }
+  useEffect(() => noCerrar, [])
+  const alEntrar = () => {
+    noCerrar()
+    setAbierta(true)
+  }
+  const alSalir = (e: React.MouseEvent<HTMLDivElement>) => {
+    noCerrar()
+    const porLaHoja = e.clientY > e.currentTarget.getBoundingClientRect().bottom
+    if (!porLaHoja) {
+      setAbierta(false)
+      return
+    }
+    cierre.current = window.setTimeout(() => {
+      cierre.current = null
+      setAbiertaEn(null)
+    }, GRACIA_AL_SALIR_MS)
+  }
+
   const alPulsarTecla = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'Escape') return
     setAbierta(false)
@@ -263,8 +330,8 @@ function SeccionEscritorio({ entrada }: { entrada: EntradaMenu }) {
   return (
     <Box
       sx={{ position: 'relative', flexShrink: 0, display: 'flex' }}
-      onMouseEnter={desplegable ? () => setAbierta(true) : undefined}
-      onMouseLeave={desplegable ? () => setAbierta(false) : undefined}
+      onMouseEnter={desplegable ? alEntrar : undefined}
+      onMouseLeave={desplegable ? alSalir : undefined}
       onFocus={desplegable ? (e) => { if (vieneDeFuera(e)) setAbierta(true) } : undefined}
       onBlur={desplegable ? (e) => { if (vieneDeFuera(e)) setAbierta(false) } : undefined}
       onKeyDown={desplegable ? alPulsarTecla : undefined}

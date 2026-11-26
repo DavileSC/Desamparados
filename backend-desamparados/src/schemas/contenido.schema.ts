@@ -131,6 +131,7 @@ const ESQUEMAS = {
   vida: paginaDeBloquesSchema,
   evangelizacion: paginaDeBloquesSchema,
   cultos: paginaDeBloquesSchema,
+  'grupo-joven': paginaDeBloquesSchema,
   'sabado-de-pasion': paginaDeBloquesSchema,
   trono: paginaDeBloquesSchema,
   enseres: paginaDeBloquesSchema,

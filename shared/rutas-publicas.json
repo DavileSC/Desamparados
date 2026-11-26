@@ -12,6 +12,7 @@
     { "ruta": "/cultos", "requisito": ["nucleo"] },
     { "ruta": "/cultos/rosario", "requisito": ["paginas-propias"] },
     { "ruta": "/desamparados", "requisito": ["paginas-propias"] },
+    { "ruta": "/grupo-joven", "requisito": ["paginas-propias"] },
     { "ruta": "/hazte-hermano", "requisito": ["alta-web"] },
     { "ruta": "/historia", "requisito": ["nucleo"] },
     { "ruta": "/historia/organos-de-gobierno", "requisito": ["nucleo"] },

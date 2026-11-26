@@ -36,6 +36,7 @@
     { "ruta": "/nuestros-fines/caridad", "nombre": "Caridad" },
     { "ruta": "/cultos", "nombre": "Cultos" },
     { "ruta": "/cultos/rosario", "nombre": "Rosario" },
+    { "ruta": "/grupo-joven", "nombre": "Grupo Joven" },
     { "ruta": "/sabado-de-pasion", "nombre": "Sábado de Pasión" },
     { "ruta": "/sabado-de-pasion/recorrido", "nombre": "Recorrido" },
     { "ruta": "/sabado-de-pasion/trono", "nombre": "Trono" },
