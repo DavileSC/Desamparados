@@ -76,7 +76,7 @@ describe('la guardiana de los módulos', () => {
       // comprobar casi todas las rutas del fichero sin que la prueba lo notara
       // (hallazgo de la revisión de la ronda 1 de esta tarea).
       if (!/\bpath:\s*'[^']*'|\bindex:\s*true\b/.test(linea) || !/\belement:/.test(linea)) return;
-      if (/<Navigate\b|<DireccionAntigua\b/.test(linea)) return;
+      if (/<Navigate\b/.test(linea)) return;
       comprobadas.push(linea);
       const pagina = /\bpagina\(\w+,\s*('[a-z0-9-]+'|\[[^\]]*\])\)/.exec(linea);
       if (!pagina) { fallos.push(`routes/index.tsx:${i + 1}: sin pagina(…, modulo) → ${linea.trim()}`); return; }

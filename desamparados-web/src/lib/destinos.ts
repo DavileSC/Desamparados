@@ -32,10 +32,7 @@ export const DESTINOS_FIJOS: Destino[] = [
 export const destinosActivos = (activos: ReadonlySet<string>): Destino[] =>
   DESTINOS_FIJOS.filter((d) => cumple(d.modulo ?? 'nucleo', activos))
 
-// Con las que cambiaron de dirección (`antiguas`): se aceptan, como en el
-// servidor, para que un enlace ya guardado no impida guardar su página, pero
-// no se ofrecen (no están en DESTINOS_FIJOS).
-const RUTAS = new Set([...DESTINOS_FIJOS.map((d) => d.ruta), ...DESTINOS.antiguas.map((d) => d.ruta)])
+const RUTAS = new Set(DESTINOS_FIJOS.map((d) => d.ruta))
 
 export const PREFIJO_NOTICIA = DESTINOS.prefijoNoticia
 const NOTICIA = new RegExp(`^${PREFIJO_NOTICIA.replace(/\//g, '\\/')}[a-z0-9]+(?:-[a-z0-9]+)*$`)
@@ -56,17 +53,16 @@ export function esDestinoValido(enlace: string): boolean {
 }
 
 /**
- * El módulo de la página a la que lleva un enlace válido: el de su ruta fija
- * (o el de la ruta nueva, si es una antigua), `noticias` para una noticia y
+ * El módulo de la página a la que lleva un enlace válido: el de su ruta fija,
+ * `noticias` para una noticia y
  * `nucleo` para lo demás. Es el mismo que exige su ruta en `routes/index.tsx`.
  */
 export function moduloDelEnlace(enlace: string): Modulo {
   const almohadilla = enlace.indexOf('#')
   const ruta = almohadilla === -1 ? enlace : enlace.slice(0, almohadilla)
-  const actual = DESTINOS.antiguas.find((d) => d.ruta === ruta)?.ahora ?? ruta
-  const fijo = DESTINOS_FIJOS.find((d) => d.ruta === actual)
+  const fijo = DESTINOS_FIJOS.find((d) => d.ruta === ruta)
   if (fijo) return fijo.modulo ?? 'nucleo'
-  return NOTICIA.test(actual) ? 'noticias' : 'nucleo'
+  return NOTICIA.test(ruta) ? 'noticias' : 'nucleo'
 }
 
 /**

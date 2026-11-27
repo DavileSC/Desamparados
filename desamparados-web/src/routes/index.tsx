@@ -6,7 +6,6 @@ import MarcoAcceso from '../app/MarcoAcceso'
 import ExigeSesion from './ExigeSesion'
 import ExigeRol from './ExigeRol'
 import ExigeModulo from './ExigeModulo'
-import DireccionAntigua from './DireccionAntigua'
 import { rolesPorRutaCms } from '../app/rolesCms'
 import { Helmet } from 'react-helmet-async'
 import { QuitarCanonico } from '../lib/canonico'
@@ -207,20 +206,10 @@ const router = createBrowserRouter([
           { path: 'politica-privacidad', element: pagina(PoliticaDePrivacidadPage, 'nucleo') },
           { path: 'politica-cookies', element: pagina(PoliticaDeCookiesPage, 'nucleo') },
           { path: 'condiciones-de-compra', element: pagina(CondicionesDeCompraPage, 'tienda-web') },
-          // La parroquia se llamaba como la orden que la atiende (hasta el 12-10-2026).
-          { path: 'parroquia-pasionistas', element: <DireccionAntigua a="/parroquia" /> },
-          // Formación dejó paso a Evangelización, de las páginas propias (26-11-2026).
-          { path: 'nuestros-fines/formacion', element: <DireccionAntigua a="/nuestros-fines/evangelizacion" /> },
-          // El Rosario pasó a colgar de Cultos (26-11-2026).
-          { path: 'rosario', element: <DireccionAntigua a="/cultos/rosario" /> },
-          // Los boletines pasaron a llamarse «Newsletter» (26-11-2026).
-          { path: 'publicaciones/boletines', element: <DireccionAntigua a="/publicaciones/newsletter" /> },
-          // Las direcciones de antes de quitar las portadas de sección (25-09-2026):
-          // /corporacion/historia sigue llevando a /historia, y así con todas.
-          { path: 'corporacion/*', element: <DireccionAntigua /> },
-          { path: 'sagrada-titular/*', element: <DireccionAntigua /> },
-          { path: 'actualidad/*', element: <DireccionAntigua /> },
-          { path: 'hermanos/*', element: <DireccionAntigua /> },
+          // Las direcciones viejas (la antigua de la parroquia, /rosario, /corporacion/…)
+          // redirigían a la nueva hasta el 27-11-2026; ahora dan 404, como
+          // cualquier otra (lo pidió así el usuario). La migración
+          // sin_direcciones_antiguas pasó los enlaces guardados a las de ahora.
           // 404 real (con cabecera y pie): antes cualquier URL errónea redirigía a la portada
           { path: '*', element: pagina(NoEncontradaPage, 'nucleo') },
         ],

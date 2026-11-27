@@ -246,11 +246,6 @@ const EXCEPCIONES_NOMBRES: { fichero: string; contiene: string; motivo: string }
     motivo: 'Palabra que se busca dentro de una contraseña para rechazarla; nunca se enseña.',
   },
   {
-    fichero: 'desamparados-web/src/routes/index.tsx',
-    contiene: "path: 'parroquia-pasionistas'",
-    motivo: 'Dirección antigua que redirige a /parroquia: no es texto visible, y en otra instalación no la pide nadie.',
-  },
-  {
     fichero: 'backend-desamparados/prisma/demo/generar.ts',
     contiene: "nombre: 'Málaga'",
     motivo: 'Domicilios inventados de la demostración, que solo se siembra fuera de producción.',
