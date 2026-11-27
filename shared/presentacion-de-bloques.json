@@ -25,7 +25,8 @@
         "papel",
         "granate",
         "oscuro",
-        "foto"
+        "foto",
+        "vino"
       ]
     },
     "ancho": {
@@ -150,7 +151,8 @@
           "granate",
           "numeradas",
           "filetes",
-          "indice"
+          "indice",
+          "redondeadas"
         ]
       },
       "orientacion": {
@@ -172,7 +174,8 @@
           "recuadro",
           "franja",
           "sencilla",
-          "fila"
+          "fila",
+          "nota"
         ]
       },
       "boton": {

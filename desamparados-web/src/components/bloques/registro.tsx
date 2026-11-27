@@ -20,6 +20,7 @@ import BloquePuertas from './BloquePuertas'
 import BloquePrograma from './BloquePrograma'
 import BloqueRelacion from './BloqueRelacion'
 import BloqueNotasAlMargen from './BloqueNotasAlMargen'
+import BloqueCalendarioDePared from './BloqueCalendarioDePared'
 import { valorDe } from './presentacion'
 import type { Bloque } from '../../lib/api/contenido'
 
@@ -137,6 +138,7 @@ export const REGISTRO_BLOQUES: Record<string, ComponenteDeBloque> = {
   carrusel: PEREZOSOS.carrusel.Componente,
   donativo: PEREZOSOS.donativo.Componente,
   notasAlMargen: BloqueNotasAlMargen as ComponenteDeBloque,
+  calendarioDePared: BloqueCalendarioDePared as ComponenteDeBloque,
 }
 
 export const componenteDeBloque = (bloque: Bloque) => REGISTRO_BLOQUES[bloque.tipo]
@@ -146,8 +148,8 @@ export const componenteDeBloque = (bloque: Bloque) => REGISTRO_BLOQUES[bloque.ti
  * versiones cortas llevan al lado el enlace al listado entero («Ver todas las
  * noticias»), que va dentro del mismo encabezado. El dibujo lo pone en la
  * columna del texto, al lado del dibujo y no encima de los dos. El programa lo
- * lleva con el año al otro lado; la relación, con el mandato; y la foto con
- * texto fundida, sobre la foto.
+ * lleva con el año al otro lado; la relación, con el mandato; la foto con
+ * texto fundida, sobre la foto; y la llamada en nota, dentro de la nota.
  */
 const CON_TITULO_PROPIO = new Set(['listado', 'dibujo', 'programa', 'relacion'])
 
@@ -155,3 +157,5 @@ export const pintaSuTitulo = (bloque: Bloque) =>
   CON_TITULO_PROPIO.has(bloque.tipo) || (bloque.tipo === 'fotoTexto' && valorDe(bloque, 'estilo') === 'fundido')
   // En foco, el título va dentro, pequeño y en oro, sobre las tres palabras.
   || (bloque.tipo === 'anillos' && valorDe(bloque, 'disposicion') === 'foco')
+  // La nota lleva el título dentro, a la izquierda del texto.
+  || (bloque.tipo === 'llamada' && valorDe(bloque, 'estilo') === 'nota')

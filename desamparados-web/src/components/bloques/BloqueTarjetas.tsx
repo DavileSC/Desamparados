@@ -10,7 +10,7 @@ import { propsDeFoto } from '../../lib/fotoSubida'
 import { useFotoQueFalla } from '../../hooks/useFotoQueFalla'
 import { MARCA, alfa } from '../../theme/marca'
 
-type Estilo = 'cristal' | 'papel' | 'contorno' | 'granate' | 'numeradas' | 'filetes' | 'indice'
+type Estilo = 'cristal' | 'papel' | 'contorno' | 'granate' | 'numeradas' | 'filetes' | 'indice' | 'redondeadas'
 
 /**
  * Cuántas columnas ocupa cada tarjeta. En `auto` (el de siempre) depende de
@@ -33,6 +33,9 @@ const FONDOS: Record<Exclude<Estilo, 'cristal' | 'numeradas' | 'filetes' | 'indi
   papel: { backgroundColor: PAPEL, color: '#1b1c1a', borderRadius: '8px' },
   contorno: { backgroundColor: 'rgba(255, 255, 255, 0.035)', borderRadius: '8px' },
   granate: { backgroundColor: GRANATE, color: '#fff', borderRadius: '8px' },
+  // Redondeadas (Vida, 27-11-2026): la más cercana, con esquinas grandes y la
+  // etiqueta en una píldora dorada; un punto más clara que el fondo «vino».
+  redondeadas: { backgroundColor: '#22161a', borderRadius: '28px' },
 }
 
 /**
@@ -99,7 +102,7 @@ function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEn
 
   const textos = (
     <Box sx={{ p: visible ? { xs: 3, md: 3.5 } : 0, textAlign: centrada ? 'center' : 'left', minWidth: 0 }}>
-      <Etiqueta tarjeta={tarjeta} sx={{ color: oscura ? GOLD : estilo === 'papel' ? GRANATE : MARCA.acentoApagado }} />
+      <Etiqueta tarjeta={tarjeta} sx={estilo === 'redondeadas' ? PILDORA : { color: oscura ? GOLD : estilo === 'papel' ? GRANATE : MARCA.acentoApagado }} />
       <Typography variant="h6" component="h3" sx={{ mb: 1, color: oscura ? '#fff' : estilo === 'papel' ? '#1b1c1a' : 'text.primary' }}>{tarjeta.titulo}</Typography>
       <Typography variant="body2" sx={{ color: oscura ? 'rgba(255,255,255,0.8)' : estilo === 'papel' ? '#4a454a' : 'text.secondary', lineHeight: 1.6 }}>{tarjeta.descripcion}</Typography>
     </Box>
@@ -190,6 +193,12 @@ function Numeradas({ bloque }: { bloque: Datos }) {
   )
 }
 
+/** La etiqueta de las tarjetas redondeadas: en minúscula, dentro de una píldora. */
+const PILDORA = {
+  display: 'inline-block', px: 1.5, py: 0.5, borderRadius: '999px', letterSpacing: 0, textTransform: 'none', fontWeight: 500,
+  backgroundColor: alfa(MARCA.acento, 0.14), color: MARCA.acento,
+} as const
+
 /** La etiqueta de la tarjeta (cuándo o con quién), en versalitas encima del título. */
 function Etiqueta({ tarjeta, sx }: { tarjeta: TarjetaEnlace; sx?: object }) {
   if (!tarjeta.etiqueta?.trim()) return null
@@ -249,7 +258,7 @@ function ConFilete({ bloque }: { bloque: Datos }) {
 }
 
 /**
- * Índice (Pasionistas, 28-11-2026): una lista larga y corta a la vez, como el
+ * Índice (Pasionistas, 27-11-2026): una lista larga y corta a la vez, como el
  * índice de un libro. Cada tarjeta es una línea, con su número romano en oro,
  * el título y, si tiene, el texto en pequeño debajo; separadas por un filete
  * de puntos. En escritorio va a dos columnas, salvo que se pidan otras.

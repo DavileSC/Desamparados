@@ -22,7 +22,7 @@ import type { Props } from './comunes'
 import type {
   BloqueFotoTexto, BloqueCita, BloqueVideo, BloqueBotones, BloquePreguntas,
   BloqueDescargas, BloqueMapa, BloqueCuentaAtras, BotonDeBloque, BloqueDibujo, NombreDeDibujo, BloqueAnillos, FinDeAnillo,
-  BloquePuertas, Puerta, BloquePrograma, BloqueRelacion, BloqueNotasAlMargen,
+  BloquePuertas, Puerta, BloquePrograma, BloqueRelacion, BloqueNotasAlMargen, BloqueCalendarioDePared, MesDeCalendario,
 } from '../../../../lib/api/contenido'
 
 export function FormularioFotoTexto({ bloque, onCambio }: Props<BloqueFotoTexto>) {
@@ -392,6 +392,41 @@ export function FormularioNotasAlMargen({ bloque, onCambio }: Props<BloqueNotasA
               helperText="Opcional. Una frase corta." slotProps={{ htmlInput: { maxLength: topes.descripcion } }} />
           </>
         )} />
+    </Stack>
+  )
+}
+
+const NOMBRES_DE_MES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+
+/** Los doce meses, siempre todos y en su orden: cada uno se rellena o se deja tenue. */
+export function FormularioCalendarioDePared({ bloque, onCambio }: Props<BloqueCalendarioDePared>) {
+  const cambiar = (i: number, cambio: Partial<MesDeCalendario>) =>
+    onCambio({ meses: bloque.meses.map((mes, j) => (j === i ? { ...mes, ...cambio } : mes)) })
+  return (
+    <Stack spacing={2}>
+      <Typography variant="body2" color="text.secondary">
+        Lo que pasa cada mes. Un mes sin título sale tenue, con su línea si la tiene. Los meses grandes, en granate y con foto.
+      </Typography>
+      {bloque.meses.map((mes, i) => (
+        <Stack key={NOMBRES_DE_MES[i]} spacing={1.5} sx={{ borderTop: 1, borderColor: 'divider', pt: 2 }}>
+          <Typography variant="subtitle2" component="h3">{NOMBRES_DE_MES[i]}</Typography>
+          <TextField label={`Qué pasa en ${NOMBRES_DE_MES[i].toLowerCase()}`} value={mes.titulo} onChange={(e) => cambiar(i, { titulo: e.target.value })} size="small" fullWidth
+            helperText="Opcional, como «Sábado de Pasión»." slotProps={{ htmlInput: { maxLength: topes.titulo } }} />
+          <TextField label="Línea de debajo" value={mes.texto} onChange={(e) => cambiar(i, { texto: e.target.value })} size="small" fullWidth
+            helperText="Opcional, como «La Virgen sale por el barrio»." slotProps={{ htmlInput: { maxLength: topes.descripcion } }} />
+          <TextField select label="Cómo se ve" value={mes.tono} onChange={(e) => cambiar(i, { tono: e.target.value as MesDeCalendario['tono'] })} size="small" fullWidth>
+            <MenuItem value="normal">Normal</MenuItem>
+            <MenuItem value="destacado">Destacado, en granate</MenuItem>
+            <MenuItem value="crema">Nota, en crema</MenuItem>
+          </TextField>
+          <CampoImagen valor={mes.foto} onCambio={(foto) => cambiar(i, { foto })} etiqueta={`Foto de ${NOMBRES_DE_MES[i].toLowerCase()}`}
+            ayuda="Opcional. Ocupa la casilla entera, velada por abajo." />
+          {mes.foto !== '' && (
+            <CampoTexto etiqueta="Descripción de la foto" valor={mes.fotoAlt} onCambio={(fotoAlt) => cambiar(i, { fotoAlt })}
+              ayuda="Lo que se ve, en una frase." maxLength={topes.descripcion} />
+          )}
+        </Stack>
+      ))}
     </Stack>
   )
 }

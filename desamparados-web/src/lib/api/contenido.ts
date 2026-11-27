@@ -199,6 +199,10 @@ export interface BloqueCita extends BloqueBase { tipo: 'cita'; texto: string; au
 /** Una nota al margen: el dato en grande («1972», «C.P.») y qué es. */
 export interface NotaAlMargen { dato: string; texto: string }
 export interface BloqueNotasAlMargen extends BloqueBase { tipo: 'notasAlMargen'; html: string; notas: NotaAlMargen[] }
+/** Un mes del calendario de pared. Sin título, la casilla va tenue, con su línea si la tiene. */
+export interface MesDeCalendario { titulo: string; texto: string; foto: string; fotoAlt: string; tono: 'normal' | 'destacado' | 'crema' }
+/** Siempre doce meses, de enero a diciembre: el nombre sale de la posición. */
+export interface BloqueCalendarioDePared extends BloqueBase { tipo: 'calendarioDePared'; meses: MesDeCalendario[] }
 /** Un vídeo suelto: las mismas reglas que uno de la galería. */
 export interface BloqueVideo extends BloqueBase { tipo: 'video'; url: string; portada: string; alt: string; pie: string }
 export interface BotonDeBloque { texto: string; enlace: string; estilo: 'principal' | 'secundario' }
@@ -291,6 +295,7 @@ export type Bloque =
   | BloquePuertas
   | BloquePrograma
   | BloqueNotasAlMargen
+  | BloqueCalendarioDePared
   | BloqueRelacion
   | BloqueCarrusel
   | BloqueDonativo

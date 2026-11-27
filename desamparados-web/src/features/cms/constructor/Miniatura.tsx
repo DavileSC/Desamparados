@@ -25,6 +25,7 @@ const boton = (x: number, y: number, w: number, lleno = true) => (
 )
 
 const DIBUJOS: Record<string, ReactNode> = {
+  calendarioDePared: <>{[0, 1, 2].map((f) => [0, 1, 2, 3].map((c) => <rect key={`${f}-${c}`} x={10 + c * 26} y={6 + f * 21} width={22} height={18} rx={4} fill={A} opacity={(f === 0 && c === 2) || (f === 2 && c === 2) ? 0.55 : 0.14} />))}</>,
   notasAlMargen: <>{raya(10, 12, 34)}{raya(10, 20, 36)}{raya(10, 28, 32)}{raya(10, 36, 36)}{raya(50, 12, 34)}{raya(50, 20, 30)}{raya(50, 28, 36)}<rect x={92} y={10} width={1} height={50} fill={A} opacity={0.4} /><text x={96} y={20} fontSize={9} fill={A} opacity={0.7} fontFamily="serif">1972</text>{raya(96, 25, 16, 0.3)}<text x={96} y={42} fontSize={9} fill={A} opacity={0.7} fontFamily="serif">C.P.</text>{raya(96, 47, 14, 0.3)}</>,
   texto: <>{raya(14, 14, 70, 0.6)}{raya(14, 24, 92)}{raya(14, 32, 88)}{raya(14, 40, 92)}{raya(14, 48, 60)}</>,
   cita: <><text x={14} y={34} fontSize={34} fill={A} opacity={0.5} fontFamily="serif">“</text>{raya(34, 22, 72, 0.6)}{raya(34, 31, 66, 0.6)}{raya(34, 40, 50, 0.6)}{raya(34, 52, 30, 0.35)}</>,

@@ -842,6 +842,31 @@ const espacioSchema = type({
   tipo: "'espacio'",
 });
 
+/**
+ * Calendario de pared: el año en doce casillas, de enero a diciembre, siempre
+ * las doce (el nombre del mes lo pone la web por su posición). Un mes sin
+ * nada que contar lleva el título vacío y, si se quiere, una línea tenue.
+ * `tono` marca los meses grandes (en granate) y uno de nota (en crema).
+ */
+const mesDeCalendarioSchema = type({
+  titulo: TITULO,
+  texto: DESCRIPCION,
+  foto: sinFoto.or(rutaImagenPublica),
+  fotoAlt: DESCRIPCION,
+  tono: "'normal' | 'destacado' | 'crema'",
+});
+
+const calendarioDeParedSchema = type({
+  ...comunes,
+  tipo: "'calendarioDePared'",
+  meses: mesDeCalendarioSchema.array().exactlyLength(12),
+}).narrow((datos, ctx) => {
+  for (const [indice, mes] of datos.meses.entries()) {
+    if (mes.foto !== '' && enBlanco(mes.fotoAlt)) return ctx.reject({ path: ['meses', indice, 'fotoAlt'], problem: 'es obligatoria cuando el mes lleva foto' });
+  }
+  return true;
+});
+
 const POR_TIPO = {
   texto: textoSchema,
   foto: fotoSchema,
@@ -872,6 +897,7 @@ const POR_TIPO = {
   carrusel: carruselSchema,
   donativo: donativoSchema,
   notasAlMargen: notasAlMargenSchema,
+  calendarioDePared: calendarioDeParedSchema,
 } as const;
 
 export const esquemaDeBloque = (tipo: TipoBloque) => POR_TIPO[tipo as keyof typeof POR_TIPO];

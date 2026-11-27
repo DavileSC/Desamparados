@@ -10,7 +10,7 @@ import { FormularioDonativo } from './formularios/donativo'
 import {
   FormularioFotoTexto, FormularioCita, FormularioVideo, FormularioBotones, FormularioPreguntas,
   FormularioDescargas, FormularioMapa, FormularioCuentaAtras, FormularioEspacio, FormularioDibujo, FormularioAnillos,
-  FormularioPuertas, FormularioPrograma, FormularioRelacion, FormularioNotasAlMargen,
+  FormularioPuertas, FormularioPrograma, FormularioRelacion, FormularioNotasAlMargen, FormularioCalendarioDePared,
 } from './formularios/nuevos'
 import { FICHA_DE_BLOQUE } from '../constructor/etiquetas'
 import { libreDe, valorDe } from '../../../components/bloques/presentacion'
@@ -59,6 +59,7 @@ export const FORMULARIOS: Record<string, ComponentType<Props<never>>> = {
   puertas: FormularioPuertas as unknown as ComponentType<Props<never>>,
   programa: FormularioPrograma as unknown as ComponentType<Props<never>>,
   notasAlMargen: FormularioNotasAlMargen as unknown as ComponentType<Props<never>>,
+  calendarioDePared: FormularioCalendarioDePared as unknown as ComponentType<Props<never>>,
   relacion: FormularioRelacion as unknown as ComponentType<Props<never>>,
   carrusel: FormularioCarrusel as unknown as ComponentType<Props<never>>,
   donativo: FormularioDonativo as unknown as ComponentType<Props<never>>,
@@ -127,6 +128,11 @@ const BLOQUE_NUEVO: Record<string, object> = {
   notasAlMargen: {
     tipo: 'notasAlMargen', titulo: '', html: '', notas: [{ dato: '', texto: '' }],
     presentacion: { columnas: '2', alineacion: 'justificado', capitular: true },
+  },
+  // Los doce meses, en blanco: tenues hasta que se rellenen.
+  calendarioDePared: {
+    tipo: 'calendarioDePared', titulo: 'Un año en el Grupo',
+    meses: Array.from({ length: 12 }, () => ({ titulo: '', texto: '', foto: '', fotoAlt: '', tono: 'normal' as const })),
   },
 }
 
@@ -247,6 +253,10 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       if (bloque.texto.trim() === '') return 'está vacía'
       if ((bloque.foto ?? '') !== '' && (bloque.fotoAlt ?? '').trim() === '') return 'tiene la foto sin descripción'
       return null
+    case 'calendarioDePared': {
+      const sin = bloque.meses.findIndex((m) => m.foto !== '' && m.fotoAlt.trim() === '')
+      return sin === -1 ? null : `tiene la foto del mes ${sin + 1} sin descripción`
+    }
     case 'notasAlMargen': {
       if (bloque.html.trim() === '') return 'no tiene texto'
       const sin = bloque.notas.findIndex((n) => n.dato.trim() === '')

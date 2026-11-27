@@ -28,7 +28,7 @@ import { SECCION_TRAS_CABECERA } from '../espaciado'
  *
  * La cabecera es la misma en todas: la foto a todo el ancho con el título
  * encima (`CabeceraASangre`). Agenda y Cultos no llevaban ninguna e Historia
- * una suya, hasta que el 28-11-2026 se igualaron: cada página tiene su
+ * una suya, hasta que el 27-11-2026 se igualaron: cada página tiene su
  * carácter de la cabecera abajo, pero todas se abren igual.
  *
  * El título de la pestaña sale de la cabecera del documento, así que también se

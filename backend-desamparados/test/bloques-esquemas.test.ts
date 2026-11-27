@@ -6,7 +6,7 @@ import { esquemaDeBloque } from '../src/schemas/bloques.schema.js';
 import { TIPOS_BLOQUE } from '../src/domain/bloques.js';
 
 type Tipo = 'texto' | 'foto' | 'galeria' | 'tarjetas' | 'llamada' | 'datos' | 'itinerario'
-  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas' | 'programa' | 'relacion' | 'carrusel' | 'donativo' | 'notasAlMargen' | 'cita';
+  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas' | 'programa' | 'relacion' | 'carrusel' | 'donativo' | 'notasAlMargen' | 'cita' | 'calendarioDePared';
 
 const falla = (tipo: Tipo, valor: unknown) =>
   esquemaDeBloque(tipo)(valor) instanceof ArkErrors;
@@ -613,5 +613,24 @@ describe('cita con foto (lámina)', () => {
   test('una foto sin descripción o de fuera del sitio, no', () => {
     assert.ok(falla('cita', { ...CITA, foto: '/images/cabeceras/cera.webp', fotoAlt: ' ' }));
     assert.ok(falla('cita', { ...CITA, foto: 'https://otro-sitio.example/foto.jpg', fotoAlt: 'Una foto' }));
+  });
+});
+
+describe('bloque de calendario de pared', () => {
+  const MES = { titulo: '', texto: '', foto: '', fotoAlt: '', tono: 'normal' };
+  const CALENDARIO = { tipo: 'calendarioDePared', titulo: 'Un año en el Grupo', meses: Array.from({ length: 12 }, () => MES) };
+
+  test('doce meses, aunque vayan en blanco, pasan; uno con foto y descripción, también', () => {
+    assert.ok(!falla('calendarioDePared', CALENDARIO));
+    const meses = [...CALENDARIO.meses];
+    meses[2] = { titulo: 'Sábado de Pasión', texto: 'La Virgen sale', foto: '/images/cabeceras/cera.webp', fotoAlt: 'El trono', tono: 'destacado' };
+    assert.ok(!falla('calendarioDePared', { ...CALENDARIO, meses }));
+  });
+
+  test('ni once ni trece meses, ni una foto sin descripción, ni un tono que no existe', () => {
+    assert.ok(falla('calendarioDePared', { ...CALENDARIO, meses: CALENDARIO.meses.slice(1) }));
+    assert.ok(falla('calendarioDePared', { ...CALENDARIO, meses: [...CALENDARIO.meses, MES] }));
+    assert.ok(falla('calendarioDePared', { ...CALENDARIO, meses: [{ ...MES, foto: '/images/cabeceras/cera.webp' }, ...CALENDARIO.meses.slice(1)] }));
+    assert.ok(falla('calendarioDePared', { ...CALENDARIO, meses: [{ ...MES, tono: 'rojo' }, ...CALENDARIO.meses.slice(1)] }));
   });
 });

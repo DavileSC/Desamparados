@@ -8,7 +8,10 @@ import { VELO_SOBRE_GRANATE } from '../estiloDeBoton'
 import { propsDeFoto } from '../../lib/fotoSubida'
 import { MARCA } from '../../theme/marca'
 
-export type Fondo = 'ninguno' | 'papel' | 'granate' | 'oscuro' | 'foto'
+export type Fondo = 'ninguno' | 'papel' | 'granate' | 'oscuro' | 'foto' | 'vino'
+
+/** El fondo «vino». Lo usan también las casillas del calendario de pared, un punto más claras. */
+export const FONDO_VINO = '#170e11'
 
 /** Tinta sobre papel: los colores de la lista de la Agenda, que ya se leen bien ahí. */
 const TINTA = '#1b1c1a'
@@ -42,7 +45,9 @@ export default function BandaDeFondo({ fondo, foto, children }: { fondo: Fondo; 
 
   if (fondo === 'ninguno') return <>{children}</>
 
-  const color = { papel: PAPEL, granate: GRANATE, oscuro: '#0a090b', foto: '#0a090b' }[fondo]
+  // Vino: un negro con un punto de rojo, el de Vida. Puesto en todos los
+  // bloques de una página, las franjas se juntan y la página entera toma el tono.
+  const color = { papel: PAPEL, granate: GRANATE, oscuro: '#0a090b', foto: '#0a090b', vino: FONDO_VINO }[fondo]
   const banda = (
     <Box
       data-fondo={fondo}

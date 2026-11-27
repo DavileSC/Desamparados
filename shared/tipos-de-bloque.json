@@ -46,8 +46,11 @@
     "fuente: noticias, agenda y publicaciones son módulos distintos. El itinerario y el",
     "programa son del núcleo: solo consultan el cortejo en directo y la agenda si están.",
     "",
-    "Notas al margen (notasAlMargen), 28-11-2026: un texto largo con fechas o",
-    "datos cortos en una columna al lado, como las notas de un libro."
+    "Notas al margen (notasAlMargen), 27-11-2026: un texto largo con fechas o",
+    "datos cortos en una columna al lado, como las notas de un libro.",
+    "",
+    "Calendario de pared (calendarioDePared), 27-11-2026: el año en doce casillas,",
+    "una por mes, con lo que pasa en cada uno; los meses grandes, con foto."
   ],
   "tipos": [
     "texto",
@@ -78,7 +81,8 @@
     "relacion",
     "carrusel",
     "donativo",
-    "notasAlMargen"
+    "notasAlMargen",
+    "calendarioDePared"
   ],
   "modulo": {
     "texto": "nucleo", "foto": "nucleo", "galeria": "nucleo", "tarjetas": "nucleo", "llamada": "nucleo",
@@ -88,6 +92,6 @@
     "preguntas": "nucleo", "descargas": "nucleo", "mapa": "nucleo", "cuentaAtras": "nucleo", "espacio": "nucleo",
     "fotoFija": "nucleo", "horario": "nucleo", "dibujo": "paginas-propias", "anillos": "nucleo", "puertas": "nucleo",
     "programa": "nucleo", "relacion": "nucleo", "carrusel": "nucleo", "donativo": "donativos",
-    "notasAlMargen": "nucleo"
+    "notasAlMargen": "nucleo", "calendarioDePared": "nucleo"
   }
 }

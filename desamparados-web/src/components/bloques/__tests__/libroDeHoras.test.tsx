@@ -5,7 +5,7 @@ import BloquesDePagina from '../BloquesDePagina'
 import type { Bloque } from '../../../lib/api/contenido'
 
 /**
- * Las piezas que llegaron con Pasionistas (28-11-2026): el bloque de notas al
+ * Las piezas que llegaron con Pasionistas (27-11-2026): el bloque de notas al
  * margen, las tarjetas en índice, la cita en lámina y la foto entre filetes.
  */
 const FOTO = '/storage/public/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.webp'
