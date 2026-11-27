@@ -22,7 +22,7 @@ import type { Props } from './comunes'
 import type {
   BloqueFotoTexto, BloqueCita, BloqueVideo, BloqueBotones, BloquePreguntas,
   BloqueDescargas, BloqueMapa, BloqueCuentaAtras, BotonDeBloque, BloqueDibujo, NombreDeDibujo, BloqueAnillos, FinDeAnillo,
-  BloquePuertas, Puerta, BloquePrograma, BloqueRelacion, BloqueNotasAlMargen, BloqueCalendarioDePared, MesDeCalendario,
+  BloquePuertas, Puerta, BloquePrograma, BloqueRelacion, BloqueNotasAlMargen, BloqueCalendarioDePared, MesDeCalendario, BloqueConversacion,
 } from '../../../../lib/api/contenido'
 
 export function FormularioFotoTexto({ bloque, onCambio }: Props<BloqueFotoTexto>) {
@@ -430,5 +430,50 @@ export function FormularioCalendarioDePared({ bloque, onCambio }: Props<BloqueCa
         </Stack>
       ))}
     </Stack>
+  )
+}
+
+/**
+ * Los turnos de la conversación: cada uno, una pregunta y su respuesta; la
+ * respuesta puede llevar etiquetas cortas, una por línea, y un botón.
+ */
+export function FormularioConversacion({ bloque, onCambio }: Props<BloqueConversacion>) {
+  return (
+    <Stack spacing={2}>
+      <CampoTexto etiqueta="Quién contesta" valor={bloque.nombre} onCambio={(nombre) => onCambio({ nombre })}
+        ayuda="Va encima de cada respuesta, junto al escudo, como «Grupo Joven»." maxLength={topes.etiqueta} />
+      <ListaEditable elementos={bloque.turnos} onCambio={(turnos) => onCambio({ turnos })}
+        nuevo={() => ({ pregunta: '', respuesta: '', etiquetas: [], boton: '', enlace: '' })} nombre="Pregunta" maximo={topes.turnosPorConversacion}
+        pintar={(turno, cambiar, i) => (
+          <>
+            <TextField label={`Pregunta ${i + 1}`} value={turno.pregunta} onChange={(e) => cambiar({ pregunta: e.target.value })} size="small" fullWidth
+              helperText="Como la haría quien llega: «¿Tengo que ser hermano para ir?»." slotProps={{ htmlInput: { maxLength: topes.titulo } }} />
+            <TextField label="Respuesta" value={turno.respuesta} onChange={(e) => cambiar({ respuesta: e.target.value })} size="small" fullWidth multiline minRows={2}
+              helperText="Corta y cercana. Una línea en blanco separa párrafos." slotProps={{ htmlInput: { maxLength: topes.respuesta } }} />
+            <CampoEtiquetas valor={turno.etiquetas} onCambio={(etiquetas) => cambiar({ etiquetas })} />
+            <TextField label="Texto del botón" value={turno.boton} onChange={(e) => cambiar({ boton: e.target.value })} size="small" fullWidth
+              helperText="Opcional, como «Escríbenos». Con texto, elige también adónde lleva." slotProps={{ htmlInput: { maxLength: topes.etiqueta } }} />
+            {turno.boton.trim() !== '' && (
+              <CampoEnlace etiqueta="Adónde lleva el botón" valor={turno.enlace} onCambio={(enlace) => cambiar({ enlace })} />
+            )}
+          </>
+        )} />
+    </Stack>
+  )
+}
+
+/**
+ * Las etiquetas, una por línea. Se guarda el texto tal cual se escribe para
+ * no comerse el salto de línea a medio escribir; al salir del campo se quitan
+ * las vacías y los espacios de los lados.
+ */
+function CampoEtiquetas({ valor, onCambio }: { valor: string[]; onCambio: (etiquetas: string[]) => void }) {
+  const [texto, setTexto] = useState(() => valor.join('\n'))
+  const limpiar = (t: string) => t.split('\n').map((e) => e.trim()).filter(Boolean).slice(0, topes.etiquetasPorTurno)
+  return (
+    <TextField label="Etiquetas" value={texto} size="small" fullWidth multiline minRows={2}
+      onChange={(e) => { setTexto(e.target.value); onCambio(limpiar(e.target.value)) }}
+      onBlur={() => setTexto(limpiar(texto).join('\n'))}
+      helperText={`Opcional: una por línea, hasta ${topes.etiquetasPorTurno}. Salen en píldoras bajo la respuesta.`} />
   )
 }

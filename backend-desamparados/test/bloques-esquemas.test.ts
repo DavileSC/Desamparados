@@ -6,7 +6,7 @@ import { esquemaDeBloque } from '../src/schemas/bloques.schema.js';
 import { TIPOS_BLOQUE } from '../src/domain/bloques.js';
 
 type Tipo = 'texto' | 'foto' | 'galeria' | 'tarjetas' | 'llamada' | 'datos' | 'itinerario'
-  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas' | 'programa' | 'relacion' | 'carrusel' | 'donativo' | 'notasAlMargen' | 'cita' | 'calendarioDePared';
+  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas' | 'programa' | 'relacion' | 'carrusel' | 'donativo' | 'notasAlMargen' | 'cita' | 'calendarioDePared' | 'conversacion';
 
 const falla = (tipo: Tipo, valor: unknown) =>
   esquemaDeBloque(tipo)(valor) instanceof ArkErrors;
@@ -632,5 +632,25 @@ describe('bloque de calendario de pared', () => {
     assert.ok(falla('calendarioDePared', { ...CALENDARIO, meses: [...CALENDARIO.meses, MES] }));
     assert.ok(falla('calendarioDePared', { ...CALENDARIO, meses: [{ ...MES, foto: '/images/cabeceras/cera.webp' }, ...CALENDARIO.meses.slice(1)] }));
     assert.ok(falla('calendarioDePared', { ...CALENDARIO, meses: [{ ...MES, tono: 'rojo' }, ...CALENDARIO.meses.slice(1)] }));
+  });
+});
+
+describe('bloque de conversación', () => {
+  const TURNO = { pregunta: '¿Tengo que ser hermano?', respuesta: 'No.', etiquetas: [], boton: '', enlace: '' };
+  const CONVERSACION = { tipo: 'conversacion', titulo: '', nombre: 'Grupo Joven', turnos: [TURNO] };
+
+  test('un turno con etiquetas y un botón con su destino pasan', () => {
+    assert.ok(!falla('conversacion', CONVERSACION));
+    assert.ok(!falla('conversacion', { ...CONVERSACION, turnos: [{ ...TURNO, etiquetas: ['Montar el altar'], boton: 'Escríbenos', enlace: '/contacto' }] }));
+  });
+
+  test('ni sin turnos, ni sin quién contesta, ni un botón a medias, ni una etiqueta vacía, ni un enlace de fuera', () => {
+    assert.ok(falla('conversacion', { ...CONVERSACION, turnos: [] }));
+    assert.ok(falla('conversacion', { ...CONVERSACION, nombre: '  ' }));
+    assert.ok(falla('conversacion', { ...CONVERSACION, turnos: [{ ...TURNO, respuesta: '' }] }));
+    assert.ok(falla('conversacion', { ...CONVERSACION, turnos: [{ ...TURNO, boton: 'Escríbenos' }] }));
+    assert.ok(falla('conversacion', { ...CONVERSACION, turnos: [{ ...TURNO, enlace: '/contacto' }] }));
+    assert.ok(falla('conversacion', { ...CONVERSACION, turnos: [{ ...TURNO, etiquetas: [' '] }] }));
+    assert.ok(falla('conversacion', { ...CONVERSACION, turnos: [{ ...TURNO, boton: 'Ir', enlace: 'https://otro-sitio.example' }] }));
   });
 });

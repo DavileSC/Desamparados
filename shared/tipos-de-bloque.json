@@ -50,7 +50,10 @@
     "datos cortos en una columna al lado, como las notas de un libro.",
     "",
     "Calendario de pared (calendarioDePared), 27-11-2026: el año en doce casillas,",
-    "una por mes, con lo que pasa en cada uno; los meses grandes, con foto."
+    "una por mes, con lo que pasa en cada uno; los meses grandes, con foto.",
+    "",
+    "Conversación (conversacion), 27-11-2026: preguntas y respuestas como en un",
+    "chat, la respuesta con el escudo; para lo que se pregunta antes de venir."
   ],
   "tipos": [
     "texto",
@@ -82,7 +85,8 @@
     "carrusel",
     "donativo",
     "notasAlMargen",
-    "calendarioDePared"
+    "calendarioDePared",
+    "conversacion"
   ],
   "modulo": {
     "texto": "nucleo", "foto": "nucleo", "galeria": "nucleo", "tarjetas": "nucleo", "llamada": "nucleo",
@@ -92,6 +96,6 @@
     "preguntas": "nucleo", "descargas": "nucleo", "mapa": "nucleo", "cuentaAtras": "nucleo", "espacio": "nucleo",
     "fotoFija": "nucleo", "horario": "nucleo", "dibujo": "paginas-propias", "anillos": "nucleo", "puertas": "nucleo",
     "programa": "nucleo", "relacion": "nucleo", "carrusel": "nucleo", "donativo": "donativos",
-    "notasAlMargen": "nucleo", "calendarioDePared": "nucleo"
+    "notasAlMargen": "nucleo", "calendarioDePared": "nucleo", "conversacion": "nucleo"
   }
 }

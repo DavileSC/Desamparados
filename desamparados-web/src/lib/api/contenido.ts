@@ -203,6 +203,10 @@ export interface BloqueNotasAlMargen extends BloqueBase { tipo: 'notasAlMargen';
 export interface MesDeCalendario { titulo: string; texto: string; foto: string; fotoAlt: string; tono: 'normal' | 'destacado' | 'crema' }
 /** Siempre doce meses, de enero a diciembre: el nombre sale de la posición. */
 export interface BloqueCalendarioDePared extends BloqueBase { tipo: 'calendarioDePared'; meses: MesDeCalendario[] }
+/** Un turno de la conversación: la pregunta, la respuesta y, si se quiere, etiquetas en píldora y un botón. */
+export interface TurnoDeConversacion { pregunta: string; respuesta: string; etiquetas: string[]; boton: string; enlace: string }
+/** Preguntas y respuestas como en un chat; `nombre` es quién contesta. */
+export interface BloqueConversacion extends BloqueBase { tipo: 'conversacion'; nombre: string; turnos: TurnoDeConversacion[] }
 /** Un vídeo suelto: las mismas reglas que uno de la galería. */
 export interface BloqueVideo extends BloqueBase { tipo: 'video'; url: string; portada: string; alt: string; pie: string }
 export interface BotonDeBloque { texto: string; enlace: string; estilo: 'principal' | 'secundario' }
@@ -296,6 +300,7 @@ export type Bloque =
   | BloquePrograma
   | BloqueNotasAlMargen
   | BloqueCalendarioDePared
+  | BloqueConversacion
   | BloqueRelacion
   | BloqueCarrusel
   | BloqueDonativo

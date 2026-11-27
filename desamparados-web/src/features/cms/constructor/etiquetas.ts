@@ -53,7 +53,7 @@ const ETIQUETA_VALOR: Record<string, string> = {
   lista: 'Lista', tabla: 'Tabla', tarjetas: 'Tarjetas', linea: 'Línea', indice: 'Índice de devocionario', plano: 'Sobre el mapa', cinta: 'Cinta que pasa al bajar',
   lado: 'Datos al lado', debajo: 'Datos debajo', solo: 'Solo el formulario',
   mitad: 'La mitad', tercio: 'Un tercio', arriba: 'Arriba',
-  clasica: 'Clásica', lineas: 'Líneas', lamina: 'Lámina, con foto al lado', retrato: 'Retrato, con foto en color al lado', nota: 'Nota en crema', redondeadas: 'Redondeadas', vino: 'Vino',
+  clasica: 'Clásica', lineas: 'Líneas', lamina: 'Lámina, con foto al lado', retrato: 'Retrato, con foto en color al lado', nota: 'Nota en crema', redondeadas: 'Redondeadas', vino: 'Vino', historias: 'Historias, que se deslizan de lado',
   bajo: 'Bajo', medio: 'Medio', alto: 'Alto', compacta: 'Compacta',
   pequeno: 'Pequeño', mediano: 'Mediano',
   anillos: 'Anillos entrelazados', foco: 'En foco', enfoque: 'Se enfoca al leerla', fila: 'En una fila',
@@ -113,6 +113,7 @@ export const FICHA_DE_BLOQUE: Record<string, FichaDeBloque> = {
   mapa: { nombre: 'Mapa', descripcion: 'Un lugar en el mapa, con el enlace para llegar.' },
   horario: { nombre: 'Horario vivo', descripcion: 'Misas y despacho, con la próxima misa y cuánto falta, calculado al momento.' },
   relacion: { nombre: 'Relación de cargos', descripcion: 'Los cargos de la Junta, con quién los ocupa y qué hace cada uno.' },
+  conversacion: { nombre: 'Conversación', descripcion: 'Preguntas y respuestas como en un chat, para lo que alguien se pregunta antes de venir.' },
   calendarioDePared: { nombre: 'Calendario de pared', descripcion: 'El año en doce casillas, una por mes, con lo que pasa en cada uno.' },
   programa: { nombre: 'Programa', descripcion: 'Los cultos del año mes a mes, con el próximo marcado solo y su fecha de la Agenda.' },
   puertas: { nombre: 'Dos puertas', descripcion: 'Dos paneles para dos lectores, como «Necesito ayuda» y «Quiero ayudar», con sus datos y un botón.' },
@@ -129,7 +130,7 @@ export const FICHA_DE_BLOQUE: Record<string, FichaDeBloque> = {
  * no se ofrecería: lo vigila la prueba de la galería.
  */
 export const CARPETAS_DE_BLOQUES: { nombre: string; tipos: string[] }[] = [
-  { nombre: 'Texto', tipos: ['texto', 'cita', 'notasAlMargen', 'preguntas'] },
+  { nombre: 'Texto', tipos: ['texto', 'cita', 'notasAlMargen', 'preguntas', 'conversacion'] },
   { nombre: 'Fotos y vídeo', tipos: ['foto', 'fotoTexto', 'galeria', 'carrusel', 'fotoFija', 'video', 'dibujo'] },
   { nombre: 'Composición', tipos: ['tarjetas', 'llamada', 'botones', 'puertas', 'anillos', 'espacio'] },
   { nombre: 'Información', tipos: ['datos', 'itinerario', 'cronologia', 'calendarioDePared', 'horario', 'mapa', 'relacion', 'descargas', 'cuentaAtras'] },

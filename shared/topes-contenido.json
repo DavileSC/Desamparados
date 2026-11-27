@@ -34,5 +34,7 @@
   "donativoMinimoEuros": 1,
   "donativoMaximoEuros": 5000,
   "extractoNoticia": 300,
-  "notasPorBloque": 6
+  "notasPorBloque": 6,
+  "turnosPorConversacion": 12,
+  "etiquetasPorTurno": 8
 }

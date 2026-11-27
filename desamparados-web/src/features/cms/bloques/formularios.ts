@@ -10,7 +10,7 @@ import { FormularioDonativo } from './formularios/donativo'
 import {
   FormularioFotoTexto, FormularioCita, FormularioVideo, FormularioBotones, FormularioPreguntas,
   FormularioDescargas, FormularioMapa, FormularioCuentaAtras, FormularioEspacio, FormularioDibujo, FormularioAnillos,
-  FormularioPuertas, FormularioPrograma, FormularioRelacion, FormularioNotasAlMargen, FormularioCalendarioDePared,
+  FormularioPuertas, FormularioPrograma, FormularioRelacion, FormularioNotasAlMargen, FormularioCalendarioDePared, FormularioConversacion,
 } from './formularios/nuevos'
 import { FICHA_DE_BLOQUE } from '../constructor/etiquetas'
 import { libreDe, valorDe } from '../../../components/bloques/presentacion'
@@ -60,6 +60,7 @@ export const FORMULARIOS: Record<string, ComponentType<Props<never>>> = {
   programa: FormularioPrograma as unknown as ComponentType<Props<never>>,
   notasAlMargen: FormularioNotasAlMargen as unknown as ComponentType<Props<never>>,
   calendarioDePared: FormularioCalendarioDePared as unknown as ComponentType<Props<never>>,
+  conversacion: FormularioConversacion as unknown as ComponentType<Props<never>>,
   relacion: FormularioRelacion as unknown as ComponentType<Props<never>>,
   carrusel: FormularioCarrusel as unknown as ComponentType<Props<never>>,
   donativo: FormularioDonativo as unknown as ComponentType<Props<never>>,
@@ -133,6 +134,10 @@ const BLOQUE_NUEVO: Record<string, object> = {
   calendarioDePared: {
     tipo: 'calendarioDePared', titulo: 'Un año en el Grupo',
     meses: Array.from({ length: 12 }, () => ({ titulo: '', texto: '', foto: '', fotoAlt: '', tono: 'normal' as const })),
+  },
+  conversacion: {
+    tipo: 'conversacion', titulo: 'Lo que nos preguntan', nombre: '',
+    turnos: [{ pregunta: '', respuesta: '', etiquetas: [], boton: '', enlace: '' }],
   },
 }
 
@@ -253,6 +258,13 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       if (bloque.texto.trim() === '') return 'está vacía'
       if ((bloque.foto ?? '') !== '' && (bloque.fotoAlt ?? '').trim() === '') return 'tiene la foto sin descripción'
       return null
+    case 'conversacion': {
+      if (bloque.nombre.trim() === '') return 'no dice quién contesta'
+      const sin = bloque.turnos.findIndex((t) => t.pregunta.trim() === '' || t.respuesta.trim() === '')
+      if (sin !== -1) return `tiene la pregunta o la respuesta ${sin + 1} en blanco`
+      const aMedias = bloque.turnos.findIndex((t) => (t.boton.trim() === '') !== (t.enlace === ''))
+      return aMedias === -1 ? null : `tiene el botón de la respuesta ${aMedias + 1} sin texto o sin destino`
+    }
     case 'calendarioDePared': {
       const sin = bloque.meses.findIndex((m) => m.foto !== '' && m.fotoAlt.trim() === '')
       return sin === -1 ? null : `tiene la foto del mes ${sin + 1} sin descripción`

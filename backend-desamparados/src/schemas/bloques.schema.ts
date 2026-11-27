@@ -867,6 +867,38 @@ const calendarioDeParedSchema = type({
   return true;
 });
 
+/**
+ * Conversación: lo que alguien se pregunta antes de venir, contestado como en
+ * un chat. Cada turno es una pregunta y su respuesta; la respuesta puede
+ * llevar etiquetas cortas (en píldoras) y un botón a otra página del sitio.
+ * `nombre` es quién contesta («Grupo Joven»), encima de cada respuesta.
+ */
+const turnoSchema = type({
+  pregunta: TITULO,
+  respuesta: texto(topes.respuesta),
+  etiquetas: ETIQUETA.array().atMostLength(topes.etiquetasPorTurno),
+  boton: ETIQUETA,
+  enlace: sinEnlace.or(enlaceInterno),
+});
+
+const conversacionSchema = type({
+  ...comunes,
+  tipo: "'conversacion'",
+  nombre: ETIQUETA,
+  turnos: turnoSchema.array().atLeastLength(1).atMostLength(topes.turnosPorConversacion),
+}).narrow((datos, ctx) => {
+  if (enBlanco(datos.nombre)) return ctx.reject({ path: ['nombre'], problem: 'no puede quedar en blanco' });
+  for (const [indice, turno] of datos.turnos.entries()) {
+    if (enBlanco(turno.pregunta)) return ctx.reject({ path: ['turnos', indice, 'pregunta'], problem: 'no puede quedar en blanco' });
+    if (enBlanco(turno.respuesta)) return ctx.reject({ path: ['turnos', indice, 'respuesta'], problem: 'no puede quedar en blanco' });
+    // Un botón sin destino no lleva a ninguna parte, y un destino sin texto no se ve.
+    if (enBlanco(turno.boton) !== (turno.enlace === '')) return ctx.reject({ path: ['turnos', indice, 'boton'], problem: 'necesita texto y destino, o ninguno de los dos' });
+    const vacia = turno.etiquetas.findIndex((e) => enBlanco(e));
+    if (vacia !== -1) return ctx.reject({ path: ['turnos', indice, 'etiquetas', vacia], problem: 'no puede quedar en blanco' });
+  }
+  return true;
+});
+
 const POR_TIPO = {
   texto: textoSchema,
   foto: fotoSchema,
@@ -898,6 +930,7 @@ const POR_TIPO = {
   donativo: donativoSchema,
   notasAlMargen: notasAlMargenSchema,
   calendarioDePared: calendarioDeParedSchema,
+  conversacion: conversacionSchema,
 } as const;
 
 export const esquemaDeBloque = (tipo: TipoBloque) => POR_TIPO[tipo as keyof typeof POR_TIPO];

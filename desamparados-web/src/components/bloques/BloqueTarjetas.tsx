@@ -10,7 +10,7 @@ import { propsDeFoto } from '../../lib/fotoSubida'
 import { useFotoQueFalla } from '../../hooks/useFotoQueFalla'
 import { MARCA, alfa } from '../../theme/marca'
 
-type Estilo = 'cristal' | 'papel' | 'contorno' | 'granate' | 'numeradas' | 'filetes' | 'indice' | 'redondeadas'
+type Estilo = 'cristal' | 'papel' | 'contorno' | 'granate' | 'numeradas' | 'filetes' | 'indice' | 'redondeadas' | 'historias'
 
 /**
  * Cuántas columnas ocupa cada tarjeta. En `auto` (el de siempre) depende de
@@ -27,7 +27,7 @@ function columnas(cuantas: number, eleccion: string) {
 }
 
 /** El recuadro de cada estilo. `cristal` es el de siempre. */
-const FONDOS: Record<Exclude<Estilo, 'cristal' | 'numeradas' | 'filetes' | 'indice'>, object> = {
+const FONDOS: Record<Exclude<Estilo, 'cristal' | 'numeradas' | 'filetes' | 'indice' | 'historias'>, object> = {
   // Sin bordes (26-09-2026): cada estilo se distingue por su fondo. `contorno`
   // conserva el nombre guardado en las páginas, pero ya es un recuadro sobrio.
   papel: { backgroundColor: PAPEL, color: '#1b1c1a', borderRadius: '8px' },
@@ -54,6 +54,7 @@ export default function BloqueTarjetas({ bloque }: { bloque: Datos }) {
   if (estilo === 'numeradas') return <Numeradas bloque={bloque} />
   if (estilo === 'filetes') return <ConFilete bloque={bloque} />
   if (estilo === 'indice') return <Indice bloque={bloque} />
+  if (estilo === 'historias') return <Historias bloque={bloque} />
   return (
     // La última fila, si no se llena, va centrada y no pegada a la izquierda.
     <Grid container spacing={3} sx={{ justifyContent: 'center', maxWidth: anchoMaximo(bloque, estrecha ? '1000px' : 'none'), mx: 'auto' }}>
@@ -75,7 +76,7 @@ export default function BloqueTarjetas({ bloque }: { bloque: Datos }) {
  * parte es una promesa que no se cumple, y además aparecería en la lista de
  * enlaces de quien navega con lector de pantalla.
  */
-function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEnlace; estilo: Exclude<Estilo, 'numeradas' | 'filetes' | 'indice'>; horizontal: boolean; centrada: boolean }) {
+function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEnlace; estilo: Exclude<Estilo, 'numeradas' | 'filetes' | 'indice' | 'historias'>; horizontal: boolean; centrada: boolean }) {
   const enlaceVivo = useEnlaceVivo()
   const icono = tarjeta.icono ? ICONOS[tarjeta.icono] : null
   const foto = tarjeta.foto ?? ''
@@ -303,6 +304,60 @@ function Indice({ bloque }: { bloque: Datos }) {
           </Box>
         )
       })}
+    </Box>
+  )
+}
+
+/**
+ * Historias (Grupo Joven, 27-11-2026): el año en fotos verticales, una tira
+ * que se desliza de lado como las historias del móvil. Cada tarjeta es la foto
+ * entera con la etiqueta («Octubre») y el título encima, abajo y velados. Sin
+ * foto, la tarjeta se queda en oscuro con su texto. Encaja al soltar el dedo
+ * y, con el teclado, la tira se recorre con las flechas al darle el foco.
+ */
+function Historias({ bloque }: { bloque: Datos }) {
+  const enlaceVivo = useEnlaceVivo()
+  return (
+    <Box component="ul" tabIndex={0} aria-label={bloque.titulo || 'Fotos'} sx={{
+      listStyle: 'none', m: 0, p: 0, pb: 1.5, maxWidth: anchoMaximo(bloque, 'none'), mx: 'auto',
+      display: 'flex', gap: 2, overflowX: 'auto', scrollSnapType: 'x mandatory', overscrollBehaviorX: 'contain',
+      '&:focus-visible': { outline: `2px solid ${MARCA.acento}`, outlineOffset: 4 },
+    }}>
+      {bloque.tarjetas.map((tarjeta, indice) => {
+        const enlace = tarjeta.enlace && enlaceVivo(tarjeta.enlace) ? tarjeta.enlace : ''
+        return (
+          <Box component="li" key={indice} sx={{ flex: { xs: '0 0 200px', md: '0 0 260px' }, scrollSnapAlign: 'start' }}>
+            {enlace ? (
+              <Box component={Link} to={enlace} sx={{ display: 'block', textDecoration: 'none', color: 'inherit', borderRadius: '18px', '&:focus-visible': { outline: `2px solid ${MARCA.acento}`, outlineOffset: 3 } }}>
+                <Historia tarjeta={tarjeta} />
+              </Box>
+            ) : <Historia tarjeta={tarjeta} />}
+          </Box>
+        )
+      })}
+    </Box>
+  )
+}
+
+function Historia({ tarjeta }: { tarjeta: TarjetaEnlace }) {
+  const { visible, alFallar } = useFotoQueFalla(tarjeta.foto ?? '')
+  return (
+    <Box sx={{
+      position: 'relative', overflow: 'hidden', isolation: 'isolate', aspectRatio: '9 / 16', borderRadius: '18px',
+      backgroundColor: '#161417', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', p: 2.25, color: '#fff',
+    }}>
+      {visible && (
+        <>
+          <Box component="img" {...propsDeFoto(tarjeta.foto ?? '', '260px', alFallar)} alt={tarjeta.fotoAlt ?? ''} loading="lazy" decoding="async"
+            sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: -2 }} />
+          <Box aria-hidden sx={{ position: 'absolute', inset: 0, zIndex: -1, background: 'linear-gradient(to top, rgba(7,6,8,.9), rgba(7,6,8,0) 55%)' }} />
+        </>
+      )}
+      <Etiqueta tarjeta={tarjeta} sx={{ color: MARCA.acento, mb: 0.75 }} />
+      <Typography component="h3" sx={{ fontFamily: SERIF, fontSize: { xs: 20, md: 24 }, lineHeight: 1.1, fontWeight: 600 }}>{tarjeta.titulo}</Typography>
+      {tarjeta.descripcion && (
+        <Typography sx={{ fontSize: 13, lineHeight: 1.45, mt: 0.75, color: 'rgba(255,255,255,0.8)' }}>{tarjeta.descripcion}</Typography>
+      )}
     </Box>
   )
 }

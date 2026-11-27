@@ -21,6 +21,7 @@ import BloquePrograma from './BloquePrograma'
 import BloqueRelacion from './BloqueRelacion'
 import BloqueNotasAlMargen from './BloqueNotasAlMargen'
 import BloqueCalendarioDePared from './BloqueCalendarioDePared'
+import BloqueConversacion from './BloqueConversacion'
 import { valorDe } from './presentacion'
 import type { Bloque } from '../../lib/api/contenido'
 
@@ -139,6 +140,7 @@ export const REGISTRO_BLOQUES: Record<string, ComponenteDeBloque> = {
   donativo: PEREZOSOS.donativo.Componente,
   notasAlMargen: BloqueNotasAlMargen as ComponenteDeBloque,
   calendarioDePared: BloqueCalendarioDePared as ComponenteDeBloque,
+  conversacion: BloqueConversacion as ComponenteDeBloque,
 }
 
 export const componenteDeBloque = (bloque: Bloque) => REGISTRO_BLOQUES[bloque.tipo]

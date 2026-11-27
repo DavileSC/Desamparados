@@ -59,6 +59,14 @@ export function ejemploDe(tipo: string, fotos: string[]): Bloque[] {
       }]
     case 'cita':
       return [{ tipo, ...sinTitulo, texto: 'Unas palabras que merecen ir en grande, para que se lean despacio.', autor: 'Quién lo dijo', fuente: 'Dónde' }]
+    case 'conversacion':
+      return [{
+        tipo, titulo: 'Lo que nos preguntan', nombre: 'Quien contesta',
+        turnos: [
+          { pregunta: '¿Una pregunta de quien llega?', respuesta: 'La respuesta, cercana y corta.', etiquetas: [], boton: '', enlace: '' },
+          { pregunta: '¿Y qué se hace?', respuesta: 'Un poco de todo:', etiquetas: ['Una cosa', 'Otra'], boton: '', enlace: '' },
+        ],
+      }]
     case 'calendarioDePared':
       return [{
         tipo, titulo: 'Un año en el Grupo',
