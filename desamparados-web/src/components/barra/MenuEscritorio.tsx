@@ -350,10 +350,12 @@ function SeccionEscritorio({ entrada }: { entrada: EntradaMenu }) {
         aria-expanded={desplegable ? abierta : undefined}
         sx={{
           position: 'relative',
-          fontSize: '12px',
-          fontWeight: 600,
-          letterSpacing: '0.18em',
-          textTransform: 'uppercase',
+          // Sin versales (D2, 28-11-2026): en minúscula con inicial se lee más
+          // grande en el mismo ancho, y las mayúsculas quedan para el rótulo.
+          fontSize: '15px',
+          fontWeight: 500,
+          letterSpacing: '0.01em',
+          textTransform: 'none',
           whiteSpace: 'nowrap',
           lineHeight: 1,
           height: ALTO_MENU,
@@ -371,7 +373,7 @@ function SeccionEscritorio({ entrada }: { entrada: EntradaMenu }) {
             position: 'absolute',
             left: 0,
             // Sin el espaciado de la última letra, que deja la raya descentrada.
-            right: '0.18em',
+            right: '0.01em',
             bottom: 0,
             height: 2,
             backgroundColor: 'secondary.main',
@@ -382,8 +384,8 @@ function SeccionEscritorio({ entrada }: { entrada: EntradaMenu }) {
           '&:hover': { color: 'secondary.main', backgroundColor: 'transparent' },
           // disableRipple quita también la marca de foco de MUI: se pone la de la web.
           '&.Mui-focusVisible': FOCO,
-          [compactMq]: { fontSize: '11.5px', letterSpacing: '0.14em', '&::after': { right: '0.14em' } },
-          [estrechoMq]: { fontSize: '11px', letterSpacing: '0.1em', '&::after': { right: '0.1em' } },
+          [compactMq]: { fontSize: '14.5px' },
+          [estrechoMq]: { fontSize: '14px' },
         }}
       >
         {entrada.label}
@@ -411,9 +413,9 @@ export default function MenuEscritorio() {
         justifyContent: 'center',
         alignItems: 'stretch',
         flexWrap: 'nowrap',
-        gap: '44px',
-        [compactMq]: { mx: '24px', gap: '30px' },
-        [estrechoMq]: { gap: '20px' },
+        gap: '34px',
+        [compactMq]: { mx: '24px', gap: '28px' },
+        [estrechoMq]: { gap: '22px' },
       }}
     >
       {menu.map((entrada) => (

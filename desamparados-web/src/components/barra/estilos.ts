@@ -15,7 +15,9 @@ export const desktopMq = `@media (min-width:${DESKTOP_NAV_MIN}px)`
 // al estrecharse es el tamaño de la letra y del escudo, por tramos; el alto,
 // nunca, porque las páginas dejan su hueco con `ALTO_BARRA_ESCRITORIO`.
 // Medido con los cinco perfiles y el menú de pruebas: en estrecho, a 1024 px,
-// el menú pide ~700 y la franja de arriba ~820.
+// el menú pide ~700 y la franja de arriba ~820. El 28-11-2026 creció a 52 + 42
+// (pieza D2 de su maqueta): el menú sin versales y a 15 px se leía de lejos
+// y, en versales a 11,5, no; el rótulo en imagen pide algo más de franja.
 export const compactMq = `@media (max-width:1439px)`
 export const estrechoMq = `@media (max-width:1219px)`
 
@@ -41,9 +43,9 @@ export const COLA_DEL_VELO = 14
 export const bajoElVelo = (aire: number) => `${ALTO_BARRA_ESCRITORIO + COLA_DEL_VELO + aire}px`
 
 /** El piso de arriba de la barra de escritorio: redes, escudo y nombre, acceso. */
-export const ALTO_FRANJA = 48
+export const ALTO_FRANJA = 52
 /** El piso del menú, bajo un filete burdeos. */
-export const ALTO_MENU = 34
+export const ALTO_MENU = 42
 /**
  * Lo que tapa la barra fija de escritorio: el hueco que deja arriba quien
  * empieza bajo ella (las cabeceras a sangre, el hero, las páginas sin cabecera).

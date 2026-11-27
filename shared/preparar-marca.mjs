@@ -45,6 +45,8 @@ const COMO_SE_PREPARA = {
   escudoSobreOscuro: { formato: 'png', paleta: true, alto: ALTO_WEB.maximo },
   escudoSobreClaro: { formato: 'png', paleta: true, alto: 400 },
   escudoDestacado: { formato: 'png', paleta: false, alto: 600 },
+  // Sin paleta: son letras finas, y la paleta les deja los bordes en escalera.
+  rotulo: { formato: 'png', paleta: false, alto: 96 },
   compartir: { formato: 'jpeg', ancho: 1200 },
   correoCabecera: { formato: 'jpeg', ancho: 1200 },
 }

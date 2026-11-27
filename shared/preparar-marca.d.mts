@@ -5,7 +5,7 @@ import type { ClaveMarca } from './marca.mjs'
 
 type Sharp = unknown
 
-export type ClaveQueSeSube = 'escudoSobreOscuro' | 'escudoSobreClaro' | 'escudoDestacado' | 'compartir' | 'correoCabecera'
+export type ClaveQueSeSube = 'escudoSobreOscuro' | 'escudoSobreClaro' | 'escudoDestacado' | 'rotulo' | 'compartir' | 'correoCabecera'
 export type ClaveDeIcono = 'favicon32' | 'appleTouchIcon' | 'icono192' | 'icono512'
 
 export declare const TINTA: { r: number; g: number; b: number; alpha: number }

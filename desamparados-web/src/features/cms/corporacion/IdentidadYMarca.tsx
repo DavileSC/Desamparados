@@ -120,6 +120,7 @@ const ANCHO_ENTERO = { gridColumn: '1 / -1' } as const
 /** Cada imagen: dónde sale, qué fondo lleva detrás en su sitio y si se puede quedar sin ella. */
 const IMAGENES: { clave: ClaveDeImagen; nombre: string; donde: string; fondo: string; foto?: boolean; opcional?: boolean }[] = [
   { clave: 'escudoSobreOscuro', nombre: 'Escudo sobre oscuro', donde: 'La barra de la web', fondo: FONDOS.profundo },
+  { clave: 'rotulo', nombre: 'Rótulo', donde: 'Junto al escudo, en la barra; sin él, el nombre escrito', fondo: FONDOS.profundo, opcional: true },
   { clave: 'escudoSobreClaro', nombre: 'Escudo sobre claro', donde: 'Correos y pie de los PDF', fondo: FONDOS.blanco },
   { clave: 'escudoDestacado', nombre: 'Escudo destacado', donde: 'Papeleta, cartas, informes', fondo: FONDOS.almanaque, opcional: true },
   { clave: 'compartir', nombre: 'Imagen para compartir', donde: 'WhatsApp, Facebook', fondo: FONDOS.profundo, foto: true, opcional: true },

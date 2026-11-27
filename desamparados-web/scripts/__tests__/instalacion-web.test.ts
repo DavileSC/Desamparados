@@ -114,7 +114,7 @@ describe('la orden instalacion-web.mjs', () => {
     ])
     expect(Object.keys(publica.marca)).toEqual(['colorPrincipal', 'colorAcento', 'imagenes'])
     // Solo las URL de lo que pinta la web: ni la ruta del disco ni los iconos.
-    expect(Object.keys(publica.marca.imagenes)).toEqual(['escudo', 'escudoDestacado', 'compartir'])
+    expect(Object.keys(publica.marca.imagenes)).toEqual(['escudo', 'escudoDestacado', 'rotulo', 'compartir'])
   })
 
   it('un dato pendiente (null) quita su línea del JSON-LD sin dejar una coma colgando', () => {
@@ -254,6 +254,8 @@ describe('la marca publicada', () => {
       escudo: `/marca/escudo-sobre-oscuro.png?v=${partida.escudoSobreOscuro.version}`,
       // Sin escudo destacado, la papeleta de la web lleva el de sobre oscuro.
       escudoDestacado: `/marca/escudo-sobre-oscuro.png?v=${partida.escudoSobreOscuro.version}`,
+      // Sin rótulo, la barra lleva el nombre escrito.
+      rotulo: null,
       compartir: icono,
     })
   })

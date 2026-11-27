@@ -3,7 +3,7 @@
 //
 //   node shared/__fixtures__/marca/generar.mjs
 //
-// completa/: una instalación con los nueve ficheros, todos válidos y sin
+// completa/: una instalación con los diez ficheros, todos válidos y sin
 //   avisos, en azul para distinguirlos a simple vista de la marca de partida.
 //   El escudo destacado va ENTRELAZADO (Adam7): PDFKit lo lee, y así lo
 //   comprueban también las pruebas que generan PDF con esta carpeta.
@@ -33,6 +33,8 @@ mkdirSync(sueltos, { recursive: true })
 await sharp(escudo(144, 176, '#ffffff')).png().toFile(join(completa, 'escudo-sobre-oscuro.png'))
 await sharp(escudo(200, 240, AZUL)).png().toFile(join(completa, 'escudo-sobre-claro.png'))
 await sharp(escudo(200, 240, '#c0a040')).png({ progressive: true }).toFile(join(completa, 'escudo-destacado.png'))
+// El rótulo: una franja blanca apaisada sobre transparente, como un nombre en imagen.
+await liso(560, 32, { r: 255, g: 255, b: 255, alpha: 1 }, 4).png().toFile(join(completa, 'rotulo.png'))
 for (const [fichero, lado] of [['favicon-32.png', 32], ['apple-touch-icon.png', 180], ['icono-192.png', 192], ['icono-512.png', 512]]) {
   await liso(lado, lado, AZUL).png().toFile(join(completa, fichero))
 }

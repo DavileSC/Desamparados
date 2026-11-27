@@ -23,6 +23,7 @@ const ESTADO: EstadoDeLaMarca = {
     escudoSobreOscuro: imagen('escudo-sobre-oscuro.png', true),
     escudoSobreClaro: imagen('escudo-sobre-claro.png', false),
     escudoDestacado: null,
+    rotulo: null,
     compartir: null,
     correoCabecera: null,
   },
@@ -138,7 +139,8 @@ describe('Identidad y marca', () => {
     const tarjeta = screen.getByText('Imagen para compartir').closest('div')!.parentElement!
     expect(within(tarjeta).getByText('Sin imagen')).toBeInTheDocument()
     const campos = container.querySelectorAll<HTMLInputElement>('input[type="file"]')
-    await usuario.upload(campos[3], new File(['no es una foto'], 'foto.png', { type: 'image/png' }))
+    // Escudo sobre oscuro, rótulo, sobre claro, destacado y compartir: la quinta.
+    await usuario.upload(campos[4], new File(['no es una foto'], 'foto.png', { type: 'image/png' }))
 
     await waitFor(() => expect(fetch.mock.calls.some(([u, o]) => String(u).endsWith('/marca/compartir') && o?.method === 'PUT')).toBe(true))
     expect(await screen.findByText(/tiene que ser un PNG, un JPEG o un WebP/, {}, { timeout: 5000 })).toBeInTheDocument()

@@ -30,7 +30,7 @@ export function ponerDatosDeContacto(queryClient: QueryClient, datos: DatosDeCon
 }
 
 /** Las imágenes que se suben desde el CMS: los iconos salen del escudo sobre oscuro. */
-export type ClaveDeImagen = 'escudoSobreOscuro' | 'escudoSobreClaro' | 'escudoDestacado' | 'compartir' | 'correoCabecera'
+export type ClaveDeImagen = 'escudoSobreOscuro' | 'escudoSobreClaro' | 'escudoDestacado' | 'rotulo' | 'compartir' | 'correoCabecera'
 
 /** Una imagen de la marca: la URL lleva su versión (`?v=`). `propia` es false con la de partida. */
 export interface ImagenDeLaMarca {

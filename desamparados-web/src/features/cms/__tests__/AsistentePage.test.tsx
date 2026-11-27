@@ -23,6 +23,7 @@ const MARCA: EstadoDeLaMarca = {
     escudoSobreOscuro: imagen('escudo-sobre-oscuro.png', true),
     escudoSobreClaro: imagen('escudo-sobre-claro.png', false),
     escudoDestacado: null,
+    rotulo: null,
     compartir: null,
     correoCabecera: null,
   },

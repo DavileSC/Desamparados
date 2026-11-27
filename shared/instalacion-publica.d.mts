@@ -9,6 +9,8 @@ export interface ImagenesDeMarca {
   escudo: string
   /** La papeleta; sin escudo destacado, el de sobre oscuro. */
   escudoDestacado: string
+  /** El nombre en imagen para la barra y el cajón; sin él (null), el nombre escrito. */
+  rotulo: string | null
   /** La imagen al compartir y de los datos estructurados; sin compartir.jpg, el icono de 512. */
   compartir: string
 }

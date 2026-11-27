@@ -67,7 +67,7 @@ export const identidadSchema = type({
 
 /** Qué imagen se sube o se quita: los iconos no, salen del escudo sobre oscuro. */
 export const imagenDeMarcaSchema = type({
-  params: { clave: "'escudoSobreOscuro' | 'escudoSobreClaro' | 'escudoDestacado' | 'compartir' | 'correoCabecera'" },
+  params: { clave: "'escudoSobreOscuro' | 'escudoSobreClaro' | 'escudoDestacado' | 'rotulo' | 'compartir' | 'correoCabecera'" },
 });
 
 /** El asistente de primer arranque: por qué paso va, qué se ha saltado y si se acaba. */

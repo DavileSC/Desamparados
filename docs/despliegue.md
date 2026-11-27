@@ -1006,6 +1006,7 @@ pinta WebP.
 | `escudo-sobre-oscuro.png` | PNG con transparencia | alto ≥ 176; ideal 176–480; hasta 150 KB | La web: barra, cajón, CMS, área de hermanos, acceso, placas de las noticias sin foto | El de partida (blanco) |
 | `escudo-sobre-claro.png` | PNG con transparencia | alto ≥ 200; ideal ~300 | El membrete de los correos y el pie de los PDF | El de partida (casi negro) |
 | `escudo-destacado.png` | PNG con transparencia | alto ≥ 200 | La papeleta (web y PDF) y los membretes de los PDF | `escudo-sobre-claro.png` en papel; `escudo-sobre-oscuro.png` en la banda negra de los informes y en la web |
+| `rotulo.png` | PNG con transparencia | alto ≥ 32, ideal 96 (se reduce a 96 al subirlo) | El nombre en imagen, junto al escudo, en la barra y en el cajón del móvil | La barra lleva el nombre escrito |
 | `favicon-32.png` | PNG | 32×32 exactos | La pestaña del navegador | El de partida |
 | `apple-touch-icon.png` | PNG **opaco** | 180×180 exactos | El icono de iOS en la pantalla de inicio | El de partida |
 | `icono-192.png` | PNG | 192×192 exactos | El manifest (Android) | El de partida |

@@ -57,6 +57,15 @@ export const CATALOGO_MARCA = Object.freeze([
     siFalta: 'se usa escudo-sobre-claro.png en papel y escudo-sobre-oscuro.png en la banda negra y en la web',
     altoMinimo: 200, altoIdeal: [200, 600], pesoAviso: 300 * KB, transparencia: 'si',
   },
+  {
+    // El nombre escrito en imagen (el rótulo de la corporación), para la barra
+    // y el cajón. Muy apaisado: lo que cuenta es el alto, que en la barra es de
+    // 16 px; con 32 ya se ve nítido en una pantalla 2x.
+    clave: 'rotulo', fichero: 'rotulo.png', formato: 'png', partida: false,
+    para: 'la barra de la web y la cabecera del cajón del móvil, en lugar del nombre escrito',
+    siFalta: 'la barra lleva el nombre escrito',
+    altoMinimo: 32, altoIdeal: [32, 96], pesoAviso: 100 * KB, transparencia: 'si',
+  },
   { clave: 'favicon32', fichero: 'favicon-32.png', formato: 'png', partida: true, para: 'la pestaña del navegador', exacto: [32, 32] },
   {
     clave: 'appleTouchIcon', fichero: 'apple-touch-icon.png', formato: 'png', partida: true,

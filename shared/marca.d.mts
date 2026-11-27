@@ -18,6 +18,7 @@ export type ClaveMarca =
   | 'escudoSobreOscuro'
   | 'escudoSobreClaro'
   | 'escudoDestacado'
+  | 'rotulo'
   | 'favicon32'
   | 'appleTouchIcon'
   | 'icono192'
@@ -26,7 +27,7 @@ export type ClaveMarca =
   | 'correoCabecera'
 
 /** Las claves que no tienen fichero de partida: salen a null si la instalación no las trae. */
-export type ClaveSinPartida = 'escudoDestacado' | 'compartir' | 'correoCabecera'
+export type ClaveSinPartida = 'escudoDestacado' | 'rotulo' | 'compartir' | 'correoCabecera'
 
 export interface EntradaCatalogo {
   clave: ClaveMarca

@@ -41,6 +41,7 @@ export function imagenesDeMarca(ficheros) {
   return {
     escudo: urlDeMarca(ficheros.escudoSobreOscuro),
     escudoDestacado: urlDeMarca(ficheros.escudoDestacado ?? ficheros.escudoSobreOscuro),
+    rotulo: urlDeMarca(ficheros.rotulo),
     compartir: urlDeMarca(ficheros.compartir ?? ficheros.icono512),
   }
 }
