@@ -65,12 +65,10 @@ export const menuPublico: EntradaMenu[] = [
           { label: 'Caridad', href: '/nuestros-fines/caridad', modulo: 'nucleo' },
         ],
       },
-      {
-        label: 'Cultos', modulo: 'nucleo',
-        href: '/cultos',
-        // El Rosario colgaba suelto de Corporación (/rosario) hasta el 26-11-2026.
-        hijos: [{ label: 'Rosario', href: '/cultos/rosario', modulo: 'paginas-propias' }],
-      },
+      // El Rosario (/cultos/rosario) es un apartado de Cultos: tiene su página,
+      // pero no sale en el menú (27-11-2026); se llega desde el botón de Cultos.
+      // Su ceja la saca `cejaDePagina` de la página de la que cuelga.
+      { label: 'Cultos', href: '/cultos', modulo: 'nucleo' },
       { label: 'Grupo Joven', href: '/grupo-joven', modulo: 'paginas-propias' },
       {
         label: 'Sábado de Pasión', modulo: 'paginas-propias',
@@ -150,7 +148,7 @@ export function ponerNombres(entradas: EntradaMenu[], nombres: Readonly<Record<s
  * El menú con estos módulos encendidos. Un título de primer nivel (que no es
  * enlace) que se quede sin hijos desaparece: un título que no despliega nada
  * confunde. Por debajo, una página con subpáginas sí es un enlace: sin ellas
- * se queda como página sola (Cultos sin el Rosario de las páginas propias).
+ * se queda como página sola.
  */
 export function menuVisible(entradas: EntradaMenu[], activos: ReadonlySet<string>, primerNivel = true): EntradaMenu[] {
   return entradas.flatMap((e) => {

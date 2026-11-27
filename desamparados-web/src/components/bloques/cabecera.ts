@@ -1,5 +1,5 @@
 import CATALOGO from '../../../../shared/paginas-publicas.json'
-import { menuPublico, ponerNombres, type EntradaMenu } from '../../config/navegacion'
+import { aplanarMenu, menuPublico, ponerNombres, type EntradaMenu } from '../../config/navegacion'
 import type { SlugContenido } from '../../lib/api/contenido'
 import { CABECERA_CON_COPIA } from '../../config/fotosDeLaInstalacion'
 
@@ -42,6 +42,21 @@ function seccionesHasta(ruta: string, entradas: EntradaMenu[], camino: string[] 
   return null
 }
 
+/**
+ * Como `seccionesHasta`, pero una página que no sale en el menú (el Rosario,
+ * apartado de Cultos) toma el camino de la página de la que cuelga por su
+ * ruta, con ella dentro: «Corporación · Cultos».
+ */
+function caminoHasta(ruta: string, menu: EntradaMenu[]): string[] | null {
+  const camino = seccionesHasta(ruta, menu)
+  if (camino) return camino
+  const padre = ruta.slice(0, ruta.lastIndexOf('/'))
+  if (!padre) return null
+  const entrada = aplanarMenu(menu).find((e) => e.href === padre)
+  const arriba = caminoHasta(padre, menu)
+  return entrada && arriba ? [...arriba, entrada.label] : null
+}
+
 const normal = (texto: string) => texto.trim().toLocaleLowerCase('es')
 
 /**
@@ -55,7 +70,7 @@ const normal = (texto: string) => texto.trim().toLocaleLowerCase('es')
 export function cejaDePagina(slug: string, titulo: string, nombres: Readonly<Record<string, string>> = {}): string[] {
   const ruta = RUTAS.get(slug)
   if (!ruta) return []
-  return (seccionesHasta(ruta, ponerNombres(menuPublico, nombres)) ?? []).filter((seccion) => normal(seccion) !== normal(titulo))
+  return (caminoHasta(ruta, ponerNombres(menuPublico, nombres)) ?? []).filter((seccion) => normal(seccion) !== normal(titulo))
 }
 
 /**

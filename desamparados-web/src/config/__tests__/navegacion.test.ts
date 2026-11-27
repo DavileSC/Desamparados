@@ -43,7 +43,6 @@ describe('menuPublico', () => {
         '    Evangelización /nuestros-fines/evangelizacion',
         '    Caridad /nuestros-fines/caridad',
         '  Cultos /cultos',
-        '    Rosario /cultos/rosario',
         '  Grupo Joven /grupo-joven',
         '  Sábado de Pasión /sabado-de-pasion',
         '    Recorrido /sabado-de-pasion/recorrido',
@@ -96,14 +95,18 @@ describe('menuPublico', () => {
     expect(dibujo(['publicaciones'])).not.toContain('Hermanos')
   })
 
-  it('sin las páginas propias se va el grupo Sábado de Pasión entero y el Rosario de Cultos; la Sagrada titular se queda', () => {
+  it('el Rosario es un apartado de Cultos: tiene su página, pero no sale en el menú', () => {
+    expect(aplanarMenu(menuPublico).map((e) => e.href)).not.toContain('/cultos/rosario')
+    expect(rutasDelRouter().has('/cultos/rosario')).toBe(true)
+    expect(aplanarMenu(menuPublico).find((e) => e.label === 'Cultos')?.hijos).toBeUndefined()
+  })
+
+  it('sin las páginas propias se va el grupo Sábado de Pasión entero; la Sagrada titular se queda', () => {
     const sinPropias = dibujar(menuVisible(menuPublico, new Set())).join('\n')
-    for (const fuera of ['Sábado de Pasión', 'Recorrido', 'Patrimonio', 'Rosario']) {
+    for (const fuera of ['Sábado de Pasión', 'Recorrido', 'Patrimonio']) {
       expect(sinPropias).not.toContain(fuera)
     }
-    // Cultos es una página: sin el Rosario se queda, sola y sin desplegable.
     expect(sinPropias).toContain('  Cultos /cultos\nSagrada titular')
-    expect(menuVisible(menuPublico, new Set()).find((e) => e.label === 'Corporación')?.hijos?.find((e) => e.label === 'Cultos')?.hijos).toBeUndefined()
     // La Sagrada titular es del núcleo: una página sola, sin desplegable.
     expect(sinPropias).toMatch(/^Sagrada titular \/sagrada-titular\n[^ ]/m)
     const conPropias = dibujar(menuVisible(menuPublico, new Set(['paginas-propias']))).join('\n')

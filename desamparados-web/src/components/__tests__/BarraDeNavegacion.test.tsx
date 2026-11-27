@@ -113,10 +113,18 @@ describe('BarraDeNavegacion en escritorio', () => {
     expect(screen.getByRole('link', { name: 'Sábado de Pasión', hidden: true })).toHaveAttribute('href', '/sabado-de-pasion')
 
     // Con el ratón, quedándose un momento en la fila.
-    const cultos = screen.getByRole('button', { name: 'Páginas de Cultos', hidden: true })
-    fireEvent.mouseEnter(screen.getByRole('link', { name: 'Cultos', hidden: true }).closest('li')!)
-    await waitFor(() => expect(cultos).toHaveAttribute('aria-expanded', 'true'))
-    expect(screen.getByRole('link', { name: 'Rosario', hidden: true })).toHaveAttribute('href', '/cultos/rosario')
+    fireEvent.mouseEnter(fines.closest('li')!)
+    await waitFor(() => expect(fines).toHaveAttribute('aria-expanded', 'true'))
+    expect(screen.getByRole('link', { name: 'Caridad', hidden: true })).toHaveAttribute('href', '/nuestros-fines/caridad')
+  })
+
+  it('Cultos es una página sola: el Rosario, su apartado, no sale en el menú', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<BarraDeNavegacion />, { modulos: TODOS_CON_PAGINAS_PROPIAS })
+    await user.hover(within(navEscritorio()).getByRole('button', { name: 'Corporación', hidden: true }))
+    expect(screen.getByRole('link', { name: 'Cultos', hidden: true })).toHaveAttribute('href', '/cultos')
+    expect(screen.queryByRole('button', { name: 'Páginas de Cultos', hidden: true })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Rosario', hidden: true })).not.toBeInTheDocument()
   })
 
   it('pasar de largo por otra fila no cambia la segunda hoja abierta', async () => {
@@ -125,19 +133,21 @@ describe('BarraDeNavegacion en escritorio', () => {
     await user.hover(within(navEscritorio()).getByRole('button', { name: 'Corporación', hidden: true }))
     const fines = screen.getByRole('button', { name: 'Páginas de Nuestros fines', hidden: true })
     fireEvent.click(fines)
-    // Camino de Caridad en diagonal, el ratón cruza la fila de Cultos y llega a
-    // la segunda hoja, que es parte de la fila de Nuestros fines.
+    // Camino de Caridad en diagonal, el ratón cruza otra fila con su propia
+    // hoja (Sábado de Pasión) y llega a la segunda hoja, que es parte de la
+    // fila de Nuestros fines.
     // Con `relatedTarget`: sin él, React lo toma como salir de la ventana y
     // cierra la hoja entera.
-    const filaDeCultos = screen.getByRole('link', { name: 'Cultos', hidden: true }).closest('li')!
+    const sabado = screen.getByRole('button', { name: 'Páginas de Sábado de Pasión', hidden: true })
+    const filaDeSabado = sabado.closest('li')!
     const caridad = screen.getByRole('link', { name: 'Caridad', hidden: true })
     expect(fines.closest('li')).toContainElement(caridad)
-    fireEvent.mouseEnter(filaDeCultos)
-    fireEvent.mouseLeave(filaDeCultos, { relatedTarget: caridad })
-    fireEvent.mouseEnter(fines.closest('li')!, { relatedTarget: filaDeCultos })
+    fireEvent.mouseEnter(filaDeSabado)
+    fireEvent.mouseLeave(filaDeSabado, { relatedTarget: caridad })
+    fireEvent.mouseEnter(fines.closest('li')!, { relatedTarget: filaDeSabado })
     await new Promise((r) => setTimeout(r, 400))
     expect(fines).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('button', { name: 'Páginas de Cultos', hidden: true })).toHaveAttribute('aria-expanded', 'false')
+    expect(sabado).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('con un nombre puesto en el CMS, la página sale con él; sin él, con el de siempre', async () => {

@@ -16,7 +16,7 @@
     "«tope»: caracteres como mucho de un nombre; más largo no cabe en la barra.",
     "",
     "«secciones»: los títulos de primer nivel que solo despliegan (Corporación,",
-    "Sagrada titular…), que también se renombran, desde el título de su grupo",
+    "Publicaciones…), que también se renombran, desde el título de su grupo",
     "en Páginas. Su clave es «seccion:» y su ruta, para que no choque con una",
     "página de la misma ruta: «Publicaciones» despliega y «/publicaciones» es",
     "otra página. Con el nombre de siempre de navegacion.ts."
@@ -34,7 +34,6 @@
     { "ruta": "/nuestros-fines/evangelizacion", "nombre": "Evangelización" },
     { "ruta": "/nuestros-fines/caridad", "nombre": "Caridad" },
     { "ruta": "/cultos", "nombre": "Cultos" },
-    { "ruta": "/cultos/rosario", "nombre": "Rosario" },
     { "ruta": "/grupo-joven", "nombre": "Grupo Joven" },
     { "ruta": "/sabado-de-pasion", "nombre": "Sábado de Pasión" },
     { "ruta": "/sabado-de-pasion/recorrido", "nombre": "Recorrido" },

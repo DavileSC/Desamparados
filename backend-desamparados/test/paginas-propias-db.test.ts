@@ -1,7 +1,7 @@
 // Las páginas propias de una corporación (módulo de instalación
 // «paginas-propias»): encendidas solo si el fichero de la instalación lo dice.
 // Apagadas, la API no las sirve ni deja guardarlas, el sitemap no las anuncia
-// y no recogen donativos; las páginas del núcleo (Ajuar) siguen igual. Y el
+// y no recogen donativos; las páginas del núcleo (la Sagrada titular) siguen igual. Y el
 // módulo no se cuela en la pantalla de Módulos ni se cambia por la API.
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
@@ -123,7 +123,7 @@ describe('la API de contenido', () => {
 });
 
 describe('el sitemap', () => {
-  test('apagado no las anuncia; encendido, sí; el Ajuar, siempre', async (t) => {
+  test('apagado no las anuncia; encendido, sí; la Sagrada titular, siempre', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     await con(false, async () => {
       const lista = await urls();

@@ -13,6 +13,11 @@ describe('cejaDePagina', () => {
     expect(cejaDePagina('caridad', 'Caridad')).toEqual(['Corporación', 'Nuestros fines'])
   })
 
+  it('una página que no sale en el menú toma la ceja de la que cuelga, con ella dentro', () => {
+    expect(cejaDePagina('rosario', 'Rosario')).toEqual(['Corporación', 'Cultos'])
+    expect(cejaDePagina('rosario', 'Rosario', { '/cultos': 'Nuestros cultos' })).toEqual(['Corporación', 'Nuestros cultos'])
+  })
+
   it('con los nombres del menú que se pusieron en el CMS, como en la barra', () => {
     const nombres = { '/nuestros-fines': 'Los fines', '/corporacion': 'No vale' }
     expect(cejaDePagina('vida', 'Vida', nombres)).toEqual(['Corporación', 'Los fines'])
