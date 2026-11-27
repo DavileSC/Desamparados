@@ -22,7 +22,7 @@ import type { Props } from './comunes'
 import type {
   BloqueFotoTexto, BloqueCita, BloqueVideo, BloqueBotones, BloquePreguntas,
   BloqueDescargas, BloqueMapa, BloqueCuentaAtras, BotonDeBloque, BloqueDibujo, NombreDeDibujo, BloqueAnillos, FinDeAnillo,
-  BloquePuertas, Puerta, BloquePrograma, BloqueRelacion,
+  BloquePuertas, Puerta, BloquePrograma, BloqueRelacion, BloqueNotasAlMargen,
 } from '../../../../lib/api/contenido'
 
 export function FormularioFotoTexto({ bloque, onCambio }: Props<BloqueFotoTexto>) {
@@ -53,6 +53,21 @@ export function FormularioCita({ bloque, onCambio }: Props<BloqueCita>) {
         ayuda="Opcional, como «San Pablo de la Cruz»." maxLength={topes.etiqueta} />
       <CampoTexto etiqueta="Dónde" valor={bloque.fuente} onCambio={(fuente) => onCambio({ fuente })}
         ayuda="Opcional, como «Homilía del triduo, 2025»." maxLength={topes.descripcion} />
+      {/* Solo la lámina pinta la foto: con otro estilo, el campo confundiría. */}
+      {valorDe(bloque, 'estilo') === 'lamina' && (
+        <>
+          <CampoImagen valor={bloque.foto ?? ''} onCambio={(foto) => onCambio({ foto })} etiqueta="Foto de la lámina"
+            ayuda="Opcional. Va al lado de la cita, en blanco y negro con un punto de sepia, como una estampa antigua." apaisada />
+          {(bloque.foto ?? '') !== '' && (
+            <>
+              <CampoTexto etiqueta="Descripción de la foto" valor={bloque.fotoAlt ?? ''} onCambio={(fotoAlt) => onCambio({ fotoAlt })}
+                ayuda="Lo que se ve, en una frase. Es lo que oye quien usa un lector de pantalla." maxLength={topes.descripcion} />
+              <CampoTexto etiqueta="Pie de la foto" valor={bloque.pie ?? ''} onCambio={(pie) => onCambio({ pie })}
+                ayuda="Opcional, una línea bajo la foto." maxLength={topes.etiqueta} />
+            </>
+          )}
+        </>
+      )}
     </Stack>
   )
 }
@@ -357,5 +372,26 @@ export function FormularioEspacio() {
     <Alert severity="info" variant="outlined">
       Este bloque no lleva texto: deja aire entre el de encima y el de debajo. Su alto y la línea se eligen en «Presentación».
     </Alert>
+  )
+}
+
+export function FormularioNotasAlMargen({ bloque, onCambio }: Props<BloqueNotasAlMargen>) {
+  return (
+    <Stack spacing={2}>
+      <EditorTexto valor={bloque.html} onCambio={(html) => onCambio({ html })} etiqueta="Texto" />
+      <Typography variant="body2" color="text.secondary">
+        Las notas van a la derecha del texto (debajo, en el móvil): un dato que se busca de un vistazo, como un año o unas siglas, y qué es.
+      </Typography>
+      <ListaEditable elementos={bloque.notas} onCambio={(notas) => onCambio({ notas })}
+        nuevo={() => ({ dato: '', texto: '' })} nombre="Nota" maximo={topes.notasPorBloque}
+        pintar={(nota, cambiar, i) => (
+          <>
+            <TextField label={`Dato (nota ${i + 1})`} value={nota.dato} onChange={(e) => cambiar({ dato: e.target.value })} size="small" fullWidth
+              helperText="Lo que va en grande: «1972», «C.P.»." slotProps={{ htmlInput: { maxLength: topes.etiqueta } }} />
+            <TextField label="Qué es" value={nota.texto} onChange={(e) => cambiar({ texto: e.target.value })} size="small" fullWidth multiline minRows={2}
+              helperText="Opcional. Una frase corta." slotProps={{ htmlInput: { maxLength: topes.descripcion } }} />
+          </>
+        )} />
+    </Stack>
   )
 }

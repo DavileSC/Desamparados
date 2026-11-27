@@ -194,7 +194,11 @@ export interface BloqueContacto extends BloqueBase { tipo: 'contacto'; tituloDat
 export interface BloqueFotoTexto extends BloqueBase {
   tipo: 'fotoTexto'; url: string; alt: string; pie: string; html: string; boton: string; enlace: string
 }
-export interface BloqueCita extends BloqueBase { tipo: 'cita'; texto: string; autor: string; fuente: string }
+/** La foto, opcional, solo la pinta el estilo «lámina». */
+export interface BloqueCita extends BloqueBase { tipo: 'cita'; texto: string; autor: string; fuente: string; foto?: string; fotoAlt?: string; pie?: string }
+/** Una nota al margen: el dato en grande («1972», «C.P.») y qué es. */
+export interface NotaAlMargen { dato: string; texto: string }
+export interface BloqueNotasAlMargen extends BloqueBase { tipo: 'notasAlMargen'; html: string; notas: NotaAlMargen[] }
 /** Un vídeo suelto: las mismas reglas que uno de la galería. */
 export interface BloqueVideo extends BloqueBase { tipo: 'video'; url: string; portada: string; alt: string; pie: string }
 export interface BotonDeBloque { texto: string; enlace: string; estilo: 'principal' | 'secundario' }
@@ -286,6 +290,7 @@ export type Bloque =
   | BloqueAnillos
   | BloquePuertas
   | BloquePrograma
+  | BloqueNotasAlMargen
   | BloqueRelacion
   | BloqueCarrusel
   | BloqueDonativo

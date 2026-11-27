@@ -6,7 +6,7 @@ import { esquemaDeBloque } from '../src/schemas/bloques.schema.js';
 import { TIPOS_BLOQUE } from '../src/domain/bloques.js';
 
 type Tipo = 'texto' | 'foto' | 'galeria' | 'tarjetas' | 'llamada' | 'datos' | 'itinerario'
-  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas' | 'programa' | 'relacion' | 'carrusel' | 'donativo';
+  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas' | 'programa' | 'relacion' | 'carrusel' | 'donativo' | 'notasAlMargen' | 'cita';
 
 const falla = (tipo: Tipo, valor: unknown) =>
   esquemaDeBloque(tipo)(valor) instanceof ArkErrors;
@@ -584,5 +584,34 @@ describe('bloque de donativo', () => {
     assert.ok(falla('donativo', doc({ destinos: ['Caridad', ' '] })));
     assert.ok(falla('donativo', doc({ destinos: ['Caridad', 'caridad'] })));
     assert.ok(falla('donativo', doc({ destinos: ['<b>Caridad</b>'] })), 'sin HTML');
+  });
+});
+
+describe('bloque de notas al margen', () => {
+  const NOTAS = { tipo: 'notasAlMargen', titulo: '', html: '<p>Llegaron en 1972.</p>', notas: [{ dato: '1972', texto: 'Llegan a Málaga.' }, { dato: 'C.P.', texto: '' }] };
+
+  test('un texto con sus notas pasa; el texto de una nota es opcional', () => {
+    assert.ok(!falla('notasAlMargen', NOTAS));
+  });
+
+  test('sin texto, sin notas, con demasiadas o con una nota sin dato, no', () => {
+    assert.ok(falla('notasAlMargen', { ...NOTAS, html: '   ' }));
+    assert.ok(falla('notasAlMargen', { ...NOTAS, notas: [] }));
+    assert.ok(falla('notasAlMargen', { ...NOTAS, notas: Array.from({ length: topes.notasPorBloque + 1 }, () => NOTAS.notas[0]) }));
+    assert.ok(falla('notasAlMargen', { ...NOTAS, notas: [{ dato: ' ', texto: 'Algo' }] }));
+  });
+});
+
+describe('cita con foto (lámina)', () => {
+  const CITA = { tipo: 'cita', titulo: '', texto: 'La Pasión de Jesús es la obra más grande del amor de Dios.', autor: 'San Pablo de la Cruz', fuente: '' };
+
+  test('una cita de antes, sin foto, sigue valiendo; con foto y descripción, también', () => {
+    assert.ok(!falla('cita', CITA));
+    assert.ok(!falla('cita', { ...CITA, foto: '/images/cabeceras/cera.webp', fotoAlt: 'Cirios del trono', pie: '' }));
+  });
+
+  test('una foto sin descripción o de fuera del sitio, no', () => {
+    assert.ok(falla('cita', { ...CITA, foto: '/images/cabeceras/cera.webp', fotoAlt: ' ' }));
+    assert.ok(falla('cita', { ...CITA, foto: 'https://otro-sitio.example/foto.jpg', fotoAlt: 'Una foto' }));
   });
 });

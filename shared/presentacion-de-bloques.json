@@ -106,7 +106,8 @@
         "valores": [
           "ninguno",
           "fino",
-          "dorado"
+          "dorado",
+          "entreFiletes"
         ]
       },
       "ampliable": {
@@ -148,7 +149,8 @@
           "contorno",
           "granate",
           "numeradas",
-          "filetes"
+          "filetes",
+          "indice"
         ]
       },
       "orientacion": {
@@ -294,7 +296,8 @@
           "clasica",
           "grande",
           "franja",
-          "enfoque"
+          "enfoque",
+          "lamina"
         ]
       },
       "alineacion": {
@@ -404,6 +407,23 @@
           "anillos",
           "foco"
         ]
+      }
+    },
+    "notasAlMargen": {
+      "columnas": {
+        "valores": [
+          "2",
+          "1"
+        ]
+      },
+      "alineacion": {
+        "valores": [
+          "justificado",
+          "izquierda"
+        ]
+      },
+      "capitular": {
+        "siNo": true
       }
     }
   },

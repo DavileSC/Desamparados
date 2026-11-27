@@ -59,6 +59,12 @@ export function ejemploDe(tipo: string, fotos: string[]): Bloque[] {
       }]
     case 'cita':
       return [{ tipo, ...sinTitulo, texto: 'Unas palabras que merecen ir en grande, para que se lean despacio.', autor: 'Quién lo dijo', fuente: 'Dónde' }]
+    case 'notasAlMargen':
+      return [{
+        tipo, ...sinTitulo, presentacion: { columnas: '2', alineacion: 'justificado', capitular: true },
+        html: '<p>Un texto largo que se lee despacio, a dos columnas y con la primera letra grande, como la página de un libro.</p><p>A su lado, las notas: lo que se busca de un vistazo sin leerlo todo.</p>',
+        notas: [{ dato: '1972', texto: 'Una fecha y lo que pasó.' }, { dato: 'C.P.', texto: 'Unas siglas y qué significan.' }],
+      }]
     case 'preguntas':
       return [{
         tipo, titulo: 'Preguntas frecuentes', presentacion: { abrirPrimera: true },

@@ -10,7 +10,7 @@ import { propsDeFoto } from '../../lib/fotoSubida'
 import { useFotoQueFalla } from '../../hooks/useFotoQueFalla'
 import { MARCA, alfa } from '../../theme/marca'
 
-type Estilo = 'cristal' | 'papel' | 'contorno' | 'granate' | 'numeradas' | 'filetes'
+type Estilo = 'cristal' | 'papel' | 'contorno' | 'granate' | 'numeradas' | 'filetes' | 'indice'
 
 /**
  * Cuántas columnas ocupa cada tarjeta. En `auto` (el de siempre) depende de
@@ -27,7 +27,7 @@ function columnas(cuantas: number, eleccion: string) {
 }
 
 /** El recuadro de cada estilo. `cristal` es el de siempre. */
-const FONDOS: Record<Exclude<Estilo, 'cristal' | 'numeradas' | 'filetes'>, object> = {
+const FONDOS: Record<Exclude<Estilo, 'cristal' | 'numeradas' | 'filetes' | 'indice'>, object> = {
   // Sin bordes (26-09-2026): cada estilo se distingue por su fondo. `contorno`
   // conserva el nombre guardado en las páginas, pero ya es un recuadro sobrio.
   papel: { backgroundColor: PAPEL, color: '#1b1c1a', borderRadius: '8px' },
@@ -50,6 +50,7 @@ export default function BloqueTarjetas({ bloque }: { bloque: Datos }) {
   const centrada = valorDe(bloque, 'alineacion') === 'centro'
   if (estilo === 'numeradas') return <Numeradas bloque={bloque} />
   if (estilo === 'filetes') return <ConFilete bloque={bloque} />
+  if (estilo === 'indice') return <Indice bloque={bloque} />
   return (
     // La última fila, si no se llena, va centrada y no pegada a la izquierda.
     <Grid container spacing={3} sx={{ justifyContent: 'center', maxWidth: anchoMaximo(bloque, estrecha ? '1000px' : 'none'), mx: 'auto' }}>
@@ -71,7 +72,7 @@ export default function BloqueTarjetas({ bloque }: { bloque: Datos }) {
  * parte es una promesa que no se cumple, y además aparecería en la lista de
  * enlaces de quien navega con lector de pantalla.
  */
-function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEnlace; estilo: Exclude<Estilo, 'numeradas' | 'filetes'>; horizontal: boolean; centrada: boolean }) {
+function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEnlace; estilo: Exclude<Estilo, 'numeradas' | 'filetes' | 'indice'>; horizontal: boolean; centrada: boolean }) {
   const enlaceVivo = useEnlaceVivo()
   const icono = tarjeta.icono ? ICONOS[tarjeta.icono] : null
   const foto = tarjeta.foto ?? ''
@@ -240,6 +241,53 @@ function ConFilete({ bloque }: { bloque: Datos }) {
             {enlace ? (
               <Box component={Link} to={enlace} sx={{ display: 'block', textDecoration: 'none', color: 'inherit', '&:hover h3': { color: GOLD } }}>{contenido}</Box>
             ) : contenido}
+          </Box>
+        )
+      })}
+    </Box>
+  )
+}
+
+/**
+ * Índice (Pasionistas, 28-11-2026): una lista larga y corta a la vez, como el
+ * índice de un libro. Cada tarjeta es una línea, con su número romano en oro,
+ * el título y, si tiene, el texto en pequeño debajo; separadas por un filete
+ * de puntos. En escritorio va a dos columnas, salvo que se pidan otras.
+ */
+function Indice({ bloque }: { bloque: Datos }) {
+  const enlaceVivo = useEnlaceVivo()
+  const eleccion = valorDe(bloque, 'columnas')
+  const porFila = eleccion === 'auto' ? 2 : Number(eleccion)
+  return (
+    <Box component="ol" sx={{
+      listStyle: 'none', m: 0, p: 0, maxWidth: anchoMaximo(bloque, '1100px'), mx: 'auto',
+      display: 'grid', gridTemplateColumns: { xs: '1fr', md: `repeat(${porFila}, minmax(0, 1fr))` }, columnGap: 9,
+      counterReset: 'obra',
+    }}>
+      {bloque.tarjetas.map((tarjeta, indice) => {
+        const enlace = tarjeta.enlace && enlaceVivo(tarjeta.enlace) ? tarjeta.enlace : ''
+        const contenido = (
+          <>
+            <Typography component="h3" sx={{ fontFamily: SERIF, fontSize: { xs: 20, md: 22 }, fontWeight: 600, lineHeight: 1.3, color: 'text.primary' }}>{tarjeta.titulo}</Typography>
+            {tarjeta.descripcion && (
+              <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.25, lineHeight: 1.5 }}>{tarjeta.descripcion}</Typography>
+            )}
+          </>
+        )
+        return (
+          <Box component="li" key={indice} sx={{
+            counterIncrement: 'obra',
+            display: 'grid', gridTemplateColumns: '56px minmax(0, 1fr)', alignItems: 'baseline',
+            py: 1.75, borderBottom: `1px dotted ${alfa(MARCA.acentoApagado, 0.45)}`,
+            // El número lo pone el contador de la lista: el lector de pantalla ya
+            // dice «elemento 3 de 9», y un «III.» escrito se leería además.
+            '&::before': { content: 'counter(obra, upper-roman) "."', color: MARCA.acento, fontFamily: SERIF, fontSize: 18, fontWeight: 600 },
+          }}>
+            <Box sx={{ minWidth: 0 }}>
+              {enlace ? (
+                <Box component={Link} to={enlace} sx={{ display: 'block', textDecoration: 'none', color: 'inherit', '&:hover h3': { color: GOLD } }}>{contenido}</Box>
+              ) : contenido}
+            </Box>
           </Box>
         )
       })}

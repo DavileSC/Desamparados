@@ -33,5 +33,6 @@
   "destinosPorDonativo": 6,
   "donativoMinimoEuros": 1,
   "donativoMaximoEuros": 5000,
-  "extractoNoticia": 300
+  "extractoNoticia": 300,
+  "notasPorBloque": 6
 }

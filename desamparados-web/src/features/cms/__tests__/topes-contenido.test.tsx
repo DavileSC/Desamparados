@@ -71,7 +71,7 @@ describe('topes de longitud del CMS', () => {
     // cuentan todas. Historia es ya una página de bloques: su cronología se
     // despliega abajo con los demás bloques.
     await screen.findByDisplayValue(POR_DEFECTO.portada.hero.titulo)
-    await screen.findByDisplayValue('Corporación · Historia')
+    await screen.findByDisplayValue(POR_DEFECTO.historia.cabecera.subtitulo)
     await screen.findByDisplayValue('Nuestros fines')
 
     // El constructor de páginas SÍ desmonta lo que pliega, así que sus

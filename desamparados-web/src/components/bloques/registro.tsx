@@ -19,6 +19,7 @@ import BloqueAnillos from './BloqueAnillos'
 import BloquePuertas from './BloquePuertas'
 import BloquePrograma from './BloquePrograma'
 import BloqueRelacion from './BloqueRelacion'
+import BloqueNotasAlMargen from './BloqueNotasAlMargen'
 import { valorDe } from './presentacion'
 import type { Bloque } from '../../lib/api/contenido'
 
@@ -135,6 +136,7 @@ export const REGISTRO_BLOQUES: Record<string, ComponenteDeBloque> = {
   relacion: BloqueRelacion as ComponenteDeBloque,
   carrusel: PEREZOSOS.carrusel.Componente,
   donativo: PEREZOSOS.donativo.Componente,
+  notasAlMargen: BloqueNotasAlMargen as ComponenteDeBloque,
 }
 
 export const componenteDeBloque = (bloque: Bloque) => REGISTRO_BLOQUES[bloque.tipo]

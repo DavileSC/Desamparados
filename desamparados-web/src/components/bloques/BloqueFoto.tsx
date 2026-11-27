@@ -10,7 +10,11 @@ import { MARCA, alfa } from '../../theme/marca'
 /** Ancho de la foto según su tamaño. `grande` es el de siempre. */
 const TAMANOS = { pequena: '480px', mediana: '720px', grande: '1000px', completa: 'none' } as const
 
-/** Los marcos: ninguno (el de siempre), un filete fino o un paspartú dorado. */
+/**
+ * Los marcos: ninguno (el de siempre), un filete fino o un paspartú dorado.
+ * «Entre filetes» no enmarca: pone la foto (un escudo, un emblema) entre dos líneas
+ * doradas que van de lado a lado; ver `EntreFiletes`.
+ */
 const MARCOS = {
   ninguno: {},
   fino: { p: 1, border: '1px solid rgba(204, 196, 201, 0.25)', borderRadius: '10px' },
@@ -25,6 +29,27 @@ const MARCOS = {
  * El `alt` es obligatorio en el servidor (`bloques.schema.ts`): aquí nunca
  * llega vacío.
  */
+/**
+ * Un emblema entre dos filetes dorados, como el escudo de la portadilla de un
+ * libro. Va a su alto (más bajo en el móvil) y no al ancho de la columna: un
+ * escudo a todo el ancho sería un cartel. Con transparencia, se ve el fondo
+ * del bloque alrededor.
+ */
+function EntreFiletes({ bloque, alFallar }: { bloque: Datos; alFallar: () => void }) {
+  const filete = { content: '""', flex: '0 1 220px', height: '1px', backgroundColor: alfa(MARCA.acento, 0.45) }
+  return (
+    <Box component="figure" sx={{ m: 0 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: { xs: 3, md: 4.5 }, '&::before': filete, '&::after': filete }}>
+        <Box component="img" {...propsDeFoto(bloque.url, '240px', alFallar)} alt={bloque.alt} loading="lazy" decoding="async"
+          sx={{ display: 'block', height: { xs: 150, md: 220 }, width: 'auto', maxWidth: '60%', objectFit: 'contain' }} />
+      </Box>
+      {bloque.pie && (
+        <Typography component="figcaption" variant="body2" sx={{ color: 'text.secondary', mt: 2, textAlign: 'center' }}>{bloque.pie}</Typography>
+      )}
+    </Box>
+  )
+}
+
 export default function BloqueFoto({ bloque }: { bloque: Datos }) {
   // Sin foto todavía (un bloque recién añadido, en la vista previa del CMS),
   // nada: un <img src=""> vuelve a pedir la página entera. Una que no carga
@@ -32,6 +57,7 @@ export default function BloqueFoto({ bloque }: { bloque: Datos }) {
   // icono roto: el bloque se quita.
   const { visible, alFallar } = useFotoQueFalla(bloque.url)
   if (!visible) return null
+  if (valorDe(bloque, 'marco') === 'entreFiletes') return <EntreFiletes bloque={bloque} alFallar={alFallar} />
   const tamano = valorDe(bloque, 'tamano') as keyof typeof TAMANOS
   const completa = tamano === 'completa'
   const proporcion = valorDe(bloque, 'proporcion')

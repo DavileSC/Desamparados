@@ -44,7 +44,10 @@
     "modulo (02-10-2026): de qué módulo es cada tipo. 'nucleo' siempre se pinta; con una",
     "clave, el bloque no se pinta ni se ofrece con el módulo apagado. El listado va por",
     "fuente: noticias, agenda y publicaciones son módulos distintos. El itinerario y el",
-    "programa son del núcleo: solo consultan el cortejo en directo y la agenda si están."
+    "programa son del núcleo: solo consultan el cortejo en directo y la agenda si están.",
+    "",
+    "Notas al margen (notasAlMargen), 28-11-2026: un texto largo con fechas o",
+    "datos cortos en una columna al lado, como las notas de un libro."
   ],
   "tipos": [
     "texto",
@@ -74,7 +77,8 @@
     "programa",
     "relacion",
     "carrusel",
-    "donativo"
+    "donativo",
+    "notasAlMargen"
   ],
   "modulo": {
     "texto": "nucleo", "foto": "nucleo", "galeria": "nucleo", "tarjetas": "nucleo", "llamada": "nucleo",
@@ -83,6 +87,7 @@
     "contacto": "nucleo", "fotoTexto": "nucleo", "cita": "nucleo", "video": "nucleo", "botones": "nucleo",
     "preguntas": "nucleo", "descargas": "nucleo", "mapa": "nucleo", "cuentaAtras": "nucleo", "espacio": "nucleo",
     "fotoFija": "nucleo", "horario": "nucleo", "dibujo": "paginas-propias", "anillos": "nucleo", "puertas": "nucleo",
-    "programa": "nucleo", "relacion": "nucleo", "carrusel": "nucleo", "donativo": "donativos"
+    "programa": "nucleo", "relacion": "nucleo", "carrusel": "nucleo", "donativo": "donativos",
+    "notasAlMargen": "nucleo"
   }
 }

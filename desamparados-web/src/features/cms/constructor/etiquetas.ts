@@ -43,7 +43,7 @@ const ETIQUETA_VALOR: Record<string, string> = {
   entradilla: 'Entradilla', destacado: 'Destacado', carta: 'Carta',
   preguntas: 'Preguntas grandes', margen: 'Título al margen',
   grande: 'Grande', pequena: 'Pequeña', mediana: 'Mediana', completa: 'De lado a lado',
-  original: 'Original', fino: 'Filete fino', dorado: 'Dorado',
+  original: 'Original', fino: 'Filete fino', dorado: 'Dorado', entreFiletes: 'Entre filetes, como un escudo',
   pase: 'Pase', cuadricula: 'Cuadrícula', mosaico: 'Mosaico', tiras: 'Tiras', estampas: 'Estampas', carteles: 'Carteles',
   rueda: 'Números que ruedan',
   auto: 'Automático', cristal: 'Cristal', contorno: 'Recuadro sobrio', numeradas: 'Numeradas', filetes: 'Columnas con filete',
@@ -53,7 +53,7 @@ const ETIQUETA_VALOR: Record<string, string> = {
   lista: 'Lista', tabla: 'Tabla', tarjetas: 'Tarjetas', linea: 'Línea', indice: 'Índice de devocionario', plano: 'Sobre el mapa', cinta: 'Cinta que pasa al bajar',
   lado: 'Datos al lado', debajo: 'Datos debajo', solo: 'Solo el formulario',
   mitad: 'La mitad', tercio: 'Un tercio', arriba: 'Arriba',
-  clasica: 'Clásica', lineas: 'Líneas',
+  clasica: 'Clásica', lineas: 'Líneas', lamina: 'Lámina, con foto al lado',
   bajo: 'Bajo', medio: 'Medio', alto: 'Alto', compacta: 'Compacta',
   pequeno: 'Pequeño', mediano: 'Mediano',
   anillos: 'Anillos entrelazados', foco: 'En foco', enfoque: 'Se enfoca al leerla', fila: 'En una fila',
@@ -93,6 +93,7 @@ interface FichaDeBloque { nombre: string; descripcion: string }
 export const FICHA_DE_BLOQUE: Record<string, FichaDeBloque> = {
   texto: { nombre: 'Texto', descripcion: 'Párrafos con formato: negritas, listas, enlaces y subtítulos.' },
   cita: { nombre: 'Cita', descripcion: 'Unas palabras destacadas en grande, con quién las dijo.' },
+  notasAlMargen: { nombre: 'Notas al margen', descripcion: 'Un texto largo con fechas o datos cortos al lado, como las notas de un libro.' },
   preguntas: { nombre: 'Preguntas plegables', descripcion: 'Preguntas que se abren al pulsarlas: ideal para dudas frecuentes.' },
   foto: { nombre: 'Foto', descripcion: 'Una foto con su pie, del tamaño y recorte que quieras.' },
   fotoTexto: { nombre: 'Foto con texto', descripcion: 'Foto a un lado y texto al otro, con un botón si quieres.' },
@@ -127,7 +128,7 @@ export const FICHA_DE_BLOQUE: Record<string, FichaDeBloque> = {
  * no se ofrecería: lo vigila la prueba de la galería.
  */
 export const CARPETAS_DE_BLOQUES: { nombre: string; tipos: string[] }[] = [
-  { nombre: 'Texto', tipos: ['texto', 'cita', 'preguntas'] },
+  { nombre: 'Texto', tipos: ['texto', 'cita', 'notasAlMargen', 'preguntas'] },
   { nombre: 'Fotos y vídeo', tipos: ['foto', 'fotoTexto', 'galeria', 'carrusel', 'fotoFija', 'video', 'dibujo'] },
   { nombre: 'Composición', tipos: ['tarjetas', 'llamada', 'botones', 'puertas', 'anillos', 'espacio'] },
   { nombre: 'Información', tipos: ['datos', 'itinerario', 'cronologia', 'horario', 'mapa', 'relacion', 'descargas', 'cuentaAtras'] },

@@ -10,7 +10,7 @@ import { FormularioDonativo } from './formularios/donativo'
 import {
   FormularioFotoTexto, FormularioCita, FormularioVideo, FormularioBotones, FormularioPreguntas,
   FormularioDescargas, FormularioMapa, FormularioCuentaAtras, FormularioEspacio, FormularioDibujo, FormularioAnillos,
-  FormularioPuertas, FormularioPrograma, FormularioRelacion,
+  FormularioPuertas, FormularioPrograma, FormularioRelacion, FormularioNotasAlMargen,
 } from './formularios/nuevos'
 import { FICHA_DE_BLOQUE } from '../constructor/etiquetas'
 import { libreDe, valorDe } from '../../../components/bloques/presentacion'
@@ -58,6 +58,7 @@ export const FORMULARIOS: Record<string, ComponentType<Props<never>>> = {
   anillos: FormularioAnillos as unknown as ComponentType<Props<never>>,
   puertas: FormularioPuertas as unknown as ComponentType<Props<never>>,
   programa: FormularioPrograma as unknown as ComponentType<Props<never>>,
+  notasAlMargen: FormularioNotasAlMargen as unknown as ComponentType<Props<never>>,
   relacion: FormularioRelacion as unknown as ComponentType<Props<never>>,
   carrusel: FormularioCarrusel as unknown as ComponentType<Props<never>>,
   donativo: FormularioDonativo as unknown as ComponentType<Props<never>>,
@@ -122,6 +123,11 @@ const BLOQUE_NUEVO: Record<string, object> = {
   programa: { tipo: 'programa', titulo: 'Programa del año', filas: [{ cuando: '', mes: 0, titulo: '', texto: '', boton: '', enlace: '' }] },
   // Nace con importes corrientes y sin destinos: se puede publicar tal cual.
   donativo: { tipo: 'donativo', titulo: 'Colabora con un donativo', texto: '', importes: [5, 10, 20, 50], destinos: [] },
+  // Nace a dos columnas, justificado y con capitular: la forma de libro para la que se hizo.
+  notasAlMargen: {
+    tipo: 'notasAlMargen', titulo: '', html: '', notas: [{ dato: '', texto: '' }],
+    presentacion: { columnas: '2', alineacion: 'justificado', capitular: true },
+  },
 }
 
 /** La fecha de un mes más tarde a las 18:00, como AAAA-MM-DDTHH:mm. */
@@ -238,7 +244,14 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       if (bloque.enlace !== '' && !esDestinoValido(bloque.enlace)) return `lleva el botón a una página que no existe (${bloque.enlace})`
       return null
     case 'cita':
-      return bloque.texto.trim() === '' ? 'está vacía' : null
+      if (bloque.texto.trim() === '') return 'está vacía'
+      if ((bloque.foto ?? '') !== '' && (bloque.fotoAlt ?? '').trim() === '') return 'tiene la foto sin descripción'
+      return null
+    case 'notasAlMargen': {
+      if (bloque.html.trim() === '') return 'no tiene texto'
+      const sin = bloque.notas.findIndex((n) => n.dato.trim() === '')
+      return sin === -1 ? null : `tiene la nota ${sin + 1} sin dato`
+    }
     case 'video':
       return problemaDelMedio({ tipo: 'video', url: bloque.url, portada: bloque.portada, alt: bloque.alt, pie: bloque.pie })
     case 'botones': {

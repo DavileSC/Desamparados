@@ -428,16 +428,48 @@ const fotoFijaSchema = type({
   return true;
 });
 
-/** Una cita: unas palabras destacadas y, si se quiere, de quién son. */
+/**
+ * Una cita: unas palabras destacadas y, si se quiere, de quién son. La foto
+ * es opcional y solo la pinta el estilo «lámina», a un lado de la cita: una
+ * cita de antes no la trae.
+ */
 const citaSchema = type({
   ...comunes,
   tipo: "'cita'",
   texto: PARRAFO,
   autor: ETIQUETA,
   fuente: DESCRIPCION,
-}).narrow((datos, ctx) => enBlanco(datos.texto)
-  ? ctx.reject({ path: ['texto'], problem: 'no puede quedar en blanco' })
-  : true);
+  'foto?': sinFoto.or(rutaImagenPublica),
+  'fotoAlt?': DESCRIPCION,
+  'pie?': ETIQUETA,
+}).narrow((datos, ctx) => {
+  if (enBlanco(datos.texto)) return ctx.reject({ path: ['texto'], problem: 'no puede quedar en blanco' });
+  if ((datos.foto ?? '') !== '' && enBlanco(datos.fotoAlt ?? '')) return ctx.reject({ path: ['fotoAlt'], problem: 'es obligatoria cuando la cita lleva foto' });
+  return true;
+});
+
+/**
+ * Notas al margen: un texto largo con formato y, al lado, una columna de
+ * notas cortas (una fecha o una sigla y qué significa), como las de un libro.
+ */
+const notaAlMargenSchema = type({
+  dato: ETIQUETA,
+  texto: DESCRIPCION,
+});
+
+const notasAlMargenSchema = type({
+  ...comunes,
+  tipo: "'notasAlMargen'",
+  // Saneado antes de validar, como el del bloque de texto.
+  html: type(`1 <= string <= ${topes.html}`),
+  notas: notaAlMargenSchema.array().atLeastLength(1).atMostLength(topes.notasPorBloque),
+}).narrow((datos, ctx) => {
+  if (enBlanco(datos.html)) return ctx.reject({ path: ['html'], problem: 'no puede quedar en blanco' });
+  for (const [indice, nota] of datos.notas.entries()) {
+    if (enBlanco(nota.dato)) return ctx.reject({ path: ['notas', indice, 'dato'], problem: 'no puede quedar en blanco' });
+  }
+  return true;
+});
 
 /**
  * Un vídeo suelto de YouTube o Vimeo. Las mismas reglas que un vídeo de la
@@ -839,6 +871,7 @@ const POR_TIPO = {
   relacion: relacionSchema,
   carrusel: carruselSchema,
   donativo: donativoSchema,
+  notasAlMargen: notasAlMargenSchema,
 } as const;
 
 export const esquemaDeBloque = (tipo: TipoBloque) => POR_TIPO[tipo as keyof typeof POR_TIPO];
