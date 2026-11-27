@@ -25,6 +25,7 @@ const boton = (x: number, y: number, w: number, lleno = true) => (
 )
 
 const DIBUJOS: Record<string, ReactNode> = {
+  pliegue: <>{[10, 30, 50].map((y, i) => <g key={y}><rect x={10} y={y} width={100} height={1} fill={A} opacity={0.4} />{raya(12, y + 9, i === 0 ? 40 : 34, i === 0 ? 0.6 : 0.3)}<path d={`M101 ${y + 7}l3 3 3-3`} stroke={A} strokeWidth={1} fill="none" opacity={0.6} /></g>)}</>,
   conversacion: <><rect x={62} y={8} width={46} height={12} rx={6} fill={A} opacity={0.55} /><rect x={12} y={25} width={60} height={16} rx={6} fill={A} opacity={0.18} /><rect x={70} y={46} width={38} height={12} rx={6} fill={A} opacity={0.55} /></>,
   calendarioDePared: <>{[0, 1, 2].map((f) => [0, 1, 2, 3].map((c) => <rect key={`${f}-${c}`} x={10 + c * 26} y={6 + f * 21} width={22} height={18} rx={4} fill={A} opacity={(f === 0 && c === 2) || (f === 2 && c === 2) ? 0.55 : 0.14} />))}</>,
   notasAlMargen: <>{raya(10, 12, 34)}{raya(10, 20, 36)}{raya(10, 28, 32)}{raya(10, 36, 36)}{raya(50, 12, 34)}{raya(50, 20, 30)}{raya(50, 28, 36)}<rect x={92} y={10} width={1} height={50} fill={A} opacity={0.4} /><text x={96} y={20} fontSize={9} fill={A} opacity={0.7} fontFamily="serif">1972</text>{raya(96, 25, 16, 0.3)}<text x={96} y={42} fontSize={9} fill={A} opacity={0.7} fontFamily="serif">C.P.</text>{raya(96, 47, 14, 0.3)}</>,

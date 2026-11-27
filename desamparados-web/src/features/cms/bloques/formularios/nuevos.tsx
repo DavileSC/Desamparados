@@ -22,7 +22,7 @@ import type { Props } from './comunes'
 import type {
   BloqueFotoTexto, BloqueCita, BloqueVideo, BloqueBotones, BloquePreguntas,
   BloqueDescargas, BloqueMapa, BloqueCuentaAtras, BotonDeBloque, BloqueDibujo, NombreDeDibujo, BloqueAnillos, FinDeAnillo,
-  BloquePuertas, Puerta, BloquePrograma, BloqueRelacion, BloqueNotasAlMargen, BloqueCalendarioDePared, MesDeCalendario, BloqueConversacion,
+  BloquePuertas, Puerta, BloquePrograma, BloqueRelacion, BloqueNotasAlMargen, BloqueCalendarioDePared, MesDeCalendario, BloqueConversacion, BloquePliegue,
 } from '../../../../lib/api/contenido'
 
 export function FormularioFotoTexto({ bloque, onCambio }: Props<BloqueFotoTexto>) {
@@ -475,5 +475,21 @@ function CampoEtiquetas({ valor, onCambio }: { valor: string[]; onCambio: (etiqu
       onChange={(e) => { setTexto(e.target.value); onCambio(limpiar(e.target.value)) }}
       onBlur={() => setTexto(limpiar(texto).join('\n'))}
       helperText={`Opcional: una por línea, hasta ${topes.etiquetasPorTurno}. Salen en píldoras bajo la respuesta.`} />
+  )
+}
+
+/**
+ * El pliegue solo lleva su frase: el título es el de todo bloque y lo que se
+ * abre son los bloques que van detrás. El ancla, en «Presentación».
+ */
+export function FormularioPliegue({ bloque, onCambio }: Props<BloquePliegue>) {
+  return (
+    <Stack spacing={2}>
+      <CampoTexto etiqueta="Qué hay dentro" valor={bloque.resumen} onCambio={(resumen) => onCambio({ resumen })}
+        ayuda="Opcional, una frase al lado del título: «La pieza mayor del Grupo»." maxLength={topes.descripcion} />
+      <Typography variant="body2" color="text.secondary">
+        Se abre con los bloques que van detrás, hasta la siguiente sección plegable o el final de la página. Solo hay una abierta a la vez; la primera, al llegar. Con un ancla en «Presentación», un enlace a ella la abre.
+      </Typography>
+    </Stack>
   )
 }

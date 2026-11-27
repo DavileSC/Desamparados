@@ -59,6 +59,13 @@ export function ejemploDe(tipo: string, fotos: string[]): Bloque[] {
       }]
     case 'cita':
       return [{ tipo, ...sinTitulo, texto: 'Unas palabras que merecen ir en grande, para que se lean despacio.', autor: 'Quién lo dijo', fuente: 'Dónde' }]
+    case 'pliegue':
+      return [
+        { tipo, titulo: 'Primera parte', resumen: 'Una frase de lo que hay dentro.' },
+        { tipo: 'texto', titulo: '', html: '<p>Los bloques que siguen a la sección plegable son lo que se abre al pulsarla, hasta la siguiente.</p>' },
+        { tipo, titulo: 'Segunda parte', resumen: 'Cerrada hasta que se pulsa.' },
+        { tipo: 'texto', titulo: '', html: '<p>Su contenido.</p>' },
+      ]
     case 'conversacion':
       return [{
         tipo, titulo: 'Lo que nos preguntan', nombre: 'Quien contesta',

@@ -6,7 +6,7 @@ import { esquemaDeBloque } from '../src/schemas/bloques.schema.js';
 import { TIPOS_BLOQUE } from '../src/domain/bloques.js';
 
 type Tipo = 'texto' | 'foto' | 'galeria' | 'tarjetas' | 'llamada' | 'datos' | 'itinerario'
-  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas' | 'programa' | 'relacion' | 'carrusel' | 'donativo' | 'notasAlMargen' | 'cita' | 'calendarioDePared' | 'conversacion';
+  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas' | 'programa' | 'relacion' | 'carrusel' | 'donativo' | 'notasAlMargen' | 'cita' | 'calendarioDePared' | 'conversacion' | 'pliegue';
 
 const falla = (tipo: Tipo, valor: unknown) =>
   esquemaDeBloque(tipo)(valor) instanceof ArkErrors;
@@ -652,5 +652,16 @@ describe('bloque de conversación', () => {
     assert.ok(falla('conversacion', { ...CONVERSACION, turnos: [{ ...TURNO, enlace: '/contacto' }] }));
     assert.ok(falla('conversacion', { ...CONVERSACION, turnos: [{ ...TURNO, etiquetas: [' '] }] }));
     assert.ok(falla('conversacion', { ...CONVERSACION, turnos: [{ ...TURNO, boton: 'Ir', enlace: 'https://otro-sitio.example' }] }));
+  });
+});
+
+describe('bloque de sección plegable', () => {
+  test('con título pasa, con resumen o sin él', () => {
+    assert.ok(!falla('pliegue', { tipo: 'pliegue', titulo: 'El trono', resumen: 'La pieza mayor del Grupo.' }));
+    assert.ok(!falla('pliegue', { tipo: 'pliegue', titulo: 'El trono', resumen: '' }));
+  });
+
+  test('sin título no: no habría nada que pulsar', () => {
+    assert.ok(falla('pliegue', { tipo: 'pliegue', titulo: ' ', resumen: 'Algo' }));
   });
 });

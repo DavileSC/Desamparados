@@ -207,6 +207,8 @@ export interface BloqueCalendarioDePared extends BloqueBase { tipo: 'calendarioD
 export interface TurnoDeConversacion { pregunta: string; respuesta: string; etiquetas: string[]; boton: string; enlace: string }
 /** Preguntas y respuestas como en un chat; `nombre` es quién contesta. */
 export interface BloqueConversacion extends BloqueBase { tipo: 'conversacion'; nombre: string; turnos: TurnoDeConversacion[] }
+/** Sección plegable: abre y cierra los bloques que le siguen, hasta el siguiente pliegue. */
+export interface BloquePliegue extends BloqueBase { tipo: 'pliegue'; resumen: string }
 /** Un vídeo suelto: las mismas reglas que uno de la galería. */
 export interface BloqueVideo extends BloqueBase { tipo: 'video'; url: string; portada: string; alt: string; pie: string }
 export interface BotonDeBloque { texto: string; enlace: string; estilo: 'principal' | 'secundario' }
@@ -301,6 +303,7 @@ export type Bloque =
   | BloqueNotasAlMargen
   | BloqueCalendarioDePared
   | BloqueConversacion
+  | BloquePliegue
   | BloqueRelacion
   | BloqueCarrusel
   | BloqueDonativo

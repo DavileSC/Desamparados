@@ -10,7 +10,7 @@ import { propsDeFoto } from '../../lib/fotoSubida'
 import { useFotoQueFalla } from '../../hooks/useFotoQueFalla'
 import { MARCA, alfa } from '../../theme/marca'
 
-type Estilo = 'cristal' | 'papel' | 'contorno' | 'granate' | 'numeradas' | 'filetes' | 'indice' | 'redondeadas' | 'historias'
+type Estilo = 'cristal' | 'papel' | 'contorno' | 'granate' | 'numeradas' | 'filetes' | 'indice' | 'redondeadas' | 'historias' | 'piezas'
 
 /**
  * Cuántas columnas ocupa cada tarjeta. En `auto` (el de siempre) depende de
@@ -27,7 +27,7 @@ function columnas(cuantas: number, eleccion: string) {
 }
 
 /** El recuadro de cada estilo. `cristal` es el de siempre. */
-const FONDOS: Record<Exclude<Estilo, 'cristal' | 'numeradas' | 'filetes' | 'indice' | 'historias'>, object> = {
+const FONDOS: Record<Exclude<Estilo, 'cristal' | 'numeradas' | 'filetes' | 'indice' | 'historias' | 'piezas'>, object> = {
   // Sin bordes (26-09-2026): cada estilo se distingue por su fondo. `contorno`
   // conserva el nombre guardado en las páginas, pero ya es un recuadro sobrio.
   papel: { backgroundColor: PAPEL, color: '#1b1c1a', borderRadius: '8px' },
@@ -55,6 +55,7 @@ export default function BloqueTarjetas({ bloque }: { bloque: Datos }) {
   if (estilo === 'filetes') return <ConFilete bloque={bloque} />
   if (estilo === 'indice') return <Indice bloque={bloque} />
   if (estilo === 'historias') return <Historias bloque={bloque} />
+  if (estilo === 'piezas') return <Piezas bloque={bloque} />
   return (
     // La última fila, si no se llena, va centrada y no pegada a la izquierda.
     <Grid container spacing={3} sx={{ justifyContent: 'center', maxWidth: anchoMaximo(bloque, estrecha ? '1000px' : 'none'), mx: 'auto' }}>
@@ -76,7 +77,7 @@ export default function BloqueTarjetas({ bloque }: { bloque: Datos }) {
  * parte es una promesa que no se cumple, y además aparecería en la lista de
  * enlaces de quien navega con lector de pantalla.
  */
-function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEnlace; estilo: Exclude<Estilo, 'numeradas' | 'filetes' | 'indice' | 'historias'>; horizontal: boolean; centrada: boolean }) {
+function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEnlace; estilo: Exclude<Estilo, 'numeradas' | 'filetes' | 'indice' | 'historias' | 'piezas'>; horizontal: boolean; centrada: boolean }) {
   const enlaceVivo = useEnlaceVivo()
   const icono = tarjeta.icono ? ICONOS[tarjeta.icono] : null
   const foto = tarjeta.foto ?? ''
@@ -359,5 +360,49 @@ function Historia({ tarjeta }: { tarjeta: TarjetaEnlace }) {
         <Typography sx={{ fontSize: 13, lineHeight: 1.45, mt: 0.75, color: 'rgba(255,255,255,0.8)' }}>{tarjeta.descripcion}</Typography>
       )}
     </Box>
+  )
+}
+
+/**
+ * Piezas (Patrimonio, 27-11-2026): la foto grande y, debajo, su nombre y lo
+ * que es, como el pie de una lámina de catálogo. Sin recuadro: las separa el
+ * aire. Dos por fila en escritorio, una en el móvil.
+ */
+function Piezas({ bloque }: { bloque: Datos }) {
+  const enlaceVivo = useEnlaceVivo()
+  const eleccion = valorDe(bloque, 'columnas')
+  const porFila = eleccion === 'auto' ? 2 : Number(eleccion)
+  return (
+    <Box component="ul" sx={{
+      listStyle: 'none', m: 0, p: 0, maxWidth: anchoMaximo(bloque, 'none'), mx: 'auto',
+      display: 'grid', gridTemplateColumns: { xs: '1fr', md: `repeat(${porFila}, minmax(0, 1fr))` }, columnGap: 4, rowGap: { xs: 4, md: 6 },
+    }}>
+      {bloque.tarjetas.map((tarjeta, indice) => {
+        const enlace = tarjeta.enlace && enlaceVivo(tarjeta.enlace) ? tarjeta.enlace : ''
+        const contenido = <Pieza tarjeta={tarjeta} />
+        return (
+          <Box component="li" key={indice}>
+            {enlace ? (
+              <Box component={Link} to={enlace} sx={{ display: 'block', textDecoration: 'none', color: 'inherit', '&:hover h3': { color: GOLD } }}>{contenido}</Box>
+            ) : contenido}
+          </Box>
+        )
+      })}
+    </Box>
+  )
+}
+
+function Pieza({ tarjeta }: { tarjeta: TarjetaEnlace }) {
+  const { visible, alFallar } = useFotoQueFalla(tarjeta.foto ?? '')
+  return (
+    <>
+      {visible && (
+        <Box component="img" {...propsDeFoto(tarjeta.foto ?? '', '(min-width: 900px) 600px, 100vw', alFallar)} alt={tarjeta.fotoAlt ?? ''} loading="lazy" decoding="async"
+          sx={{ display: 'block', width: '100%', aspectRatio: '3 / 2', objectFit: 'cover', mb: 2 }} />
+      )}
+      <Etiqueta tarjeta={tarjeta} sx={{ mb: 0.5 }} />
+      <Typography component="h3" sx={{ fontFamily: SERIF, fontSize: { xs: 24, md: 28 }, fontWeight: 600, lineHeight: 1.15, mb: 0.75, color: 'text.primary', transition: 'color .2s ease' }}>{tarjeta.titulo}</Typography>
+      <Typography sx={{ fontSize: 15, lineHeight: 1.6, color: 'text.secondary' }}>{tarjeta.descripcion}</Typography>
+    </>
   )
 }

@@ -10,7 +10,7 @@ import { FormularioDonativo } from './formularios/donativo'
 import {
   FormularioFotoTexto, FormularioCita, FormularioVideo, FormularioBotones, FormularioPreguntas,
   FormularioDescargas, FormularioMapa, FormularioCuentaAtras, FormularioEspacio, FormularioDibujo, FormularioAnillos,
-  FormularioPuertas, FormularioPrograma, FormularioRelacion, FormularioNotasAlMargen, FormularioCalendarioDePared, FormularioConversacion,
+  FormularioPuertas, FormularioPrograma, FormularioRelacion, FormularioNotasAlMargen, FormularioCalendarioDePared, FormularioConversacion, FormularioPliegue,
 } from './formularios/nuevos'
 import { FICHA_DE_BLOQUE } from '../constructor/etiquetas'
 import { libreDe, valorDe } from '../../../components/bloques/presentacion'
@@ -61,6 +61,7 @@ export const FORMULARIOS: Record<string, ComponentType<Props<never>>> = {
   notasAlMargen: FormularioNotasAlMargen as unknown as ComponentType<Props<never>>,
   calendarioDePared: FormularioCalendarioDePared as unknown as ComponentType<Props<never>>,
   conversacion: FormularioConversacion as unknown as ComponentType<Props<never>>,
+  pliegue: FormularioPliegue as unknown as ComponentType<Props<never>>,
   relacion: FormularioRelacion as unknown as ComponentType<Props<never>>,
   carrusel: FormularioCarrusel as unknown as ComponentType<Props<never>>,
   donativo: FormularioDonativo as unknown as ComponentType<Props<never>>,
@@ -139,6 +140,7 @@ const BLOQUE_NUEVO: Record<string, object> = {
     tipo: 'conversacion', titulo: 'Lo que nos preguntan', nombre: '',
     turnos: [{ pregunta: '', respuesta: '', etiquetas: [], boton: '', enlace: '' }],
   },
+  pliegue: { tipo: 'pliegue', titulo: 'Nueva sección', resumen: '' },
 }
 
 /** La fecha de un mes más tarde a las 18:00, como AAAA-MM-DDTHH:mm. */
@@ -258,6 +260,8 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       if (bloque.texto.trim() === '') return 'está vacía'
       if ((bloque.foto ?? '') !== '' && (bloque.fotoAlt ?? '').trim() === '') return 'tiene la foto sin descripción'
       return null
+    case 'pliegue':
+      return bloque.titulo.trim() === '' ? 'no tiene título, que es lo que se pulsa' : null
     case 'conversacion': {
       if (bloque.nombre.trim() === '') return 'no dice quién contesta'
       const sin = bloque.turnos.findIndex((t) => t.pregunta.trim() === '' || t.respuesta.trim() === '')

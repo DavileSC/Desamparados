@@ -899,6 +899,18 @@ const conversacionSchema = type({
   return true;
 });
 
+/**
+ * Sección plegable: el título (el de todo bloque) y una frase de qué hay
+ * dentro. No lleva contenido propio: abre y cierra los bloques que le siguen
+ * en la página, hasta el siguiente pliegue o el final. Así cada parte se edita
+ * con sus bloques de siempre.
+ */
+const pliegueSchema = type({
+  ...comunes,
+  tipo: "'pliegue'",
+  resumen: DESCRIPCION,
+}).narrow((datos, ctx) => (enBlanco(datos.titulo) ? ctx.reject({ path: ['titulo'], problem: 'no puede quedar en blanco: es lo que se pulsa' }) : true));
+
 const POR_TIPO = {
   texto: textoSchema,
   foto: fotoSchema,
@@ -931,6 +943,7 @@ const POR_TIPO = {
   notasAlMargen: notasAlMargenSchema,
   calendarioDePared: calendarioDeParedSchema,
   conversacion: conversacionSchema,
+  pliegue: pliegueSchema,
 } as const;
 
 export const esquemaDeBloque = (tipo: TipoBloque) => POR_TIPO[tipo as keyof typeof POR_TIPO];
