@@ -1,27 +1,6 @@
 import CATALOGO from '../../../../shared/paginas-publicas.json'
 import { aplanarMenu, menuPublico, ponerNombres, type EntradaMenu } from '../../config/navegacion'
-import type { SlugContenido } from '../../lib/api/contenido'
 import { CABECERA_CON_COPIA } from '../../config/fotosDeLaInstalacion'
-
-/**
- * Qué cabecera lleva cada página de bloques. Lo leen la web, para pintarla, y
- * el CMS, para explicar al editar qué se hace con la foto.
- *
- * - Agenda y Cultos, ninguna: su contenido ya dice qué página es (el
- *   calendario, el rostro de la Virgen). La foto, si la hay, queda velada
- *   detrás de toda la página.
- * - Historia, la suya propia (`HistoriaPage`), también con la foto velada.
- * - Las demás, la cabecera a sangre (`CabeceraASangre`): la foto a todo el
- *   ancho y el título apoyado en su borde de abajo.
- */
-const SIN_CABECERA: readonly SlugContenido[] = ['agenda', 'cultos']
-
-type TipoDeCabecera = 'a-sangre' | 'ninguna' | 'propia'
-
-export function tipoDeCabecera(slug: string): TipoDeCabecera {
-  if (slug === 'historia') return 'propia'
-  return (SIN_CABECERA as readonly string[]).includes(slug) ? 'ninguna' : 'a-sangre'
-}
 
 /** Encuadre de partida: el punto de la foto (en % de su alto) que se queda a la vista. */
 export const ENCUADRE_POR_DEFECTO = 40

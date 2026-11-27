@@ -1,5 +1,3 @@
-import { bajoLaBarra, desktopMq } from './barra/estilos'
-
 /**
  * El aire entre la cabecera de una página (CabeceraDePagina) y su contenido.
  *
@@ -11,6 +9,3 @@ import { bajoLaBarra, desktopMq } from './barra/estilos'
  * siempre antes del pie.
  */
 export const SECCION_TRAS_CABECERA = { pt: { xs: 4, md: 6 }, pb: { xs: 6, md: 10 } } as const
-
-/** Sin cabecera, el contenido abre justo por debajo de la barra de navegación, que en escritorio va fija encima. */
-export const SECCION_SIN_CABECERA = { pt: { xs: 4, md: 12 }, pb: { xs: 6, md: 10 }, [desktopMq]: { pt: bajoLaBarra(24) } } as const

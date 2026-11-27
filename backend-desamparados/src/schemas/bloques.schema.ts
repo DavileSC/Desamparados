@@ -867,25 +867,18 @@ export function problemaDeBloque(bloque: unknown): { path: (string | number)[]; 
 }
 
 /**
- * La cabecera de la página. Está siempre y no se puede quitar.
- *
- * La ceja (la línea pequeña en mayúsculas encima del título) es opcional y
- * solo la lleva Historia, cuya cabecera tiene diseño propio. Las demás no la
- * pintan, y por eso no traen la clave en sus valores de partida: al mezclar,
- * lo guardado que no está en los valores de partida se descarta.
+ * La cabecera de la página. Está siempre y no se puede quitar: la foto a todo
+ * el ancho arriba, con el título encima de su borde de abajo.
  */
 export const cabeceraSchema = type({
-  'ceja?': ETIQUETA,
   titulo: TITULO,
   subtitulo: DESCRIPCION,
   foto: sinFoto.or(rutaImagenPublica),
-  // La descripción es opcional. En Historia, Agenda y Cultos la foto es el
-  // fondo velado de la página y va fuera del árbol accesible. En las demás se
-  // ve a todo el ancho arriba y la lee el lector de pantalla si está escrita;
-  // si no, se trata como decorativa (el título ya dice qué página es).
+  // La descripción es opcional: la lee el lector de pantalla si está escrita;
+  // si no, la foto se trata como decorativa (el título ya dice qué página es).
   fotoAlt: DESCRIPCION,
   // Qué altura de la foto (0 arriba, 100 abajo) se queda a la vista cuando la
-  // cabecera a sangre la recorta. Solo lo traen esas páginas.
+  // cabecera la recorta.
   'encuadre?': '0 <= number.integer <= 100',
 }).narrow((datos, ctx) => {
   // Un título en blanco (o solo espacios: tres espacios no son un título) deja

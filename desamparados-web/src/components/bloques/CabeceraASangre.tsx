@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Box, Typography } from '@mui/material'
 import ContenedorDePagina from '../ContenedorDePagina'
 import { Revela } from '../SeccionAnimada'
@@ -32,6 +33,14 @@ const bandaSx = {
 } as const
 const textoSx = { width: '100%', pt: 12, pb: { xs: 4, md: 6 }, [ESCRITORIO]: { pt: bajoLaBarra(72), pb: 7 } } as const
 const cejaSx = { ...estiloCeja, color: GOLD, m: 0, mb: { xs: 1.5, md: 2 }, fontSize: { xs: 11, md: 12 }, fontWeight: 600, textShadow: '0 1px 10px rgba(0,0,0,0.9)' } as const
+/** Con algo al lado (el índice de Historia): el texto a la izquierda y eso a la derecha, apoyados abajo. */
+const conLadoSx = {
+  display: 'grid',
+  gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) 380px' },
+  columnGap: { md: 8 },
+  rowGap: 5,
+  alignItems: 'end',
+} as const
 const TITULO = 'clamp(38px, 10.5vw, 60px)'
 const TITULO_ESCRITORIO = 'clamp(64px, 7.2vw, 112px)'
 const tituloSx = {
@@ -57,6 +66,24 @@ interface Props {
   encuadre?: number
   /** Dónde está la página en el menú: la línea pequeña de encima del título. */
   ceja: string[]
+  /**
+   * Lo que va a la derecha del título, solo desde tableta: en el móvil iría
+   * debajo, la banda crecería y el título subiría hasta la parte clara de la
+   * foto, donde no se lee. Tiene que ser algo que la página repita más abajo
+   * (en Historia, los momentos de la cronología).
+   */
+  lado?: ReactNode
+}
+
+/** El texto de la cabecera, solo o con lo de al lado. */
+function ConLado({ lado, children }: { lado?: ReactNode; children: ReactNode }) {
+  if (!lado) return children
+  return (
+    <Box sx={conLadoSx}>
+      <Box sx={{ minWidth: 0 }}>{children}</Box>
+      <Box sx={{ display: { xs: 'none', md: 'block' } }}>{lado}</Box>
+    </Box>
+  )
 }
 
 /**
@@ -81,7 +108,7 @@ interface Props {
  * navegador no sabe hacerlo, con prefers-reduced-motion y en la vista en vivo
  * del constructor, se queda quieta.
  */
-export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encuadre, ceja }: Props) {
+export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encuadre, ceja, lado }: Props) {
   const quieta = useModoEdicion() !== null
   useFotoBajoLaBarra()
   const encuadreY = `${Math.min(100, Math.max(0, encuadre ?? ENCUADRE_POR_DEFECTO))}%`
@@ -176,39 +203,41 @@ export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encu
       />
 
       <ContenedorDePagina className="sobre-la-foto" sx={textoSx}>
-        {ceja.length > 0 && (
-          <Revela alMontar>
-            <Typography component="p" sx={cejaSx}>
-              {ceja.join(' · ')}
-            </Typography>
-          </Revela>
-        )}
-        <Revela alMontar efecto="cortina" orden={1}>
-          <Typography
-            component="h1"
-            lang="es"
-            sx={tituloSx}
-          >
-            {titulo}
-          </Typography>
-        </Revela>
-        {subtitulo && (
-          <Revela alMontar orden={2}>
+        <ConLado lado={lado}>
+          {ceja.length > 0 && (
+            <Revela alMontar>
+              <Typography component="p" sx={cejaSx}>
+                {ceja.join(' · ')}
+              </Typography>
+            </Revela>
+          )}
+          <Revela alMontar efecto="cortina" orden={1}>
             <Typography
-              sx={{
-                mt: { xs: 2, md: 2.5 },
-                fontSize: { xs: 17, md: 20 },
-                lineHeight: 1.5,
-                color: '#e4dfe1',
-                maxWidth: '46ch',
-                overflowWrap: 'break-word',
-                textShadow: '0 1px 16px rgba(0,0,0,0.6)',
-              }}
+              component="h1"
+              lang="es"
+              sx={tituloSx}
             >
-              {subtitulo}
+              {titulo}
             </Typography>
           </Revela>
-        )}
+          {subtitulo && (
+            <Revela alMontar orden={2}>
+              <Typography
+                sx={{
+                  mt: { xs: 2, md: 2.5 },
+                  fontSize: { xs: 17, md: 20 },
+                  lineHeight: 1.5,
+                  color: '#e4dfe1',
+                  maxWidth: '46ch',
+                  overflowWrap: 'break-word',
+                  textShadow: '0 1px 16px rgba(0,0,0,0.6)',
+                }}
+              >
+                {subtitulo}
+              </Typography>
+            </Revela>
+          )}
+        </ConLado>
       </ContenedorDePagina>
     </Box>
   )
@@ -223,22 +252,24 @@ export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encu
  * título va escrito en su `h1`: sin él, la página se quedaba sin encabezado
  * para el lector de pantalla y sin decir dónde se está.
  */
-export function CabeceraASangreEsqueleto({ ceja, titulo }: { ceja: string[]; titulo?: string }) {
+export function CabeceraASangreEsqueleto({ ceja, titulo, lado }: { ceja: string[]; titulo?: string; lado?: ReactNode }) {
   return (
     <Box component="header" sx={{ ...bandaSx, backgroundColor: '#161416' }}>
       <Hueso sx={{ position: 'absolute', inset: 0, zIndex: -1, borderRadius: 0 }} />
       <ContenedorDePagina sx={textoSx}>
-        {ceja.length > 0 && <Typography component="p" sx={cejaSx}>{ceja.join(' · ')}</Typography>}
-        {titulo
-          ? <Typography component="h1" lang="es" sx={tituloSx}>{titulo}</Typography>
-          : (
-            <Box sx={{ height: `calc(${TITULO} * 1.02)`, [ESCRITORIO]: { height: `calc(${TITULO_ESCRITORIO} * 1.02)` }, display: 'flex', alignItems: 'center' }}>
-              <Hueso sx={{ width: 'min(64%, 560px)', height: '64%' }} />
-            </Box>
-          )}
-        <Box sx={{ mt: { xs: 2, md: 2.5 } }}>
-          <Lineas anchos={['min(92%, 470px)', 'min(52%, 270px)']} linea={{ xs: 25.5, md: 30 }} grosor={{ xs: 10, md: 12 }} />
-        </Box>
+        <ConLado lado={lado}>
+          {ceja.length > 0 && <Typography component="p" sx={cejaSx}>{ceja.join(' · ')}</Typography>}
+          {titulo
+            ? <Typography component="h1" lang="es" sx={tituloSx}>{titulo}</Typography>
+            : (
+              <Box sx={{ height: `calc(${TITULO} * 1.02)`, [ESCRITORIO]: { height: `calc(${TITULO_ESCRITORIO} * 1.02)` }, display: 'flex', alignItems: 'center' }}>
+                <Hueso sx={{ width: 'min(64%, 560px)', height: '64%' }} />
+              </Box>
+            )}
+          <Box sx={{ mt: { xs: 2, md: 2.5 } }}>
+            <Lineas anchos={['min(92%, 470px)', 'min(52%, 270px)']} linea={{ xs: 25.5, md: 30 }} grosor={{ xs: 10, md: 12 }} />
+          </Box>
+        </ConLado>
       </ContenedorDePagina>
     </Box>
   )

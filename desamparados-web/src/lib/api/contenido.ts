@@ -290,12 +290,8 @@ export type Bloque =
   | BloqueCarrusel
   | BloqueDonativo
 
-/**
- * `ceja` solo la trae Historia, cuya cabecera tiene diseño propio. `encuadre`,
- * las de cabecera a sangre: qué altura de la foto (0 arriba, 100 abajo) se
- * queda a la vista al recortarla.
- */
-export interface CabeceraPagina { ceja?: string; titulo: string; subtitulo: string; foto: string; fotoAlt: string; encuadre?: number }
+/** `encuadre`: qué altura de la foto (0 arriba, 100 abajo) se queda a la vista al recortarla. */
+export interface CabeceraPagina { titulo: string; subtitulo: string; foto: string; fotoAlt: string; encuadre?: number }
 export interface PaginaDeBloques { cabecera: CabeceraPagina; bloques: Bloque[] }
 
 /**

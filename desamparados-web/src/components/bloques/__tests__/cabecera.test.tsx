@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { screen } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import CabeceraASangre from '../CabeceraASangre'
-import { cejaDePagina, srcSetDeCabecera, tipoDeCabecera } from '../cabecera'
+import { cejaDePagina, srcSetDeCabecera } from '../cabecera'
 import CATALOGO from '../../../../../shared/paginas-publicas.json'
 import POR_DEFECTO from '../../../../../shared/contenido-por-defecto.json'
 import type { PaginaDeBloques } from '../../../lib/api/contenido'
@@ -28,21 +28,21 @@ describe('cejaDePagina', () => {
     expect(cejaDePagina('contacto', 'Contacto')).toEqual([])
   })
 
-  it('las demás páginas con cabecera a sangre sí la llevan: están dentro de una sección del menú', () => {
+  it('las demás páginas sí la llevan: están dentro de una sección del menú', () => {
     const sinCeja = CATALOGO.paginas
-      .filter((p) => tipoDeCabecera(p.slug) === 'a-sangre' && !['contacto', 'publicaciones', 'sagrada-titular'].includes(p.slug))
+      .filter((p) => !['contacto', 'publicaciones', 'sagrada-titular'].includes(p.slug))
       .filter((p) => cejaDePagina(p.slug, p.nombre).length === 0)
     expect(sinCeja.map((p) => p.slug)).toEqual([])
   })
 })
 
 describe('fotos de partida', () => {
-  it('toda página con cabecera a sangre nace sin foto (es de cada instalación), pero con su encuadre', () => {
+  it('toda página nace sin foto de cabecera (es de cada instalación), pero con su encuadre', () => {
     // El contenido de partida es neutro: la foto la sube cada corporación, o
     // llega con la semilla de su instalación. El encuadre sí tiene que estar:
     // al mezclar, el servidor descarta las claves que el de partida no trae,
     // y sin él no se podría guardar el de la foto que se suba.
-    for (const { slug } of CATALOGO.paginas.filter((p) => tipoDeCabecera(p.slug) === 'a-sangre')) {
+    for (const { slug } of CATALOGO.paginas) {
       const { cabecera } = (POR_DEFECTO as unknown as Record<string, PaginaDeBloques>)[slug]
       expect(cabecera.foto, slug).toBe('')
       expect(cabecera.encuadre, slug).toBeGreaterThanOrEqual(0)

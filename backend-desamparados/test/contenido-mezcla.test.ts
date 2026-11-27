@@ -99,10 +99,11 @@ test('los bloques guardados de la historia sustituyen enteros a los de por defec
 
   assert.deepEqual(mezclado.bloques, bloques);
   assert.equal(mezclado.cabecera.titulo, 'Historia', 'lo no tocado conserva el texto de siempre');
-  assert.equal(mezclado.cabecera.ceja, 'Corporación · Historia', 'y la ceja, que solo tiene Historia, también');
 });
 
-test('una ceja guardada en una página que no la lleva se descarta', () => {
-  const mezclado = mezclarConDefectos('cultos', { cabecera: { ceja: 'Colada' } }) as any;
+// La cabecera de Historia llevaba una ceja propia hasta el 28-11-2026: la
+// guardada de antes se descarta al leer.
+test('una ceja guardada en la cabecera se descarta', () => {
+  const mezclado = mezclarConDefectos('historia', { cabecera: { ceja: 'Corporación · Historia' } }) as any;
   assert.ok(!('ceja' in mezclado.cabecera));
 });

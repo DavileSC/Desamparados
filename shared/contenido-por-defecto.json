@@ -107,11 +107,11 @@
   },
   "historia": {
     "cabecera": {
-      "ceja": "Corporación · Historia",
       "titulo": "Historia",
       "subtitulo": "De dónde venimos y cómo hemos llegado hasta hoy.",
       "foto": "",
-      "fotoAlt": ""
+      "fotoAlt": "",
+      "encuadre": 50
     },
     "bloques": [
       {
@@ -163,7 +163,8 @@
       "titulo": "Cultos",
       "subtitulo": "Celebraciones y devociones en honor de nuestra imagen titular.",
       "foto": "",
-      "fotoAlt": ""
+      "fotoAlt": "",
+      "encuadre": 40
     },
     "bloques": [
       {
@@ -603,7 +604,8 @@
       "titulo": "Agenda",
       "subtitulo": "Calendario de cultos, actos y celebraciones de la corporación.",
       "foto": "",
-      "fotoAlt": ""
+      "fotoAlt": "",
+      "encuadre": 40
     },
     "bloques": [
       {

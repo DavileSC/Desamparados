@@ -91,7 +91,7 @@ test('cada clase de texto acepta su tope justo y rechaza un carácter más', () 
 /**
  * Historia pasó a ser una página de bloques: sus hitos los valida el bloque de
  * cronología (`bloques-esquemas.test.ts`). Aquí queda lo que es del documento
- * entero: que los valores de partida pasan, y la ceja y el fondo de su cabecera.
+ * entero: que los valores de partida pasan, y la foto de su cabecera.
  */
 const cronologiaDe = (datos: any) => datos.bloques.find((b: any) => b.tipo === 'cronologia');
 
@@ -108,21 +108,12 @@ test('una foto de hito sin descripción no se guarda', () => {
   assert.ok(valida('historia', datos));
 });
 
-test('la foto de fondo puede no estar, y si está es del propio sitio', () => {
+test('la foto de cabecera puede no estar, y si está es del propio sitio', () => {
   const datos = porDefecto('historia') as any;
   datos.cabecera.foto = '';
-  assert.ok(valida('historia', datos), 'sin foto, el fondo queda liso');
+  assert.ok(valida('historia', datos), 'sin foto, la banda queda en granate');
 
   datos.cabecera.foto = 'https://otro-sitio.example/foto.jpg';
-  assert.ok(!valida('historia', datos));
-});
-
-test('la ceja de la cabecera es opcional y tiene el tope de una etiqueta', () => {
-  const datos = porDefecto('historia') as any;
-  delete datos.cabecera.ceja;
-  assert.ok(valida('historia', datos), 'las demás páginas no llevan ceja');
-
-  datos.cabecera.ceja = 'a'.repeat(topes.etiqueta + 1);
   assert.ok(!valida('historia', datos));
 });
 

@@ -32,7 +32,8 @@ describe('HistoriaPage', () => {
     renderWithProviders(<HistoriaPage />)
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Historia' })).toBeInTheDocument()
-    expect(screen.getByText('Corporación · Historia')).toBeInTheDocument()
+    // La ceja sale del menú, como en las demás cabeceras.
+    expect(screen.getByText('Corporación')).toBeInTheDocument()
 
     // La cronología se descarga aparte: la página espera en esqueleto a que llegue.
     const lista = await screen.findByRole('list', { name: 'Cronología' })
@@ -58,10 +59,10 @@ describe('HistoriaPage', () => {
     })
   })
 
-  it('las fotos van dentro de su hito y la de fondo no se anuncia', async () => {
+  it('las fotos van dentro de su hito, y la de cabecera arriba con su descripción', async () => {
     // El de partida es neutro y no trae fotos: se le ponen aquí, como haría el CMS.
     const conFotos = structuredClone(HISTORIA)
-    conFotos.cabecera = { ...conFotos.cabecera, foto: '/storage/public/fondo.webp', fotoAlt: 'La imagen titular, al fondo' }
+    conFotos.cabecera = { ...conFotos.cabecera, foto: '/storage/public/cabecera.webp', fotoAlt: 'La imagen titular' }
     const hitosConFotos = (conFotos.bloques.find((b) => b.tipo === 'cronologia') as BloqueCronologia).hitos
     hitosConFotos[0].foto = { url: '/storage/public/primer-hito.webp', alt: 'El primer hito', pie: '' }
     responder(conFotos)
@@ -73,13 +74,11 @@ describe('HistoriaPage', () => {
     for (const hito of conFoto) {
       expect(screen.getByRole('img', { name: hito.foto.alt })).toBeInTheDocument()
     }
-    // La foto velada de fondo es decorativa: ni alt ni papel de imagen, aunque
-    // la cabecera guarde una descripción (el esquema la pide en cuanto hay foto).
-    expect(screen.getAllByRole('img')).toHaveLength(conFoto.length)
-    expect(document.querySelector('img[alt=""]')).toHaveAttribute('src', conFotos.cabecera.foto)
+    expect(screen.getByRole('img', { name: 'La imagen titular' })).toHaveAttribute('src', conFotos.cabecera.foto)
+    expect(screen.getAllByRole('img')).toHaveLength(conFoto.length + 1)
   })
 
-  it('enseña lo que viene del CMS: otros hitos, párrafos partidos, otros bloques y sin foto de fondo', async () => {
+  it('enseña lo que viene del CMS: otros hitos, párrafos partidos, otros bloques y sin foto de cabecera', async () => {
     responder({
       cabecera: { ...HISTORIA.cabecera, foto: '', fotoAlt: '' },
       bloques: [

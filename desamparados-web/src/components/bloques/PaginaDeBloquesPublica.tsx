@@ -1,11 +1,9 @@
 import { useEffect } from 'react'
-import { Box, Typography } from '@mui/material'
-import { visuallyHidden } from '@mui/utils'
+import { Box } from '@mui/material'
 import { useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ContenedorDePagina from '../ContenedorDePagina'
 import MetaDePagina from '../MetaDePagina'
-import FondoDePagina from '../FondoDePagina'
 import SeccionAnimada from '../SeccionAnimada'
 import BloquesDePagina from './BloquesDePagina'
 import CabeceraASangre, { CabeceraASangreEsqueleto } from './CabeceraASangre'
@@ -13,12 +11,12 @@ import BloquesEsqueleto from './BloquesEsqueleto'
 import ConBloquesCargados from './ConBloquesCargados'
 import EnCarga from '../esqueleto/EnCarga'
 import { estadoDeConsulta } from '../esqueleto/esperaDeCarga'
-import { cejaDePagina, tipoDeCabecera } from './cabecera'
+import { cejaDePagina } from './cabecera'
 import { useBorradorPagina } from './borrador'
 import { useNombresEnMenu } from '../../hooks/useNombresEnMenu'
 import CATALOGO from '../../../../shared/paginas-publicas.json'
 import { getContenido, type PaginaDeBloques, type SlugContenido } from '../../lib/api/contenido'
-import { SECCION_SIN_CABECERA, SECCION_TRAS_CABECERA } from '../espaciado'
+import { SECCION_TRAS_CABECERA } from '../espaciado'
 
 /**
  * Una página pública compuesta por bloques: su cabecera y, debajo, lo que el
@@ -28,10 +26,10 @@ import { SECCION_SIN_CABECERA, SECCION_TRAS_CABECERA } from '../espaciado'
  * slug. Antes cada una llevaba su texto escrito dentro del `.tsx` y cambiar un
  * párrafo exigía tocar código y desplegar.
  *
- * La cabecera es la foto a todo el ancho con el título encima
- * (`CabeceraASangre`). Las páginas sin cabecera (Agenda, Cultos: ver
- * `cabecera.ts`) llevan la foto, si la tienen, velada detrás de la página
- * entera: quieta a la altura de la ventana mientras el texto pasa por encima.
+ * La cabecera es la misma en todas: la foto a todo el ancho con el título
+ * encima (`CabeceraASangre`). Agenda y Cultos no llevaban ninguna e Historia
+ * una suya, hasta que el 28-11-2026 se igualaron: cada página tiene su
+ * carácter de la cabecera abajo, pero todas se abren igual.
  *
  * El título de la pestaña sale de la cabecera del documento, así que también se
  * edita desde el CMS. Era lo que ya decía cada página («Cultos | Desamparados»),
@@ -55,10 +53,6 @@ interface Props {
 }
 
 export default function PaginaDeBloquesPublica({ slug }: Props) {
-  // Sin la cabecera grande las páginas cuyo contenido ya dice lo que son, como
-  // la Agenda, que así enseña su calendario entero al entrar. El título sigue
-  // ahí, oculto, como el h1 de la página.
-  const sinCabecera = tipoDeCabecera(slug) === 'ninguna'
   // En la vista previa del CMS, lo que se está escribiendo; fuera, lo guardado.
   const borrador = useBorradorPagina()
   const consulta = useQuery({
@@ -77,7 +71,7 @@ export default function PaginaDeBloquesPublica({ slug }: Props) {
   useBajarAlAncla(Boolean(data))
   const nombresEnMenu = useNombresEnMenu()
   const ceja = cejaDePagina(slug, titulo, nombresEnMenu)
-  const seccion = sinCabecera ? SECCION_SIN_CABECERA : SECCION_TRAS_CABECERA
+  const seccion = SECCION_TRAS_CABECERA
 
   return (
     <>
@@ -93,23 +87,14 @@ export default function PaginaDeBloquesPublica({ slug }: Props) {
       <Box sx={{ position: 'relative', isolation: 'isolate', overflowX: 'clip' }}>
         {guardada ? (
           <>
-            {sinCabecera
-              ? (
-                <>
-                  {Boolean(guardada.cabecera.foto) && <FondoDePagina url={guardada.cabecera.foto} />}
-                  <Typography component="h1" sx={visuallyHidden}>{guardada.cabecera.titulo}</Typography>
-                </>
-              )
-              : (
-                <CabeceraASangre
-                  titulo={guardada.cabecera.titulo}
-                  subtitulo={guardada.cabecera.subtitulo}
-                  foto={guardada.cabecera.foto}
-                  fotoAlt={guardada.cabecera.fotoAlt}
-                  encuadre={guardada.cabecera.encuadre}
-                  ceja={ceja}
-                />
-              )}
+            <CabeceraASangre
+              titulo={guardada.cabecera.titulo}
+              subtitulo={guardada.cabecera.subtitulo}
+              foto={guardada.cabecera.foto}
+              fotoAlt={guardada.cabecera.fotoAlt}
+              encuadre={guardada.cabecera.encuadre}
+              ceja={ceja}
+            />
             <SeccionAnimada sx={seccion}>
               <ContenedorDePagina>
                 <ConBloquesCargados bloques={guardada.bloques} esqueleto={<BloquesEsqueleto slug={slug} />}>
@@ -120,9 +105,7 @@ export default function PaginaDeBloquesPublica({ slug }: Props) {
           </>
         ) : estadoDeConsulta(consulta) === 'error' ? (
           <>
-            {sinCabecera
-              ? <Typography component="h1" sx={visuallyHidden}>{titulo}</Typography>
-              : <Box className="esqueleto-quieto"><CabeceraASangreEsqueleto ceja={ceja} titulo={titulo} /></Box>}
+            <Box className="esqueleto-quieto"><CabeceraASangreEsqueleto ceja={ceja} titulo={titulo} /></Box>
             <Box sx={seccion}>
               <ContenedorDePagina>
                 <EnCarga avisoArriba estado="error" que="esta página" alReintentar={() => { void consulta.refetch() }} esqueleto={<BloquesEsqueleto slug={slug} />} />
@@ -136,7 +119,7 @@ export default function PaginaDeBloquesPublica({ slug }: Props) {
             alReintentar={() => { void consulta.refetch() }}
             esqueleto={(
               <>
-                {!sinCabecera && <CabeceraASangreEsqueleto ceja={ceja} />}
+                <CabeceraASangreEsqueleto ceja={ceja} />
                 <Box sx={seccion}>
                   <ContenedorDePagina><BloquesEsqueleto slug={slug} /></ContenedorDePagina>
                 </Box>
