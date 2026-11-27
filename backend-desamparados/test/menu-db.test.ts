@@ -70,7 +70,7 @@ describe('depurarNombres', () => {
       '/cultos': '   ',
       '/no-existe': 'Nada',
       '/corporacion': 'Título que solo despliega',
-      '/ajuar': 'x'.repeat(TOPE_NOMBRE_EN_MENU + 1),
+      '/sagrada-titular': 'x'.repeat(TOPE_NOMBRE_EN_MENU + 1),
       '/agenda': '<b>Agenda</b>',
       '/noticias': 7,
     }), { '/parroquia': 'Parroquia · Pasionistas' });
@@ -120,11 +120,11 @@ describe('los nombres del menú', () => {
     assert.deepEqual(desconocida.cuerpo.errors, [{ field: 'nombres./no-existe', message: 'No es una entrada del menú' }]);
     // Un título que solo despliega no es una página: tampoco se renombra.
     assert.equal((await guardar('ADMIN', { '/corporacion': 'La casa' })).status, 400);
-    const largo = await guardar('ADMIN', { '/ajuar': 'x'.repeat(TOPE_NOMBRE_EN_MENU + 1) });
+    const largo = await guardar('ADMIN', { '/sagrada-titular': 'x'.repeat(TOPE_NOMBRE_EN_MENU + 1) });
     assert.equal(largo.status, 400);
-    assert.equal(largo.cuerpo.errors[0].field, 'nombres./ajuar');
-    assert.equal((await guardar('ADMIN', { '/ajuar': '<i>Ajuar</i>' })).status, 400);
-    assert.equal((await guardar('ADMIN', { '/ajuar': 3 })).status, 400);
+    assert.equal(largo.cuerpo.errors[0].field, 'nombres./sagrada-titular');
+    assert.equal((await guardar('ADMIN', { '/sagrada-titular': '<i>Sagrada titular</i>' })).status, 400);
+    assert.equal((await guardar('ADMIN', { '/sagrada-titular': 3 })).status, 400);
     assert.equal((await pedir('/cms/menu', { rol: 'ADMIN', metodo: 'PUT', cuerpo: {} })).status, 400);
     assert.deepEqual((await pedir('/menu')).cuerpo, antes);
   });
@@ -143,7 +143,7 @@ describe('los nombres del menú', () => {
     const malo = await cambiar('/no-existe', 'Nada');
     assert.equal(malo.status, 400);
     assert.equal(malo.cuerpo.errors[0].field, 'ruta');
-    assert.equal((await cambiar('/ajuar', '<i>Ajuar</i>')).status, 400);
+    assert.equal((await cambiar('/sagrada-titular', '<i>Sagrada titular</i>')).status, 400);
     assert.equal((await pedir('/cms/menu', { rol: 'TESORERIA', metodo: 'PATCH', cuerpo: { ruta: '/agenda', nombre: 'x' } })).status, 403);
   });
 

@@ -25,7 +25,7 @@ let server: Server;
 let baseUrl: string;
 let dbDisponible = false;
 const DOMINIO = `https://${identidad.dominio}`;
-const PROPIAS = ['/desamparados', '/pasionistas', '/grupo-joven', '/cultos/rosario', '/nuestros-fines/vida', '/nuestros-fines/evangelizacion', '/sabado-de-pasion', '/sabado-de-pasion/recorrido', '/sabado-de-pasion/patrimonio'];
+const PROPIAS = ['/pasionistas', '/grupo-joven', '/cultos/rosario', '/nuestros-fines/vida', '/nuestros-fines/evangelizacion', '/sabado-de-pasion', '/sabado-de-pasion/recorrido', '/sabado-de-pasion/patrimonio'];
 
 before(async () => {
   server = app.listen(0);
@@ -84,7 +84,7 @@ describe('la API de contenido', () => {
     try {
       await con(false, async () => {
         const cookie = `${COOKIE_CMS}=${generateToken(admin.id, Role.ADMIN, false, 'cms')}`;
-        for (const slug of ['desamparados', 'rosario', 'sabado-de-pasion', 'recorrido', 'patrimonio']) {
+        for (const slug of ['rosario', 'sabado-de-pasion', 'recorrido', 'patrimonio']) {
           const leer = await fetch(`${baseUrl}/api/contenido/${slug}`);
           assert.equal(leer.status, 404, slug);
           assert.equal((await leer.json() as { error: string }).error, 'MODULO_NO_ACTIVADO', slug);
@@ -94,8 +94,8 @@ describe('la API de contenido', () => {
           assert.equal(guardar.status, 404, `${slug}: guardar`);
           assert.equal((await fetch(`${baseUrl}/api/contenido/${slug}/versiones`, { headers: { cookie } })).status, 404, `${slug}: versiones`);
         }
-        // El Ajuar es del núcleo: con el módulo apagado se sigue sirviendo.
-        assert.equal((await fetch(`${baseUrl}/api/contenido/ajuar`)).status, 200);
+        // La Sagrada titular es del núcleo: con el módulo apagado se sigue sirviendo.
+        assert.equal((await fetch(`${baseUrl}/api/contenido/sagrada-titular`)).status, 200);
       });
     } finally {
       await borrarUsuarioPrueba(admin.id);
@@ -105,7 +105,7 @@ describe('la API de contenido', () => {
   test('encendido: se sirven como siempre', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     await con(true, async () => {
-      for (const slug of ['desamparados', 'rosario', 'sabado-de-pasion', 'recorrido', 'patrimonio']) {
+      for (const slug of ['rosario', 'sabado-de-pasion', 'recorrido', 'patrimonio']) {
         assert.equal((await fetch(`${baseUrl}/api/contenido/${slug}`)).status, 200, slug);
       }
     });
@@ -128,7 +128,7 @@ describe('el sitemap', () => {
     await con(false, async () => {
       const lista = await urls();
       for (const ruta of PROPIAS) assert.ok(!lista.includes(`${DOMINIO}${ruta}`), `apagado anuncia ${ruta}`);
-      assert.ok(lista.includes(`${DOMINIO}/ajuar`));
+      assert.ok(lista.includes(`${DOMINIO}/sagrada-titular`));
     });
     await con(true, async () => {
       const lista = await urls();

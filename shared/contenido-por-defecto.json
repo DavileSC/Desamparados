@@ -574,10 +574,10 @@
       }
     ]
   },
-  "desamparados": {
+  "sagrada-titular": {
     "cabecera": {
-      "titulo": "Nuestra imagen titular",
-      "subtitulo": "Historia y devoción.",
+      "titulo": "Sagrada titular",
+      "subtitulo": "Historia, devoción y ajuar de nuestra imagen titular.",
       "foto": "",
       "fotoAlt": "",
       "encuadre": 35
@@ -587,21 +587,13 @@
         "tipo": "texto",
         "titulo": "",
         "html": "<p>Aquí se cuenta la historia de nuestra imagen titular: su advocación, su autor y la devoción que despierta.</p>"
-      }
-    ]
-  },
-  "ajuar": {
-    "cabecera": {
-      "titulo": "Ajuar",
-      "subtitulo": "Mantos, coronas y joyas de nuestra imagen titular.",
-      "foto": "",
-      "fotoAlt": "",
-      "encuadre": 40
-    },
-    "bloques": [
+      },
       {
         "tipo": "texto",
-        "titulo": "",
+        "titulo": "Ajuar",
+        "presentacion": {
+          "ancla": "ajuar"
+        },
         "html": "<p>El ajuar de la imagen titular lo forman piezas de gran valor artístico y devocional. Aquí se presentan, pieza a pieza.</p>"
       }
     ]

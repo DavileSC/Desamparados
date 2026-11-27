@@ -122,19 +122,11 @@
       "modulo": "paginas-propias"
     },
     {
-      "slug": "desamparados",
-      "nombre": "Desamparados",
-      "ruta": "/desamparados",
+      "slug": "sagrada-titular",
+      "nombre": "Sagrada titular",
+      "ruta": "/sagrada-titular",
       "grupo": "Sagrada titular",
-      "descripcion": "La historia y la devoción a la Amantísima Titular.",
-      "modulo": "paginas-propias"
-    },
-    {
-      "slug": "ajuar",
-      "nombre": "Ajuar",
-      "ruta": "/ajuar",
-      "grupo": "Sagrada titular",
-      "descripcion": "El manto, la corona y las joyas de la imagen titular."
+      "descripcion": "La historia y la devoción a la imagen titular y, en su sección, su ajuar: el manto, la corona y las joyas."
     },
     {
       "slug": "agenda",

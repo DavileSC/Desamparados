@@ -11,7 +11,6 @@ describe('cejaDePagina', () => {
   it('dice dónde está la página en el menú, de fuera adentro', () => {
     expect(cejaDePagina('patrimonio', 'Patrimonio')).toEqual(['Corporación', 'Sábado de Pasión'])
     expect(cejaDePagina('caridad', 'Caridad')).toEqual(['Corporación', 'Nuestros fines'])
-    expect(cejaDePagina('ajuar', 'Ajuar')).toEqual(['Sagrada titular'])
   })
 
   it('con los nombres del menú que se pusieron en el CMS, como en la barra', () => {
@@ -26,7 +25,7 @@ describe('cejaDePagina', () => {
 
   it('las demás páginas con cabecera a sangre sí la llevan: están dentro de una sección del menú', () => {
     const sinCeja = CATALOGO.paginas
-      .filter((p) => tipoDeCabecera(p.slug) === 'a-sangre' && !['contacto', 'publicaciones'].includes(p.slug))
+      .filter((p) => tipoDeCabecera(p.slug) === 'a-sangre' && !['contacto', 'publicaciones', 'sagrada-titular'].includes(p.slug))
       .filter((p) => cejaDePagina(p.slug, p.nombre).length === 0)
     expect(sinCeja.map((p) => p.slug)).toEqual([])
   })

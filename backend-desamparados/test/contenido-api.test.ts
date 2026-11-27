@@ -85,7 +85,7 @@ test('la siembra deja una fila por página editable, con los textos de siempre',
   assert.equal(itinerario.recorrido, undefined);
   // Y las páginas convertidas en esta tanda traen ya su contenido de partida.
   assert.ok(documento('cultos').bloques.length >= 2, 'Cultos se siembra con su texto y su programa');
-  assert.ok(documento('ajuar').bloques.length >= 1, 'Ajuar se siembra con su texto');
+  assert.ok(documento('sagrada-titular').bloques.length >= 2, 'La Sagrada titular se siembra con su texto y el del Ajuar');
 });
 
 test('sembrar dos veces no pisa lo que se haya editado', async (t) => {

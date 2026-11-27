@@ -39,8 +39,7 @@
     { "ruta": "/sabado-de-pasion", "nombre": "Sábado de Pasión" },
     { "ruta": "/sabado-de-pasion/recorrido", "nombre": "Recorrido" },
     { "ruta": "/sabado-de-pasion/patrimonio", "nombre": "Patrimonio" },
-    { "ruta": "/desamparados", "nombre": "Desamparados" },
-    { "ruta": "/ajuar", "nombre": "Ajuar" },
+    { "ruta": "/sagrada-titular", "nombre": "Sagrada titular" },
     { "ruta": "/publicaciones/newsletter", "nombre": "Newsletter" },
     { "ruta": "/publicaciones/dossier-prensa", "nombre": "Dossier prensa" },
     { "ruta": "/acceso", "nombre": "Hermanos" },
@@ -49,7 +48,6 @@
   "secciones": [
     { "ruta": "seccion:/actualidad", "nombre": "Actualidad" },
     { "ruta": "seccion:/corporacion", "nombre": "Corporación" },
-    { "ruta": "seccion:/sagrada-titular", "nombre": "Sagrada titular" },
     { "ruta": "seccion:/publicaciones", "nombre": "Publicaciones" }
   ]
 }

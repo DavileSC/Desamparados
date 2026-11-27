@@ -662,7 +662,8 @@ alguno de los tres.
 **Los módulos «de instalación» van aparte y no se parecen a los demás en
 nada salvo en preguntar por ellos.** `deInstalacion` de `shared/modulos.json`
 (hoy solo `paginas-propias`: las páginas hechas a medida de Desamparados,
-/desamparados, /cultos/rosario y el Sábado de Pasión con recorrido, trono y enseres)
+Pasionistas, Vida, Evangelización, Grupo Joven, /cultos/rosario y el Sábado de Pasión
+con Recorrido y Patrimonio; la Sagrada titular es del núcleo desde el 27-11-2026)
 no está en `CLAVES_MODULO` sino en `CLAVES_DE_INSTALACION`: no sale en
 Sistema → «Módulos», no tiene fila en `Modulo` y `cambiar` responde 404. Está
 encendido si y solo si su clave está en `modulos.activos` del fichero de la

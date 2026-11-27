@@ -3,7 +3,6 @@
   "rutas": [
     { "ruta": "/", "requisito": ["nucleo"] },
     { "ruta": "/agenda", "requisito": ["agenda"] },
-    { "ruta": "/ajuar", "requisito": ["nucleo"] },
     { "ruta": "/apadrina", "requisito": ["apadrinamientos"] },
     { "ruta": "/apadrina/gracias/:token", "requisito": ["apadrinamientos"] },
     { "ruta": "/aviso-legal", "requisito": ["nucleo"] },
@@ -11,7 +10,6 @@
     { "ruta": "/contacto", "requisito": ["nucleo"] },
     { "ruta": "/cultos", "requisito": ["nucleo"] },
     { "ruta": "/cultos/rosario", "requisito": ["paginas-propias"] },
-    { "ruta": "/desamparados", "requisito": ["paginas-propias"] },
     { "ruta": "/grupo-joven", "requisito": ["paginas-propias"] },
     { "ruta": "/hazte-hermano", "requisito": ["alta-web"] },
     { "ruta": "/historia", "requisito": ["nucleo"] },
@@ -31,6 +29,7 @@
     { "ruta": "/sabado-de-pasion", "requisito": ["paginas-propias"] },
     { "ruta": "/sabado-de-pasion/patrimonio", "requisito": ["paginas-propias"] },
     { "ruta": "/sabado-de-pasion/recorrido", "requisito": ["paginas-propias"] },
+    { "ruta": "/sagrada-titular", "requisito": ["nucleo"] },
     { "ruta": "/tienda", "requisito": ["tienda-web"] },
     { "ruta": "/tienda/pedido/:token", "requisito": ["tienda-web"] },
     { "ruta": "/tienda/producto/:id", "requisito": ["tienda-web"] }

@@ -52,11 +52,11 @@ describe('BarraDeNavegacion en escritorio', () => {
   it('muestra las siete entradas; las que despliegan no llevan a ninguna página', () => {
     renderWithProviders(<BarraDeNavegacion />)
     const nav = navEscritorio()
-    for (const etiqueta of ['Inicio', 'Contacto']) {
+    for (const etiqueta of ['Inicio', 'Sagrada titular', 'Contacto']) {
       expect(within(nav).getByRole('link', { name: etiqueta, hidden: true })).toBeInTheDocument()
     }
     expect(within(nav).getByRole('link', { name: 'Hermanos', hidden: true })).toHaveAttribute('href', '/acceso')
-    for (const etiqueta of ['Actualidad', 'Corporación', 'Sagrada titular', 'Publicaciones']) {
+    for (const etiqueta of ['Actualidad', 'Corporación', 'Publicaciones']) {
       expect(within(nav).getByRole('button', { name: etiqueta, hidden: true })).not.toHaveAttribute('href')
       expect(within(nav).queryByRole('link', { name: etiqueta, hidden: true })).not.toBeInTheDocument()
     }
@@ -65,11 +65,11 @@ describe('BarraDeNavegacion en escritorio', () => {
   it('pulsar el título de una sección no hace nada: el panel sigue abierto', async () => {
     const user = userEvent.setup()
     renderWithProviders(<BarraDeNavegacion />)
-    const titular = within(navEscritorio()).getByRole('button', { name: 'Sagrada titular', hidden: true })
-    await user.click(titular)
-    await user.click(titular)
-    expect(titular).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('link', { name: 'Ajuar', hidden: true })).toHaveAttribute('href', '/ajuar')
+    const actualidad = within(navEscritorio()).getByRole('button', { name: 'Actualidad', hidden: true })
+    await user.click(actualidad)
+    await user.click(actualidad)
+    expect(actualidad).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('link', { name: 'Agenda', hidden: true })).toHaveAttribute('href', '/agenda')
   })
 
   it('no enseña las subpáginas hasta que se abre una sección', () => {
@@ -263,13 +263,13 @@ describe('BarraDeNavegacion en móvil', () => {
 
   it('los títulos de sección y «Hermanos» llevan el nombre del CMS; el botón del acceso, el suyo', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<BarraDeNavegacion />, { nombresEnMenu: { '/acceso': 'Área de hermanos', 'seccion:/sagrada-titular': 'Sagrados titulares' } })
-    expect(within(navEscritorio()).getByRole('button', { name: 'Sagrados titulares', hidden: true })).toBeInTheDocument()
+    renderWithProviders(<BarraDeNavegacion />, { nombresEnMenu: { '/acceso': 'Área de hermanos', 'seccion:/publicaciones': 'Archivo' } })
+    expect(within(navEscritorio()).getByRole('button', { name: 'Archivo', hidden: true })).toBeInTheDocument()
     expect(within(navEscritorio()).getByRole('link', { name: 'Área de hermanos', hidden: true })).toHaveAttribute('href', '/acceso')
     // El botón no sigue al nombre de la entrada: «Área de hermanos» y «Acceso hermanos» a la vez.
     expect(screen.getAllByRole('link', { name: 'Acceso hermanos', hidden: true }).length).toBeGreaterThan(0)
     await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
-    expect(screen.getByRole('button', { name: 'Sagrados titulares' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Archivo' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Área de hermanos' })).toHaveAttribute('href', '/acceso')
   })
 
@@ -283,17 +283,17 @@ describe('BarraDeNavegacion en móvil', () => {
 
   it('llega con la sección de la página actual ya desplegada', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<BarraDeNavegacion />, { ruta: '/ajuar' })
+    renderWithProviders(<BarraDeNavegacion />, { ruta: '/agenda' })
     await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
 
-    expect(screen.getByRole('link', { name: 'Ajuar' })).toHaveAttribute('href', '/ajuar')
+    expect(screen.getByRole('link', { name: 'Agenda' })).toHaveAttribute('href', '/agenda')
     expect(screen.queryByRole('link', { name: 'Historia' })).not.toBeInTheDocument()
   })
 
   // Las capas salen antes de que el cajón se quite: hay que esperar a que acaben.
   it('la X lo cierra, y vuelve a abrirse con la sección de la página actual', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<BarraDeNavegacion />, { ruta: '/ajuar' })
+    renderWithProviders(<BarraDeNavegacion />, { ruta: '/agenda' })
     await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
     await user.click(screen.getByRole('button', { name: 'Cerrar menú' }))
     expect(screen.getByRole('button', { name: 'Abrir menú', hidden: true })).toHaveAttribute('aria-expanded', 'false')
@@ -303,7 +303,7 @@ describe('BarraDeNavegacion en móvil', () => {
     // la transición del cierre, y con el CI cargado el botón aún no se veía
     // (docs/notas-del-proyecto.md, sección 6).
     await user.click(await screen.findByRole('button', { name: 'Abrir menú' }))
-    expect(screen.getByRole('link', { name: 'Ajuar' })).toHaveAttribute('href', '/ajuar')
+    expect(screen.getByRole('link', { name: 'Agenda' })).toHaveAttribute('href', '/agenda')
   })
 
   it('Escape lo cierra', async () => {

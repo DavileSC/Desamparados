@@ -70,10 +70,10 @@ describe('el catálogo', () => {
   });
 
   test('las páginas propias del catálogo de páginas dependen de su módulo; las demás son del núcleo', () => {
-    for (const slug of ['desamparados', 'rosario', 'sabado-de-pasion', 'recorrido', 'patrimonio'] as SlugContenido[]) {
+    for (const slug of ['rosario', 'sabado-de-pasion', 'recorrido', 'patrimonio'] as SlugContenido[]) {
       assert.equal(moduloDePagina(slug), 'paginas-propias', slug);
     }
-    for (const slug of ['ajuar', 'historia', 'caridad', 'portada'] as SlugContenido[]) assert.equal(moduloDePagina(slug), undefined, slug);
+    for (const slug of ['sagrada-titular', 'historia', 'caridad', 'portada'] as SlugContenido[]) assert.equal(moduloDePagina(slug), undefined, slug);
   });
 
   test('el lote inicial respeta los requisitos', () => {

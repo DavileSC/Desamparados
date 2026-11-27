@@ -10,7 +10,7 @@ export type SlugContenido =
   | 'parroquia' | 'pasionistas'
   | 'nuestros-fines' | 'vida' | 'evangelizacion' | 'caridad' | 'cultos' | 'grupo-joven'
   | 'sabado-de-pasion' | 'patrimonio' | 'rosario'
-  | 'desamparados' | 'ajuar'
+  | 'sagrada-titular'
   | 'agenda' | 'noticias'
   | 'publicaciones' | 'boletines' | 'dossier-prensa'
   | 'contacto'

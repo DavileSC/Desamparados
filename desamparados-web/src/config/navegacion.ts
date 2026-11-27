@@ -83,14 +83,9 @@ export const menuPublico: EntradaMenu[] = [
       },
     ],
   },
-  {
-    label: 'Sagrada titular', modulo: 'nucleo',
-    href: '/sagrada-titular',
-    hijos: [
-      { label: 'Desamparados', href: '/desamparados', modulo: 'paginas-propias' },
-      { label: 'Ajuar', href: '/ajuar', modulo: 'nucleo' },
-    ],
-  },
+  // Una sola página desde el 27-11-2026: la Virgen y debajo el Ajuar (#ajuar).
+  // Hasta entonces desplegaba Desamparados y Ajuar.
+  { label: 'Sagrada titular', href: '/sagrada-titular', modulo: 'nucleo' },
   {
     label: 'Publicaciones', modulo: 'nucleo',
     href: '/publicaciones',

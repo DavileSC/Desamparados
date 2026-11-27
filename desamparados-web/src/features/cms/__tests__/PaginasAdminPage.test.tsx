@@ -137,14 +137,12 @@ describe('PaginasAdminPage', () => {
     expect(screen.getByRole('link', { name: 'Contacto' })).toHaveAttribute('href', '/cms/paginas/contacto')
   })
 
-  it('sin las páginas propias, ni su sección ni sus páginas; el Ajuar sigue', async () => {
-    const user = userEvent.setup()
+  it('sin las páginas propias, ni su sección ni sus páginas; la Sagrada titular sigue', () => {
     montar([])
     expect(screen.queryByRole('button', { name: /^Sábado de Pasión/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Rosario' })).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /^Sagrada titular/ }))
-    expect(screen.getByRole('link', { name: 'Ajuar' })).toHaveAttribute('href', '/cms/paginas/ajuar')
-    expect(screen.queryByRole('link', { name: 'Desamparados' })).not.toBeInTheDocument()
+    // Una sola página que se llama como su grupo, como Contacto: va anclada, sin plegar.
+    expect(screen.getByRole('link', { name: 'Sagrada titular' })).toHaveAttribute('href', '/cms/paginas/sagrada-titular')
   })
 
   it('una página con otro nombre en el menú lo enseña en su fila', async () => {
@@ -230,10 +228,10 @@ describe('PaginasAdminPage', () => {
 
   it('los títulos de primer nivel se renombran desde su grupo, y ninguno se repite entre las otras entradas', async () => {
     const user = userEvent.setup()
-    montar(TODOS_CON_PAGINAS_PROPIAS, { 'seccion:/sagrada-titular': 'Sagrados titulares' })
+    montar(TODOS_CON_PAGINAS_PROPIAS, { 'seccion:/publicaciones': 'Archivo' })
     // El grupo se ve con su nombre en el menú, y el lápiz va fuera del botón que pliega.
-    expect(await screen.findByRole('button', { name: /^Sagrados titulares/ })).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.getByRole('button', { name: 'Cambiar el nombre en el menú de la sección Sagrada titular' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /^Archivo/ })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('button', { name: 'Cambiar el nombre en el menú de la sección Publicaciones' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Otras entradas del menú/ }))
     const region = screen.getByRole('region', { name: /Otras entradas del menú/ })
     // Hermanos dejó de ser un título que despliega (26-11-2026): todos tienen ya su grupo.

@@ -49,8 +49,6 @@ describe('menuPublico', () => {
         '    Recorrido /sabado-de-pasion/recorrido',
         '    Patrimonio /sabado-de-pasion/patrimonio',
         'Sagrada titular /sagrada-titular',
-        '  Desamparados /desamparados',
-        '  Ajuar /ajuar',
         'Publicaciones /publicaciones',
         '  Newsletter /publicaciones/newsletter',
         '  Dossier prensa /publicaciones/dossier-prensa',
@@ -98,19 +96,18 @@ describe('menuPublico', () => {
     expect(dibujo(['publicaciones'])).not.toContain('Hermanos')
   })
 
-  it('sin las páginas propias se va el grupo Sábado de Pasión entero, el Rosario de Cultos y Desamparados; Ajuar se queda', () => {
+  it('sin las páginas propias se va el grupo Sábado de Pasión entero y el Rosario de Cultos; la Sagrada titular se queda', () => {
     const sinPropias = dibujar(menuVisible(menuPublico, new Set())).join('\n')
-    for (const fuera of ['Sábado de Pasión', 'Recorrido', 'Patrimonio', 'Rosario', 'Desamparados /desamparados']) {
+    for (const fuera of ['Sábado de Pasión', 'Recorrido', 'Patrimonio', 'Rosario']) {
       expect(sinPropias).not.toContain(fuera)
     }
     // Cultos es una página: sin el Rosario se queda, sola y sin desplegable.
     expect(sinPropias).toContain('  Cultos /cultos\nSagrada titular')
     expect(menuVisible(menuPublico, new Set()).find((e) => e.label === 'Corporación')?.hijos?.find((e) => e.label === 'Cultos')?.hijos).toBeUndefined()
-    // A «Sagrada titular» le queda el Ajuar: no desaparece.
-    expect(sinPropias).toContain('Sagrada titular /sagrada-titular\n  Ajuar /ajuar')
+    // La Sagrada titular es del núcleo: una página sola, sin desplegable.
+    expect(sinPropias).toMatch(/^Sagrada titular \/sagrada-titular\n[^ ]/m)
     const conPropias = dibujar(menuVisible(menuPublico, new Set(['paginas-propias']))).join('\n')
     expect(conPropias).toContain('Sábado de Pasión /sabado-de-pasion\n    Recorrido')
-    expect(conPropias).toContain('Desamparados /desamparados')
   })
 
   it('el catálogo compartido de nombres es el de los enlaces del menú, con su nombre de siempre', () => {
@@ -125,7 +122,7 @@ describe('menuPublico', () => {
   })
 
   it('ponerNombres cambia el nombre de las páginas, y el de los títulos que despliegan solo por su clave', () => {
-    const nombres = { '/parroquia': 'Parroquia · Pasionistas', '/historia': 'Nuestra historia', '/nuestros-fines': 'Los fines', '/publicaciones': 'No está en el menú', '/corporacion': 'No vale', 'seccion:/sagrada-titular': 'Sagrados titulares', 'seccion:/publicaciones': 'Archivo' }
+    const nombres = { '/parroquia': 'Parroquia · Pasionistas', '/historia': 'Nuestra historia', '/nuestros-fines': 'Los fines', '/publicaciones': 'No está en el menú', '/corporacion': 'No vale', '/sagrada-titular': 'Nuestra Madre', 'seccion:/sagrada-titular': 'Ya no despliega', 'seccion:/publicaciones': 'Archivo' }
     const dibujo = dibujar(ponerNombres(menuPublico, nombres)).join('\n')
     expect(dibujo).toContain('  Parroquia · Pasionistas /parroquia')
     // Una subsección con páginas dentro sí es un enlace: cambia.
@@ -133,7 +130,8 @@ describe('menuPublico', () => {
     // El título que despliega cambia por su clave, no por la ruta de la página /publicaciones.
     expect(dibujo).toContain('Archivo /publicaciones\n  Newsletter')
     expect(dibujo).toContain('Corporación /corporacion')
-    expect(dibujo).toContain('Sagrados titulares /sagrada-titular\n  Desamparados /desamparados')
+    // La Sagrada titular es ya una página: cambia por su ruta, no por la clave de título.
+    expect(dibujo).toContain('Nuestra Madre /sagrada-titular\nArchivo')
     expect(ponerNombres(menuPublico, {})).toBe(menuPublico)
   })
 
