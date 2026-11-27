@@ -50,11 +50,8 @@ export const menuPublico: EntradaMenu[] = [
     label: 'Corporación', modulo: 'nucleo',
     href: '/corporacion',
     hijos: [
-      {
-        label: 'Historia', modulo: 'nucleo',
-        href: '/historia',
-        hijos: [{ label: 'Órganos de Gobierno', href: '/historia/organos-de-gobierno', modulo: 'nucleo' }],
-      },
+      // Historia tenía debajo Órganos de Gobierno hasta el 27-11-2026.
+      { label: 'Historia', href: '/historia', modulo: 'nucleo' },
       { label: 'Parroquia', href: '/parroquia', modulo: 'nucleo' },
       // Lo de los Pasionistas iba dentro de Parroquia hasta el 26-11-2026.
       { label: 'Pasionistas', href: '/pasionistas', modulo: 'paginas-propias' },

@@ -125,10 +125,7 @@ describe('PaginasAdminPage', () => {
     for (const hija of ['Recorrido', 'Patrimonio']) {
       expect(within(madre).getByRole('link', { name: hija })).toBeInTheDocument()
     }
-    // En el catálogo, Parroquia va entre Historia y Órganos de Gobierno: la
-    // subpágina se va con su madre y Parroquia no se lleva nada.
-    const historia = screen.getByRole('link', { name: 'Historia' }).closest('li')!
-    expect(within(historia).getByRole('link', { name: 'Órganos de Gobierno' })).toBeInTheDocument()
+    // Parroquia no tiene subpáginas: no se lleva ninguna de las de al lado.
     const parroquia = screen.getByRole('link', { name: /^Parroquia/ }).closest('li')!
     expect(within(parroquia).getAllByRole('link')).toHaveLength(2) // la suya y la de ver en la web
   })

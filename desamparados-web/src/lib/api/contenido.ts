@@ -7,7 +7,7 @@ import { llamarApi } from './cliente'
  */
 export type SlugContenido =
   | 'portada' | 'recorrido' | 'historia'
-  | 'parroquia' | 'pasionistas' | 'organos-de-gobierno'
+  | 'parroquia' | 'pasionistas'
   | 'nuestros-fines' | 'vida' | 'evangelizacion' | 'caridad' | 'cultos' | 'grupo-joven'
   | 'sabado-de-pasion' | 'patrimonio' | 'rosario'
   | 'desamparados' | 'ajuar'

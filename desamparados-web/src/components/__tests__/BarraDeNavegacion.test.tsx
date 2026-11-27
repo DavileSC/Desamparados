@@ -85,11 +85,8 @@ describe('BarraDeNavegacion en escritorio', () => {
     expect(screen.getByRole('link', { name: 'Historia', hidden: true })).toHaveAttribute('href', '/historia')
     // Con fireEvent y no con user.click: en jsdom, mover el ratón de user-event a
     // cualquier cosa de la hoja dispara el mouseleave de la sección y la cierra.
-    fireEvent.click(screen.getByRole('button', { name: 'Páginas de Historia', hidden: true }))
-    expect(screen.getByRole('link', { name: 'Órganos de Gobierno', hidden: true })).toHaveAttribute(
-      'href',
-      '/historia/organos-de-gobierno',
-    )
+    fireEvent.click(screen.getByRole('button', { name: 'Páginas de Nuestros fines', hidden: true }))
+    expect(screen.getByRole('link', { name: 'Vida', hidden: true })).toHaveAttribute('href', '/nuestros-fines/vida')
     fireEvent.click(screen.getByRole('button', { name: 'Páginas de Sábado de Pasión', hidden: true }))
     expect(screen.getByRole('link', { name: 'Patrimonio', hidden: true })).toHaveAttribute('href', '/sabado-de-pasion/patrimonio')
   })
@@ -98,23 +95,20 @@ describe('BarraDeNavegacion en escritorio', () => {
     const user = userEvent.setup()
     renderWithProviders(<BarraDeNavegacion />, { modulos: TODOS_CON_PAGINAS_PROPIAS })
     await user.hover(within(navEscritorio()).getByRole('button', { name: 'Corporación', hidden: true }))
-    const historia = screen.getByRole('button', { name: 'Páginas de Historia', hidden: true })
+    const fines = screen.getByRole('button', { name: 'Páginas de Nuestros fines', hidden: true })
     const sabado = screen.getByRole('button', { name: 'Páginas de Sábado de Pasión', hidden: true })
     // Fuera de un grupo, ningún panel abierto.
-    expect(historia).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByRole('link', { name: 'Órganos de Gobierno', hidden: true })).not.toBeInTheDocument()
+    expect(fines).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('link', { name: 'Vida', hidden: true })).not.toBeInTheDocument()
 
-    fireEvent.click(historia)
-    expect(historia).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('link', { name: 'Órganos de Gobierno', hidden: true })).toHaveAttribute(
-      'href',
-      '/historia/organos-de-gobierno',
-    )
+    fireEvent.click(fines)
+    expect(fines).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('link', { name: 'Vida', hidden: true })).toHaveAttribute('href', '/nuestros-fines/vida')
 
     fireEvent.click(sabado)
-    expect(historia).toHaveAttribute('aria-expanded', 'false')
+    expect(fines).toHaveAttribute('aria-expanded', 'false')
     expect(sabado).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.queryByRole('link', { name: 'Órganos de Gobierno', hidden: true })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Vida', hidden: true })).not.toBeInTheDocument()
     // El nombre sigue llevando a su página.
     expect(screen.getByRole('link', { name: 'Sábado de Pasión', hidden: true })).toHaveAttribute('href', '/sabado-de-pasion')
 
@@ -246,12 +240,13 @@ describe('BarraDeNavegacion en móvil', () => {
 
     expect(screen.getByRole('link', { name: 'Historia' })).toHaveAttribute('href', '/historia')
     expect(screen.getByRole('button', { name: 'Corporación' })).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.queryByRole('link', { name: 'Órganos de Gobierno' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Caridad' })).not.toBeInTheDocument()
 
-    const flecha = screen.getByRole('button', { name: 'Páginas de Historia' })
+    // Caridad y no Vida: esta prueba no enciende las páginas propias.
+    const flecha = screen.getByRole('button', { name: 'Páginas de Nuestros fines' })
     await user.click(flecha)
     expect(flecha).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('link', { name: 'Órganos de Gobierno' })).toHaveAttribute('href', '/historia/organos-de-gobierno')
+    expect(screen.getByRole('link', { name: 'Caridad' })).toHaveAttribute('href', '/nuestros-fines/caridad')
   })
 
   it('en el cajón, un grupo de subpáginas abierto cada vez', async () => {
@@ -259,10 +254,10 @@ describe('BarraDeNavegacion en móvil', () => {
     renderWithProviders(<BarraDeNavegacion />, { modulos: TODOS_CON_PAGINAS_PROPIAS })
     await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
     await user.click(screen.getByRole('button', { name: 'Corporación' }))
-    await user.click(screen.getByRole('button', { name: 'Páginas de Historia' }))
+    await user.click(screen.getByRole('button', { name: 'Páginas de Nuestros fines' }))
     await user.click(screen.getByRole('button', { name: 'Páginas de Sábado de Pasión' }))
 
-    expect(screen.getByRole('button', { name: 'Páginas de Historia' })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('button', { name: 'Páginas de Nuestros fines' })).toHaveAttribute('aria-expanded', 'false')
     expect(screen.getByRole('link', { name: 'Recorrido' })).toHaveAttribute('href', '/sabado-de-pasion/recorrido')
   })
 

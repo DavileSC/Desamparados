@@ -33,10 +33,12 @@ function textoDe(slug: string): string {
       // Las dos puertas, en sus paneles (Caridad, 26-09-2026).
       puertas?: { ceja: string; titulo: string; texto: string }[]
       // El programa, en sus filas (Cultos, 26-09-2026).
-      // El programa (Cultos) y la relación (Órganos de Gobierno), en sus filas.
       filas?: { cuando?: string; titulo?: string; cargo?: string; nombre?: string; texto: string }[]
       // El carrusel, en sus piezas (Enseres, 27-09-2026).
       piezas?: { familia: string; titulo: string; texto: string }[]
+      // La cronología, en sus hitos (Historia, que sin la llamada a Órganos de
+      // Gobierno se queda solo con ella, 27-11-2026).
+      hitos?: { titulo: string; relato: string }[]
     }[]
   }
   const trozos = [pagina.cabecera.titulo, pagina.cabecera.subtitulo]
@@ -49,6 +51,7 @@ function textoDe(slug: string): string {
     for (const puerta of bloque.puertas ?? []) trozos.push(puerta.ceja, puerta.titulo, puerta.texto)
     for (const fila of bloque.filas ?? []) trozos.push(fila.cuando ?? '', fila.titulo ?? '', fila.cargo ?? '', fila.nombre ?? '', fila.texto)
     for (const pieza of bloque.piezas ?? []) trozos.push(pieza.familia, pieza.titulo, pieza.texto)
+    for (const hito of bloque.hitos ?? []) trozos.push(hito.titulo, hito.relato)
   }
   return trozos.join(' ').replace(/\s+/g, ' ')
 }

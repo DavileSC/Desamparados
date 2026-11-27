@@ -10,14 +10,13 @@ import type { PaginaDeBloques } from '../../../lib/api/contenido'
 describe('cejaDePagina', () => {
   it('dice dónde está la página en el menú, de fuera adentro', () => {
     expect(cejaDePagina('patrimonio', 'Patrimonio')).toEqual(['Corporación', 'Sábado de Pasión'])
-    expect(cejaDePagina('organos-de-gobierno', 'Órganos de Gobierno')).toEqual(['Corporación', 'Historia'])
     expect(cejaDePagina('caridad', 'Caridad')).toEqual(['Corporación', 'Nuestros fines'])
     expect(cejaDePagina('ajuar', 'Ajuar')).toEqual(['Sagrada titular'])
   })
 
   it('con los nombres del menú que se pusieron en el CMS, como en la barra', () => {
-    const nombres = { '/historia': 'Nuestra historia', '/corporacion': 'No vale' }
-    expect(cejaDePagina('organos-de-gobierno', 'Órganos de Gobierno', nombres)).toEqual(['Corporación', 'Nuestra historia'])
+    const nombres = { '/nuestros-fines': 'Los fines', '/corporacion': 'No vale' }
+    expect(cejaDePagina('vida', 'Vida', nombres)).toEqual(['Corporación', 'Los fines'])
   })
 
   it('no repite una sección que se llama como la página, y las de primer nivel no llevan', () => {

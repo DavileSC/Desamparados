@@ -45,13 +45,6 @@
       "modulo": "paginas-propias"
     },
     {
-      "slug": "organos-de-gobierno",
-      "nombre": "Órganos de Gobierno",
-      "ruta": "/historia/organos-de-gobierno",
-      "grupo": "Corporación",
-      "descripcion": "La Junta de Gobierno y los cargos que la componen."
-    },
-    {
       "slug": "nuestros-fines",
       "nombre": "Nuestros Fines",
       "ruta": "/nuestros-fines",

@@ -36,7 +36,6 @@ describe('menuPublico', () => {
         '  Agenda /agenda',
         'Corporación /corporacion',
         '  Historia /historia',
-        '    Órganos de Gobierno /historia/organos-de-gobierno',
         '  Parroquia /parroquia',
         '  Pasionistas /pasionistas',
         '  Nuestros fines /nuestros-fines',
@@ -126,11 +125,11 @@ describe('menuPublico', () => {
   })
 
   it('ponerNombres cambia el nombre de las páginas, y el de los títulos que despliegan solo por su clave', () => {
-    const nombres = { '/parroquia': 'Parroquia · Pasionistas', '/historia': 'Nuestra historia', '/publicaciones': 'No está en el menú', '/corporacion': 'No vale', 'seccion:/sagrada-titular': 'Sagrados titulares', 'seccion:/publicaciones': 'Archivo' }
+    const nombres = { '/parroquia': 'Parroquia · Pasionistas', '/historia': 'Nuestra historia', '/nuestros-fines': 'Los fines', '/publicaciones': 'No está en el menú', '/corporacion': 'No vale', 'seccion:/sagrada-titular': 'Sagrados titulares', 'seccion:/publicaciones': 'Archivo' }
     const dibujo = dibujar(ponerNombres(menuPublico, nombres)).join('\n')
     expect(dibujo).toContain('  Parroquia · Pasionistas /parroquia')
     // Una subsección con páginas dentro sí es un enlace: cambia.
-    expect(dibujo).toContain('  Nuestra historia /historia\n    Órganos de Gobierno')
+    expect(dibujo).toContain('  Los fines /nuestros-fines\n    Vida')
     // El título que despliega cambia por su clave, no por la ruta de la página /publicaciones.
     expect(dibujo).toContain('Archivo /publicaciones\n  Newsletter')
     expect(dibujo).toContain('Corporación /corporacion')

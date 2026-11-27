@@ -27,7 +27,6 @@
     { "ruta": "/noticias", "nombre": "Noticias" },
     { "ruta": "/agenda", "nombre": "Agenda" },
     { "ruta": "/historia", "nombre": "Historia" },
-    { "ruta": "/historia/organos-de-gobierno", "nombre": "Órganos de Gobierno" },
     { "ruta": "/parroquia", "nombre": "Parroquia" },
     { "ruta": "/pasionistas", "nombre": "Pasionistas" },
     { "ruta": "/nuestros-fines", "nombre": "Nuestros fines" },

@@ -79,18 +79,6 @@ describe('HistoriaPage', () => {
     expect(document.querySelector('img[alt=""]')).toHaveAttribute('src', conFotos.cabecera.foto)
   })
 
-  it('cierra con la llamada a Órganos de Gobierno, con el aspecto de siempre', async () => {
-    responder(HISTORIA)
-    renderWithProviders(<HistoriaPage />)
-
-    expect(await screen.findByRole('link', { name: /Órganos de Gobierno/ })).toHaveAttribute(
-      'href',
-      '/historia/organos-de-gobierno',
-    )
-    expect(screen.getByRole('heading', { level: 2, name: 'Quién gobierna hoy la corporación' })).toBeInTheDocument()
-    expect(screen.getByText('Seguir leyendo')).toBeInTheDocument()
-  })
-
   it('enseña lo que viene del CMS: otros hitos, párrafos partidos, otros bloques y sin foto de fondo', async () => {
     responder({
       cabecera: { ...HISTORIA.cabecera, foto: '', fotoAlt: '' },
@@ -119,8 +107,6 @@ describe('HistoriaPage', () => {
     expect(screen.getByText('Primer párrafo del relato.')).toBeInTheDocument()
     expect(screen.getByText('Segundo párrafo del relato.')).toBeInTheDocument()
     expect(screen.getByText('Un bloque cualquiera añadido desde el CMS.')).toBeInTheDocument()
-    // Sin llamada, no hay cierre.
-    expect(screen.queryByRole('link', { name: /Órganos de Gobierno/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
     expect(document.querySelector('img[alt=""]')).toBeNull()
   })

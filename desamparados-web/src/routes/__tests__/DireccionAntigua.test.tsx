@@ -29,8 +29,8 @@ function entrarEn(direccion: string) {
 
 describe('las direcciones de antes de quitar las secciones', () => {
   it('llevan a la página, que ya no cuelga de su sección', () => {
-    entrarEn('/corporacion/historia/organos-de-gobierno')
-    expect(screen.getByText('en /historia/organos-de-gobierno')).toBeInTheDocument()
+    entrarEn('/corporacion/nuestros-fines/caridad')
+    expect(screen.getByText('en /nuestros-fines/caridad')).toBeInTheDocument()
   })
 
   it('una noticia conserva su slug', () => {

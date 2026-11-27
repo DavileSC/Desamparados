@@ -25,7 +25,6 @@ const MarcoAreaHermano = lazy(() => import('../app/MarcoAreaHermano'))
 // Public pages
 const InicioPage = lazy(() => import('../features/inicio/InicioPage'))
 const HistoriaPage = lazy(() => import('../features/corporacion/historia/HistoriaPage'))
-const OrganosDeGobiernoPage = lazy(() => import('../features/corporacion/gobierno/OrganosDeGobiernoPage'))
 const ParroquiaPage = lazy(() => import('../features/corporacion/parroquia/ParroquiaPage'))
 const PasionistasPage = lazy(() => import('../features/corporacion/parroquia/PasionistasPage'))
 const NuestrosFinesPage = lazy(() => import('../features/corporacion/fines/NuestrosFinesPage'))
@@ -176,7 +175,6 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: pagina(InicioPage, 'nucleo') },
           { path: 'historia', element: pagina(HistoriaPage, 'nucleo') },
-          { path: 'historia/organos-de-gobierno', element: pagina(OrganosDeGobiernoPage, 'nucleo') },
           { path: 'parroquia', element: pagina(ParroquiaPage, 'nucleo') },
           { path: 'pasionistas', element: pagina(PasionistasPage, 'paginas-propias') },
           { path: 'nuestros-fines', element: pagina(NuestrosFinesPage, 'nucleo') },

@@ -155,13 +155,6 @@
             "tono": "oro"
           }
         ]
-      },
-      {
-        "tipo": "llamada",
-        "titulo": "Quién gobierna hoy la corporación",
-        "texto": "Seguir leyendo",
-        "boton": "Órganos de Gobierno",
-        "enlace": "/historia/organos-de-gobierno"
       }
     ]
   },
@@ -232,76 +225,6 @@
             "estilo": "principal"
           }
         ]
-      }
-    ]
-  },
-  "organos-de-gobierno": {
-    "cabecera": {
-      "titulo": "Órganos de Gobierno",
-      "subtitulo": "Junta de Gobierno y órganos de dirección de la corporación.",
-      "foto": "",
-      "fotoAlt": "",
-      "encuadre": 55
-    },
-    "bloques": [
-      {
-        "tipo": "texto",
-        "titulo": "",
-        "presentacion": {
-          "estilo": "carta"
-        },
-        "html": "<p>La Junta de Gobierno es el órgano colegiado encargado de la dirección y la administración de la corporación, de acuerdo con sus reglas y con lo que decide el Cabildo General de hermanos.</p>"
-      },
-      {
-        "tipo": "relacion",
-        "titulo": "Junta de Gobierno",
-        "mandato": "",
-        "nota": "",
-        "filas": [
-          {
-            "cargo": "Hermano Mayor",
-            "nombre": "",
-            "texto": "Representa a la corporación y dirige su vida con la Junta.",
-            "enlace": ""
-          },
-          {
-            "cargo": "Secretaría",
-            "nombre": "",
-            "texto": "Actas, correspondencia oficial y archivo de la corporación.",
-            "enlace": ""
-          },
-          {
-            "cargo": "Tesorería",
-            "nombre": "",
-            "texto": "Administra los bienes de la corporación, con transparencia.",
-            "enlace": ""
-          },
-          {
-            "cargo": "Vocalía de Cultos",
-            "nombre": "",
-            "texto": "Los cultos y las celebraciones del año.",
-            "enlace": "/cultos"
-          },
-          {
-            "cargo": "Vocalía de Caridad",
-            "nombre": "",
-            "texto": "La ayuda a quien la necesita.",
-            "enlace": "/nuestros-fines/caridad"
-          },
-          {
-            "cargo": "Vocalía de Formación",
-            "nombre": "",
-            "texto": "Crecer en la fe.",
-            "enlace": ""
-          }
-        ]
-      },
-      {
-        "tipo": "llamada",
-        "titulo": "",
-        "texto": "¿Quieres hacer llegar algo a la Junta de Gobierno?",
-        "boton": "Escribir a la Junta",
-        "enlace": "/contacto"
       }
     ]
   },

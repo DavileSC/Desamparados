@@ -57,29 +57,18 @@ function recorridoABloques(viejo: Record<string, never>): Documento {
  * La Historia de antes: cabecera con ceja, foto de fondo, hitos y cierre.
  *
  * Los hitos pasan tal cual a un bloque de cronología (misma forma, campo a
- * campo) y el cierre a un bloque de llamada, que es lo que era: un rótulo, una
- * frase y un enlace. Su destino lo fijaba el código; ahora va escrito en el
- * bloque, con el mismo valor.
+ * campo). El cierre llevaba a Órganos de Gobierno, que se quitó el 27-11-2026:
+ * sin página a la que llevar, no pasa.
  */
 function historiaABloques(viejo: Record<string, never>): Documento {
   const d = viejo as unknown as {
     ceja: string; titulo: string; subtitulo: string;
     fondo?: { url: string };
     hitos?: unknown[];
-    cierre?: { ceja: string; titulo: string; enlace: string };
   };
   const bloques: unknown[] = [];
   // Una cronología vacía no es un bloque válido: sin hitos, no se crea.
   if (d.hitos?.length) bloques.push({ tipo: 'cronologia', titulo: 'Cronología', hitos: d.hitos });
-  if (d.cierre?.enlace?.trim()) {
-    bloques.push({
-      tipo: 'llamada',
-      titulo: d.cierre.titulo,
-      texto: d.cierre.ceja,
-      boton: d.cierre.enlace,
-      enlace: '/historia/organos-de-gobierno',
-    });
-  }
   const fondo = d.fondo?.url ?? '';
   return {
     cabecera: {

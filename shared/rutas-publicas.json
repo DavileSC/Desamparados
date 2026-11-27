@@ -15,7 +15,6 @@
     { "ruta": "/grupo-joven", "requisito": ["paginas-propias"] },
     { "ruta": "/hazte-hermano", "requisito": ["alta-web"] },
     { "ruta": "/historia", "requisito": ["nucleo"] },
-    { "ruta": "/historia/organos-de-gobierno", "requisito": ["nucleo"] },
     { "ruta": "/noticias", "requisito": ["noticias"] },
     { "ruta": "/noticias/:slug", "requisito": ["noticias"] },
     { "ruta": "/nuestros-fines", "requisito": ["nucleo"] },
