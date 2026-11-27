@@ -350,7 +350,7 @@ function SeccionEscritorio({ entrada }: { entrada: EntradaMenu }) {
         aria-expanded={desplegable ? abierta : undefined}
         sx={{
           position: 'relative',
-          // Sin versales (D2, 28-11-2026): en minúscula con inicial se lee más
+          // Sin versales (D2, 27-11-2026): en minúscula con inicial se lee más
           // grande en el mismo ancho, y las mayúsculas quedan para el rótulo.
           fontSize: '15px',
           fontWeight: 500,

@@ -15,7 +15,7 @@ export const desktopMq = `@media (min-width:${DESKTOP_NAV_MIN}px)`
 // al estrecharse es el tamaño de la letra y del escudo, por tramos; el alto,
 // nunca, porque las páginas dejan su hueco con `ALTO_BARRA_ESCRITORIO`.
 // Medido con los cinco perfiles y el menú de pruebas: en estrecho, a 1024 px,
-// el menú pide ~700 y la franja de arriba ~820. El 28-11-2026 creció a 52 + 42
+// el menú pide ~700 y la franja de arriba ~820. El 27-11-2026 creció a 52 + 42
 // (pieza D2 de su maqueta): el menú sin versales y a 15 px se leía de lejos
 // y, en versales a 11,5, no; el rótulo en imagen pide algo más de franja.
 export const compactMq = `@media (max-width:1439px)`

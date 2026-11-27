@@ -4,7 +4,7 @@
  * ya no enseña su título; la clase («Grupo Parroquial») sigue en el hero, como
  * antetítulo encima del párrafo.
  *
- * Desde el 28-11-2026, si la corporación ha subido su rótulo (el nombre en
+ * Desde el 27-11-2026, si la corporación ha subido su rótulo (el nombre en
  * imagen, en Marca), va ese tal cual en lugar del nombre escrito: es su letra
  * de siempre y no hay tipografía que la imite. Sin rótulo, el nombre escrito.
  *
