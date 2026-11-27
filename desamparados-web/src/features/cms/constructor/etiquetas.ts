@@ -53,7 +53,7 @@ const ETIQUETA_VALOR: Record<string, string> = {
   lista: 'Lista', tabla: 'Tabla', tarjetas: 'Tarjetas', linea: 'Línea', indice: 'Índice de devocionario', plano: 'Sobre el mapa', cinta: 'Cinta que pasa al bajar',
   lado: 'Datos al lado', debajo: 'Datos debajo', solo: 'Solo el formulario',
   mitad: 'La mitad', tercio: 'Un tercio', arriba: 'Arriba',
-  clasica: 'Clásica', lineas: 'Líneas', lamina: 'Lámina, con foto al lado', nota: 'Nota en crema', redondeadas: 'Redondeadas', vino: 'Vino',
+  clasica: 'Clásica', lineas: 'Líneas', lamina: 'Lámina, con foto al lado', retrato: 'Retrato, con foto en color al lado', nota: 'Nota en crema', redondeadas: 'Redondeadas', vino: 'Vino',
   bajo: 'Bajo', medio: 'Medio', alto: 'Alto', compacta: 'Compacta',
   pequeno: 'Pequeño', mediano: 'Mediano',
   anillos: 'Anillos entrelazados', foco: 'En foco', enfoque: 'Se enfoca al leerla', fila: 'En una fila',

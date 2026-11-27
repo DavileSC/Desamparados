@@ -1,4 +1,4 @@
-import { Box, Grid, Typography } from '@mui/material'
+import { Box, Grid, Typography, useTheme } from '@mui/material'
 import { Link } from 'react-router-dom'
 import TarjetaCristal from '../TarjetaCristal'
 import { GOLD, GRANATE, PAPEL, SERIF } from '../../features/inicio/estilos'
@@ -156,6 +156,9 @@ const ROSA = MARCA.principalClaro
  */
 function Numeradas({ bloque }: { bloque: Datos }) {
   const enlaceVivo = useEnlaceVivo()
+  // Sobre una franja de papel ni el rosa ni el oro se leen: número y etiqueta pasan a granate.
+  const sobrePapel = useTheme().palette.mode === 'light'
+  const numero = sobrePapel ? GRANATE : ROSA
   const cuantas = bloque.tarjetas.length
   const eleccion = valorDe(bloque, 'columnas')
   const porFila = eleccion === 'auto' ? Math.min(cuantas, 4) : Number(eleccion)
@@ -170,10 +173,10 @@ function Numeradas({ bloque }: { bloque: Datos }) {
         const enlace = tarjeta.enlace && enlaceVivo(tarjeta.enlace) ? tarjeta.enlace : ''
         const contenido = (
           <>
-            <Typography component="span" aria-hidden sx={{ display: 'block', fontFamily: SERIF, fontSize: { xs: 38, md: 44 }, lineHeight: 1, fontWeight: 300, color: ROSA, mb: 1.5 }}>
+            <Typography component="span" aria-hidden sx={{ display: 'block', fontFamily: SERIF, fontSize: { xs: 38, md: 44 }, lineHeight: 1, fontWeight: 300, color: numero, mb: 1.5 }}>
               {String(indice + 1).padStart(2, '0')}
             </Typography>
-            <Etiqueta tarjeta={tarjeta} />
+            <Etiqueta tarjeta={tarjeta} sx={sobrePapel ? { color: GRANATE } : undefined} />
             <Typography variant="h6" component="h3" sx={{ mb: 1, color: 'text.primary' }}>{tarjeta.titulo}</Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>{tarjeta.descripcion}</Typography>
           </>

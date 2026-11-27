@@ -300,7 +300,8 @@
           "grande",
           "franja",
           "enfoque",
-          "lamina"
+          "lamina",
+          "retrato"
         ]
       },
       "alineacion": {
@@ -337,7 +338,8 @@
       "estilo": {
         "valores": [
           "lineas",
-          "tarjetas"
+          "tarjetas",
+          "numeradas"
         ]
       },
       "abrirPrimera": {

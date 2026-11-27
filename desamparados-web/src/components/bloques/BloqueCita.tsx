@@ -15,7 +15,9 @@ import { MARCA } from '../../theme/marca'
  * a tamaño de titular (grande), entre dos filetes dorados a lo ancho (franja)
  * o en letra fina que se enfoca palabra a palabra al llegar a ella (enfoque,
  * el Blur Text de React Bits). La lámina la pone al lado de una foto vieja, en
- * sepia, como la estampa de la página de enfrente en un libro de horas.
+ * sepia, como la estampa de la página de enfrente en un libro de horas; el
+ * retrato, al lado de una foto en color y alta, con la cita alineada a la
+ * izquierda bajo unas comillas grandes (Evangelización).
  *
  * Va en un `<figure>` con su `<blockquote>` y su `<figcaption>`: es la forma
  * de decirle a un lector de pantalla que esto es una cita y quién la firma.
@@ -49,8 +51,11 @@ function TextoQueSeEnfoca({ texto }: { texto: string }) {
   )
 }
 
-/** La cita con su foto en sepia al lado; sin foto, la cita sola, centrada. */
-function Lamina({ bloque, firma }: { bloque: Datos; firma: string }) {
+/**
+ * La cita con su foto al lado: en sepia (lámina) o en color (retrato). Sin
+ * foto, la cita sola: centrada en la lámina, a la izquierda en el retrato.
+ */
+function Lamina({ bloque, firma, retrato }: { bloque: Datos; firma: string; retrato: boolean }) {
   const { visible, alFallar } = useFotoQueFalla(bloque.foto ?? '')
   const conFoto = visible
   return (
@@ -62,12 +67,27 @@ function Lamina({ bloque, firma }: { bloque: Datos; firma: string }) {
       {conFoto && (
         <Box component="figure" sx={{ m: 0 }}>
           <Box component="img" {...propsDeFoto(bloque.foto ?? '', '(min-width: 900px) 600px, 100vw', alFallar)} alt={bloque.fotoAlt ?? ''} loading="lazy" decoding="async"
-            sx={{ display: 'block', width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', filter: 'grayscale(1) contrast(1.05) sepia(.25)' }} />
+            sx={{ display: 'block', width: '100%', objectFit: 'cover', ...(retrato ? { aspectRatio: { xs: '4 / 3', md: '4 / 5' } } : { aspectRatio: '4 / 3', filter: 'grayscale(1) contrast(1.05) sepia(.25)' }) }} />
           {bloque.pie && (
             <Typography component="figcaption" sx={{ mt: 1.25, fontSize: 14, fontStyle: 'italic', color: 'text.secondary' }}>{bloque.pie}</Typography>
           )}
         </Box>
       )}
+      {retrato ? (
+        <Box component="figure" sx={{ m: 0 }}>
+          <Typography aria-hidden sx={{ fontFamily: SERIF, fontSize: 112, lineHeight: 0.6, color: 'secondary.main', height: 48 }}>“</Typography>
+          <Box component="blockquote" sx={{ m: 0, mt: 1, mb: 3 }}>
+            <Typography sx={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: { xs: 28, md: 42 }, lineHeight: 1.15, color: 'text.primary', textWrap: 'balance' }}>
+              {bloque.texto}
+            </Typography>
+          </Box>
+          {firma && (
+            <Typography component="figcaption" sx={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'secondary.main' }}>
+              {firma}
+            </Typography>
+          )}
+        </Box>
+      ) : (
       <Box component="figure" sx={{ m: 0, textAlign: 'center' }}>
         {/* Tres rombos de adorno, dibujados y no escritos: un florón (❦) cae en
             la letra de emojis en muchos equipos y sale en color. */}
@@ -85,6 +105,7 @@ function Lamina({ bloque, firma }: { bloque: Datos; firma: string }) {
           </Typography>
         )}
       </Box>
+      )}
     </Box>
   )
 }
@@ -95,7 +116,7 @@ export default function BloqueCita({ bloque }: { bloque: Datos }) {
   const izquierda = valorDe(bloque, 'alineacion') === 'izquierda'
   const grande = estilo === 'grande' || enfoque
   const firma = [bloque.autor, bloque.fuente].filter((p) => p.trim() !== '').join(', ')
-  if (estilo === 'lamina') return <Lamina bloque={bloque} firma={firma} />
+  if (estilo === 'lamina' || estilo === 'retrato') return <Lamina bloque={bloque} firma={firma} retrato={estilo === 'retrato'} />
 
   return (
     <Box component="figure" sx={{

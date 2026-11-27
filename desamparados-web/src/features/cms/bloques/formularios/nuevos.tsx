@@ -53,11 +53,13 @@ export function FormularioCita({ bloque, onCambio }: Props<BloqueCita>) {
         ayuda="Opcional, como «San Pablo de la Cruz»." maxLength={topes.etiqueta} />
       <CampoTexto etiqueta="Dónde" valor={bloque.fuente} onCambio={(fuente) => onCambio({ fuente })}
         ayuda="Opcional, como «Homilía del triduo, 2025»." maxLength={topes.descripcion} />
-      {/* Solo la lámina pinta la foto: con otro estilo, el campo confundiría. */}
-      {valorDe(bloque, 'estilo') === 'lamina' && (
+      {/* Solo la lámina y el retrato pintan la foto: con otro estilo, el campo confundiría. */}
+      {(valorDe(bloque, 'estilo') === 'lamina' || valorDe(bloque, 'estilo') === 'retrato') && (
         <>
-          <CampoImagen valor={bloque.foto ?? ''} onCambio={(foto) => onCambio({ foto })} etiqueta="Foto de la lámina"
-            ayuda="Opcional. Va al lado de la cita, en blanco y negro con un punto de sepia, como una estampa antigua." apaisada />
+          <CampoImagen valor={bloque.foto ?? ''} onCambio={(foto) => onCambio({ foto })} etiqueta="Foto de al lado"
+            ayuda={valorDe(bloque, 'estilo') === 'lamina'
+              ? 'Opcional. Va al lado de la cita, en blanco y negro con un punto de sepia, como una estampa antigua.'
+              : 'Opcional. Va al lado de la cita, en color y vertical.'} apaisada={valorDe(bloque, 'estilo') === 'lamina'} />
           {(bloque.foto ?? '') !== '' && (
             <>
               <CampoTexto etiqueta="Descripción de la foto" valor={bloque.fotoAlt ?? ''} onCambio={(fotoAlt) => onCambio({ fotoAlt })}
