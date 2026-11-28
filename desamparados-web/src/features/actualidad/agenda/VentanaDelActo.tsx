@@ -16,10 +16,13 @@ const CORMORANT = '"Cormorant Garamond", Georgia, serif'
 
 interface Props {
   evento: ApiEvent
-  /** La casilla pulsada: la ventana crece desde ella. */
+  /** La casilla pulsada: si queda fuera de la pantalla, la página la sigue. */
   origen: HTMLElement | null
-  /** Quien pide menos movimiento la ve aparecer sin crecer. */
+  /** Quien pide menos movimiento la ve aparecer y irse sin animación. */
   quieto: boolean
+  /** Se está cerrando: la hoja se levanta y, al acabar, avisa con `onSalida`. */
+  saliendo?: boolean
+  onSalida?: () => void
   /** En el móvil la ventana va dentro de un Dialog, que ya es el diálogo. */
   esDialogo: boolean
   onCerrar: () => void
@@ -31,7 +34,18 @@ interface Props {
  * Un acto de la Agenda, en su ventana: la foto si es solemne, qué es, cuándo,
  * dónde y, para no olvidarlo, al calendario del móvil.
  */
-export default function VentanaDelActo({ evento, origen, quieto, esDialogo, onCerrar, sinHora = false }: Props) {
+/**
+ * Cae como una hoja de almanaque: gira desde su borde de arriba hasta quedar
+ * plana (elegida en maqueta el 28-11-2026). Antes crecía desde la casilla con
+ * una escala distinta a lo ancho y a lo alto, y la letra se aplastaba por el
+ * camino. Hasta el valor neutro escrito, nunca `none` (notas: animar con transform).
+ */
+const CAIDA: Keyframe[] = [
+  { transformOrigin: '50% 0%', transform: 'perspective(900px) rotateX(-28deg) translateY(-6px)', opacity: 0 },
+  { transformOrigin: '50% 0%', transform: 'perspective(900px) rotateX(0deg) translateY(0px)', opacity: 1 },
+]
+
+export default function VentanaDelActo({ evento, origen, quieto, esDialogo, onCerrar, saliendo = false, onSalida, sinHora = false }: Props) {
   const raiz = useRef<HTMLDivElement>(null)
   const cerrar = useRef<HTMLButtonElement>(null)
   const nota = notaDelActo(evento)
@@ -39,30 +53,33 @@ export default function VentanaDelActo({ evento, origen, quieto, esDialogo, onCe
   // Sin la foto (la fija de una instalación que no la tiene), la ventana sin ella.
   const { visible: conFoto, alFallar } = useFotoQueFalla(foto?.src)
 
-  // Nace de la casilla: se mide cuando ya está colocada (el Popper la coloca
-  // después de montarla) y se anima desde el tamaño y el sitio de la casilla.
-  // Si se abre en otro mes (desde «Próximo acto») y su día queda fuera de la pantalla, la página la sigue.
+  // Al abrir, cae. Se espera a que el Popper la coloque (la monta y la mueve
+  // después) para que no caiga en un sitio y aparezca en otro. Si se abre en
+  // otro mes (desde «Próximo acto») y su día queda fuera de la pantalla, la
+  // página lo sigue antes de que caiga, de golpe: con el desplazamiento suave,
+  // el Popper la recolocaba a mitad de la caída.
   useLayoutEffect(() => {
     const el = raiz.current
-    if (!el || !origen) return
+    if (!el) return
     const animar = !quieto && typeof el.animate === 'function'
     if (animar) el.style.opacity = '0'
     const marco = requestAnimationFrame(() => {
       el.style.opacity = ''
-      // La casilla, no la ventana: el Popper aún no la ha colocado.
-      if (!esDialogo) origen.scrollIntoView?.({ block: 'nearest', behavior: quieto ? 'auto' : 'smooth' })
-      const p = el.getBoundingClientRect()
-      const c = origen.getBoundingClientRect()
-      if (!animar || !p.width || !p.height) return
-      const dx = c.left + c.width / 2 - (p.left + p.width / 2)
-      const dy = c.top + c.height / 2 - (p.top + p.height / 2)
-      el.animate([
-        { transform: `translate(${dx}px, ${dy}px) scale(${c.width / p.width}, ${c.height / p.height})`, opacity: 0.2 },
-        { transform: 'none', opacity: 1 },
-      ], { duration: 420, easing: 'cubic-bezier(.2,.8,.2,1)' })
+      if (!esDialogo) origen?.scrollIntoView?.({ block: 'nearest' })
+      if (animar) el.animate(CAIDA, { duration: 360, easing: 'cubic-bezier(.2,.8,.2,1)' })
     })
     return () => { cancelAnimationFrame(marco); el.style.opacity = '' }
   }, [evento.id, origen, quieto, esDialogo])
+
+  // Al cerrar, se levanta (más deprisa que al caer) y luego se quita.
+  useEffect(() => {
+    if (!saliendo) return
+    const el = raiz.current
+    if (!el || quieto || typeof el.animate !== 'function') { onSalida?.(); return }
+    const animacion = el.animate([...CAIDA].reverse(), { duration: 220, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' })
+    animacion.onfinish = () => onSalida?.()
+    return () => { animacion.onfinish = null }
+  }, [saliendo, quieto, onSalida])
 
   // Sin mover la página: la ventana aún no está en su sitio cuando se enfoca.
   useEffect(() => { cerrar.current?.focus({ preventScroll: true }) }, [evento.id])

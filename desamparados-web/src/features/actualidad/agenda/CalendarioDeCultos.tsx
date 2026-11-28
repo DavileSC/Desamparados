@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Box, ButtonBase, ClickAwayListener, Dialog, Popper, Typography, useMediaQuery } from '@mui/material'
 import { bajoElVelo, desktopMq } from '../../../components/barra/estilos'
 import { keyframes, useTheme } from '@mui/material/styles'
@@ -73,6 +73,8 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
   const mes = mesElegido > ultimo ? ultimo : mesElegido
   const [animar, setAnimar] = useState(false)
   const [abierto, setAbierto] = useState<number | null>(null)
+  // La ventana abierta se está cerrando: sigue montada mientras se levanta.
+  const [saliendo, setSaliendo] = useState(false)
   // La lista de un día con más actos de los que caben en su casilla («+N más»).
   const [diaAbierto, setDiaAbierto] = useState<{ ancla: HTMLElement; fecha: Date; actos: ApiEvent[] } | null>(null)
   const [ancla, setAncla] = useState<HTMLElement | null>(null)
@@ -94,13 +96,22 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
 
   const abrir = (e: ApiEvent) => {
     cambiarMes(primerDiaEnElMes(e, mes) ? mes : inicioDeMes(diaDelCalendario(e.startDate)))
-    setAbierto(e.id)
+    abrirActo(e.id)
   }
 
-  const cerrar = (devolverFoco = true) => {
+  const abrirActo = (id: number) => { setSaliendo(false); setAbierto(id) }
+
+  /**
+   * En escritorio, la ventana se levanta antes de irse (`saliendo`). Al pasar
+   * de mes se va al instante: su casilla desaparece con el mes. En el móvil
+   * va dentro de un Dialog, que ya tiene su propio fundido de salida.
+   */
+  const cerrar = (devolverFoco = true, alInstante = false) => {
     if (devolverFoco) ancla?.focus()
-    setAbierto(null)
+    if (alInstante || estrecho || quieto) { setAbierto(null); setSaliendo(false); return }
+    setSaliendo(true)
   }
+  const alSalir = useCallback(() => { setAbierto(null); setSaliendo(false) }, [])
 
   // La ventana se ancla a la tarjeta del acto (a su primer tramo, si cruza de
   // semana), que puede estar en un mes recién pintado.
@@ -186,6 +197,8 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
       quieto={quieto}
       esDialogo={estrecho}
       onCerrar={() => cerrar()}
+      saliendo={saliendo}
+      onSalida={alSalir}
     />
   )
 
@@ -216,11 +229,11 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
           <Box component="span" aria-hidden sx={{ display: { xs: 'none', sm: 'inline' }, fontStyle: 'italic', fontWeight: 400, fontSize: { xs: 20, md: 26 }, color: GRIS, ml: 1.5 }}>de {mes.getFullYear()}</Box>
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', mr: { xs: -1.25, md: 0 } }}>
-          <ButtonBase aria-label={`Mes anterior: ${anterior}`} disabled={mes <= primero} onClick={() => { cerrar(false); cambiarMes(sumarMeses(mes, -1)) }} sx={pasar}>
+          <ButtonBase aria-label={`Mes anterior: ${anterior}`} disabled={mes <= primero} onClick={() => { cerrar(false, true); cambiarMes(sumarMeses(mes, -1)) }} sx={pasar}>
             <MesDeAlLado nombre={anterior} lado="anterior" />
           </ButtonBase>
           <Box component="span" aria-hidden sx={{ display: { xs: 'none', md: 'block' }, width: '1px', height: 16, bgcolor: RAYA }} />
-          <ButtonBase aria-label={`Mes siguiente: ${siguiente}`} disabled={mes >= ultimo} onClick={() => { cerrar(false); cambiarMes(sumarMeses(mes, 1)) }} sx={pasar}>
+          <ButtonBase aria-label={`Mes siguiente: ${siguiente}`} disabled={mes >= ultimo} onClick={() => { cerrar(false, true); cambiarMes(sumarMeses(mes, 1)) }} sx={pasar}>
             <MesDeAlLado nombre={siguiente} lado="siguiente" />
           </ButtonBase>
         </Box>
@@ -262,7 +275,7 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
             const retraso = (columna: number) => ({ animationDelay: `${(columna + s) * 18}ms` })
             const empiezaProximo = (dia: Date) => !!proximo && primerDia(proximo) !== null && claveDelDia(primerDia(proximo)!) === claveDelDia(dia)
             const elegido = (e: ApiEvent) => abierto === e.id
-            const pulsar = (e: ApiEvent) => { if (abierto === e.id) cerrar(); else setAbierto(e.id) }
+            const pulsar = (e: ApiEvent) => { if (abierto === e.id && !saliendo) cerrar(); else abrirActo(e.id) }
             // En escritorio, una etiqueta; en el móvil, donde no cabe, un filete granate.
             // En una tarjeta de varios días, sobre el primero: en la esquina de
             // la tarjeta caía en el último y parecía que el acto empezaba ahí.
@@ -331,7 +344,7 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
                             ocultos={actos.slice(caben - 1)}
                             etiqueta={`${dia.getDate()} de ${nombre.toLowerCase()}`}
                             onPulsar={(boton) => {
-                              cerrar(false)
+                              cerrar(false, true)
                               setDiaAbierto((d) => (d?.ancla === boton ? null : { ancla: boton, fecha: dia, actos }))
                             }}
                           />
@@ -434,7 +447,7 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
           ancla={diaAbierto.ancla}
           enDialogo={estrecho}
           zIndex={tema.zIndex.modal}
-          onElegir={(e) => { setDiaAbierto(null); setAbierto(e.id) }}
+          onElegir={(e) => { setDiaAbierto(null); abrirActo(e.id) }}
           onCerrar={(devolverFoco) => { if (devolverFoco) diaAbierto.ancla.focus(); setDiaAbierto(null) }}
         />
       )}
