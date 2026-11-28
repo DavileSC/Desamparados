@@ -105,7 +105,9 @@ export default function AccesoPage() {
             pt: { xs: '76px', md: '112px' },
             pb: { xs: 2, md: 6 },
             px: { xs: 2.5, sm: 5, md: 6, lg: 9 },
-            ...(!segundaPuerta && dosPuertas && { alignItems: 'center' }),
+            // Cada bloque, en medio de su mitad: las dos puertas quedan simétricas
+            // respecto al filete y al eje de la marca, como el resto de la web.
+            alignItems: { md: 'center' },
             [MOVIL_ESTRECHO]: { px: 2 },
             [MOVIL_MINIMO]: { pt: '68px', pb: 1 },
           }}
@@ -131,14 +133,14 @@ export default function AccesoPage() {
               pt: '112px',
               pb: 6,
               px: { md: 6, lg: 9 },
-              alignItems: 'flex-end',
+              alignItems: 'center',
               // El divisor: un filete blanco que nace bajo la marca y baja
               // hasta el borde, sin apagarse, para que se lea como un corte y
               // no como una raya suelta. Pasa por la parte oscura de los velos.
               '&::before': { content: '""', position: 'absolute', left: 0, top: 84, bottom: 0, width: '1px', backgroundColor: alfa(TINTA, 0.45), zIndex: 1 },
             }}
           >
-            <Box sx={{ maxWidth: 400, width: '100%' }}>{alta(false)}</Box>
+            <Box sx={{ maxWidth: 420, width: '100%' }}>{alta(false)}</Box>
           </Puerta>
         )}
       </Box>
