@@ -48,6 +48,9 @@ export default function MarcoAcceso({ aPantalla = false }: { aPantalla?: boolean
           left: { xs: 8, md: 32 },
           zIndex: 11,
           px: 1,
+          // Más grande y en blanco que en los demás enlaces con flecha: aquí va
+          // sola sobre la foto, y en el móvil es todo el botón.
+          '& svg': { fontSize: 24, color: 'text.primary', transition: 'transform .25s ease' },
           '&:hover svg': { transform: 'translateX(-3px)' },
           '&:focus-visible': { outline: '2px solid', outlineColor: 'secondary.main', outlineOffset: 2 },
         }}
