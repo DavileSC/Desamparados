@@ -268,6 +268,21 @@ export const themeOptions: ThemeOptions = {
         },
       },
     },
+    // En modo oscuro, MUI pinta el campo que rellena el navegador (el correo
+    // guardado) con un azul fijo, #266798, que no es de la web. Se cambia por
+    // el gris de las tarjetas: tiene que ser opaco, porque es una sombra por
+    // dentro que tapa el fondo que pone el navegador.
+    MuiOutlinedInput: {
+      styleOverrides: {
+        input: {
+          '&:-webkit-autofill': {
+            WebkitBoxShadow: '0 0 0 100px #1c1a1d inset',
+            WebkitTextFillColor: designTokens.colors.surfaceContainerLowest,
+            caretColor: designTokens.colors.surfaceContainerLowest,
+          },
+        },
+      },
+    },
   },
 }
 
