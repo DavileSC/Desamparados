@@ -116,7 +116,6 @@ const PerfilPage = lazy(() => import('../features/areaHermano/perfil/PerfilPage'
 const CuentaPage = lazy(() => import('../features/areaHermano/perfil/CuentaPage'))
 const FamiliaPage = lazy(() => import('../features/areaHermano/familia/FamiliaPage'))
 const AvisosPage = lazy(() => import('../features/areaHermano/avisos/AvisosPage'))
-const AvisoPage = lazy(() => import('../features/areaHermano/avisos/AvisoPage'))
 const AvisoPersonalPage = lazy(() => import('../features/areaHermano/avisos/AvisoPersonalPage'))
 const ProcesionPage = lazy(() => import('../features/areaHermano/procesion/ProcesionPage'))
 const HistoricoPage = lazy(() => import('../features/areaHermano/procesion/HistoricoPage'))
@@ -271,10 +270,9 @@ const router = createBrowserRouter([
           { path: 'procesion/historico', element: pagina(HistoricoPage, 'procesion') },
           { path: 'recibos', element: pagina(RecibosPage, 'nucleo') },
           { path: 'recibos/:id', element: pagina(ReciboPage, 'nucleo') },
-          // La lista es del núcleo: los avisos personales llegan aunque no haya comunicados.
+          // Del núcleo: lo de la papeleta pendiente, aunque no haya comunicados.
           { path: 'avisos', element: pagina(AvisosPage, 'nucleo') },
           { path: 'avisos/personal/:id', element: pagina(AvisoPersonalPage, 'nucleo') },
-          { path: 'avisos/:id', element: pagina(AvisoPage, 'comunicados') },
           { path: '*', element: <Navigate to="/area-hermano/perfil" replace /> },
         ],
       },

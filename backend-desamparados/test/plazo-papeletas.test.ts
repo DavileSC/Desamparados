@@ -227,7 +227,6 @@ test('abrir exige días de reparto; al abrir se avisa y queda un borrador de not
     }
     assert.ok(nuestro, 'se avisa a la cuenta de prueba');
     assert.equal(nuestro!.html.split('|').length, 2, 'nombra sus dos fichas');
-    assert.equal(nuestro!.porMovil, false, 'sin móvil para los avisos, por correo');
     assert.ok(avisosDeApertura.mock.callCount() >= 1);
 
     // Un hermano no puede tocar el plazo.

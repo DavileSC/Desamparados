@@ -14,7 +14,7 @@ const ESTADO: Record<EnvioEnMarcha['estado'], { texto: string; color: 'default' 
  * Los envíos a muchos y el tope de correos del día (forma B de las maquetas,
  * traspaso-2026-10-14 §5): el servidor de correo (OVH) deja unos 200 a la
  * hora, y un envío a todos los hermanos se reparte en varias horas o días. Aquí se ve
- * cuánto salió hoy, qué va al móvil y qué espera a mañana.
+ * cuánto salió hoy y qué espera a mañana.
  */
 export default function EnviosEnMarcha() {
   const { data } = useQuery({
@@ -58,7 +58,6 @@ export default function EnviosEnMarcha() {
               <TableHead>
                 <TableRow>
                   <TableCell>Qué</TableCell>
-                  <TableCell align="right">Al móvil</TableCell>
                   <TableCell align="right">Por correo</TableCell>
                   <TableCell>Estado</TableCell>
                 </TableRow>
@@ -69,7 +68,6 @@ export default function EnviosEnMarcha() {
                   return (
                     <TableRow key={e.clave}>
                       <TableCell sx={{ minWidth: 220 }}>{e.titulo}</TableCell>
-                      <TableCell align="right" sx={{ fontVariantNumeric: 'tabular-nums' }}>{e.alMovil || '—'}</TableCell>
                       <TableCell align="right" sx={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
                         {porCorreo ? `${e.enviados + e.rebotados} de ${porCorreo}` : '—'}
                         {e.fallidos > 0 && <Typography component="span" variant="body2" color="error"> · {e.fallidos} fallidos</Typography>}

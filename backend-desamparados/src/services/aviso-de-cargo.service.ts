@@ -79,7 +79,7 @@ export async function ponerAvisosDeCargoEnCola(remesaId: number, fechaCobro: str
   const titulo = `Aviso de cargo en cuenta · ${fechaCobro.split('-').reverse().join('/')}`;
   const filas: Prisma.CorreoEnColaCreateManyInput[] = [];
   for (const [userId, c] of await cuentasDeLaRemesa(remesaId)) {
-    filas.push({ lote: loteDe(remesaId), titulo, userId, porMovil: false, para: c.email, ...(await correoDe(c, fechaCobro, acreedor)) });
+    filas.push({ lote: loteDe(remesaId), titulo, userId, para: c.email, ...(await correoDe(c, fechaCobro, acreedor)) });
   }
   for (let i = 0; i < filas.length; i += 100) await db.correoEnCola.createMany({ data: filas.slice(i, i + 100) });
   void despertarCola();

@@ -387,7 +387,6 @@ test('al generar, cada cuenta recibe por correo un aviso del cargo con todos sus
     assert.equal(remesa.avisados, 1);
     const enCola = await db.correoEnCola.findMany({ where: { lote: `remesa:${remesa.id}` } });
     assert.equal(enCola.length, 1);
-    assert.equal(enCola[0].porMovil, false, 'el aviso que pide la norma va por correo, tenga o no el móvil');
 
     await despertarCola();
     const aviso = enviados.find((c) => c.to === e.usuario.email && c.subject.startsWith('Aviso de cargo en su cuenta: 42,50 €'));

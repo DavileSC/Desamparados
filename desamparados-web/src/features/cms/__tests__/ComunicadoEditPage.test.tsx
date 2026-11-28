@@ -24,7 +24,7 @@ afterEach(() => { vi.unstubAllGlobals() })
 // `crearQueryClientDePruebas`, la consulta de módulos caería en el `fetch`
 // simulado de aquí abajo (pensado para las rutas del comunicado) y rompería
 // con una respuesta que no es la lista de módulos.
-function montar(comunicado: unknown, envios = { enviados: 0, fallidos: 0, rebotados: 0, pendientes: 0, alMovil: 0 }, modulos?: readonly string[]) {
+function montar(comunicado: unknown, envios = { enviados: 0, fallidos: 0, rebotados: 0, pendientes: 0 }, modulos?: readonly string[]) {
   const fetch = vi.fn().mockImplementation((url: string, init: RequestInit = {}) => {
     const ruta = String(url)
     if (esListaDeSalidas(ruta)) return Promise.resolve(json(salidasDePrueba))
@@ -213,7 +213,7 @@ describe('ComunicadoEditPage', () => {
   })
 
   it('lo enviado se enseña tal cual, con cómo fue el envío y los fallidos por reintentar', async () => {
-    montar({ ...BORRADOR, estado: 'ENVIADO', enviadoEl: '2026-09-30T11:00:00Z' }, { enviados: 8, fallidos: 2, rebotados: 0, pendientes: 0, alMovil: 0 })
+    montar({ ...BORRADOR, estado: 'ENVIADO', enviadoEl: '2026-09-30T11:00:00Z' }, { enviados: 8, fallidos: 2, rebotados: 0, pendientes: 0 })
     expect(await screen.findByText('Enviado a 8 direcciones')).toBeInTheDocument()
     expect(screen.getByText('Se convoca cabildo.')).toBeInTheDocument()
     expect(screen.getByText(/2 correos no han salido/)).toBeInTheDocument()
@@ -223,7 +223,7 @@ describe('ComunicadoEditPage', () => {
 
   it('los que rebotaron se cuentan aparte, sin reintentar, y Secretaría va al censo a verlos', async () => {
     useAuthStore.setState({ status: 'listo', cms: { id: 1, email: 'secre@ejemplo.es', role: 'SECRETARIA', perfiles: [], origen: 'cms' }, hermano: null })
-    montar({ ...BORRADOR, tipo: 'BOLETIN', estado: 'ENVIADO', enviadoEl: '2026-09-30T11:00:00Z' }, { enviados: 9, fallidos: 0, rebotados: 1, pendientes: 0, alMovil: 0 })
+    montar({ ...BORRADOR, tipo: 'BOLETIN', estado: 'ENVIADO', enviadoEl: '2026-09-30T11:00:00Z' }, { enviados: 9, fallidos: 0, rebotados: 1, pendientes: 0 })
     // Salió a las diez: la que rebotó también se envió.
     expect(await screen.findByText('Enviado a 10 direcciones')).toBeInTheDocument()
     expect(screen.getByText(/1 correo rebotó/)).toBeInTheDocument()
@@ -233,7 +233,7 @@ describe('ComunicadoEditPage', () => {
 
   it('a Redes, que no ve el censo, no le ofrece ir a verlos', async () => {
     useAuthStore.setState({ status: 'listo', cms: { id: 2, email: 'redes@ejemplo.es', role: 'REDES', perfiles: [], origen: 'cms' }, hermano: null })
-    montar({ ...BORRADOR, tipo: 'BOLETIN', estado: 'ENVIADO', enviadoEl: '2026-09-30T11:00:00Z' }, { enviados: 9, fallidos: 0, rebotados: 1, pendientes: 0, alMovil: 0 })
+    montar({ ...BORRADOR, tipo: 'BOLETIN', estado: 'ENVIADO', enviadoEl: '2026-09-30T11:00:00Z' }, { enviados: 9, fallidos: 0, rebotados: 1, pendientes: 0 })
     expect(await screen.findByText(/1 correo rebotó/)).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Ver quiénes' })).not.toBeInTheDocument()
   })

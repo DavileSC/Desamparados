@@ -2,7 +2,6 @@ import { EstadoPedido, OrigenPago, TipoPagoEnLinea } from '@prisma/client';
 import db from '../config/db.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from './auditoria.service.js';
 import { NotFoundError } from '../utils/error.handle.js';
-import { avisosConfigurados } from './push.js';
 import {
   CATALOGO_MODULOS, CLAVES_MODULO, DE_INSTALACION_ENCENDIDOS, LOTE_INICIAL, dependientesActivos, esClaveDeModulo, fichaDe,
   requisitosQueFaltan, type ClaveDeInstalacion, type ClaveEncendible, type ClaveModulo, type FichaDeModulo,
@@ -67,19 +66,17 @@ const RECUENTOS: Record<ClaveModulo, () => Promise<RecuentoDeDatos[]>> = {
   contabilidad: async () => [],
   cabildos: async () => [{ uno: 'cabildo', que: 'cabildos', total: await db.cabildo.count() }],
   'informe-anual': async () => [{ uno: 'informe', que: 'informes', total: await db.informeAnual.count() }],
-  'avisos-a-los-hermanos': async () => [{ uno: 'móvil con avisos', que: 'móviles con avisos', total: await db.movilDeAvisos.count() }],
   // El informe vive en el disco del servidor, no en la base.
   'estadisticas-de-visitas': async () => [],
 };
 
 /**
  * Lo que un módulo necesita del servidor y no de otro módulo: sin ello,
- * encenderlo dejaría una función que no puede funcionar (los avisos al móvil
- * sin claves VAPID no salen). Devuelve qué falta, o null si está todo.
+ * encenderlo dejaría una función que no puede funcionar (una clave del .env
+ * que falta, por ejemplo). Devuelve qué falta, o null si está todo. Hoy no lo
+ * necesita ninguno: lo usaban los avisos al móvil, quitados el 28-11-2026.
  */
-const QUE_FALTA_EN_EL_SERVIDOR: Partial<Record<ClaveModulo, () => string | null>> = {
-  'avisos-a-los-hermanos': () => (avisosConfigurados() ? null : 'faltan las claves VAPID del servidor (VAPID_PUBLICA, VAPID_PRIVADA y VAPID_CONTACTO; se generan con npm run gen:vapid).'),
-};
+const QUE_FALTA_EN_EL_SERVIDOR: Partial<Record<ClaveModulo, () => string | null>> = {};
 
 const nombres = (claves: ClaveModulo[]) => claves.map((c) => `«${fichaDe(c).nombre}»`).join(', ');
 

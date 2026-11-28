@@ -189,8 +189,6 @@ model User {
   // Códigos de respaldo del 2FA (de un solo uso, para perder/cambiar el móvil)
   backupCodes TwoFactorBackupCode[]
 
-  // Móviles que reciben los avisos del área de hermanos (ver MovilDeAvisos).
-  movilesDeAvisos MovilDeAvisos[]
   avisosPersonales AvisoPersonal[]
 
   // Registro de auditoría de las acciones que realiza este usuario (staff)
@@ -1133,29 +1131,9 @@ model TwoFactorBackupCode {
   @@index([userId])
 }
 
-/// Un móvil que recibe los avisos del área de hermanos (apertura de
-/// papeletas, avisos de la Junta). Solo recibe: no prueba nada de quien lo
-/// lleva, así que no pide contraseña ni guarda clave del dispositivo.
-model MovilDeAvisos {
-  id           Int       @id @default(autoincrement())
-  userId       Int
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // Se pone solo («Android · Chrome»): al hermano no se le pregunta.
-  nombre       String    @db.VarChar(60)
-  endpoint     String    @db.Text
-  endpointHash String    @unique @db.Char(64)
-  p256dh       String    @db.VarChar(200)
-  auth         String    @db.VarChar(100)
-  creadoEn     DateTime  @default(now())
-  usadoEn      DateTime?
-
-  @@index([userId])
-}
-
-/// Lo que se le manda a una cuenta en concreto y no a todos (el justificante
-/// de un pago, el recordatorio de su cita): se lee en la página Avisos del
-/// área y llega al móvil, o por correo si la cuenta no tiene móvil. Guarda la
-/// carta entera, la misma que iría por correo.
+/// Lo de la papeleta pendiente de una cuenta (sin recoger, el recordatorio de
+/// la cita): va por correo y se guarda para leerlo en la página Avisos del
+/// área. Guarda la carta entera, la misma que salió por correo.
 model AvisoPersonal {
   id       Int      @id @default(autoincrement())
   userId   Int
@@ -1163,7 +1141,7 @@ model AvisoPersonal {
   /// La clave del correo (`shared/usos-de-correo.json`).
   uso      String   @db.VarChar(60)
   asunto   String   @db.VarChar(200)
-  /// Lo que se lee en la lista y en el aviso del móvil.
+  /// Lo que se lee en la lista de Avisos.
   resumen  String   @db.VarChar(300)
   html     String   @db.LongText
   creadoEn DateTime @default(now())
@@ -1380,7 +1358,6 @@ enum EstadoEnvio {
   PENDIENTE
   ENVIADO
   FALLIDO
-  MOVIL // Le llegó el aviso al móvil: no hizo falta el correo
   REBOTADO // Salió, pero el servicio de envío avisó después de que no llegó
 }
 
@@ -1444,11 +1421,9 @@ model ComunicadoEnvio {
   /// A quién saluda: el nombre si la dirección es de una sola ficha.
   nombre       String?
   sexo         Sexo?
-  /// La cuenta de esas fichas: lo que ve en «Avisos» del área y a quién va el
-  /// aviso al móvil. Sin FK: el envío sobrevive a la cuenta, como el resto.
+  /// La cuenta de esas fichas, para borrar su rastro al suprimirla. Sin FK:
+  /// el envío sobrevive a la cuenta, como el resto.
   userId       Int?
-  /// Decidido al ponerlo en cola: esa cuenta tenía móvil para los avisos.
-  porMovil     Boolean     @default(false)
   estado       EstadoEnvio @default(PENDIENTE)
   creadoEn     DateTime    @default(now())
   enviadoEl    DateTime?
@@ -1467,13 +1442,10 @@ model CorreoEnCola {
   lote      String      @db.VarChar(60)
   titulo    String      @db.VarChar(150)
   userId    Int?
-  porMovil  Boolean     @default(false)
   para      String      @db.VarChar(191)
   asunto    String      @db.VarChar(200)
   html      String      @db.LongText
   uso       String      @db.VarChar(60)
-  /// Título, texto y adónde lleva el aviso al móvil, si la cuenta tiene.
-  aviso     Json?
   /// Qué PDF va adjunto («{ tipo: 'certificado_182', ejercicio, nif }»): se
   /// hace al enviarlo, no se guarda aquí cientos de veces.
   adjunto   Json?
@@ -1481,7 +1453,7 @@ model CorreoEnCola {
   creadoEn  DateTime    @default(now())
   enviadoEl DateTime?
 
-  @@index([estado, porMovil])
+  @@index([estado])
   @@index([lote])
   @@index([estado, enviadoEl])
 }

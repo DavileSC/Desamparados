@@ -1,18 +1,15 @@
-// Los avisos personales (20-10-2026): lo que va a una sola cuenta se guarda
-// para la página Avisos y llega al móvil o, si no tiene, por correo; nunca los
-// dos. Y el recordatorio de la cita la víspera, uno por cuenta.
+// Los avisos personales: lo de la papeleta pendiente (sin recoger, la cita
+// para recogerla) va por correo y se guarda para la página Avisos del área.
+// Y el recordatorio de la cita la víspera, uno por cuenta.
 import assert from 'node:assert/strict';
-import crypto from 'node:crypto';
-import { after, afterEach, before, test } from 'node:test';
+import { after, before, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import { Role } from '@prisma/client';
-import webpush from 'web-push';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_HERMANO } from '../src/utils/cookies.js';
-import { avisosDePrueba, fijarEnvioDePrueba } from '../src/services/push.js';
 import { colaTerminada } from '../src/services/correos/cola.js';
 import { ponerTransporte } from '../src/services/correos/envio.js';
 import { EmailService } from '../src/services/email.service.js';
@@ -27,27 +24,19 @@ let server: Server;
 let baseUrl: string;
 let dbDisponible = false;
 let restaurarModulos: (() => Promise<void>) | undefined;
-const entornoAntes = { ...process.env };
 const usuarios: number[] = [];
 const turnos: number[] = [];
 const enviados: { to: string; subject: string }[] = [];
 
 before(async () => {
-  const { publicKey, privateKey } = webpush.generateVAPIDKeys();
-  process.env.VAPID_PUBLICA = publicKey;
-  process.env.VAPID_PRIVADA = privateKey;
-  process.env.VAPID_CONTACTO = 'mailto:pruebas@ejemplo.test';
-
   server = app.listen(0);
   await new Promise<void>((resolve) => server.once('listening', resolve));
   baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   const timeout = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 3000).unref());
   dbDisponible = await Promise.race([db.$queryRaw`SELECT 1`.then(() => true).catch(() => false), timeout]);
-  if (dbDisponible) restaurarModulos = await encenderModulos(['avisos-a-los-hermanos', 'area-hermanos', 'procesion']);
+  if (dbDisponible) restaurarModulos = await encenderModulos(['area-hermanos', 'procesion']);
   ponerTransporte({ sendMail: async (correo) => { enviados.push({ to: correo.to, subject: correo.subject }); return {}; } });
 });
-
-afterEach(() => { fijarEnvioDePrueba(); });
 
 after(async () => {
   ponerTransporte(undefined);
@@ -59,10 +48,6 @@ after(async () => {
     await db.hermano.deleteMany({ where: { userId: { in: usuarios } } });
     for (const id of usuarios) await borrarUsuarioPrueba(id);
     await restaurarModulos?.();
-  }
-  for (const nombre of ['VAPID_PUBLICA', 'VAPID_PRIVADA', 'VAPID_CONTACTO']) {
-    if (entornoAntes[nombre] === undefined) delete process.env[nombre];
-    else process.env[nombre] = entornoAntes[nombre];
   }
   await new Promise<void>((resolve) => server.close(() => resolve()));
   await db.$disconnect();
@@ -85,59 +70,30 @@ async function pedir(ruta: string, cookie: string, metodo = 'GET', cuerpo?: unkn
   });
 }
 
-async function activarMovil(h: { cookie: string }) {
-  const suscripcion = {
-    endpoint: `https://fcm.googleapis.com/fcm/send/${crypto.randomBytes(12).toString('hex')}`,
-    expirationTime: null,
-    keys: { p256dh: crypto.randomBytes(65).toString('base64url'), auth: crypto.randomBytes(16).toString('base64url') },
-  };
-  const res = await pedir('/hermanos/mis-avisos-movil', h.cookie, 'POST', { nombre: 'Android · Chrome', suscripcion });
-  assert.equal(res.status, 201, await res.clone().text());
-}
-
-const justificante = () => EmailService.correoJustificantePago('Ana', 'MUJER', {
+/** Un correo cualquiera ya compuesto: lo que importa es dónde acaba, no qué dice. */
+const correo = () => EmailService.correoJustificantePago('Ana', 'MUJER', {
   total: '30,00 €', metodo: 'Bizum', fecha: '20/10/2026 18:00', pedido: '000123', lineas: [{ concepto: 'Cuota 2026', detalle: 'Ana Prueba', importe: '30,00 €' }],
 });
 
-test('con móvil, el aviso llega al móvil y no por correo; sin móvil, por correo; los dos quedan en Avisos', async (t) => {
+test('el aviso sale por correo y queda en Avisos para leerlo entero; a otra cuenta, no', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
-  const conMovil = await cuenta();
-  const sinMovil = await cuenta();
-  await activarMovil(conMovil);
-  const antes = avisosDePrueba.length;
+  const ana = await cuenta();
+  const otra = await cuenta();
 
-  await AvisosPersonalesService.mandar({ userId: conMovil.id, email: conMovil.email }, await justificante());
-  await AvisosPersonalesService.mandar({ userId: sinMovil.id, email: sinMovil.email }, await justificante());
+  assert.equal(await AvisosPersonalesService.ponerEnCola('prueba-avisos', 'Prueba', [{ userId: ana.id, email: ana.email, correo: await correo() }]), 1);
+  await colaTerminada();
+  assert.ok(enviados.some((e) => e.to === ana.email), 'por correo');
 
-  assert.ok(!enviados.some((e) => e.to === conMovil.email), 'sin correo para quien lo recibió en el móvil');
-  assert.ok(enviados.some((e) => e.to === sinMovil.email && e.subject.startsWith('Justificante de su pago de 30,00')));
-
-  const lista = await (await pedir('/hermanos/mis-avisos', conMovil.cookie)).json() as { id: number; tipo: string; asunto: string; extracto: string }[];
-  const mio = lista.find((a) => a.tipo === 'personal');
-  assert.ok(mio, 'el justificante está en Avisos');
-  assert.match(mio!.asunto, /^Justificante de su pago/);
-
-  const alMovil = avisosDePrueba.slice(antes).find((a) => a.aviso.url === `/area-hermano/avisos/personal/${mio!.id}`);
-  assert.ok(alMovil, 'el aviso del móvil abre su página');
-  assert.equal(alMovil!.aviso.titulo, mio!.asunto);
-  assert.ok(alMovil!.aviso.cuerpo.length > 0 && alMovil!.aviso.cuerpo.length <= 140);
+  const lista = await (await pedir('/hermanos/mis-avisos', ana.cookie)).json() as { id: number; asunto: string }[];
+  assert.equal(lista.length, 1);
+  assert.match(lista[0].asunto, /^Justificante de su pago/);
 
   // Entero, con el escudo dentro (una imagen `cid:` no se ve en el navegador); a otra cuenta, no.
-  const entero = await (await pedir(`/hermanos/mis-avisos/personales/${mio!.id}`, conMovil.cookie)).json() as { html: string };
+  const entero = await (await pedir(`/hermanos/mis-avisos/personales/${lista[0].id}`, ana.cookie)).json() as { html: string };
   assert.match(entero.html, /Cuota 2026/);
   assert.doesNotMatch(entero.html, /src="cid:/);
-  assert.equal((await pedir(`/hermanos/mis-avisos/personales/${mio!.id}`, sinMovil.cookie)).status, 404);
-});
-
-test('si el móvil ya no existe, el aviso sale por correo y sigue en Avisos', async (t) => {
-  if (!dbDisponible) return t.skip(SIN_DB);
-  const h = await cuenta();
-  await activarMovil(h);
-  fijarEnvioDePrueba(async () => 'muerta');
-
-  await AvisosPersonalesService.mandar({ userId: h.id, email: h.email }, await justificante());
-  assert.ok(enviados.some((e) => e.to === h.email));
-  assert.equal(await db.avisoPersonal.count({ where: { userId: h.id } }), 1);
+  assert.equal((await pedir(`/hermanos/mis-avisos/personales/${lista[0].id}`, otra.cookie)).status, 404);
+  await db.correoEnCola.deleteMany({ where: { lote: 'prueba-avisos' } });
 });
 
 test('la víspera de la cita, a partir de las diez, un recordatorio por cuenta con todas sus fichas, y solo una vez', async (t) => {
@@ -156,7 +112,6 @@ test('la víspera de la cita, a partir de las diez, un recordatorio por cuenta c
   const hijo = await db.hermano.create({ data: { userId: familia.id, nombre: 'Pablo', apellidos: 'Prueba', fechaNacimiento: new Date(Date.UTC(2012, 0, 1)), activo: true } });
   const otra = await cuenta('Luisa');
   const deHoy = await cuenta('Marta');
-  await activarMovil(familia);
   await db.cita.createMany({
     data: [
       { turnoId: turno.id, hermanoId: familia.ficha.id },
@@ -173,7 +128,7 @@ test('la víspera de la cita, a partir de las diez, un recordatorio por cuenta c
   await colaTerminada();
 
   const enCola = await db.correoEnCola.findMany({ where: { lote: 'cita:2099-03-11' } });
-  assert.equal(enCola.find((c) => c.userId === familia.id)?.estado, 'MOVIL');
+  assert.equal(enCola.find((c) => c.userId === familia.id)?.estado, 'ENVIADO');
   assert.equal(enCola.find((c) => c.userId === otra.id)?.estado, 'ENVIADO');
   assert.ok(!enCola.some((c) => c.userId === deHoy.id));
 
@@ -207,10 +162,9 @@ test('si preparar el recordatorio falla, las citas no se dan por recordadas y la
   assert.equal(await db.correoEnCola.count({ where: { lote: 'cita:2099-04-15', userId: ana.id } }), 1);
 });
 
-test('al borrar la cuenta se van sus móviles, lo que esperaba en la cola y su dirección del registro de envíos', async (t) => {
+test('al borrar la cuenta se va lo que esperaba en la cola y su dirección del registro de envíos', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const ana = await cuenta('Ana');
-  await activarMovil(ana);
   const comunicado = await db.comunicado.create({ data: { tipo: 'BOLETIN', asunto: 'Boletín de prueba', cuerpo: '<p>x</p>', segmento: {}, estado: 'ENVIANDO' } });
   const otro = await db.comunicado.create({ data: { tipo: 'BOLETIN', asunto: 'Boletín anterior', cuerpo: '<p>x</p>', segmento: {}, estado: 'ENVIADO' } });
   try {
@@ -219,16 +173,14 @@ test('al borrar la cuenta se van sus móviles, lo que esperaba en la cola y su d
     await db.correoEnCola.create({ data: { lote: 'prueba-supresion', titulo: 'Prueba', userId: ana.id, para: ana.email, asunto: 'Aviso', html: '<p>Ana Prueba</p>', uso: 'prueba' } });
     await db.correoEnCola.create({ data: { lote: 'prueba-supresion', titulo: 'Prueba', userId: ana.id, para: ana.email, asunto: 'Aviso', html: '<p>Ana Prueba</p>', uso: 'prueba', estado: 'ENVIADO', enviadoEl: new Date() } });
 
-    // Antes de irse, «Descargar mis datos» trae también los móviles y los comunicados (art. 15).
-    const datos = await (await pedir('/auth/mis-datos', ana.cookie)).json() as { usuario: { movilesDeAvisos: { nombre: string; endpoint?: string }[] }; comunicadosRecibidos: { comunicado: { asunto: string } }[]; pagosEnLinea: unknown[] };
-    assert.deepEqual(datos.usuario.movilesDeAvisos.map((m) => [m.nombre, m.endpoint]), [['Android · Chrome', undefined]]);
+    // Antes de irse, «Descargar mis datos» trae también los comunicados (art. 15).
+    const datos = await (await pedir('/auth/mis-datos', ana.cookie)).json() as { comunicadosRecibidos: { comunicado: { asunto: string } }[]; pagosEnLinea: unknown[] };
     assert.deepEqual(datos.comunicadosRecibidos.map((c) => c.comunicado.asunto).sort(), ['Boletín anterior', 'Boletín de prueba']);
     assert.deepEqual(datos.pagosEnLinea, []);
 
     const res = await pedir('/auth/mi-cuenta', ana.cookie, 'DELETE', { password: PASSWORD_PRUEBA });
     assert.equal(res.status, 200, await res.clone().text());
 
-    assert.equal(await db.movilDeAvisos.count({ where: { userId: ana.id } }), 0, 'sin móviles');
     assert.equal(await db.comunicadoEnvio.count({ where: { userId: ana.id, estado: 'PENDIENTE' } }), 0, 'el boletín pendiente ya no sale');
     assert.equal((await db.comunicado.findUniqueOrThrow({ where: { id: comunicado.id } })).estado, 'ENVIADO', 'y el comunicado no se queda «enviándose»');
     const enviado = await db.comunicadoEnvio.findFirstOrThrow({ where: { comunicadoId: otro.id, userId: ana.id } });

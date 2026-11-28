@@ -16,7 +16,6 @@
     "test:upload-clamav": "tsx scripts/test-upload-clamav.ts",
     "gen:secret": "node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\"",
     "gen:clave-totp": "node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
-    "gen:vapid": "node scripts/gen-vapid.mjs",
     "seed": "prisma db seed",
     "auditoria:purgar": "node --import tsx scripts/purgar-auditoria.ts",
     "cuenta:crear-cargo": "node --import tsx scripts/crear-cuenta-de-cargo.ts",
@@ -59,8 +58,7 @@
     "qrcode": "^1.5.4",
     "sanitize-html": "^2.18.1",
     "sharp": "^0.35.4",
-    "tsx": "^4.23.12",
-    "web-push": "^3.6.7"
+    "tsx": "^4.23.12"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",
@@ -74,7 +72,6 @@
     "@types/pdfkit": "^0.17.6",
     "@types/qrcode": "^1.5.6",
     "@types/sanitize-html": "^2.16.1",
-    "@types/web-push": "^3.6.4",
     "jszip": "^3.10.2",
     "prisma": "^7.10.0",
     "typescript": "~6.0.3"

@@ -9,7 +9,7 @@ que mirar están explicadas en [licencias.md](licencias.md).
 
 MIT (239), ISC (24), Apache-2.0 (12), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X11 (2), Apache-2.0 AND LGPL-3.0-or-later (1), Unlicense (1), Sin licencia (1), (MIT OR GPL-3.0-or-later) (1), BlueOak-1.0.0 (1), LGPL-2.1-or-later (1), MIT-0 (1), (MIT AND Zlib) (1), MIT (por su fichero LICENSE) (1), 0BSD (1), MPL-2.0 (1)
 
-**A mirar:** @img/sharp-win32-x64 0.35.5 (Apache-2.0 AND LGPL-3.0-or-later); buffers 0.1.1 (sin licencia); mariadb 3.5.4 (LGPL-2.1-or-later); web-push 3.6.7 (MPL-2.0).
+**A mirar:** @img/sharp-win32-x64 0.35.5 (Apache-2.0 AND LGPL-3.0-or-later); buffers 0.1.1 (sin licencia); mariadb 3.5.4 (LGPL-2.1-or-later).
 
 | Paquete | Versión | Licencia |
 |---|---|---|
@@ -303,7 +303,6 @@ MIT (239), ISC (24), Apache-2.0 (12), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X1
 | util-deprecate | 1.0.2 | MIT |
 | uuid | 11.1.1 | MIT |
 | vary | 1.1.2 | MIT |
-| web-push | 3.6.7 | MPL-2.0 |
 | which-module | 2.0.1 | ISC |
 | wrap-ansi | 6.2.0 | MIT |
 | wrappy | 1.0.2 | ISC |

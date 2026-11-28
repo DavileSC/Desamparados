@@ -3,9 +3,9 @@
  * prueba, el envío y la baja del boletín.
  *
  * Enviar no manda nada en el acto: apunta a cada destinatario y la cola de
- * correos (`correos/cola.ts`) los va mandando uno a uno, con pausa y con el
- * tope del día; un aviso a quien tiene móvil para los avisos le llega ahí en
- * vez de por correo. Si el servidor se reinicia a medias, sigue por donde iba.
+ * correos (`correos/cola.ts`) los va mandando uno a uno, con pausa y con los
+ * topes de la hora y del día. Si el servidor se reinicia a medias, sigue por
+ * donde iba.
  *
  * Programado es lo mismo con hora: el reloj de `arrancarProgramados` lo envía
  * al llegar, y a quién va se calcula entonces, no al programarlo.
@@ -17,7 +17,6 @@ import { sanearContenidoCms, extractoPlano } from '../utils/sanear-html.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
 import { enviarCorreo } from './correos/envio.js';
 import { colaTerminada, despertarCola, ponerMaquetaDeComunicados, reintentarLote, retirarBoletinesPendientes, topeDiario, topePorHora } from './correos/cola.js';
-import { AvisosHermanosService } from './avisos-hermanos.service.js';
 import { firma, maquetar, parrafo, saludo, urlDeLaWeb } from './correos/plantilla.js';
 import { anioDeLaMesa } from './procesion/zonas.service.js';
 import { SalidasService } from './procesion/salidas.service.js';
@@ -149,15 +148,11 @@ const resumen = async (c: { id: number; tipo: TipoComunicado; asunto: string; es
 
 // --- El envío: lo hace la cola de correos ----------------------------------
 
-/** Lo que dice el aviso al móvil: el asunto y el principio, y abre el aviso entero en el área. */
-function avisoDe(c: { id: number; asunto: string; cuerpo: string }) {
-  return { etiqueta: `comunicado-${c.id}`, titulo: c.asunto, cuerpo: extractoPlano(c.cuerpo).slice(0, 140), url: `/area-hermano/avisos/${c.id}` };
-}
 /** La baja en un clic, solo en el boletín: a los avisos no se suscribe nadie. */
 function cabecerasPara(c: { tipo: TipoComunicado }, email: string) {
   return c.tipo === TipoComunicado.BOLETIN ? cabecerasDeBaja(email, secreto(), process.env.API_URL || 'http://localhost:3001') : undefined;
 }
-ponerMaquetaDeComunicados({ correo: correoPara, aviso: avisoDe, cabeceras: cabecerasPara });
+ponerMaquetaDeComunicados({ correo: correoPara, cabeceras: cabecerasPara });
 
 export class ComunicadosService {
   static async listar() {
@@ -171,7 +166,7 @@ export class ComunicadosService {
     const nombres = await nombresDeSalidas();
     return Promise.all(lista.map(async (c) => ({
       ...(await resumen(c, nombres)),
-      envios: { enviados: de(c.id, EstadoEnvio.ENVIADO), fallidos: de(c.id, EstadoEnvio.FALLIDO), rebotados: de(c.id, EstadoEnvio.REBOTADO), pendientes: de(c.id, EstadoEnvio.PENDIENTE), alMovil: de(c.id, EstadoEnvio.MOVIL) },
+      envios: { enviados: de(c.id, EstadoEnvio.ENVIADO), fallidos: de(c.id, EstadoEnvio.FALLIDO), rebotados: de(c.id, EstadoEnvio.REBOTADO), pendientes: de(c.id, EstadoEnvio.PENDIENTE) },
     })));
   }
 
@@ -252,13 +247,6 @@ export class ComunicadosService {
     if (!enviable.includes(c.estado)) throw new HttpError('Este comunicado ya se envió.', 409);
     const { destinatarios } = destinatariosDe(await fichasDelSegmento(c.tipo, c.segmento as Segmento));
     if (destinatarios.length === 0) throw new HttpError('Nadie del segmento tiene correo: no hay a quién mandarlo.', 409);
-    // Al móvil, solo los avisos: el boletín es para leerlo con calma, y una
-    // convocatoria de cabildo tiene que quedar por escrito en el correo.
-    const esConvocatoria = (await db.cabildo.count({ where: { convocatoriaId: id } })) > 0;
-    const conMovil = c.tipo === TipoComunicado.AVISO && !esConvocatoria
-      ? await AvisosHermanosService.cuentasConMovil(destinatarios.flatMap((d) => (d.userId === undefined ? [] : [d.userId])))
-      : new Set<number>();
-
     await db.$transaction(async (tx) => {
       const pasa = await tx.comunicado.updateMany({
         where: { id, estado: { in: enviable } },
@@ -268,7 +256,7 @@ export class ComunicadosService {
       await tx.comunicadoEnvio.createMany({
         data: destinatarios.map((d) => ({
           comunicadoId: id, email: d.email, nombre: d.nombre, sexo: d.sexo,
-          userId: d.userId ?? null, porMovil: d.userId !== undefined && conMovil.has(d.userId),
+          userId: d.userId ?? null,
         })),
       });
     });

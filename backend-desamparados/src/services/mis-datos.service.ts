@@ -54,8 +54,6 @@ export class MisDatosService {
             asistenciasCabildo: { include: { cabildo: { select: { tipo: true, fecha: true, lugar: true } } } }
           }
         },
-        // Sin la dirección ni las claves del servicio de push: identifican el aparato, no a la persona.
-        movilesDeAvisos: { select: { nombre: true, creadoEn: true, usadoEn: true } },
         avisosPersonales: { select: { asunto: true, resumen: true, creadoEn: true }, orderBy: { creadoEn: 'desc' } }
       }
     });
@@ -173,11 +171,9 @@ export class MisDatosService {
       // nombres, importes y la carta entera.
       await tx.twoFactorBackupCode.deleteMany({ where: { userId } });
       await tx.avisoPersonal.deleteMany({ where: { userId } });
-      // Los móviles de los avisos (su dirección en el servicio de push es del
-      // aparato de la persona), y lo que ya salió por la cola: el registro de
-      // envíos guardaba la dirección y el nombre para siempre, y la cola, el
-      // correo entero. Lo pendiente se retira al acabar (`retirarPendientes`).
-      await tx.movilDeAvisos.deleteMany({ where: { userId } });
+      // Lo que ya salió por la cola: el registro de envíos guardaba la
+      // dirección y el nombre para siempre, y la cola, el correo entero. Lo
+      // pendiente se retira al acabar (`retirarPendientes`).
       const enviados = await tx.comunicadoEnvio.findMany({ where: { userId, estado: { not: EstadoEnvio.PENDIENTE } }, select: { id: true } });
       for (const { id } of enviados) {
         // Una por fila: la dirección es única dentro de cada comunicado.
@@ -185,7 +181,7 @@ export class MisDatosService {
       }
       await tx.correoEnCola.updateMany({
         where: { userId, estado: { not: EstadoEnvio.PENDIENTE } },
-        data: { para: `anon-${userId}${DOMINIO_CUENTA_ELIMINADA}`, html: '', aviso: Prisma.DbNull },
+        data: { para: `anon-${userId}${DOMINIO_CUENTA_ELIMINADA}`, html: '' },
       });
 
       // 3. Fichas, según su estado (el mismo criterio que la retirada de un

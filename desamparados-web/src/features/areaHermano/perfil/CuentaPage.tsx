@@ -7,7 +7,6 @@ import SeccionAnimada from '../../../components/SeccionAnimada'
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
 import { useAvisoAlCerrarLaPestana } from '../../../hooks/useAvisoAlCerrarLaPestana'
 import ApartadoContrasena from './ApartadoContrasena'
-import AvisosEnElMovil from './AvisosEnElMovil'
 import { ApartadoMisDatos } from './MisDerechos'
 import { site } from '../../../config/site'
 
@@ -40,7 +39,6 @@ export default function CuentaPage() {
         <ContenedorDePagina sx={{ px: { xs: 0, md: 0 } }}>
           <Typography variant="h3" component="h1" sx={{ mb: 3 }}>Cuenta y contraseña</Typography>
           <Box sx={{ maxWidth: 760, display: 'grid', gap: 2 }}>
-            <AvisosEnElMovil />
             <ApartadoContrasena onSucio={setSucio} />
             <ApartadoMisDatos />
           </Box>

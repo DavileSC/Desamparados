@@ -435,9 +435,8 @@ function Cifra({ titulo, valor, detalle }: { titulo: string; valor: string; deta
 }
 
 /**
- * Antes de abrir: a cuántos les llega el aviso al móvil y cuántos correos
- * salen, con el tope del día (traspaso-2026-10-14 §5). Con cientos de
- * hermanos y un servicio de envío gratis, no todo cabe en un día.
+ * Antes de abrir: cuántos correos salen, con el tope del día
+ * (traspaso-2026-10-14 §5). Con cientos de hermanos, no todo cabe en un día.
  */
 function RepartoDelAviso() {
   const { data } = useQuery({ queryKey: ['aviso-previsto'], queryFn: avisoPrevisto, staleTime: 0 })
@@ -445,7 +444,6 @@ function RepartoDelAviso() {
   const otroDia = Math.max(0, data.porCorreo - data.cabenHoy)
   return (
     <Box sx={{ ml: 4, mb: 1, px: 1.75, py: 1.25, borderRadius: 1, bgcolor: 'action.hover', display: 'grid', gap: 0.5, fontVariantNumeric: 'tabular-nums' }}>
-      {data.alMovil > 0 && <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}><span>Al móvil, sin correo</span><strong>{data.alMovil}</strong></Box>}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}><span>Por correo</span><strong>{data.porCorreo}</strong></Box>
       {otroDia > 0 && (
         <Typography variant="body2" color="text.secondary">

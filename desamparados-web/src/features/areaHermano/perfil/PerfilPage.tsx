@@ -9,7 +9,6 @@ import Boton from '../../../components/Boton'
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
 import { useAvisoAlCerrarLaPestana } from '../../../hooks/useAvisoAlCerrarLaPestana'
 import { Contacto, CuotaYPago, DatosPersonales, VidaDeHermano } from './apartados'
-import { PreguntaDeAvisos } from './AvisosEnElMovil'
 import { FormaDeApartados } from './Apartado'
 import Credencial from './Credencial'
 import { useFichasDeLaCuenta, usePonerFicha } from './fichasDeLaCuenta'
@@ -109,7 +108,6 @@ export default function PerfilPage() {
         onConfirmar={() => bloqueo.proceed?.()}
         onCancelar={() => bloqueo.reset?.()}
       />
-      <PreguntaDeAvisos />
       {/* En PC, sin margen propio: el del marco del área basta, y así la ficha
           cabe en la pantalla sin desplazarse (1280×552 con el escalado al 150 %). */}
       <SeccionAnimada sx={{ py: { xs: 1, md: 0 } }}>

@@ -255,8 +255,8 @@ export default function ComunicadoEditPage() {
 
   if (original.estado !== 'BORRADOR') {
     // Lo que rebotó sí salió: cuenta como enviado y el aviso de abajo dice cuántos no llegaron.
-    const total = progreso ? progreso.enviados + progreso.fallidos + progreso.rebotados + progreso.pendientes + progreso.alMovil : 0
-    const hechos = progreso ? progreso.enviados + progreso.fallidos + progreso.rebotados + progreso.alMovil : 0
+    const total = progreso ? progreso.enviados + progreso.fallidos + progreso.rebotados + progreso.pendientes : 0
+    const hechos = progreso ? progreso.enviados + progreso.fallidos + progreso.rebotados : 0
     return <>
       <Helmet><title>{`${original.asunto} | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <CabeceraSeccion titulo={titulo} subtitulo={original.para}>
@@ -267,10 +267,9 @@ export default function ComunicadoEditPage() {
       {progreso && (
         <Paper sx={{ p: 2.5, mb: 3, maxWidth: 760 }}>
           <Typography sx={{ fontWeight: 600, mb: 1 }}>
-            {original.estado === 'ENVIANDO' ? `Enviando: ${hechos} de ${total}` : `Enviado a ${plural(progreso.enviados + progreso.rebotados + progreso.alMovil, 'dirección', 'direcciones')}`}
+            {original.estado === 'ENVIANDO' ? `Enviando: ${hechos} de ${total}` : `Enviado a ${plural(progreso.enviados + progreso.rebotados, 'dirección', 'direcciones')}`}
           </Typography>
           <LinearProgress variant="determinate" value={total ? (hechos / total) * 100 : 100} aria-label="Progreso del envío" sx={{ mb: 1.5 }} />
-          {progreso.alMovil > 0 && <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>{plural(progreso.alMovil, 'lo recibió en el móvil', 'lo recibieron en el móvil')}, sin correo.</Typography>}
           {original.estado === 'ENVIANDO' && <Typography variant="body2" color="text.secondary">Sale poco a poco, con un tope de correos al día: lo que no quepa hoy sale mañana. Se puede cerrar esta pantalla: sigue enviándose.</Typography>}
           {progreso.fallidos > 0 && (
             <Alert severity="warning" sx={{ mt: 1.5 }} action={original.estado === 'ENVIADO' ? <Button color="inherit" size="small" onClick={() => void reintentar()}>Reintentar</Button> : undefined}>
