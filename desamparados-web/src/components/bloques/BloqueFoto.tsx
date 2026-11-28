@@ -36,7 +36,9 @@ const MARCOS = {
  * del bloque alrededor.
  */
 function EntreFiletes({ bloque, alFallar }: { bloque: Datos; alFallar: () => void }) {
-  const filete = { content: '""', flex: '0 1 220px', height: '1px', backgroundColor: alfa(MARCA.acento, 0.45) }
+  // Blancos, como el escudo pasionista para el que se hizo: en oro, al lado
+  // del blanco y negro del escudo, sobraba un color.
+  const filete = { content: '""', flex: '0 1 220px', height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.45)' }
   return (
     <Box component="figure" sx={{ m: 0 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: { xs: 3, md: 4.5 }, '&::before': filete, '&::after': filete }}>
