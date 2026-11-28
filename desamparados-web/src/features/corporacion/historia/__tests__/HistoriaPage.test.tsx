@@ -45,18 +45,13 @@ describe('HistoriaPage', () => {
     })
   })
 
-  it('el índice de la cabecera lleva a cada hito', async () => {
+  it('la cabecera ya no lleva el índice de momentos, pero cada hito conserva su ancla', async () => {
     responder(HISTORIA)
     renderWithProviders(<HistoriaPage />)
     await screen.findByRole('heading', { level: 1, name: 'Historia' })
 
-    const indice = screen.getByRole('navigation', { name: 'Momentos de la historia' })
-    const enlaces = within(indice).getAllByRole('link')
-    expect(enlaces).toHaveLength(HITOS.length)
-    enlaces.forEach((enlace, i) => {
-      expect(enlace).toHaveAttribute('href', `#hito-${i + 1}`)
-      expect(document.getElementById(`hito-${i + 1}`)).toBeInTheDocument()
-    })
+    expect(screen.queryByRole('navigation', { name: 'Momentos de la historia' })).not.toBeInTheDocument()
+    HITOS.forEach((_, i) => expect(document.getElementById(`hito-${i + 1}`)).toBeInTheDocument())
   })
 
   it('las fotos van dentro de su hito, y la de cabecera arriba con su descripción', async () => {
@@ -108,14 +103,6 @@ describe('HistoriaPage', () => {
     expect(screen.getByText('Un bloque cualquiera añadido desde el CMS.')).toBeInTheDocument()
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
     expect(document.querySelector('img[alt=""]')).toBeNull()
-  })
-
-  it('sin cronología no hay índice en la cabecera', async () => {
-    responder({ cabecera: HISTORIA.cabecera, bloques: [] })
-    renderWithProviders(<HistoriaPage />)
-
-    await screen.findByRole('heading', { level: 1, name: 'Historia' })
-    await vi.waitFor(() => expect(screen.queryByRole('navigation', { name: 'Momentos de la historia' })).not.toBeInTheDocument())
   })
 
   it('mientras el servidor no contesta, un esqueleto y no la historia de partida', async () => {

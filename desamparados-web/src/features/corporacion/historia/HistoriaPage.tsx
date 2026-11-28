@@ -11,7 +11,6 @@ import { Revela } from '../../../components/SeccionAnimada'
 import BloquesDePagina from '../../../components/bloques/BloquesDePagina'
 import MarcoEditable from '../../../components/bloques/MarcoEditable'
 import BloqueCronologia from '../../../components/bloques/BloqueCronologia'
-import { idDeHito } from '../../../components/bloques/cronologia'
 import { GOLD, SERIF, ceja, enlaceBloque } from '../../inicio/estilos'
 import { useEnlaceVivo } from '../../../hooks/useEnlaceVivo'
 import { useBorradorPagina } from '../../../components/bloques/borrador'
@@ -19,10 +18,9 @@ import BloquesEsqueleto from '../../../components/bloques/BloquesEsqueleto'
 import ConBloquesCargados from '../../../components/bloques/ConBloquesCargados'
 import EnCarga from '../../../components/esqueleto/EnCarga'
 import { estadoDeConsulta } from '../../../components/esqueleto/esperaDeCarga'
-import { Lineas } from '../../../components/esqueleto/Hueso'
 import {
   getContenido,
-  type Bloque, type BloqueCronologia as Cronologia, type BloqueLlamada, type PaginaDeBloques,
+  type Bloque, type BloqueLlamada, type PaginaDeBloques,
 } from '../../../lib/api/contenido'
 import { historia } from '../../../../../shared/contenido-por-defecto.json'
 import { deLaCorporacion } from '../../../domain/articulos'
@@ -30,8 +28,6 @@ import { site } from '../../../config/site'
 
 /** La cronología va en una franja de tinta, un punto más oscura que el fondo. */
 const TINTA = 'rgba(12, 11, 13, 0.55)'
-const FILETE = 'rgba(204, 196, 201, 0.22)'
-const FILETE_LEVE = 'rgba(204, 196, 201, 0.1)'
 
 /** Un título que solo oye quien usa lector de pantalla. */
 const soloLector = { position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' } as const
@@ -42,8 +38,10 @@ const soloLector = { position: 'absolute', width: '1px', height: '1px', overflow
  * maquetación propia: el constructor genérico la habría dejado en una página
  * más.
  *
- * - un bloque de **cronología** va en su franja de tinta, y el primero forma el
- *   índice de momentos, a la derecha del título;
+ * - un bloque de **cronología** va en su franja de tinta (el primero, con un
+ *   ancla en cada hito: `/historia#hito-2`). El índice de momentos que
+ *   llevaba a la derecha del título se quitó el 28-11-2026: repetía la
+ *   cronología de más abajo;
  * - un bloque de **llamada** es el cierre: su texto es el rótulo pequeño, su
  *   título la frase grande y su botón el enlace con flecha;
  * - cualquier otro bloque se pinta como en el resto de la web.
@@ -64,8 +62,7 @@ export default function HistoriaPage() {
   // título de la pestaña.
   const { cabecera, bloques } = guardada ?? (historia as PaginaDeBloques)
   const cejaDeMenu = cejaDePagina('historia', cabecera.titulo, useNombresEnMenu())
-  const conIndice = bloques.findIndex((bloque) => bloque.tipo === 'cronologia')
-  const hitosDelIndice = conIndice === -1 ? [] : (bloques[conIndice] as Cronologia).hitos
+  const conAnclas = bloques.findIndex((bloque) => bloque.tipo === 'cronologia')
 
   const meta = !borrador && (
     <MetaDePagina
@@ -84,7 +81,7 @@ export default function HistoriaPage() {
         {meta}
         {estadoDeConsulta(consulta) === 'error' ? (
           <>
-            <Box className="esqueleto-quieto"><CabeceraASangreEsqueleto ceja={cejaDeMenu} titulo={cabecera.titulo} lado={<IndiceEsqueleto />} /></Box>
+            <Box className="esqueleto-quieto"><CabeceraASangreEsqueleto ceja={cejaDeMenu} titulo={cabecera.titulo} /></Box>
             <Box sx={{ pb: { xs: 8, md: 12 } }}>
               <ContenedorDePagina>
                 <EnCarga avisoArriba estado="error" que="esta página" alReintentar={reintentar} esqueleto={<BloquesEsqueleto />} />
@@ -98,7 +95,7 @@ export default function HistoriaPage() {
             alReintentar={reintentar}
             esqueleto={(
               <>
-                <CabeceraASangreEsqueleto ceja={cejaDeMenu} lado={<IndiceEsqueleto />} />
+                <CabeceraASangreEsqueleto ceja={cejaDeMenu} />
                 <Box sx={{ pb: { xs: 8, md: 12 } }}><ContenedorDePagina><BloquesEsqueleto /></ContenedorDePagina></Box>
               </>
             )}
@@ -121,36 +118,6 @@ export default function HistoriaPage() {
           fotoAlt={cabecera.fotoAlt}
           encuadre={cabecera.encuadre}
           ceja={cejaDeMenu}
-          lado={hitosDelIndice.length > 0 && (
-            <Revela alMontar efecto="crecer" orden={3}>
-              <Box component="nav" aria-label="Momentos de la historia" sx={{ borderTop: `1px solid ${FILETE}`, pt: 1 }}>
-                {hitosDelIndice.map((hito, indice) => (
-                  <Box
-                    key={idDeHito(indice)}
-                    component="a"
-                    href={`#${idDeHito(indice)}`}
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      gap: 3,
-                      py: 1.25,
-                      borderBottom: `1px solid ${FILETE_LEVE}`,
-                      fontSize: 14,
-                      color: '#cbc5c8',
-                      textShadow: '0 1px 10px rgba(0,0,0,0.8)',
-                      transition: 'color .25s ease',
-                      '& b': { fontWeight: 600, color: '#fff' },
-                      '&:hover': { color: GOLD },
-                      '&:hover b': { color: GOLD },
-                    }}
-                  >
-                    <b>{hito.periodo}</b>
-                    <span>{hito.etiqueta}</span>
-                  </Box>
-                ))}
-              </Box>
-            </Revela>
-          )}
         />
 
         <ConBloquesCargados
@@ -163,25 +130,12 @@ export default function HistoriaPage() {
               bloque={bloque}
               posicion={posicion}
               idTitulo={`historia-bloque-${posicion + 1}`}
-              conAnclas={posicion === conIndice}
+              conAnclas={posicion === conAnclas}
             />
           ))}
         </ConBloquesCargados>
       </Box>
     </>
-  )
-}
-
-/** El índice de momentos mientras llega la historia, en huesos del tamaño de los de verdad. */
-function IndiceEsqueleto() {
-  return (
-    <Box sx={{ borderTop: `1px solid ${FILETE}`, pt: 1 }}>
-      {[0, 1, 2, 3].map((i) => (
-        <Box key={i} sx={{ py: 1.25, borderBottom: `1px solid ${FILETE_LEVE}` }}>
-          <Lineas anchos={[`${88 - i * 9}%`]} linea={21} grosor={9} />
-        </Box>
-      ))}
-    </Box>
   )
 }
 
