@@ -59,6 +59,14 @@ export function ejemploDe(tipo: string, fotos: string[]): Bloque[] {
       }]
     case 'cita':
       return [{ tipo, ...sinTitulo, texto: 'Unas palabras que merecen ir en grande, para que se lean despacio.', autor: 'Quién lo dijo', fuente: 'Dónde' }]
+    case 'detalles':
+      return [{
+        tipo, titulo: '',
+        detalles: [
+          { titulo: 'Un detalle', texto: 'Lo que se ve de cerca, en dos o tres líneas.', foto: { url: foto(0), alt: 'Foto de ejemplo' } },
+          { titulo: 'Otro detalle', texto: 'La foto pasa al otro lado.', foto: { url: foto(1), alt: 'Foto de ejemplo' } },
+        ],
+      }]
     case 'pliegue':
       return [
         { tipo, titulo: 'Primera parte', resumen: 'Una frase de lo que hay dentro.' },
@@ -76,7 +84,7 @@ export function ejemploDe(tipo: string, fotos: string[]): Bloque[] {
       }]
     case 'calendarioDePared':
       return [{
-        tipo, titulo: 'Un año en el Grupo',
+        tipo, titulo: 'Un año entre nosotros',
         meses: Array.from({ length: 12 }, (_, i) => (
           i === 2 ? { titulo: 'El gran día', texto: 'Un mes destacado, con su foto.', foto: foto(0), fotoAlt: 'Foto de ejemplo', tono: 'destacado' as const }
             : i === 4 ? { titulo: 'Una nota', texto: 'En crema.', foto: '', fotoAlt: '', tono: 'crema' as const }

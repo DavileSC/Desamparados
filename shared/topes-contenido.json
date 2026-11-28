@@ -36,5 +36,6 @@
   "extractoNoticia": 300,
   "notasPorBloque": 6,
   "turnosPorConversacion": 12,
-  "etiquetasPorTurno": 8
+  "etiquetasPorTurno": 8,
+  "detallesPorBloque": 8
 }

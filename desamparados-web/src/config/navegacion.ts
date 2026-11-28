@@ -81,7 +81,7 @@ export const menuPublico: EntradaMenu[] = [
       },
     ],
   },
-  // Una sola página desde el 27-11-2026: la Virgen y debajo el Ajuar (#ajuar).
+  // Una sola página desde el 27-11-2026: la Virgen y su ajuar, detalle a detalle (#ajuar).
   // Hasta entonces desplegaba Desamparados y Ajuar.
   { label: 'Sagrada titular', href: '/sagrada-titular', modulo: 'nucleo' },
   {

@@ -56,7 +56,10 @@
     "chat, la respuesta con el escudo; para lo que se pregunta antes de venir.",
     "",
     "Sección plegable (pliegue), 27-11-2026: título y resumen que abren y cierran",
-    "los bloques que le siguen, hasta el siguiente pliegue; una abierta cada vez."
+    "los bloques que le siguen, hasta el siguiente pliegue; una abierta cada vez.",
+    "",
+    "Detalle a detalle (detalles), 27-11-2026: una foto a pantalla y su texto,",
+    "uno tras otro y alternando el lado, para acercarse a la imagen poco a poco."
   ],
   "tipos": [
     "texto",
@@ -90,7 +93,8 @@
     "notasAlMargen",
     "calendarioDePared",
     "conversacion",
-    "pliegue"
+    "pliegue",
+    "detalles"
   ],
   "modulo": {
     "texto": "nucleo", "foto": "nucleo", "galeria": "nucleo", "tarjetas": "nucleo", "llamada": "nucleo",
@@ -100,6 +104,6 @@
     "preguntas": "nucleo", "descargas": "nucleo", "mapa": "nucleo", "cuentaAtras": "nucleo", "espacio": "nucleo",
     "fotoFija": "nucleo", "horario": "nucleo", "dibujo": "paginas-propias", "anillos": "nucleo", "puertas": "nucleo",
     "programa": "nucleo", "relacion": "nucleo", "carrusel": "nucleo", "donativo": "donativos",
-    "notasAlMargen": "nucleo", "calendarioDePared": "nucleo", "conversacion": "nucleo", "pliegue": "nucleo"
+    "notasAlMargen": "nucleo", "calendarioDePared": "nucleo", "conversacion": "nucleo", "pliegue": "nucleo", "detalles": "nucleo"
   }
 }

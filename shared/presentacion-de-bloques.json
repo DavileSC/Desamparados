@@ -199,7 +199,8 @@
         "valores": [
           "lista",
           "cuadricula",
-          "tabla"
+          "tabla",
+          "ficha"
         ]
       }
     },

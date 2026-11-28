@@ -1,4 +1,5 @@
 import { Box, Typography } from '@mui/material'
+import { SERIF } from '../../features/inicio/estilos'
 import { anchoMaximo, valorDe } from './presentacion'
 import type { BloqueDatos as Datos } from '../../lib/api/contenido'
 
@@ -18,6 +19,8 @@ import type { BloqueDatos as Datos } from '../../lib/api/contenido'
  */
 export default function BloqueDatos({ bloque }: { bloque: Datos }) {
   const disposicion = valorDe(bloque, 'disposicion')
+
+  if (disposicion === 'ficha') return <Ficha bloque={bloque} />
 
   if (disposicion === 'cuadricula') {
     return (
@@ -78,6 +81,49 @@ export default function BloqueDatos({ bloque }: { bloque: Datos }) {
           </Typography>
         </Box>
       ))}
+    </Box>
+  )
+}
+
+/**
+ * La ficha (Sagrada titular, 27-11-2026): el título a la izquierda y los
+ * datos a la derecha en dos columnas, separados por filetes finos; el valor en
+ * grande, con la letra de los títulos, y su aclaración (`nota`) debajo en
+ * pequeño. Para unos pocos datos que merecen leerse uno a uno: autor,
+ * bendición, material. Pinta su propio título, al lado y no encima.
+ */
+function Ficha({ bloque }: { bloque: Datos }) {
+  return (
+    <Box sx={{
+      maxWidth: anchoMaximo(bloque, '1200px'), mx: 'auto',
+      display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 4fr) minmax(0, 7fr)' }, gap: { xs: 3, md: 9 }, alignItems: 'start',
+    }}>
+      {bloque.titulo && (
+        <Typography variant="h2" component="h2" sx={{ fontSize: { xs: '32px', md: '48px' }, m: 0 }}>{bloque.titulo}</Typography>
+      )}
+      <Box component="dl" sx={{
+        m: 0, gridColumn: bloque.titulo ? undefined : '1 / -1',
+        display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'repeat(2, minmax(0, 1fr))' }, columnGap: 4,
+        borderTop: '1px solid', borderColor: 'divider',
+      }}>
+        {bloque.lineas.map((linea, indice) => (
+          // Cada par en su caja, con un filete debajo: en dos columnas las
+          // filas quedan alineadas sin sangrar la segunda.
+          <Box key={`${linea.etiqueta}-${indice}`} sx={{ py: { xs: 2.25, md: 3 }, borderBottom: '1px solid', borderColor: 'divider' }}>
+            <Typography component="dt" sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'text.secondary', mb: 1 }}>
+              {linea.etiqueta}
+            </Typography>
+            <Typography component="dd" sx={{ m: 0, fontFamily: SERIF, fontWeight: 600, fontSize: { xs: 22, md: 26 }, lineHeight: 1.2, color: 'text.primary' }}>
+              {linea.valor}
+              {linea.nota && (
+                <Box component="span" sx={{ display: 'block', fontFamily: (t) => t.typography.fontFamily, fontWeight: 400, fontSize: 14, lineHeight: 1.5, color: 'text.secondary', mt: 0.75 }}>
+                  {linea.nota}
+                </Box>
+              )}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
     </Box>
   )
 }

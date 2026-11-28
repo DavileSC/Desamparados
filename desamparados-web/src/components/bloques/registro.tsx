@@ -23,6 +23,7 @@ import BloqueNotasAlMargen from './BloqueNotasAlMargen'
 import BloqueCalendarioDePared from './BloqueCalendarioDePared'
 import BloqueConversacion from './BloqueConversacion'
 import BloquePliegue from './BloquePliegue'
+import BloqueDetalles from './BloqueDetalles'
 import { valorDe } from './presentacion'
 import type { Bloque } from '../../lib/api/contenido'
 
@@ -143,6 +144,7 @@ export const REGISTRO_BLOQUES: Record<string, ComponenteDeBloque> = {
   calendarioDePared: BloqueCalendarioDePared as ComponenteDeBloque,
   conversacion: BloqueConversacion as ComponenteDeBloque,
   pliegue: BloquePliegue as ComponenteDeBloque,
+  detalles: BloqueDetalles as ComponenteDeBloque,
 }
 
 export const componenteDeBloque = (bloque: Bloque) => REGISTRO_BLOQUES[bloque.tipo]
@@ -153,8 +155,8 @@ export const componenteDeBloque = (bloque: Bloque) => REGISTRO_BLOQUES[bloque.ti
  * noticias»), que va dentro del mismo encabezado. El dibujo lo pone en la
  * columna del texto, al lado del dibujo y no encima de los dos. El programa lo
  * lleva con el año al otro lado; la relación, con el mandato; la foto con
- * texto fundida, sobre la foto; la llamada en nota, dentro de la nota; y el
- * pliegue, que es su título.
+ * texto fundida, sobre la foto; la llamada en nota, dentro de la nota; la ficha de datos, a su
+ * izquierda; y el pliegue, que es su título.
  */
 const CON_TITULO_PROPIO = new Set(['listado', 'dibujo', 'programa', 'relacion', 'pliegue'])
 
@@ -164,3 +166,5 @@ export const pintaSuTitulo = (bloque: Bloque) =>
   || (bloque.tipo === 'anillos' && valorDe(bloque, 'disposicion') === 'foco')
   // La nota lleva el título dentro, a la izquierda del texto.
   || (bloque.tipo === 'llamada' && valorDe(bloque, 'estilo') === 'nota')
+  // La ficha lo lleva a la izquierda de los datos.
+  || (bloque.tipo === 'datos' && valorDe(bloque, 'disposicion') === 'ficha')

@@ -6,7 +6,7 @@ import { esquemaDeBloque } from '../src/schemas/bloques.schema.js';
 import { TIPOS_BLOQUE } from '../src/domain/bloques.js';
 
 type Tipo = 'texto' | 'foto' | 'galeria' | 'tarjetas' | 'llamada' | 'datos' | 'itinerario'
-  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas' | 'programa' | 'relacion' | 'carrusel' | 'donativo' | 'notasAlMargen' | 'cita' | 'calendarioDePared' | 'conversacion' | 'pliegue';
+  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas' | 'programa' | 'relacion' | 'carrusel' | 'donativo' | 'notasAlMargen' | 'cita' | 'calendarioDePared' | 'conversacion' | 'pliegue' | 'detalles';
 
 const falla = (tipo: Tipo, valor: unknown) =>
   esquemaDeBloque(tipo)(valor) instanceof ArkErrors;
@@ -663,5 +663,29 @@ describe('bloque de sección plegable', () => {
 
   test('sin título no: no habría nada que pulsar', () => {
     assert.ok(falla('pliegue', { tipo: 'pliegue', titulo: ' ', resumen: 'Algo' }));
+  });
+});
+
+describe('bloque de detalle a detalle', () => {
+  const DETALLE = { titulo: 'El rostro', texto: 'Tallado en cedro real.', foto: { url: '/images/cabeceras/rostro.webp', alt: 'El rostro de la Virgen' } };
+  const DETALLES = { tipo: 'detalles', titulo: '', detalles: [DETALLE] };
+
+  test('con título, foto y su descripción pasa, aunque el texto vaya vacío', () => {
+    assert.ok(!falla('detalles', DETALLES));
+    assert.ok(!falla('detalles', { ...DETALLES, detalles: [{ ...DETALLE, texto: '' }] }));
+  });
+
+  test('ni sin detalles, ni sin título, ni sin foto, ni sin su descripción', () => {
+    assert.ok(falla('detalles', { ...DETALLES, detalles: [] }));
+    assert.ok(falla('detalles', { ...DETALLES, detalles: [{ ...DETALLE, titulo: ' ' }] }));
+    assert.ok(falla('detalles', { ...DETALLES, detalles: [{ ...DETALLE, foto: { url: '', alt: 'Algo' } }] }));
+    assert.ok(falla('detalles', { ...DETALLES, detalles: [{ ...DETALLE, foto: { ...DETALLE.foto, alt: '' } }] }));
+  });
+});
+
+describe('bloque de datos en ficha', () => {
+  test('la aclaración bajo el valor es opcional', () => {
+    assert.ok(!falla('datos', { tipo: 'datos', titulo: 'La imagen', lineas: [{ etiqueta: 'Autor', valor: 'Juan Vega Ortega', nota: 'Su primera imagen mariana para Málaga.' }] }));
+    assert.ok(!falla('datos', { tipo: 'datos', titulo: '', presentacion: { disposicion: 'ficha' }, lineas: [{ etiqueta: 'Material', valor: 'Cedro real' }] }));
   });
 });

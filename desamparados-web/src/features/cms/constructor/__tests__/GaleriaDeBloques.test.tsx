@@ -58,8 +58,8 @@ describe('la galería de «Añadir bloque»', () => {
     const user = userEvent.setup()
     const { galeria } = abrir()
     await user.click(within(galeria).getByRole('button', { name: /^Fotos y vídeo/ }))
-    // Seis y no siete: el dibujo es de las páginas propias, apagadas en las pruebas.
-    expect(within(galeria).getByText('Fotos y vídeo · 6 bloques')).toBeInTheDocument()
+    // Siete y no ocho: el dibujo es de las páginas propias, apagadas en las pruebas.
+    expect(within(galeria).getByText('Fotos y vídeo · 7 bloques')).toBeInTheDocument()
     expect(within(galeria).queryByRole('button', { name: /^Dibujo con texto: / })).not.toBeInTheDocument()
     await user.click(within(galeria).getByRole('button', { name: /^Galería: / }))
     expect(within(galeria).getByText('Disposición:')).toBeInTheDocument()

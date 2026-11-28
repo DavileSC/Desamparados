@@ -22,7 +22,7 @@ import type { Props } from './comunes'
 import type {
   BloqueFotoTexto, BloqueCita, BloqueVideo, BloqueBotones, BloquePreguntas,
   BloqueDescargas, BloqueMapa, BloqueCuentaAtras, BotonDeBloque, BloqueDibujo, NombreDeDibujo, BloqueAnillos, FinDeAnillo,
-  BloquePuertas, Puerta, BloquePrograma, BloqueRelacion, BloqueNotasAlMargen, BloqueCalendarioDePared, MesDeCalendario, BloqueConversacion, BloquePliegue,
+  BloquePuertas, Puerta, BloquePrograma, BloqueRelacion, BloqueNotasAlMargen, BloqueCalendarioDePared, MesDeCalendario, BloqueConversacion, BloquePliegue, BloqueDetalles,
 } from '../../../../lib/api/contenido'
 
 export function FormularioFotoTexto({ bloque, onCambio }: Props<BloqueFotoTexto>) {
@@ -413,7 +413,7 @@ export function FormularioCalendarioDePared({ bloque, onCambio }: Props<BloqueCa
         <Stack key={NOMBRES_DE_MES[i]} spacing={1.5} sx={{ borderTop: 1, borderColor: 'divider', pt: 2 }}>
           <Typography variant="subtitle2" component="h3">{NOMBRES_DE_MES[i]}</Typography>
           <TextField label={`Qué pasa en ${NOMBRES_DE_MES[i].toLowerCase()}`} value={mes.titulo} onChange={(e) => cambiar(i, { titulo: e.target.value })} size="small" fullWidth
-            helperText="Opcional, como «Sábado de Pasión»." slotProps={{ htmlInput: { maxLength: topes.titulo } }} />
+            helperText="Opcional, como «Cuaresma»." slotProps={{ htmlInput: { maxLength: topes.titulo } }} />
           <TextField label="Línea de debajo" value={mes.texto} onChange={(e) => cambiar(i, { texto: e.target.value })} size="small" fullWidth
             helperText="Opcional, como «La Virgen sale por el barrio»." slotProps={{ htmlInput: { maxLength: topes.descripcion } }} />
           <TextField select label="Cómo se ve" value={mes.tono} onChange={(e) => cambiar(i, { tono: e.target.value as MesDeCalendario['tono'] })} size="small" fullWidth>
@@ -486,10 +486,30 @@ export function FormularioPliegue({ bloque, onCambio }: Props<BloquePliegue>) {
   return (
     <Stack spacing={2}>
       <CampoTexto etiqueta="Qué hay dentro" valor={bloque.resumen} onCambio={(resumen) => onCambio({ resumen })}
-        ayuda="Opcional, una frase al lado del título: «La pieza mayor del Grupo»." maxLength={topes.descripcion} />
+        ayuda="Opcional, una frase al lado del título: «La pieza mayor»." maxLength={topes.descripcion} />
       <Typography variant="body2" color="text.secondary">
         Se abre con los bloques que van detrás, hasta la siguiente sección plegable o el final de la página. Solo hay una abierta a la vez; la primera, al llegar. Con un ancla en «Presentación», un enlace a ella la abre.
       </Typography>
     </Stack>
+  )
+}
+
+/** Cada detalle con su foto, obligatoria; el lado lo pone la web, alternando. */
+export function FormularioDetalles({ bloque, onCambio }: Props<BloqueDetalles>) {
+  return (
+    <ListaEditable elementos={bloque.detalles} onCambio={(detalles) => onCambio({ detalles })}
+      nuevo={() => ({ titulo: '', texto: '', foto: { url: '', alt: '' } })} nombre="Detalle" maximo={topes.detallesPorBloque}
+      pintar={(detalle, cambiar, i) => (
+        <>
+          <CampoImagen valor={detalle.foto.url} onCambio={(url) => cambiar({ foto: { ...detalle.foto, url } })} etiqueta={`Foto del detalle ${i + 1}`}
+            ayuda="Cuadrada o casi: se recorta en cuadrado. La primera va a la izquierda, la segunda a la derecha, y así." />
+          <CampoTexto etiqueta="Descripción de la foto" valor={detalle.foto.alt} onCambio={(alt) => cambiar({ foto: { ...detalle.foto, alt } })}
+            ayuda="Lo que se ve, en una frase. Es lo que oye quien usa un lector de pantalla." maxLength={topes.descripcion} />
+          <TextField label="Título" value={detalle.titulo} onChange={(e) => cambiar({ titulo: e.target.value })} size="small" fullWidth
+            helperText="Corto: «El rostro», «La corona»." slotProps={{ htmlInput: { maxLength: topes.titulo } }} />
+          <TextField label="Texto" value={detalle.texto} onChange={(e) => cambiar({ texto: e.target.value })} size="small" fullWidth multiline minRows={2}
+            helperText="Dos o tres líneas. Una línea en blanco separa párrafos." slotProps={{ htmlInput: { maxLength: topes.relato } }} />
+        </>
+      )} />
   )
 }

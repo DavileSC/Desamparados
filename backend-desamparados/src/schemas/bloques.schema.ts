@@ -163,6 +163,10 @@ const llamadaSchema = type({
 const lineaDatosSchema = type({
   etiqueta: ETIQUETA,
   valor: texto(topes.lugar),
+  // Opcional: una aclaración corta bajo el valor, que solo pinta la ficha
+  // («Juan Vega Ortega» y debajo «Su primera imagen mariana para Málaga»). Las
+  // líneas guardadas antes no la llevan y siguen valiendo.
+  'nota?': DESCRIPCION,
 });
 
 const datosSchema = type({
@@ -911,6 +915,30 @@ const pliegueSchema = type({
   resumen: DESCRIPCION,
 }).narrow((datos, ctx) => (enBlanco(datos.titulo) ? ctx.reject({ path: ['titulo'], problem: 'no puede quedar en blanco: es lo que se pulsa' }) : true));
 
+/**
+ * Detalle a detalle (Sagrada titular, 27-11-2026): una foto a pantalla y su
+ * texto, uno tras otro, alternando el lado. Cada detalle es un título, un
+ * texto corto (párrafos separados por una línea en blanco, sin HTML) y su
+ * foto, obligatoria: sin ella el detalle no enseña nada.
+ */
+const detalleSchema = type({
+  titulo: TITULO,
+  texto: texto(topes.relato),
+  foto: { url: rutaImagenPublica, alt: DESCRIPCION },
+});
+
+const detallesSchema = type({
+  ...comunes,
+  tipo: "'detalles'",
+  detalles: detalleSchema.array().atLeastLength(1).atMostLength(topes.detallesPorBloque),
+}).narrow((datos, ctx) => {
+  for (const [indice, detalle] of datos.detalles.entries()) {
+    if (enBlanco(detalle.titulo)) return ctx.reject({ path: ['detalles', indice, 'titulo'], problem: 'no puede quedar en blanco' });
+    if (enBlanco(detalle.foto.alt)) return ctx.reject({ path: ['detalles', indice, 'foto', 'alt'], problem: 'es obligatoria: describe lo que se ve' });
+  }
+  return true;
+});
+
 const POR_TIPO = {
   texto: textoSchema,
   foto: fotoSchema,
@@ -944,6 +972,7 @@ const POR_TIPO = {
   calendarioDePared: calendarioDeParedSchema,
   conversacion: conversacionSchema,
   pliegue: pliegueSchema,
+  detalles: detallesSchema,
 } as const;
 
 export const esquemaDeBloque = (tipo: TipoBloque) => POR_TIPO[tipo as keyof typeof POR_TIPO];

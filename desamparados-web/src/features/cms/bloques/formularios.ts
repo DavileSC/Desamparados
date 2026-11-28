@@ -10,7 +10,7 @@ import { FormularioDonativo } from './formularios/donativo'
 import {
   FormularioFotoTexto, FormularioCita, FormularioVideo, FormularioBotones, FormularioPreguntas,
   FormularioDescargas, FormularioMapa, FormularioCuentaAtras, FormularioEspacio, FormularioDibujo, FormularioAnillos,
-  FormularioPuertas, FormularioPrograma, FormularioRelacion, FormularioNotasAlMargen, FormularioCalendarioDePared, FormularioConversacion, FormularioPliegue,
+  FormularioPuertas, FormularioPrograma, FormularioRelacion, FormularioNotasAlMargen, FormularioCalendarioDePared, FormularioConversacion, FormularioPliegue, FormularioDetalles,
 } from './formularios/nuevos'
 import { FICHA_DE_BLOQUE } from '../constructor/etiquetas'
 import { libreDe, valorDe } from '../../../components/bloques/presentacion'
@@ -62,6 +62,7 @@ export const FORMULARIOS: Record<string, ComponentType<Props<never>>> = {
   calendarioDePared: FormularioCalendarioDePared as unknown as ComponentType<Props<never>>,
   conversacion: FormularioConversacion as unknown as ComponentType<Props<never>>,
   pliegue: FormularioPliegue as unknown as ComponentType<Props<never>>,
+  detalles: FormularioDetalles as unknown as ComponentType<Props<never>>,
   relacion: FormularioRelacion as unknown as ComponentType<Props<never>>,
   carrusel: FormularioCarrusel as unknown as ComponentType<Props<never>>,
   donativo: FormularioDonativo as unknown as ComponentType<Props<never>>,
@@ -133,7 +134,7 @@ const BLOQUE_NUEVO: Record<string, object> = {
   },
   // Los doce meses, en blanco: tenues hasta que se rellenen.
   calendarioDePared: {
-    tipo: 'calendarioDePared', titulo: 'Un año en el Grupo',
+    tipo: 'calendarioDePared', titulo: 'Un año entre nosotros',
     meses: Array.from({ length: 12 }, () => ({ titulo: '', texto: '', foto: '', fotoAlt: '', tono: 'normal' as const })),
   },
   conversacion: {
@@ -141,6 +142,7 @@ const BLOQUE_NUEVO: Record<string, object> = {
     turnos: [{ pregunta: '', respuesta: '', etiquetas: [], boton: '', enlace: '' }],
   },
   pliegue: { tipo: 'pliegue', titulo: 'Nueva sección', resumen: '' },
+  detalles: { tipo: 'detalles', titulo: '', detalles: [{ titulo: '', texto: '', foto: { url: '', alt: '' } }] },
 }
 
 /** La fecha de un mes más tarde a las 18:00, como AAAA-MM-DDTHH:mm. */
@@ -262,6 +264,14 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       return null
     case 'pliegue':
       return bloque.titulo.trim() === '' ? 'no tiene título, que es lo que se pulsa' : null
+    case 'detalles': {
+      const sinTitulo = bloque.detalles.findIndex((d) => d.titulo.trim() === '')
+      if (sinTitulo !== -1) return `tiene el detalle ${sinTitulo + 1} sin título`
+      const sinFoto = bloque.detalles.findIndex((d) => d.foto.url === '')
+      if (sinFoto !== -1) return `tiene el detalle ${sinFoto + 1} sin foto`
+      const sinAlt = bloque.detalles.findIndex((d) => d.foto.alt.trim() === '')
+      return sinAlt === -1 ? null : `tiene la foto del detalle ${sinAlt + 1} sin descripción`
+    }
     case 'conversacion': {
       if (bloque.nombre.trim() === '') return 'no dice quién contesta'
       const sin = bloque.turnos.findIndex((t) => t.pregunta.trim() === '' || t.respuesta.trim() === '')

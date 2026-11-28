@@ -44,7 +44,7 @@ const ETIQUETA_VALOR: Record<string, string> = {
   preguntas: 'Preguntas grandes', margen: 'Título al margen',
   grande: 'Grande', pequena: 'Pequeña', mediana: 'Mediana', completa: 'De lado a lado',
   original: 'Original', fino: 'Filete fino', dorado: 'Dorado', entreFiletes: 'Entre filetes, como un escudo',
-  pase: 'Pase', cuadricula: 'Cuadrícula', mosaico: 'Mosaico', tiras: 'Tiras', estampas: 'Estampas', carteles: 'Carteles',
+  pase: 'Pase', cuadricula: 'Cuadrícula', ficha: 'Ficha, con el título al lado', mosaico: 'Mosaico', tiras: 'Tiras', estampas: 'Estampas', carteles: 'Carteles',
   rueda: 'Números que ruedan',
   auto: 'Automático', cristal: 'Cristal', contorno: 'Recuadro sobrio', numeradas: 'Numeradas', filetes: 'Columnas con filete',
   separada: 'Foto al lado', fundido: 'Foto fundida en negro',
@@ -113,6 +113,7 @@ export const FICHA_DE_BLOQUE: Record<string, FichaDeBloque> = {
   mapa: { nombre: 'Mapa', descripcion: 'Un lugar en el mapa, con el enlace para llegar.' },
   horario: { nombre: 'Horario vivo', descripcion: 'Misas y despacho, con la próxima misa y cuánto falta, calculado al momento.' },
   relacion: { nombre: 'Relación de cargos', descripcion: 'Los cargos de la Junta, con quién los ocupa y qué hace cada uno.' },
+  detalles: { nombre: 'Detalle a detalle', descripcion: 'Una foto a pantalla y su texto, uno tras otro y alternando el lado: para acercarse a una imagen poco a poco.' },
   pliegue: { nombre: 'Sección plegable', descripcion: 'Un título que abre y cierra los bloques que le siguen, hasta la siguiente sección plegable. Solo una abierta a la vez.' },
   conversacion: { nombre: 'Conversación', descripcion: 'Preguntas y respuestas como en un chat, para lo que alguien se pregunta antes de venir.' },
   calendarioDePared: { nombre: 'Calendario de pared', descripcion: 'El año en doce casillas, una por mes, con lo que pasa en cada uno.' },
@@ -132,7 +133,7 @@ export const FICHA_DE_BLOQUE: Record<string, FichaDeBloque> = {
  */
 export const CARPETAS_DE_BLOQUES: { nombre: string; tipos: string[] }[] = [
   { nombre: 'Texto', tipos: ['texto', 'cita', 'notasAlMargen', 'preguntas', 'conversacion'] },
-  { nombre: 'Fotos y vídeo', tipos: ['foto', 'fotoTexto', 'galeria', 'carrusel', 'fotoFija', 'video', 'dibujo'] },
+  { nombre: 'Fotos y vídeo', tipos: ['foto', 'fotoTexto', 'detalles', 'galeria', 'carrusel', 'fotoFija', 'video', 'dibujo'] },
   { nombre: 'Composición', tipos: ['tarjetas', 'llamada', 'botones', 'puertas', 'anillos', 'pliegue', 'espacio'] },
   { nombre: 'Información', tipos: ['datos', 'itinerario', 'cronologia', 'calendarioDePared', 'horario', 'mapa', 'relacion', 'descargas', 'cuentaAtras'] },
   { nombre: 'Automáticos', tipos: ['listado', 'programa'] },

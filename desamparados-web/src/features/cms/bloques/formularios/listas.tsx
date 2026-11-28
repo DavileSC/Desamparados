@@ -90,7 +90,7 @@ export function FormularioTarjetas({ bloque, onCambio }: Props<BloqueTarjetas>) 
 }
 
 export function FormularioDatos({ bloque, onCambio }: Props<BloqueDatos>) {
-  return <EditorDeLineas lineas={bloque.lineas} onCambio={(lineas) => onCambio({ lineas })} minimo={1} />
+  return <EditorDeLineas lineas={bloque.lineas} onCambio={(lineas) => onCambio({ lineas })} minimo={1} conNota={valorDe(bloque, 'disposicion') === 'ficha'} />
 }
 
 /** Una parada recién añadida, sin hora: hasta que se sepa, la web dice «por confirmar». */

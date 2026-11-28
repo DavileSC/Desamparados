@@ -154,7 +154,8 @@ export interface BloqueTarjetas extends BloqueBase { tipo: 'tarjetas'; tarjetas:
  *  servidor los valida con el esquema compartido `medios.schema.ts`. */
 export interface BloqueGaleria extends BloqueBase { tipo: 'galeria'; medios: MedioGaleria[] }
 export interface BloqueLlamada extends BloqueBase { tipo: 'llamada'; texto: string; boton: string; enlace: string }
-export interface LineaDatos { etiqueta: string; valor: string }
+/** `nota`, opcional: la aclaración bajo el valor que pinta la ficha. */
+export interface LineaDatos { etiqueta: string; valor: string; nota?: string }
 export interface BloqueDatos extends BloqueBase { tipo: 'datos'; lineas: LineaDatos[] }
 /** El recorrido de siempre o el alternativo. */
 export type VarianteDelRecorrido = 'habitual' | 'alternativo'
@@ -209,6 +210,9 @@ export interface TurnoDeConversacion { pregunta: string; respuesta: string; etiq
 export interface BloqueConversacion extends BloqueBase { tipo: 'conversacion'; nombre: string; turnos: TurnoDeConversacion[] }
 /** Sección plegable: abre y cierra los bloques que le siguen, hasta el siguiente pliegue. */
 export interface BloquePliegue extends BloqueBase { tipo: 'pliegue'; resumen: string }
+/** Un detalle: su título, un texto corto (párrafos con línea en blanco) y su foto, obligatoria. */
+export interface DetalleDeImagen { titulo: string; texto: string; foto: { url: string; alt: string } }
+export interface BloqueDetalles extends BloqueBase { tipo: 'detalles'; detalles: DetalleDeImagen[] }
 /** Un vídeo suelto: las mismas reglas que uno de la galería. */
 export interface BloqueVideo extends BloqueBase { tipo: 'video'; url: string; portada: string; alt: string; pie: string }
 export interface BotonDeBloque { texto: string; enlace: string; estilo: 'principal' | 'secundario' }
@@ -304,6 +308,7 @@ export type Bloque =
   | BloqueCalendarioDePared
   | BloqueConversacion
   | BloquePliegue
+  | BloqueDetalles
   | BloqueRelacion
   | BloqueCarrusel
   | BloqueDonativo

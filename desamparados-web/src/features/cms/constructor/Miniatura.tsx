@@ -25,6 +25,7 @@ const boton = (x: number, y: number, w: number, lleno = true) => (
 )
 
 const DIBUJOS: Record<string, ReactNode> = {
+  detalles: <><rect x={0} y={4} width={62} height={30} fill={A} opacity={0.4} />{raya(70, 14, 30, 0.6)}{raya(70, 22, 40)}<rect x={58} y={38} width={62} height={30} fill={A} opacity={0.4} />{raya(10, 48, 30, 0.6)}{raya(10, 56, 40)}</>,
   pliegue: <>{[10, 30, 50].map((y, i) => <g key={y}><rect x={10} y={y} width={100} height={1} fill={A} opacity={0.4} />{raya(12, y + 9, i === 0 ? 40 : 34, i === 0 ? 0.6 : 0.3)}<path d={`M101 ${y + 7}l3 3 3-3`} stroke={A} strokeWidth={1} fill="none" opacity={0.6} /></g>)}</>,
   conversacion: <><rect x={62} y={8} width={46} height={12} rx={6} fill={A} opacity={0.55} /><rect x={12} y={25} width={60} height={16} rx={6} fill={A} opacity={0.18} /><rect x={70} y={46} width={38} height={12} rx={6} fill={A} opacity={0.55} /></>,
   calendarioDePared: <>{[0, 1, 2].map((f) => [0, 1, 2, 3].map((c) => <rect key={`${f}-${c}`} x={10 + c * 26} y={6 + f * 21} width={22} height={18} rx={4} fill={A} opacity={(f === 0 && c === 2) || (f === 2 && c === 2) ? 0.55 : 0.14} />))}</>,

@@ -15,12 +15,14 @@ const LINEA_NUEVA = { etiqueta: '', valor: '' }
  * de datos sin líneas no pinta nada, pero la tarjeta de contacto sin líneas
  * simplemente no sale y el formulario ocupa todo el ancho.
  */
-export default function EditorDeLineas({ lineas, onCambio, minimo }: {
+export default function EditorDeLineas({ lineas, onCambio, minimo, conNota = false }: {
   lineas: LineaDatos[]
   onCambio: (lineas: LineaDatos[]) => void
   minimo: 0 | 1
+  /** La aclaración bajo el valor: solo la pinta la ficha, así que solo se pide ahí. */
+  conNota?: boolean
 }) {
-  const cambiar = (indice: number, campo: 'etiqueta' | 'valor', texto: string) =>
+  const cambiar = (indice: number, campo: 'etiqueta' | 'valor' | 'nota', texto: string) =>
     onCambio(lineas.map((l, i) => (i === indice ? { ...l, [campo]: texto } : l)))
 
   const anadir = () => onCambio([...lineas, { ...LINEA_NUEVA }])
@@ -40,6 +42,11 @@ export default function EditorDeLineas({ lineas, onCambio, minimo }: {
           <TextField label="Valor" value={linea.valor}
             onChange={(e) => cambiar(indice, 'valor', e.target.value)} size="small" fullWidth
             slotProps={{ htmlInput: { maxLength: topes.lugar } }} />
+          {conNota && (
+            <TextField label="Aclaración" value={linea.nota ?? ''} helperText="Opcional, en pequeño bajo el valor."
+              onChange={(e) => cambiar(indice, 'nota', e.target.value)} size="small" fullWidth
+              slotProps={{ htmlInput: { maxLength: topes.descripcion } }} />
+          )}
           {/* Los tres botones juntos; en el móvil, debajo de los campos y a la derecha. */}
           <Stack direction="row" sx={{ alignSelf: { xs: 'flex-end', md: 'flex-start' } }}>
             <Tooltip title="Subir"><span>
