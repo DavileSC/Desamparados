@@ -73,6 +73,8 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
   const mes = mesElegido > ultimo ? ultimo : mesElegido
   const [animar, setAnimar] = useState(false)
   const [abierto, setAbierto] = useState<number | null>(null)
+  // La lista de un día con más actos de los que caben en su casilla («+N más»).
+  const [diaAbierto, setDiaAbierto] = useState<{ ancla: HTMLElement; fecha: Date; actos: ApiEvent[] } | null>(null)
   const [ancla, setAncla] = useState<HTMLElement | null>(null)
   const rejilla = useRef<HTMLDivElement>(null)
   const marco = useRef<HTMLDivElement>(null)
@@ -103,7 +105,9 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
   // La ventana se ancla a la tarjeta del acto (a su primer tramo, si cruza de
   // semana), que puede estar en un mes recién pintado.
   useLayoutEffect(() => {
-    setAncla(evento ? rejilla.current?.querySelector<HTMLElement>(`[data-acto="${evento.id}"]`) ?? null : null)
+    // Un acto escondido tras «+N más» no tiene línea propia: la ventana sale de ese botón.
+    const r = rejilla.current
+    setAncla(evento ? r?.querySelector<HTMLElement>(`[data-acto="${evento.id}"]`) ?? r?.querySelector<HTMLElement>(`[data-ocultos~="${evento.id}"]`) ?? null : null)
   }, [evento, mes])
 
   // Solo las semanas del mes: cinco casi siempre, seis si empieza tarde y es largo.
@@ -166,6 +170,14 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
     [desktopMq]: { scrollMarginBlock: `${bajoElVelo(16)} 240px` },
   } as const
   const foco = { '&.Mui-focusVisible': { outline: `2px solid ${GRANATE}`, outlineOffset: -2 } } as const
+  // Cuántos actos caben en una casilla: lo que deja el número, entre lo que
+  // ocupa cada línea (en escritorio, hora y nombre; en el móvil, una franja).
+  // Con más, se enseñan los que caben menos uno y el último hueco es «+N más»:
+  // antes el que no cabía salía cortado por la mitad, sin aviso de que había más.
+  const lineaDeActo = estrecho ? 9 : 21
+  const altoDelNumero = estrecho ? 20 : grande ? 30 : mediano ? 26 : 22
+  const rellenoDeCasilla = estrecho ? 8 : mediano ? 16 : 10
+  const caben = Math.max(1, Math.floor((fila - rellenoDeCasilla - altoDelNumero - (estrecho ? 4 : 6) + 3) / lineaDeActo))
 
   const ventana = evento && (
     <VentanaDelActo
@@ -291,7 +303,7 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
                     <Box key={i} className="pieza" sx={{ ...sx, display: 'flex', flexDirection: 'column', gap: { xs: 0.5, md: 0.75 }, bgcolor: solemne ? SOLEMNE : PAPEL }}>
                       <Box component="span" sx={{ ...numero, fontWeight: 600, color: solemne || domingo ? GRANATE : TINTA }}>{dia.getDate()}</Box>
                       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        {actos.map((e) => (
+                        {(actos.length > caben ? actos.slice(0, caben - 1) : actos).map((e) => (
                           <ButtonBase
                             key={e.id}
                             data-acto={e.id}
@@ -314,6 +326,16 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
                             <Box component="span" sx={{ display: { xs: 'none', md: 'block' }, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, fontWeight: 500, lineHeight: 1.3, color: e.cartel ? GRANATE_TINTA : TINTA }}>{e.title}</Box>
                           </ButtonBase>
                         ))}
+                        {actos.length > caben && (
+                          <MasActos
+                            ocultos={actos.slice(caben - 1)}
+                            etiqueta={`${dia.getDate()} de ${nombre.toLowerCase()}`}
+                            onPulsar={(boton) => {
+                              cerrar(false)
+                              setDiaAbierto((d) => (d?.ancla === boton ? null : { ancla: boton, fecha: dia, actos }))
+                            }}
+                          />
+                        )}
                       </Box>
                       {actos.some((e) => e.id === proximo?.id) && empiezaProximo(dia) && marcaProximo()}
                     </Box>
@@ -405,6 +427,17 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
         )}
       </Box>
 
+      {diaAbierto && (
+        <ListaDelDia
+          fecha={diaAbierto.fecha}
+          actos={diaAbierto.actos}
+          ancla={diaAbierto.ancla}
+          enDialogo={estrecho}
+          zIndex={tema.zIndex.modal}
+          onElegir={(e) => { setDiaAbierto(null); setAbierto(e.id) }}
+          onCerrar={(devolverFoco) => { if (devolverFoco) diaAbierto.ancla.focus(); setDiaAbierto(null) }}
+        />
+      )}
       {!estrecho && (
         <Popper
           open={!!ventana && !!ancla}
@@ -469,4 +502,87 @@ function MesDeAlLado({ nombre, lado }: { nombre: string; lado: 'anterior' | 'sig
     </Box>
   )
   return <>{capa(false)}{capa(true)}</>
+}
+
+/** El «+N más» de una casilla: lleva los ids que esconde, para que la ventana de uno de ellos salga de aquí. */
+function MasActos({ ocultos, etiqueta, onPulsar }: { ocultos: ApiEvent[]; etiqueta: string; onPulsar: (boton: HTMLElement) => void }) {
+  return (
+    <ButtonBase
+      data-abre-acto
+      data-ocultos={ocultos.map((e) => e.id).join(' ')}
+      onClick={(ev) => onPulsar(ev.currentTarget)}
+      aria-haspopup="dialog"
+      aria-label={`${etiqueta}: ${ocultos.length} actos más`}
+      sx={{
+        fontFamily: 'inherit', justifyContent: 'flex-start', minWidth: 0, flex: 'none', borderRadius: '2px',
+        px: { md: 0.5 }, mx: { md: -0.5 }, py: { md: '1px' },
+        fontSize: { xs: 10, md: 11.5 }, fontWeight: 600, letterSpacing: '0.04em', color: GRANATE, lineHeight: 1.3,
+        '&:hover': { bgcolor: 'rgba(35,29,32,0.06)', textDecoration: 'underline' },
+        '&.Mui-focusVisible': { outline: `2px solid ${GRANATE}`, outlineOffset: 1 },
+      }}
+    >
+      +{ocultos.length} más
+    </ButtonBase>
+  )
+}
+
+const POSICION = [
+  { name: 'offset', options: { offset: [0, 12] } },
+  { name: 'flip', options: { fallbackPlacements: ['left-start', 'bottom'] } },
+  { name: 'preventOverflow', options: { padding: 8 } },
+]
+
+/**
+ * Todos los actos de un día que no caben en su casilla, en una hoja como la
+ * ventana del acto: junto al «+N más» en escritorio, centrada en el móvil. Al
+ * elegir uno se abre su ventana, que sale del mismo «+N más».
+ */
+function ListaDelDia({ fecha, actos, ancla, enDialogo, zIndex, onElegir, onCerrar }: {
+  fecha: Date; actos: ApiEvent[]; ancla: HTMLElement; enDialogo: boolean; zIndex: number
+  onElegir: (e: ApiEvent) => void; onCerrar: (devolverFoco: boolean) => void
+}) {
+  const primero = useRef<HTMLButtonElement>(null)
+  useEffect(() => { primero.current?.focus({ preventScroll: true }) }, [])
+  const titulo = fecha.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+  const hoja = (
+    <Box
+      role={enDialogo ? undefined : 'dialog'}
+      aria-label={`Actos del ${titulo}`}
+      onKeyDown={(e) => { if (e.key === 'Escape' && !enDialogo) { e.stopPropagation(); onCerrar(true) } }}
+      sx={{ width: { xs: 'min(340px, calc(100vw - 32px))', md: 320 }, maxHeight: '60vh', overflowY: 'auto', bgcolor: '#fbf8f2', color: TINTA, borderRadius: '3px', border: `1px solid ${RAYA}`, boxShadow: '0 24px 48px -18px rgba(20,14,16,0.45)', p: '14px 16px 10px' }}
+    >
+      <Typography component="h3" sx={{ fontFamily: CORMORANT, fontStyle: 'italic', fontWeight: 500, fontSize: 24, lineHeight: 1.1, color: GRANATE, mb: 1, '&::first-letter': { textTransform: 'uppercase' } }}>
+        {titulo}
+      </Typography>
+      <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
+        {actos.map((e, i) => (
+          <Box component="li" key={e.id} sx={{ borderTop: `1px solid ${RAYA}` }}>
+            <ButtonBase
+              ref={i === 0 ? primero : undefined}
+              data-abre-acto
+              onClick={() => onElegir(e)}
+              sx={{ fontFamily: 'inherit', width: '100%', justifyContent: 'flex-start', alignItems: 'baseline', gap: 1.25, py: 1, px: 0.5, textAlign: 'left', '&:hover': { bgcolor: 'rgba(35,29,32,0.05)' }, '&.Mui-focusVisible': { outline: `2px solid ${GRANATE}`, outlineOffset: -2 } }}
+            >
+              <Box component="span" sx={{ flex: 'none', fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', color: colorDelActo(e), fontVariantNumeric: 'tabular-nums' }}>{hora(e)}</Box>
+              <Box component="span" sx={{ fontSize: 14, fontWeight: 500, lineHeight: 1.3, color: e.cartel ? GRANATE_TINTA : TINTA }}>{e.title}</Box>
+            </ButtonBase>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  )
+  if (enDialogo) {
+    return (
+      <Dialog open onClose={() => onCerrar(true)} aria-label={`Actos del ${titulo}`} slotProps={{ paper: { sx: { bgcolor: 'transparent', boxShadow: 'none', m: 2, borderRadius: 0 } }, backdrop: { sx: { bgcolor: 'rgba(10,8,10,0.6)' } } }}>
+        {hoja}
+      </Dialog>
+    )
+  }
+  return (
+    <Popper open anchorEl={ancla} placement="right-start" modifiers={POSICION} sx={{ zIndex }}>
+      <ClickAwayListener onClickAway={(e) => { if (!(e.target as Element).closest?.('[data-abre-acto]')) onCerrar(false) }}>
+        <div>{hoja}</div>
+      </ClickAwayListener>
+    </Popper>
+  )
 }
