@@ -131,6 +131,10 @@ async function escenario() {
     await db.papeletaSitio.deleteMany({ where: { hermanoId: { in: hermanos } } });
     await db.cita.deleteMany({ where: { OR: [{ hermanoId: { in: hermanos } }, { turnoId: { in: turnos } }] } });
     await db.recibo.deleteMany({ where: { hermanoId: { in: hermanos } } });
+    // El turno creado con TurnosService lleva su acto en la Agenda: borrar
+    // solo el turno lo dejaba huérfano, y cada pasada de la suite añadía otro
+    // «Reparto de papeletas» a la agenda de la base local.
+    await db.evento.deleteMany({ where: { turno: { id: { in: turnos } } } });
     await db.turno.deleteMany({ where: { id: { in: turnos } } });
     await db.hermano.deleteMany({ where: { id: { in: hermanos } } });
     await borrarUsuarioPrueba(usuario.id);

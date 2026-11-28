@@ -252,13 +252,15 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
             const elegido = (e: ApiEvent) => abierto === e.id
             const pulsar = (e: ApiEvent) => { if (abierto === e.id) cerrar(); else setAbierto(e.id) }
             // En escritorio, una etiqueta; en el móvil, donde no cabe, un filete granate.
-            const marcaProximo = (
+            // En una tarjeta de varios días, sobre el primero: en la esquina de
+            // la tarjeta caía en el último y parecía que el acto empezaba ahí.
+            const marcaProximo = (dias = 1) => (
               <Box
                 component="span"
                 aria-hidden
                 sx={{
                   position: 'absolute', pointerEvents: 'none',
-                  inset: { xs: 0, md: 'auto' }, top: { md: mediano ? 9 : 6 }, right: { md: 8 },
+                  inset: { xs: 0, md: 'auto' }, top: { md: mediano ? 9 : 6 }, right: { md: dias > 1 ? `calc(${((dias - 1) / dias) * 100}% + 8px)` : 8 },
                   boxShadow: { xs: `inset 0 0 0 2px ${GRANATE}`, md: 'none' },
                 }}
               >
@@ -313,7 +315,7 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
                           </ButtonBase>
                         ))}
                       </Box>
-                      {actos.some((e) => e.id === proximo?.id) && empiezaProximo(dia) && marcaProximo}
+                      {actos.some((e) => e.id === proximo?.id) && empiezaProximo(dia) && marcaProximo()}
                     </Box>
                   )
                 })}
@@ -364,7 +366,7 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
                       </Box>
                       {/* En el móvil no cabe el nombre: una franja de su color, como los que coinciden. */}
                       <Box component="span" aria-hidden sx={{ display: { xs: 'block', md: 'none' }, mt: 'auto', height: 6, borderRadius: '2px', bgcolor: colorDelActo(e) }} />
-                      {esProximo && marcaProximo}
+                      {esProximo && marcaProximo(t.hasta - t.desde + 1)}
                     </ButtonBase>
                   )
                 })}
