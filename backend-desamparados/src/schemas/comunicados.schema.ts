@@ -20,6 +20,11 @@ const comunicado = {
 
 export const comunicadoSchema = type({ body: comunicado });
 
+/** Programar: el instante en que empieza a salir, en ISO (la web lo calcula en hora de Madrid). */
+export const programarSchema = type({
+    body: { cuando: type("string.date.iso").describe("un día y una hora") }
+});
+
 export const destinatariosSchema = type({ body: { tipo: comunicado.tipo, segmento } });
 
 /** La clave de un envío a muchos, como la da `GET /comunicados/envios`: `comunicado:<id>` o el lote de la cola. */

@@ -45,6 +45,15 @@ export class ComunicadosController {
     res.json(await ComunicadosService.enviar(id(req), AuditoriaService.metaFromReq(req)));
   });
 
+  static programar = manejar('Error programando el comunicado', async (req, res) => {
+    const { cuando } = req.body as { cuando: string };
+    res.json(await ComunicadosService.programar(id(req), new Date(cuando), AuditoriaService.metaFromReq(req)));
+  });
+
+  static devolverABorrador = manejar('Error devolviendo el comunicado a borrador', async (req, res) => {
+    res.json(await ComunicadosService.devolverABorrador(id(req), AuditoriaService.metaFromReq(req)));
+  });
+
   static reintentar = manejar('Error reintentando los envíos', async (req, res) => {
     res.json(await ComunicadosService.reintentarFallidos(id(req)));
   });

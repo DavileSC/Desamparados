@@ -4,7 +4,7 @@ import SendIcon from '@mui/icons-material/Send'
 import { Helmet } from 'react-helmet-async'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
-  borrarComunicado, comunicado, comunicados, destinatariosDe, enviarComunicado, enviarPrueba, guardarComunicado, reintentarFallidos,
+  borrarComunicado, comunicado, comunicados, destinatariosDe, devolverABorrador, enviarComunicado, enviarPrueba, guardarComunicado, programarComunicado, reintentarFallidos,
   type ComunicadoCompleto, type ComunicadoEnLista, type DatosComunicado, type Segmento, type TipoComunicado,
 } from '../../lib/api/comunicados'
 import { limpiarHtml } from '../../lib/limpiarHtml'
@@ -12,6 +12,8 @@ import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import PantallaEdicion from './PantallaEdicion'
 import CabeceraSeccion from './CabeceraSeccion'
 import EditorTexto from './EditorTexto'
+import VentanaDeEnvio from './VentanaDeEnvio'
+import { fechaEnMadrid } from '../../lib/horaDeMadrid'
 import { plantillasLibres } from '../../lib/api/emails'
 import { site } from '../../config/site'
 import { useSalidas } from '../procesion/useSalidas'
@@ -45,8 +47,10 @@ export default function ComunicadoEditPage() {
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
-  const [cuenta, setCuenta] = useState<{ correos: number; sinCorreo: number; para: string } | null>(null)
-  const [confirmar, setConfirmar] = useState<'enviar' | 'borrar' | null>(null)
+  const [cuenta, setCuenta] = useState<Awaited<ReturnType<typeof destinatariosDe>> | null>(null)
+  const [confirmar, setConfirmar] = useState<'enviarYa' | 'borrar' | 'devolver' | null>(null)
+  // La ventana de «Enviar» (con «Ahora» marcado) o la de «Cambiar la hora» (con la que tenía).
+  const [ventana, setVentana] = useState<'enviar' | 'cambiar' | null>(null)
   const [progreso, setProgreso] = useState<ComunicadoEnLista['envios'] | null>(null)
   // «Ver quiénes» lleva al censo: solo a quien puede abrirlo (Redes escribe comunicados, pero no ve fichas).
   const role = useAuthStore((state) => state.cms?.role ?? 'USER')
@@ -89,11 +93,23 @@ export default function ComunicadoEditPage() {
     return () => clearInterval(reloj)
   }, [enviandose, cargar])
 
+  // Programado: al pasar su hora, el servidor lo pone a salir (mira cada minuto).
+  // Se recarga entonces para enseñar cómo va, sin tener que salir y volver.
+  const programadoPara = original?.estado === 'PROGRAMADO' ? original.programadoPara : null
+  useEffect(() => {
+    if (!programadoPara) return
+    const espera = Math.max(0, new Date(programadoPara).getTime() - Date.now()) + 70_000
+    // setTimeout no admite más de unos 24 días: más allá, ya se habrá recargado la pantalla.
+    if (espera > 2 ** 31 - 1) return
+    const reloj = setTimeout(() => { void cargar().catch(() => undefined) }, espera)
+    return () => clearTimeout(reloj)
+  }, [programadoPara, cargar])
+
   // A cuántas direcciones llegaría, cuando se deja de tocar el segmento.
   const tipo = form?.tipo
   const segmentoTexto = JSON.stringify(form?.segmento ?? null)
   useEffect(() => {
-    if (!tipo || original?.estado !== 'BORRADOR') return
+    if (!tipo || (original?.estado !== 'BORRADOR' && original?.estado !== 'PROGRAMADO')) return
     let cancelado = false
     const reloj = setTimeout(() => {
       destinatariosDe(tipo, JSON.parse(segmentoTexto) as Segmento)
@@ -129,13 +145,30 @@ export default function ComunicadoEditPage() {
   }
 
   const enviar = async () => {
-    setConfirmar(null); setGuardando(true); setError(null); setAviso(null)
+    setConfirmar(null); setVentana(null); setGuardando(true); setError(null); setAviso(null)
     try {
       if (sucio) await guardarComunicado(id, form)
       setAviso((await enviarComunicado(id)).message)
       await cargar()
     } catch (err: unknown) { setError(mensaje(err, 'No se ha podido enviar.')) }
     finally { setGuardando(false) }
+  }
+
+  const programar = async (cuando: string) => {
+    setVentana(null); setGuardando(true); setError(null); setAviso(null)
+    try {
+      if (sucio) await guardarComunicado(id, form)
+      const c = await programarComunicado(id, cuando)
+      setOriginal(c); setForm(aDatos(c))
+      setAviso(`Programado: empieza a salir el ${fechaEnMadrid(cuando, { weekday: 'long', day: 'numeric', month: 'long' })}, a las ${fechaEnMadrid(cuando, { hour: 'numeric', minute: '2-digit' })}.`)
+    } catch (err: unknown) { setError(mensaje(err, 'No se ha podido programar.')) }
+    finally { setGuardando(false) }
+  }
+
+  const devolver = async () => {
+    setConfirmar(null); setError(null); setAviso(null)
+    try { const c = await devolverABorrador(id); setOriginal(c); setForm(aDatos(c)); setAviso('Vuelve a ser un borrador: ya se puede corregir.') }
+    catch (err: unknown) { setError(mensaje(err, 'No se ha podido devolver a borrador.')) }
   }
 
   const borrar = async () => {
@@ -151,6 +184,74 @@ export default function ComunicadoEditPage() {
   }
 
   const titulo = `${original.tipo === 'BOLETIN' ? 'Boletín' : 'Aviso'}: ${original.asunto}`
+  const ventanaDeEnvio = cuenta && (
+    <VentanaDeEnvio
+      abierto={ventana !== null}
+      descripcion={`${form.asunto} · ${form.tipo === 'BOLETIN' ? 'boletín' : 'aviso'}`}
+      correos={cuenta.correos}
+      ritmo={cuenta.ritmo}
+      modoInicial={ventana === 'cambiar' ? 'programado' : 'ahora'}
+      programadoPara={original.programadoPara}
+      onEnviarAhora={() => void enviar()}
+      onProgramar={(cuando) => void programar(cuando)}
+      onCerrar={() => setVentana(null)}
+    />
+  )
+
+  if (original.estado === 'PROGRAMADO' && original.programadoPara) {
+    const cuando = original.programadoPara
+    return <>
+      <Helmet><title>{`${original.asunto} | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
+      <CabeceraSeccion titulo={titulo} subtitulo={original.para}>
+        <Button component={Link} to={LISTADO}>Volver al listado</Button>
+      </CabeceraSeccion>
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {aviso && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setAviso(null)}>{aviso}</Alert>}
+      <Paper sx={{ p: 2.5, mb: 3, maxWidth: 760, display: 'grid', gap: 2 }}>
+        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+          {/* La hoja de calendario: el día se lee de un vistazo. */}
+          <Box aria-hidden sx={{ flex: '0 0 64px', height: 64, borderRadius: 1.5, bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>
+            <Typography component="span" sx={{ fontSize: 12, letterSpacing: 1, textTransform: 'uppercase' }}>{fechaEnMadrid(cuando, { month: 'short' }).replace('.', '')}</Typography>
+            <Typography component="span" sx={{ fontSize: 26, fontWeight: 700 }}>{fechaEnMadrid(cuando, { day: 'numeric' })}</Typography>
+          </Box>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography sx={{ fontWeight: 600, fontSize: 18 }}>
+              {`Programado para el ${fechaEnMadrid(cuando, { weekday: 'long', day: 'numeric', month: 'long' })}, a las ${fechaEnMadrid(cuando, { hour: 'numeric', minute: '2-digit' })}`}
+            </Typography>
+            {cuenta && <Typography variant="body2" color="text.secondary">{`Hoy llegaría a ${plural(cuenta.correos, 'dirección', 'direcciones')}.`}</Typography>}
+          </Box>
+        </Stack>
+        <Typography variant="body2" color="text.secondary">
+          Hasta esa hora se puede cambiar la hora o devolverlo a borrador para corregir el texto. A quién va se calcula al empezar: quien entre en el segmento hasta entonces también lo recibe.
+        </Typography>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+          <Button variant="outlined" disabled={!cuenta} onClick={() => setVentana('cambiar')}>Cambiar la hora</Button>
+          <Button variant="outlined" onClick={() => setConfirmar('devolver')}>Devolver a borrador</Button>
+          <Button disabled={!cuenta?.correos} onClick={() => setConfirmar('enviarYa')}>Enviarlo ya</Button>
+        </Stack>
+      </Paper>
+      <Paper sx={{ p: { xs: 2.5, md: 4 }, maxWidth: 760, '& img': { maxWidth: '100%', height: 'auto' } }}>
+        <Box dangerouslySetInnerHTML={{ __html: limpiarHtml(original.cuerpo) }} />
+      </Paper>
+      {ventanaDeEnvio}
+      <DialogoConfirmacion
+        abierto={confirmar === 'enviarYa'}
+        titulo="¿Enviarlo ya?"
+        mensaje={`Empieza a salir ahora, sin esperar a su hora, a ${plural(cuenta?.correos ?? 0, 'dirección', 'direcciones')}. Una vez enviado ya no se puede cambiar ni retirar.`}
+        textoConfirmar="Enviarlo ya"
+        onConfirmar={() => void enviar()}
+        onCancelar={() => setConfirmar(null)}
+      />
+      <DialogoConfirmacion
+        abierto={confirmar === 'devolver'}
+        titulo="¿Devolver a borrador?"
+        mensaje="Deja de estar programado: no saldrá hasta que lo vuelvas a enviar o a programar."
+        textoConfirmar="Devolver a borrador"
+        onConfirmar={() => void devolver()}
+        onCancelar={() => setConfirmar(null)}
+      />
+    </>
+  }
 
   if (original.estado !== 'BORRADOR') {
     // Lo que rebotó sí salió: cuenta como enviado y el aviso de abajo dice cuántos no llegaron.
@@ -266,7 +367,7 @@ export default function ComunicadoEditPage() {
           <Button color="error" onClick={() => setConfirmar('borrar')}>Borrar el borrador</Button>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
             <Button variant="outlined" disabled={guardando || cuerpoVacio || !form.asunto.trim()} onClick={() => void probar()}>Enviarme una prueba</Button>
-            <Button variant="contained" startIcon={<SendIcon />} disabled={guardando || cuerpoVacio || !form.asunto.trim() || !cuenta?.correos} onClick={() => setConfirmar('enviar')}>
+            <Button variant="contained" startIcon={<SendIcon />} disabled={guardando || cuerpoVacio || !form.asunto.trim() || !cuenta?.correos} onClick={() => setVentana('enviar')}>
               Enviar
             </Button>
           </Stack>
@@ -274,14 +375,7 @@ export default function ComunicadoEditPage() {
       </Stack>
     </PantallaEdicion>
 
-    <DialogoConfirmacion
-      abierto={confirmar === 'enviar'}
-      titulo="¿Enviar el comunicado?"
-      mensaje={`Se mandará a ${plural(cuenta?.correos ?? 0, 'dirección', 'direcciones')}. Una vez enviado ya no se puede cambiar ni retirar.`}
-      textoConfirmar="Enviar"
-      onConfirmar={() => void enviar()}
-      onCancelar={() => setConfirmar(null)}
-    />
+    {ventanaDeEnvio}
     <DialogoConfirmacion
       abierto={confirmar === 'borrar'}
       titulo="¿Borrar el borrador?"

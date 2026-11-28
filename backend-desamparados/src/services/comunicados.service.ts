@@ -6,6 +6,9 @@
  * correos (`correos/cola.ts`) los va mandando uno a uno, con pausa y con el
  * tope del día; un aviso a quien tiene móvil para los avisos le llega ahí en
  * vez de por correo. Si el servidor se reinicia a medias, sigue por donde iba.
+ *
+ * Programado es lo mismo con hora: el reloj de `arrancarProgramados` lo envía
+ * al llegar, y a quién va se calcula entonces, no al programarlo.
  */
 import { EstadoComunicado, EstadoEnvio, EstadoPago, EstadoSolicitud, Prisma, TipoComunicado, TipoRecibo } from '@prisma/client';
 import db from '../config/db';
@@ -13,7 +16,7 @@ import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearContenidoCms, extractoPlano } from '../utils/sanear-html.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
 import { enviarCorreo } from './correos/envio.js';
-import { colaTerminada, despertarCola, ponerMaquetaDeComunicados, reintentarLote, retirarBoletinesPendientes } from './correos/cola.js';
+import { colaTerminada, despertarCola, ponerMaquetaDeComunicados, reintentarLote, retirarBoletinesPendientes, topeDiario, topePorHora } from './correos/cola.js';
 import { AvisosHermanosService } from './avisos-hermanos.service.js';
 import { firma, maquetar, parrafo, saludo, urlDeLaWeb } from './correos/plantilla.js';
 import { anioDeLaMesa } from './procesion/zonas.service.js';
@@ -35,6 +38,20 @@ export interface DatosComunicado {
 }
 
 const secreto = () => process.env.JWT_SECRET ?? '';
+
+/**
+ * Programar a menos de cinco minutos es enviar ya, y a más de un año, un
+ * despiste: un comunicado olvidado que saldría cuando ya nadie lo espera.
+ */
+const ANTELACION_MINIMA_MS = 5 * 60 * 1000;
+const ANTELACION_MAXIMA_MS = 366 * 24 * 3600 * 1000;
+
+/** Lo que se dice al intentar tocar lo que ya no es borrador. */
+function noEsBorrador(estado: EstadoComunicado): HttpError {
+  return estado === EstadoComunicado.PROGRAMADO
+    ? new HttpError('Este comunicado está programado: devuélvelo a borrador para cambiarlo.', 409)
+    : new HttpError('Este comunicado ya se envió: no se puede cambiar.', 409);
+}
 
 /** Solo los filtros que se conocen, para guardar lo que se eligió y nada más. */
 function segmentoLimpio(s: Segmento): Segmento {
@@ -123,9 +140,10 @@ function correoPara(c: { tipo: TipoComunicado; asunto: string; cuerpo: string },
 const nombresDeSalidas = async () => new Map((await SalidasService.listar({ todas: true }))
   .map((s) => [s.id, { nombre: s.nombre, articulo: articuloDe(s) }]));
 
-const resumen = async (c: { id: number; tipo: TipoComunicado; asunto: string; estado: EstadoComunicado; segmento: Prisma.JsonValue; enviadoEl: Date | null; autorNombre: string | null; createdAt: Date; updatedAt: Date }, nombres: ReadonlyMap<number, SalidaDelSegmento>) => ({
+const resumen = async (c: { id: number; tipo: TipoComunicado; asunto: string; estado: EstadoComunicado; segmento: Prisma.JsonValue; programadoPara: Date | null; enviadoEl: Date | null; autorNombre: string | null; createdAt: Date; updatedAt: Date }, nombres: ReadonlyMap<number, SalidaDelSegmento>) => ({
   id: c.id, tipo: c.tipo, asunto: c.asunto, estado: c.estado, segmento: c.segmento as Segmento,
-  para: describirSegmento(c.tipo, await segmentoAplicable(c.segmento as Segmento), nombres), enviadoEl: c.enviadoEl, autorNombre: c.autorNombre,
+  para: describirSegmento(c.tipo, await segmentoAplicable(c.segmento as Segmento), nombres),
+  programadoPara: c.programadoPara, enviadoEl: c.enviadoEl, autorNombre: c.autorNombre,
   createdAt: c.createdAt, updatedAt: c.updatedAt,
 });
 
@@ -144,7 +162,10 @@ ponerMaquetaDeComunicados({ correo: correoPara, aviso: avisoDe, cabeceras: cabec
 export class ComunicadosService {
   static async listar() {
     // Sin el cuerpo: la lista no lo enseña, y con fotos dentro pesa megas.
-    const lista = await db.comunicado.findMany({ omit: { cuerpo: true }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 200 });
+    // Los programados, arriba y en el orden en que saldrán: son lo que está por pasar.
+    const programados = await db.comunicado.findMany({ where: { estado: EstadoComunicado.PROGRAMADO }, omit: { cuerpo: true }, orderBy: [{ programadoPara: 'asc' }, { id: 'asc' }] });
+    const resto = await db.comunicado.findMany({ where: { estado: { not: EstadoComunicado.PROGRAMADO } }, omit: { cuerpo: true }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 200 });
+    const lista = [...programados, ...resto];
     const cuentas = await db.comunicadoEnvio.groupBy({ by: ['comunicadoId', 'estado'], where: { comunicadoId: { in: lista.map((c) => c.id) } }, _count: { _all: true } });
     const de = (id: number, estado: EstadoEnvio) => cuentas.find((x) => x.comunicadoId === id && x.estado === estado)?._count._all ?? 0;
     const nombres = await nombresDeSalidas();
@@ -165,7 +186,8 @@ export class ComunicadosService {
     const s = await segmentoAplicable(segmentoLimpio(segmento));
     const fichas = await fichasDelSegmento(tipo, s);
     const { destinatarios, sinCorreo } = destinatariosDe(fichas);
-    return { para: describirSegmento(tipo, s, await nombresDeSalidas()), fichas: fichas.length, correos: destinatarios.length, sinCorreo };
+    // El ritmo de la cola va con la cuenta: el CMS calcula con él cuándo lo tendrán todos.
+    return { para: describirSegmento(tipo, s, await nombresDeSalidas()), fichas: fichas.length, correos: destinatarios.length, sinCorreo, ritmo: { porHora: topePorHora(), porDia: topeDiario() } };
   }
 
   static async crear(datos: DatosComunicado, meta?: MetaDeAuditoria) {
@@ -190,15 +212,21 @@ export class ComunicadosService {
       },
     });
     if (cambiado.count === 0) {
-      if (!(await db.comunicado.findUnique({ where: { id }, select: { id: true } }))) throw new NotFoundError('Comunicado no encontrado.');
-      throw new HttpError('Este comunicado ya se envió: no se puede cambiar.', 409);
+      const c = await db.comunicado.findUnique({ where: { id }, select: { estado: true } });
+      if (!c) throw new NotFoundError('Comunicado no encontrado.');
+      throw noEsBorrador(c.estado);
     }
     return ComunicadosService.obtener(id);
   }
 
   static async borrar(id: number) {
     const borrado = await db.comunicado.deleteMany({ where: { id, estado: EstadoComunicado.BORRADOR } });
-    if (borrado.count === 0) throw new HttpError('Solo se borran los borradores: lo enviado se queda como constancia.', 409);
+    if (borrado.count === 0) {
+      const c = await db.comunicado.findUnique({ where: { id }, select: { estado: true } });
+      throw c?.estado === EstadoComunicado.PROGRAMADO
+        ? new HttpError('Este comunicado está programado: devuélvelo a borrador para borrarlo.', 409)
+        : new HttpError('Solo se borran los borradores: lo enviado se queda como constancia.', 409);
+    }
   }
 
   /** Una prueba a quien lo está escribiendo, con su nombre en el saludo. */
@@ -214,12 +242,14 @@ export class ComunicadosService {
 
   /**
    * Apunta a los destinatarios y arranca el envío. Todo o nada: si dos
-   * personas pulsan a la vez, solo una lo manda.
+   * personas pulsan a la vez, o una pulsa «Enviarlo ya» justo cuando le llega
+   * su hora a uno programado, solo uno lo manda.
    */
   static async enviar(id: number, meta?: MetaDeAuditoria) {
     const c = await db.comunicado.findUnique({ where: { id } });
     if (!c) throw new NotFoundError('Comunicado no encontrado.');
-    if (c.estado !== EstadoComunicado.BORRADOR) throw new HttpError('Este comunicado ya se envió.', 409);
+    const enviable: EstadoComunicado[] = [EstadoComunicado.BORRADOR, EstadoComunicado.PROGRAMADO];
+    if (!enviable.includes(c.estado)) throw new HttpError('Este comunicado ya se envió.', 409);
     const { destinatarios } = destinatariosDe(await fichasDelSegmento(c.tipo, c.segmento as Segmento));
     if (destinatarios.length === 0) throw new HttpError('Nadie del segmento tiene correo: no hay a quién mandarlo.', 409);
     // Al móvil, solo los avisos: el boletín es para leerlo con calma, y una
@@ -231,8 +261,8 @@ export class ComunicadosService {
 
     await db.$transaction(async (tx) => {
       const pasa = await tx.comunicado.updateMany({
-        where: { id, estado: EstadoComunicado.BORRADOR },
-        data: { estado: EstadoComunicado.ENVIANDO, enviadoEl: new Date() },
+        where: { id, estado: { in: enviable } },
+        data: { estado: EstadoComunicado.ENVIANDO, enviadoEl: new Date(), programadoPara: null },
       });
       if (pasa.count === 0) throw new HttpError('Este comunicado ya se envió.', 409);
       await tx.comunicadoEnvio.createMany({
@@ -247,6 +277,72 @@ export class ComunicadosService {
     });
     void despertarCola();
     return { message: `Enviando a ${destinatarios.length === 1 ? '1 dirección' : `${destinatarios.length} direcciones`}. Tarda unos minutos: se ve aquí cómo avanza.`, destinatarios: destinatarios.length };
+  }
+
+  /**
+   * Lo deja programado para un día y una hora, o le cambia la hora si ya lo
+   * estaba. Se comprueba ya que llegaría a alguien, para no enterarse el día.
+   */
+  static async programar(id: number, cuando: Date, meta?: MetaDeAuditoria, ahora: Date = new Date()) {
+    const c = await db.comunicado.findUnique({ where: { id } });
+    if (!c) throw new NotFoundError('Comunicado no encontrado.');
+    const programable: EstadoComunicado[] = [EstadoComunicado.BORRADOR, EstadoComunicado.PROGRAMADO];
+    if (!programable.includes(c.estado)) throw new HttpError('Este comunicado ya se envió.', 409);
+    if (cuando.getTime() < ahora.getTime() + ANTELACION_MINIMA_MS) throw new HttpError('Elige una hora de dentro de cinco minutos como pronto. Para mandarlo ya, «Ahora».');
+    if (cuando.getTime() > ahora.getTime() + ANTELACION_MAXIMA_MS) throw new HttpError('Como mucho, se programa a un año vista.');
+    const { destinatarios } = destinatariosDe(await fichasDelSegmento(c.tipo, c.segmento as Segmento));
+    if (destinatarios.length === 0) throw new HttpError('Nadie del segmento tiene correo: no hay a quién mandarlo.', 409);
+
+    const pasa = await db.comunicado.updateMany({
+      where: { id, estado: { in: programable } },
+      data: { estado: EstadoComunicado.PROGRAMADO, programadoPara: cuando },
+    });
+    if (pasa.count === 0) throw new HttpError('Este comunicado ya se envió.', 409);
+    await AuditoriaService.log(ACCIONES_AUDITORIA.COMUNICADO_PROGRAMAR, meta ?? {}, 'comunicado', id, {
+      ...(c.programadoPara ? { antes: { programadoPara: c.programadoPara.toISOString() } } : {}),
+      despues: { tipo: c.tipo, asunto: c.asunto, programadoPara: cuando.toISOString() },
+    });
+    return ComunicadosService.obtener(id);
+  }
+
+  /** Lo saca de la programación: vuelve a ser un borrador que se puede corregir. */
+  static async devolverABorrador(id: number, meta?: MetaDeAuditoria) {
+    const pasa = await db.comunicado.updateMany({
+      where: { id, estado: EstadoComunicado.PROGRAMADO },
+      data: { estado: EstadoComunicado.BORRADOR, programadoPara: null },
+    });
+    if (pasa.count === 0) {
+      const c = await db.comunicado.findUnique({ where: { id }, select: { estado: true } });
+      if (!c) throw new NotFoundError('Comunicado no encontrado.');
+      throw c.estado === EstadoComunicado.BORRADOR
+        ? new HttpError('Este comunicado ya es un borrador.', 409)
+        : new HttpError('Ya ha empezado a salir: no se puede devolver a borrador.', 409);
+    }
+    await AuditoriaService.log(ACCIONES_AUDITORIA.COMUNICADO_DESPROGRAMAR, meta ?? {}, 'comunicado', id, {});
+    return ComunicadosService.obtener(id);
+  }
+
+  /**
+   * Los programados a los que les ha llegado la hora, a la cola. Uno que ya no
+   * llega a nadie (se dieron de baja todos) vuelve a borrador en vez de
+   * reintentarse cada minuto: el CMS lo enseña así y nadie cree que salió.
+   */
+  static async enviarLosProgramados(ahora: Date = new Date()) {
+    const toca = await db.comunicado.findMany({
+      where: { estado: EstadoComunicado.PROGRAMADO, programadoPara: { lte: ahora } },
+      select: { id: true }, orderBy: [{ programadoPara: 'asc' }, { id: 'asc' }],
+    });
+    for (const { id } of toca) {
+      try {
+        await ComunicadosService.enviar(id);
+      } catch (error) {
+        if (!(error instanceof HttpError)) throw error;
+        // Solo si sigue programado: si alguien pulsó «Enviarlo ya» a la vez, ya está saliendo.
+        const vuelve = await db.comunicado.updateMany({ where: { id, estado: EstadoComunicado.PROGRAMADO }, data: { estado: EstadoComunicado.BORRADOR, programadoPara: null } });
+        if (vuelve.count > 0) console.warn(`[Comunicados] El programado ${id} no ha salido y vuelve a borrador: ${error.message}`);
+      }
+    }
+    return toca.length;
   }
 
   /** Vuelve a intentar los que fallaron (la cuenta se quedó sin cupo, por ejemplo). */
@@ -287,6 +383,17 @@ export class ComunicadosService {
     await AuditoriaService.log(ACCIONES_AUDITORIA.BOLETIN_BAJA, {}, 'boletin', undefined, { despues: { fichas: r.count } });
     return { message: `Hecho: ya no recibirás el boletín. Los avisos ${deLaCorporacion({ corto: true })} (cuotas, cabildos) te seguirán llegando.`, fichas: r.count };
   }
+}
+
+/**
+ * Al arrancar el servidor: cada minuto, los programados a los que les toca. Uno
+ * cuya hora pasó con el servidor apagado sale al arrancar, tarde pero entero.
+ */
+export function arrancarProgramados(): void {
+  const vuelta = () => void ComunicadosService.enviarLosProgramados()
+    .catch((error) => console.error('❌ [Comunicados] No se han podido enviar los programados:', error));
+  vuelta();
+  setInterval(vuelta, 60 * 1000).unref();
 }
 
 /** Para las pruebas: esperar a que el envío en segundo plano termine. */

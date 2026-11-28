@@ -1371,6 +1371,7 @@ enum TipoComunicado {
 
 enum EstadoComunicado {
   BORRADOR
+  PROGRAMADO // Sale solo a su hora (`programadoPara`); hasta entonces se puede devolver a borrador
   ENVIANDO // Hay envíos pendientes: el servidor los va mandando poco a poco
   ENVIADO
 }
@@ -1415,6 +1416,8 @@ model Comunicado {
   /// Los filtros del segmento, tal como se eligieron (ver domain/comunicados.ts).
   segmento    Json
   estado      EstadoComunicado  @default(BORRADOR)
+  /// Cuándo empieza a salir uno PROGRAMADO. A quién va se calcula entonces, no al programarlo.
+  programadoPara DateTime?
   enviadoEl   DateTime?
   /// Quién lo escribió y quién lo mandó, copiados: sobreviven a las cuentas.
   autorId     Int?
@@ -1427,6 +1430,7 @@ model Comunicado {
   updatedAt DateTime @updatedAt
 
   @@index([createdAt])
+  @@index([estado, programadoPara])
 }
 
 /// Cada destinatario de un comunicado. Se apuntan todos al pulsar «Enviar» y

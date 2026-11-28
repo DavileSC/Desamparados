@@ -143,6 +143,9 @@ void import('./services/comunicados.service.js')
   .then(() => import('./services/correos/cola.js'))
   .then(({ arrancarCola }) => arrancarCola());
 
+// Los comunicados programados salen solos a su hora: se mira cada minuto.
+void import('./services/comunicados.service.js').then(({ arrancarProgramados }) => arrancarProgramados());
+
 // Los rebotes llegan al buzón que envía: se leen cada cuarto de hora (con EMAIL_IMAP_HOST).
 void import('./services/correos/buzon-de-rebotes.js').then(({ arrancarBuzonDeRebotes }) => arrancarBuzonDeRebotes());
 

@@ -1,7 +1,7 @@
 import { llamarApi } from './cliente'
 
 export type TipoComunicado = 'BOLETIN' | 'AVISO'
-type EstadoComunicado = 'BORRADOR' | 'ENVIANDO' | 'ENVIADO'
+type EstadoComunicado = 'BORRADOR' | 'PROGRAMADO' | 'ENVIANDO' | 'ENVIADO'
 
 /** A quién va, además de ser activo (y suscrito, en el boletín). Vacío no filtra. */
 export interface Segmento {
@@ -26,6 +26,8 @@ interface Comunicado {
   segmento: Segmento
   /** El segmento dicho en castellano. */
   para: string
+  /** Cuándo empieza a salir uno PROGRAMADO; null en los demás. */
+  programadoPara: string | null
   enviadoEl: string | null
   autorNombre: string | null
   createdAt: string
@@ -57,10 +59,14 @@ export const borrarComunicado = (id: number) => llamarApi<void>(`/comunicados/${
 
 /** A cuántas direcciones llegaría, y cuántas fichas del segmento no tienen correo. */
 export const destinatariosDe = (tipo: TipoComunicado, segmento: Segmento) =>
-  llamarApi<{ para: string; fichas: number; correos: number; sinCorreo: number }>('/comunicados/destinatarios', { method: 'POST', json: { tipo, segmento } })
+  llamarApi<{ para: string; fichas: number; correos: number; sinCorreo: number; ritmo: { porHora: number; porDia: number } }>('/comunicados/destinatarios', { method: 'POST', json: { tipo, segmento } })
 
 export const enviarPrueba = (id: number) => llamarApi<{ message: string }>(`/comunicados/${id}/prueba`, { method: 'POST' })
 export const enviarComunicado = (id: number) => llamarApi<{ message: string; destinatarios: number }>(`/comunicados/${id}/enviar`, { method: 'POST' })
+/** Que salga solo a una hora (`cuando`, ISO); también para cambiársela a uno ya programado. */
+export const programarComunicado = (id: number, cuando: string) => llamarApi<ComunicadoCompleto>(`/comunicados/${id}/programar`, { method: 'POST', json: { cuando } })
+/** Le quita la hora: vuelve a ser un borrador que se puede corregir. */
+export const devolverABorrador = (id: number) => llamarApi<ComunicadoCompleto>(`/comunicados/${id}/borrador`, { method: 'POST' })
 /** Cómo va un envío a muchos (un comunicado o la apertura de papeletas). */
 export interface EnvioEnMarcha {
   clave: string

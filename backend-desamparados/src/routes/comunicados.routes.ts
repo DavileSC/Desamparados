@@ -6,7 +6,7 @@ import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { validate } from '../config/validate.js';
 import { idParam } from '../config/common.js';
-import { comunicadoSchema, destinatariosSchema, reintentarEnvioSchema } from '../schemas/comunicados.schema.js';
+import { comunicadoSchema, destinatariosSchema, programarSchema, reintentarEnvioSchema } from '../schemas/comunicados.schema.js';
 
 const comunicadosRoutes = Router();
 
@@ -31,6 +31,8 @@ comunicadosRoutes.put('/:id', checkRole(rolesComunicacion), validateId, validate
 comunicadosRoutes.delete('/:id', checkRole(rolesComunicacion), validateId, ComunicadosController.borrar);
 comunicadosRoutes.post('/:id/prueba', checkRole(rolesComunicacion), validateId, ComunicadosController.prueba);
 comunicadosRoutes.post('/:id/enviar', checkRole(rolesComunicacion), validateId, ComunicadosController.enviar);
+comunicadosRoutes.post('/:id/programar', checkRole(rolesComunicacion), validateId, validate(programarSchema), ComunicadosController.programar);
+comunicadosRoutes.post('/:id/borrador', checkRole(rolesComunicacion), validateId, ComunicadosController.devolverABorrador);
 comunicadosRoutes.post('/:id/reintentar', checkRole(rolesComunicacion), validateId, ComunicadosController.reintentar);
 
 export { comunicadosRoutes };

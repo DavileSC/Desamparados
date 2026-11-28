@@ -87,8 +87,10 @@ export const ACCIONES_AUDITORIA = {
   PRIMER_ACCESO_FICHA_AJENA: 'PRIMER_ACCESO_FICHA_AJENA',
   // El cortejo: repartir las papeletas en los tramos por antigüedad
   CORTEJO_REPARTIR: 'CORTEJO_REPARTIR',
-  // Boletín y avisos: mandar uno y darse de baja desde el enlace del correo
+  // Boletín y avisos: mandar uno (ya o a una hora), quitarle la hora y darse de baja desde el enlace del correo
   COMUNICADO_ENVIAR: 'COMUNICADO_ENVIAR',
+  COMUNICADO_PROGRAMAR: 'COMUNICADO_PROGRAMAR',
+  COMUNICADO_DESPROGRAMAR: 'COMUNICADO_DESPROGRAMAR',
   BOLETIN_BAJA: 'BOLETIN_BAJA',
   // Cabildos: darlo por celebrado (fija el quórum) y aprobar su acta
   CABILDO_CELEBRAR: 'CABILDO_CELEBRAR',

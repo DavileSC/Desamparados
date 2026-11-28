@@ -175,6 +175,115 @@ test('los fallidos se reintentan, y la prueba llega a quien la pide', async (t) 
   }
 });
 
+test('programado: sale solo a su hora, a quien esté en el segmento entonces; hasta esa hora se cambia o vuelve a borrador', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    await e.ficha({ nombre: 'Ana', email: 'ana.programado@ejemplo.test' });
+    const c = await e.crear('AVISO');
+    const yo = { userId: e.staff.id };
+    const dentroDe = (min: number) => new Date(Date.now() + min * 60_000);
+    const conflicto = (err: unknown) => err instanceof HttpError && err.status === 409;
+
+    // Demasiado pronto o demasiado lejos, no.
+    await assert.rejects(ComunicadosService.programar(c.id, dentroDe(2), yo), /cinco minutos/);
+    await assert.rejects(ComunicadosService.programar(c.id, dentroDe(400 * 24 * 60), yo), /un año/);
+
+    const primera = dentroDe(60);
+    const p = await ComunicadosService.programar(c.id, primera, yo);
+    assert.equal(p.estado, 'PROGRAMADO');
+    assert.equal(p.programadoPara?.getTime(), primera.getTime());
+    // Arriba del listado, y con su hora.
+    const lista = await ComunicadosService.listar();
+    const corte = lista.findIndex((x) => x.estado !== 'PROGRAMADO');
+    assert.ok(corte === -1 || lista.slice(corte).every((x) => x.estado !== 'PROGRAMADO'), 'los programados, todos arriba');
+    assert.ok(lista.findIndex((x) => x.id === c.id) < (corte === -1 ? Infinity : corte));
+    // Programado no se corrige ni se borra: primero vuelve a borrador.
+    await assert.rejects(ComunicadosService.actualizar(c.id, { tipo: 'AVISO', asunto: 'Otro', cuerpo: '<p>x</p>', segmento: {} }), /devuélvelo a borrador/);
+    await assert.rejects(ComunicadosService.borrar(c.id), /devuélvelo a borrador/);
+
+    // Cambiar la hora es programarlo otra vez.
+    const segunda = dentroDe(6);
+    await ComunicadosService.programar(c.id, segunda, yo);
+
+    // Antes de su hora, el reloj no lo toca.
+    enviados.length = 0;
+    await ComunicadosService.enviarLosProgramados(new Date(segunda.getTime() - 1000));
+    assert.equal((await ComunicadosService.obtener(c.id)).estado, 'PROGRAMADO');
+
+    // Alguien entra en el segmento después de programarlo: también lo recibe.
+    await e.ficha({ nombre: 'Luis', email: 'luis.programado@ejemplo.test' });
+    await ComunicadosService.enviarLosProgramados(new Date(segunda.getTime() + 1000));
+    await envioTerminado();
+    assert.deepEqual(enviados.map((m) => m.to).sort(), ['ana.programado@ejemplo.test', 'luis.programado@ejemplo.test']);
+    const enviado = await ComunicadosService.obtener(c.id);
+    assert.equal(enviado.estado, 'ENVIADO');
+    assert.equal(enviado.programadoPara, null);
+    assert.ok(enviado.enviadoEl);
+
+    // Ya salido: ni se reprograma ni vuelve a borrador.
+    await assert.rejects(ComunicadosService.programar(c.id, dentroDe(60), yo), conflicto);
+    await assert.rejects(ComunicadosService.devolverABorrador(c.id, yo), /empezado a salir/);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('programado: «Devolver a borrador» le quita la hora, «Enviarlo ya» lo manda, y si a su hora no llega a nadie vuelve a borrador', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    const ana = await e.ficha({ nombre: 'Ana', email: 'ana.borrador@ejemplo.test' });
+    const yo = { userId: e.staff.id };
+    const cuando = new Date(Date.now() + 30 * 60_000);
+
+    const a = await e.crear('AVISO');
+    await ComunicadosService.programar(a.id, cuando, yo);
+    const vuelto = await ComunicadosService.devolverABorrador(a.id, yo);
+    assert.deepEqual([vuelto.estado, vuelto.programadoPara], ['BORRADOR', null]);
+    await assert.rejects(ComunicadosService.devolverABorrador(a.id, yo), /ya es un borrador/);
+
+    await ComunicadosService.programar(a.id, cuando, yo);
+    enviados.length = 0;
+    await ComunicadosService.enviar(a.id, yo);
+    await envioTerminado();
+    assert.deepEqual(enviados.map((m) => m.to), ['ana.borrador@ejemplo.test']);
+
+    // Programado con Ana y, para cuando le toca, Ana se ha dado de baja: no sale y vuelve a borrador.
+    const b = await e.crear('AVISO');
+    await ComunicadosService.programar(b.id, cuando, yo);
+    await db.hermano.update({ where: { id: ana.id }, data: { activo: false } });
+    enviados.length = 0;
+    await ComunicadosService.enviarLosProgramados(new Date(cuando.getTime() + 1000));
+    assert.equal(enviados.length, 0);
+    const devuelto = await ComunicadosService.obtener(b.id);
+    assert.deepEqual([devuelto.estado, devuelto.programadoPara], ['BORRADOR', null]);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('programar por la API: pide un día y una hora en ISO', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    await e.ficha({ nombre: 'Ana', email: 'ana.api@ejemplo.test' });
+    const c = await e.crear('AVISO');
+    const cookie = `${COOKIE_CMS}=${generateToken(e.staff.id, Role.SECRETARIA, false, 'cms')}`;
+    const pedir = (ruta: string, cuerpo?: unknown) => fetch(`${baseUrl}/api/comunicados/${c.id}/${ruta}`, { method: 'POST', headers: { Cookie: cookie, 'Content-Type': 'application/json' }, body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo) });
+
+    assert.equal((await pedir('programar', { cuando: 'mañana a las seis' })).status, 400);
+    const ok = await pedir('programar', { cuando: new Date(Date.now() + 3600_000).toISOString() });
+    assert.equal(ok.status, 200, await ok.clone().text());
+    assert.equal(((await ok.json()) as { estado: string }).estado, 'PROGRAMADO');
+    const vuelta = await pedir('borrador');
+    assert.equal(vuelta.status, 200, await vuelta.clone().text());
+    assert.equal(((await vuelta.json()) as { estado: string }).estado, 'BORRADOR');
+  } finally {
+    await e.recoger();
+  }
+});
+
 // NG12: «apuntados a…» llega a quien pidió la papeleta y a quien ya la recogió.
 test('«apuntados a» una salida: con la solicitud pendiente o con la papeleta de su año', async (t) => {
   if (!dbDisponible) { t.skip(SIN_DB); return; }

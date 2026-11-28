@@ -32,6 +32,8 @@ const ACCIONES: Record<string, string> = {
   PRIMER_ACCESO_FICHA_AJENA: 'Devolver una ficha que no es de la familia',
   CORTEJO_REPARTIR: 'Repartir el cortejo por antigüedad',
   COMUNICADO_ENVIAR: 'Enviar un boletín o aviso',
+  COMUNICADO_PROGRAMAR: 'Programar un boletín o aviso',
+  COMUNICADO_DESPROGRAMAR: 'Devolver a borrador un boletín o aviso programado',
   BOLETIN_BAJA: 'Darse de baja del boletín',
   CABILDO_CELEBRAR: 'Dar un cabildo por celebrado',
   CABILDO_ACTA_APROBAR: 'Aprobar el acta de un cabildo',

@@ -10,14 +10,16 @@ import EnviosEnMarcha from './EnviosEnMarcha'
 import { fechaCorta } from './contabilidad/formato'
 import { site } from '../../config/site'
 import { deLaCorporacion } from '../../domain/articulos'
+import { fechaEnMadrid } from '../../lib/horaDeMadrid'
 
 const TIPOS: Record<TipoComunicado, { nombre: string; explicacion: string }> = {
   BOLETIN: { nombre: 'Boletín', explicacion: `Noticias y vida ${deLaCorporacion({ corto: true })}. Solo lo reciben los hermanos que se han suscrito, y lleva el enlace para darse de baja.` },
   AVISO: { nombre: 'Aviso', explicacion: 'Algo que los hermanos tienen que saber (cuotas, cabildos, reparto de papeletas). Lo reciben todos los activos del segmento que elijas.' },
 }
 
-const ESTADO: Record<ComunicadoEnLista['estado'], { texto: string; color: 'default' | 'info' | 'success' }> = {
+const ESTADO: Record<ComunicadoEnLista['estado'], { texto: string; color: 'default' | 'info' | 'success' | 'warning' }> = {
   BORRADOR: { texto: 'Borrador', color: 'default' },
+  PROGRAMADO: { texto: 'Programado', color: 'warning' },
   ENVIANDO: { texto: 'Enviándose', color: 'info' },
   ENVIADO: { texto: 'Enviado', color: 'success' },
 }
@@ -77,7 +79,8 @@ export default function ComunicadosAdminPage() {
                   </Typography>
                 </Box>
                 <Typography variant="body2" color="text.secondary" sx={{ minWidth: 150 }}>
-                  {c.enviadoEl ? `Enviado el ${fechaCorta(c.enviadoEl)}` : `Escrito el ${fechaCorta(c.updatedAt)}`}
+                  {c.programadoPara ? `Sale el ${fechaEnMadrid(c.programadoPara, { day: 'numeric', month: 'short' }).replace('.', '')}, a las ${fechaEnMadrid(c.programadoPara, { hour: 'numeric', minute: '2-digit' })}`
+                    : c.enviadoEl ? `Enviado el ${fechaCorta(c.enviadoEl)}` : `Escrito el ${fechaCorta(c.updatedAt)}`}
                   {total > 0 && <><br />{c.envios.enviados + c.envios.rebotados + c.envios.alMovil} de {total} enviados{c.envios.alMovil ? ` (${c.envios.alMovil} al móvil)` : ''}{c.envios.fallidos ? ` · ${c.envios.fallidos} fallidos` : ''}{c.envios.rebotados ? ` · ${c.envios.rebotados} rebotados` : ''}</>}
                 </Typography>
                 <Chip size="small" label={ESTADO[c.estado].texto} color={ESTADO[c.estado].color} variant={c.estado === 'BORRADOR' ? 'outlined' : 'filled'} />
