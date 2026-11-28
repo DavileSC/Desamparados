@@ -103,10 +103,10 @@ describe('AccesoPage (acceso de hermanos)', () => {
     expect(screen.queryByRole('button', { name: 'Entrar' })).not.toBeInTheDocument()
   })
 
-  it('sin el alta por la web no ofrece «Solicita tu alta»', () => {
+  it('sin el alta por la web no ofrece «Hazte hermano»', () => {
     montar(['area-hermanos'])
     expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Solicita tu alta' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Hazte hermano' })).not.toBeInTheDocument()
     // Sin segunda puerta, la primera no se presenta como una de dos.
     expect(screen.queryByText('Ya soy hermano')).not.toBeInTheDocument()
   })
@@ -114,7 +114,7 @@ describe('AccesoPage (acceso de hermanos)', () => {
   it('con el alta por la web, sí: en el móvil, al pie del mismo panel que el formulario', () => {
     // jsdom no tiene ancho de pantalla: `useMediaQuery` da el móvil.
     montar(['area-hermanos', 'alta-web'])
-    expect(screen.getByRole('link', { name: 'Solicita tu alta' })).toHaveAttribute('href', '/hazte-hermano')
+    expect(screen.getByRole('link', { name: 'Hazte hermano' })).toHaveAttribute('href', '/hazte-hermano')
     expect(screen.getByRole('heading', { level: 2, name: '¿Aún no eres hermano?' })).toBeInTheDocument()
     // Un solo panel: no se presenta como la primera de dos puertas.
     expect(screen.queryByText('Ya soy hermano')).not.toBeInTheDocument()

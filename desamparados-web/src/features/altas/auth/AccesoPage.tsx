@@ -85,7 +85,8 @@ export default function AccesoPage() {
       <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6, mb: alPie ? 2 : 3, ...(alPie && { [MOVIL_MEDIO]: { display: 'none' } }) }}>
         Pide el alta desde la web; se formaliza en la Secretaría y allí se activa tu acceso.
       </Typography>
-      <Boton appVariant="claro" href="/hazte-hermano">Solicita tu alta</Boton>
+      {/* Granate como «Entrar»: es la acción de su puerta, y el velo crema se perdía sobre la foto. */}
+      <Boton href="/hazte-hermano">Hazte hermano</Boton>
     </>
   )
 
@@ -114,7 +115,7 @@ export default function AccesoPage() {
         >
           {/* Sobre la foto, los campos llevan fondo propio y más oscuro que el
               velo: la letra que se escribe se lee igual pase por donde pase. */}
-          <Box sx={{ maxWidth: 420, width: '100%', '& .MuiOutlinedInput-root': { backgroundColor: alfa(FONDO, 0.6) } }}>
+          <Box sx={{ maxWidth: 420, width: '100%', '& .MuiOutlinedInput-root': { backgroundColor: alfa(FONDO, 0.6) }, '& input:-webkit-autofill': AUTORRELLENO }}>
             {segundaPuerta && <Typography component="p" sx={ANTETITULO}>Ya soy hermano</Typography>}
             <Typography variant="h3" component="h1" sx={{ mb: 1, fontSize: { xs: '26px', md: '34px' }, [MOVIL_MINIMO]: { mb: 0.5 } }}>
               Acceso hermanos
@@ -164,6 +165,18 @@ const VELO_DERECHA = `linear-gradient(270deg, ${alfa(FONDO, 0.9)} 0%, ${alfa(FON
 const VELO_SOLA = alfa(FONDO, 0.82)
 /** En el móvil, la foto se deja ver arriba y se cierra donde empiezan los campos. */
 const VELO_MOVIL = `linear-gradient(to bottom, ${alfa(FONDO, 0.55)}, ${alfa(FONDO, 0.86)} 40%, ${alfa(FONDO, 0.95)})`
+
+/**
+ * Chrome pinta de azul los campos que rellena él (el correo guardado), con un
+ * fondo opaco que no se deja cambiar. Se aplaza su transición del fondo hasta
+ * que no llega nunca, y la letra se fuerza a la de la web: el campo queda como
+ * los demás, con su fondo velado sobre la foto.
+ */
+const AUTORRELLENO = {
+  transition: 'background-color 600000s 0s, color 600000s 0s',
+  WebkitTextFillColor: TINTA,
+  caretColor: TINTA,
+} as const
 
 const ANTETITULO = {
   fontSize: 12,
