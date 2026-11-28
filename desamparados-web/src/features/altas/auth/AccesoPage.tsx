@@ -56,11 +56,14 @@ export default function AccesoPage() {
           <title>{`Área de hermanos no activada | ${site.nombreCorto}`}</title>
           <meta name="robots" content="noindex" />
         </Helmet>
+        {/* El marco del acceso va a pantalla completa y no centra nada: lo centra esta caja. */}
+        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2, pt: 10, pb: 4 }}>
         <TarjetaCristal component="main" sx={{ width: '100%', p: { xs: 3, md: 5 }, maxWidth: 440, mx: 'auto', textAlign: 'center' }}>
           <Typography component="h1" variant="h5" sx={{ mb: 1.5 }}>El área de hermanos no está activada</Typography>
           <Typography color="text.secondary" sx={{ mb: 2 }}>En esta instalación los hermanos no entran por la web.</Typography>
           <Typography>Si eres de la Junta de Gobierno, entra por el <Link to="/cms/acceso">acceso del CMS</Link>.</Typography>
         </TarjetaCristal>
+        </Box>
       </>
     )
   }
@@ -92,37 +95,50 @@ export default function AccesoPage() {
         <title>{`Acceso hermanos | ${site.nombreCorto}`}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
-      <Box
-        component="main"
-        sx={{
-          width: '100%',
-          maxWidth: segundaPuerta ? 'none' : 640,
-          mx: 'auto',
-          display: 'flex',
-          gap: 3,
-          minHeight: { md: 520 },
-        }}
-      >
-        <Puerta foto={FOTO_DEL_ACCESO} encuadre="center 30%" sx={{ flex: '1 1 0', p: { xs: 2, sm: 5, md: '44px 56px' }, [MOVIL_ESTRECHO]: { p: 1.5 }, [MOVIL_MINIMO]: { pb: 1 } }}>
-          {segundaPuerta && <Typography component="p" sx={ANTETITULO}>Ya soy hermano</Typography>}
-          <Typography variant="h3" component="h1" sx={{ mb: 1, fontSize: { xs: '26px', md: '34px' }, [MOVIL_MINIMO]: { mb: 0.5 } }}>
-            Acceso hermanos
-          </Typography>
-          <Box sx={{ maxWidth: 460 }}>
+      <Box component="main" sx={{ flex: 1, display: 'flex', minHeight: 0 }}>
+        <Puerta
+          foto={FOTO_DEL_ACCESO}
+          encuadre="center 28%"
+          velo={segundaPuerta ? VELO_IZQUIERDA : dosPuertas ? VELO_SOLA : VELO_MOVIL}
+          sx={{
+            // En el móvil, el hueco de arriba es el de la marca, que va encima.
+            pt: { xs: '76px', md: '112px' },
+            pb: { xs: 2, md: 6 },
+            px: { xs: 2.5, sm: 5, md: 6, lg: 9 },
+            ...(!segundaPuerta && dosPuertas && { alignItems: 'center' }),
+            [MOVIL_ESTRECHO]: { px: 2 },
+            [MOVIL_MINIMO]: { pt: '68px', pb: 1 },
+          }}
+        >
+          <Box sx={{ maxWidth: 420, width: '100%' }}>
+            {segundaPuerta && <Typography component="p" sx={ANTETITULO}>Ya soy hermano</Typography>}
+            <Typography variant="h3" component="h1" sx={{ mb: 1, fontSize: { xs: '26px', md: '34px' }, [MOVIL_MINIMO]: { mb: 0.5 } }}>
+              Acceso hermanos
+            </Typography>
             <FormularioAccesoHermano alIzquierda alEntrar={alEntrar} subtitulo="Introduce tus credenciales para acceder a tu área privada." />
+            {conAlta && !dosPuertas && (
+              <Box sx={{ mt: 2.5, pt: 2.5, [MOVIL_MINIMO]: { mt: 1.5, pt: 1.5 }, borderTop: `1px solid ${alfa(MARCA.acentoApagado, 0.3)}` }}>{alta(true)}</Box>
+            )}
           </Box>
-          {conAlta && !dosPuertas && (
-            <Box sx={{ mt: 2.5, pt: 2.5, [MOVIL_MINIMO]: { mt: 1.5, pt: 1.5 }, borderTop: `1px solid ${alfa(MARCA.acentoApagado, 0.3)}` }}>{alta(true)}</Box>
-          )}
         </Puerta>
 
         {segundaPuerta && (
           <Puerta
             foto={FOTO_DE_LA_PUERTA_DEL_ALTA}
             encuadre="62% center"
-            sx={{ width: { md: 380, lg: 420 }, flexShrink: 0, p: '44px 40px' }}
+            velo={VELO_DERECHA}
+            sx={{
+              pt: '112px',
+              pb: 6,
+              px: { md: 6, lg: 9 },
+              alignItems: 'flex-end',
+              // El divisor: un filete blanco que nace bajo la marca y baja
+              // hasta el borde, sin apagarse, para que se lea como un corte y
+              // no como una raya suelta. Pasa por la parte oscura de los velos.
+              '&::before': { content: '""', position: 'absolute', left: 0, top: 84, bottom: 0, width: '1px', backgroundColor: alfa(TINTA, 0.45), zIndex: 1 },
+            }}
           >
-            {alta(false)}
+            <Box sx={{ maxWidth: 400, width: '100%' }}>{alta(false)}</Box>
           </Puerta>
         )}
       </Box>
@@ -130,10 +146,20 @@ export default function AccesoPage() {
   )
 }
 
-/** El fondo de las dos puertas: el de las tarjetas, ya sin el cristal. */
-const FONDO_PUERTA = '#1a181b'
-/** La foto apenas se intuye: la letra de encima no pierde contraste. */
-const OPACIDAD_FOTO = 0.07
+/** El fondo de la web: sobre él se funden las fotos. */
+const FONDO = '#121113'
+/** La letra clara de la web, para el filete. */
+const TINTA = '#f3efe9'
+
+// Las fotos van a color y enteras; lo que las apaga es el velo, más denso
+// donde va la letra (el borde de fuera) y también junto al divisor, para que
+// el filete pase siempre por oscuro.
+const VELO_IZQUIERDA = `linear-gradient(90deg, ${alfa(FONDO, 0.92)} 0%, ${alfa(FONDO, 0.74)} 55%, ${alfa(FONDO, 0.74)} 85%, ${alfa(FONDO, 0.9)} 100%)`
+const VELO_DERECHA = `linear-gradient(270deg, ${alfa(FONDO, 0.9)} 0%, ${alfa(FONDO, 0.7)} 55%, ${alfa(FONDO, 0.7)} 85%, ${alfa(FONDO, 0.9)} 100%)`
+/** Sin la puerta del alta, el formulario va en medio: el velo, parejo. */
+const VELO_SOLA = alfa(FONDO, 0.82)
+/** En el móvil, la foto se deja ver arriba y se cierra donde empiezan los campos. */
+const VELO_MOVIL = `linear-gradient(to bottom, ${alfa(FONDO, 0.55)}, ${alfa(FONDO, 0.86)} 40%, ${alfa(FONDO, 0.95)})`
 
 const ANTETITULO = {
   fontSize: 12,
@@ -145,16 +171,17 @@ const ANTETITULO = {
 } as const
 
 /**
- * Cada una de las dos puertas del acceso: un panel liso con su foto velada
- * detrás. La foto es de la instalación (`config/fotosDeLaInstalacion.ts`):
- * donde no está, se quita y queda el panel liso.
+ * Cada una de las dos puertas del acceso: media pantalla con su foto a todo
+ * el alto y un velo encima. La foto es de la instalación
+ * (`config/fotosDeLaInstalacion.ts`): donde no está, se quita y queda el
+ * fondo liso.
  */
-function Puerta({ foto, encuadre, sx, children }: { foto: string; encuadre: string; sx?: SxProps<Theme>; children: ReactNode }) {
+function Puerta({ foto, encuadre, velo, sx, children }: { foto: string; encuadre: string; velo: string; sx?: SxProps<Theme>; children: ReactNode }) {
   const { visible, alFallar } = useFotoQueFalla(foto)
   return (
     <Box
       sx={[
-        { position: 'relative', overflow: 'hidden', backgroundColor: FONDO_PUERTA, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start' },
+        { position: 'relative', flex: '1 1 0', minWidth: 0, overflow: 'hidden', backgroundColor: FONDO, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start' },
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}
     >
@@ -166,10 +193,11 @@ function Puerta({ foto, encuadre, sx, children }: { foto: string; encuadre: stri
           aria-hidden="true"
           decoding="async"
           onError={alFallar}
-          sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: encuadre, opacity: OPACIDAD_FOTO, pointerEvents: 'none' }}
+          sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: encuadre, pointerEvents: 'none' }}
         />
       )}
-      <Box sx={{ position: 'relative', width: '100%' }}>{children}</Box>
+      <Box aria-hidden="true" sx={{ position: 'absolute', inset: 0, background: velo, pointerEvents: 'none' }} />
+      <Box sx={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'inherit' }}>{children}</Box>
     </Box>
   )
 }

@@ -1,11 +1,15 @@
-import { Outlet, Link } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
 import { Box, Container } from '@mui/material'
-import EscudoDelGrupo from '../components/EscudoDelGrupo'
 import TransicionDePagina from '../components/TransicionDePagina'
-import { designTokens } from '../theme'
-import { site } from '../config/site'
+import { MarcaEscritorio } from '../components/barra/MarcaDeLaBarra'
 
-export default function MarcoAcceso() {
+/**
+ * `aPantalla`: la página ocupa toda la pantalla, sin el contenedor centrado ni
+ * sus márgenes. Es el acceso de hermanos, con sus fotos de lado a lado; las
+ * demás pantallas de este marco (nueva contraseña, primer acceso) siguen en
+ * su caja.
+ */
+export default function MarcoAcceso({ aPantalla = false }: { aPantalla?: boolean }) {
   return (
     <Box
       sx={{
@@ -18,47 +22,42 @@ export default function MarcoAcceso() {
         backgroundColor: 'background.default',
       }}
     >
-      <Box
-        component={Link}
-        to="/"
-        sx={{
-          position: 'absolute',
-          top: { xs: 16, md: 24 },
-          left: { xs: '20px', md: '64px' },
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1.25,
-          fontFamily: designTokens.fonts.heading,
-          fontSize: '22px',
-          lineHeight: 1,
-          color: 'text.primary',
-          textDecoration: 'none',
-          zIndex: 10,
-        }}
-      >
-        <EscudoDelGrupo alto={38} sx={{ height: { xs: 32, md: 38 } }} />
-        {site.nombreCorto.toUpperCase()}
+      {/* La marca de la barra (escudo y rótulo), arriba en medio: es la misma
+          firma que en el resto de la web, y al centro no compite con las dos
+          puertas del acceso, que se reparten la pantalla a izquierda y derecha. */}
+      {/* De lado a lado y centrada con flex, no con left 50 %: así la caja tiene
+          todo el ancho y el rótulo no se encoge en el móvil. */}
+      <Box sx={{ position: 'absolute', top: { xs: 16, md: 24 }, left: 16, right: 16, display: 'flex', justifyContent: 'center', zIndex: 10, pointerEvents: 'none', '& > *': { pointerEvents: 'auto' } }}>
+        <MarcaEscritorio />
       </Box>
 
-      {/* Ancho del acceso de hermanos, con sus dos puertas: las demás pantallas
-          de este marco (nueva contraseña, primer acceso) fijan el suyo, más estrecho. */}
-      <Container
-        maxWidth="lg"
-        sx={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          // En el móvil, lo justo para no pegarse al escudo, que va encima, y
-          // casi nada abajo: el acceso tiene que caber sin hacer scroll.
-          pt: { xs: 7, md: 8 },
-          pb: { xs: 2, md: 8 },
-        }}
-      >
-        <TransicionDePagina>
-          <Outlet />
-        </TransicionDePagina>
-      </Container>
+      {aPantalla ? (
+        // La transición envuelve la página: se estira para que la página llegue al pie.
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', '& > *': { flex: 1, display: 'flex', flexDirection: 'column' } }}>
+          <TransicionDePagina>
+            <Outlet />
+          </TransicionDePagina>
+        </Box>
+      ) : (
+        // Las pantallas sueltas (nueva contraseña, primer acceso) fijan su ancho, estrecho.
+        <Container
+          maxWidth="lg"
+          sx={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            // En el móvil, lo justo para no pegarse al escudo, que va encima, y
+            // casi nada abajo: el acceso tiene que caber sin hacer scroll.
+            pt: { xs: 7, md: 8 },
+            pb: { xs: 2, md: 8 },
+          }}
+        >
+          <TransicionDePagina>
+            <Outlet />
+          </TransicionDePagina>
+        </Container>
+      )}
     </Box>
   )
 }
