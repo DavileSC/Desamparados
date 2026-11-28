@@ -112,7 +112,9 @@ export default function AccesoPage() {
             [MOVIL_MINIMO]: { pt: '68px', pb: 1 },
           }}
         >
-          <Box sx={{ maxWidth: 420, width: '100%' }}>
+          {/* Sobre la foto, los campos llevan fondo propio y más oscuro que el
+              velo: la letra que se escribe se lee igual pase por donde pase. */}
+          <Box sx={{ maxWidth: 420, width: '100%', '& .MuiOutlinedInput-root': { backgroundColor: alfa(FONDO, 0.6) } }}>
             {segundaPuerta && <Typography component="p" sx={ANTETITULO}>Ya soy hermano</Typography>}
             <Typography variant="h3" component="h1" sx={{ mb: 1, fontSize: { xs: '26px', md: '34px' }, [MOVIL_MINIMO]: { mb: 0.5 } }}>
               Acceso hermanos
